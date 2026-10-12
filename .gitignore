@@ -1,0 +1,25 @@
+# 依赖与构建
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# 环境变量（密钥绝不入库）
+.env
+.env.*
+!.env.example
+
+# 日志与系统文件
+*.log
+npm-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
+
+# 录屏原始素材（不入库；剪辑后视频随提交物另附）
+recordings/
+
+# 编辑器
+.vscode/*
+!.vscode/extensions.json
+.idea/
