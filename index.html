@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>（游戏名待定）· 校园叙事 RPG</title>
+    <style>
+      html,
+      body,
+      #root {
+        height: 100%;
+        margin: 0;
+        background: #10141c;
+        overflow: hidden;
+      }
+      /* HD-2D 像素化渲染的关键：画布以 1/4 分辨率渲染（见 App.jsx dpr），
+         再通过最近邻放大到全屏，得到锐利的复古像素质感 */
+      canvas {
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
