@@ -36,7 +36,7 @@ export function grassTexture() {
 }
 
 // 32×32 石板路：2×2 石板 + 勾缝 + 磨损
-export function pathTexture(horizontal = false) {
+export function pathTexture(horizontal = false, rep = 14) {
   return canvasTexture(32, 32, (ctx) => {
     ctx.fillStyle = '#a49c8d'
     ctx.fillRect(0, 0, 32, 32)
@@ -54,41 +54,99 @@ export function pathTexture(horizontal = false) {
         }
       }
     }
-  }, horizontal ? 14 : 1, horizontal ? 1 : 14)
+  }, horizontal ? rep : 1, horizontal ? 1 : rep)
 }
 
-// 建筑外墙：窗户带窗框 + 楼层线 + 基座阴影
-export function buildingTexture(wall, cols, rows) {
+// 建筑外墙：砖石噪点 + 檐口/楼层线（trim）+ 基座（plinth）+ 窗（框/窗帘/花箱/亮灯）
+export function buildingTexture(wall, trim, plinth, cols, rows) {
   const cell = 10
   return canvasTexture(cols * cell, rows * cell + 14, (ctx, w, h) => {
     ctx.fillStyle = wall
     ctx.fillRect(0, 0, w, h)
-
+    // 砖石噪点
+    for (let i = 0; i < Math.floor((w * h) / 20); i++) {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)'
+      ctx.fillRect(rand(w), rand(h), 2, 1)
+      ctx.fillStyle = 'rgba(255,255,255,0.05)'
+      ctx.fillRect(rand(w), rand(h), 1, 1)
+    }
+    // 檐口与楼层线
+    ctx.fillStyle = trim
+    ctx.fillRect(0, 0, w, 3)
     for (let r = 1; r < rows; r++) {
-      ctx.fillStyle = 'rgba(0,0,0,0.12)'
+      ctx.fillStyle = trim
       ctx.fillRect(0, r * cell + 4, w, 1)
     }
-    ctx.fillStyle = 'rgba(0,0,0,0.18)'
+    // 基座
+    ctx.fillStyle = plinth
     ctx.fillRect(0, h - 8, w, 8)
-    ctx.fillStyle = 'rgba(255,255,255,0.06)'
-    ctx.fillRect(0, 0, w, 2)
-
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'
+    ctx.fillRect(0, h - 3, w, 3)
+    // 窗户
     for (let r = 0; r < rows; r++) {
       for (let c2 = 0; c2 < cols; c2++) {
         const lit = Math.random() < 0.3
+        const kind = rand(10) // 0/1 窗帘 · 2 花箱 · 其余普通
         const wx = c2 * cell + 2
         const wy = r * cell + 3
-        ctx.fillStyle = 'rgba(0,0,0,0.28)'
-        ctx.fillRect(wx, wy, 6, 6)
+        ctx.fillStyle = trim
+        ctx.fillRect(wx - 1, wy - 1, 8, 8) // 窗框
         ctx.fillStyle = lit ? '#ffd98a' : '#2c3548'
-        ctx.fillRect(wx + 1, wy + 1, 4, 4)
+        ctx.fillRect(wx, wy, 6, 6)
         ctx.fillStyle = lit ? '#ffe9b8' : '#3d4a63'
-        ctx.fillRect(wx + 1, wy + 1, 4, 1)
-        ctx.fillStyle = lit ? '#e8b96a' : '#1f2836'
-        ctx.fillRect(wx + 1, wy + 4, 4, 1)
+        ctx.fillRect(wx, wy, 6, 1)
+        if (kind <= 1 && !lit) {
+          ctx.fillStyle = '#c96a5a' // 暖色窗帘
+          ctx.fillRect(wx, wy, 6, 2)
+        }
+        if (kind === 2) {
+          ctx.fillStyle = '#4a8a3a' // 窗台花箱
+          ctx.fillRect(wx, wy + 6, 6, 2)
+        }
+        ctx.fillStyle = 'rgba(0,0,0,0.3)'
+        ctx.fillRect(wx, wy + 5, 6, 1)
       }
     }
   })
+}
+
+// 大门：门框 + 暖光气窗 + 双开木门 + 金属把手 + 踢脚
+export function doorTexture() {
+  return canvasTexture(32, 48, (ctx, w, h) => {
+    ctx.fillStyle = '#efe7d8'
+    ctx.fillRect(0, 0, w, h)
+    ctx.fillStyle = '#6b4a34'
+    ctx.fillRect(3, 3, w - 6, h - 3)
+    // 气窗（暖光 + 窗棂）
+    ctx.fillStyle = '#ffd98a'
+    ctx.fillRect(6, 7, w - 12, 12)
+    ctx.fillStyle = '#5a3c2a'
+    ctx.fillRect(w / 2 - 1, 7, 2, 12)
+    ctx.fillRect(6, 12, w - 12, 2)
+    // 双开门板
+    ctx.fillStyle = '#54382a'
+    ctx.fillRect(6, 24, 8, 17)
+    ctx.fillRect(w - 14, 24, 8, 17)
+    ctx.fillStyle = '#3a2519'
+    ctx.fillRect(w / 2 - 1, 24, 2, 18)
+    // 把手
+    ctx.fillStyle = '#d8b54a'
+    ctx.fillRect(w / 2 - 5, 34, 2, 2)
+    ctx.fillRect(w / 2 + 3, 34, 2, 2)
+    // 踢脚线
+    ctx.fillStyle = '#8a6a4a'
+    ctx.fillRect(3, h - 3, w - 6, 3)
+  })
+}
+
+// 雨棚条纹（暖白 / 砖红竖条纹）
+export function stripesTexture(a = '#efe9dd', b = '#c9553f') {
+  return canvasTexture(16, 16, (ctx) => {
+    for (let x = 0; x < 16; x++) {
+      ctx.fillStyle = x % 4 < 2 ? a : b
+      ctx.fillRect(x, 0, 1, 16)
+    }
+  }, 4, 1)
 }
 
 // 招牌：320×80、加粗大字号（原生分辨率下清晰可读）
@@ -168,7 +226,6 @@ export function trackTexture() {
 
 // 像素小人精灵表：樊楼（金发校服少年）
 // 4 方向 × 3 帧（待机/走1/走2）；单元格 26×38（含 1px 描边余量）
-// 细节：全身描边、头发高光/鬓角、五官、翻领+衬衫+领带、纽扣、腰带、裤缝、鞋底
 export function characterSheet() {
   const CW = 26
   const CH = 38
@@ -197,8 +254,8 @@ export function characterSheet() {
     if (side) {
       const fwd = frame === 1 ? 2 : 0
       const bwd = frame === 2 ? 2 : 0
-      r(12 + fwd, 21, 4, 8, K.pants) // 前腿
-      r(8 - bwd, 21, 4, 8, K.pantsD) // 后腿
+      r(12 + fwd, 21, 4, 8, K.pants)
+      r(8 - bwd, 21, 4, 8, K.pantsD)
       r(11 + fwd, 29, 6, 2, K.shoe)
       r(6 - bwd, 29, 6, 2, K.shoeD)
     } else {
@@ -206,7 +263,7 @@ export function characterSheet() {
       const liftB = frame === 2
       r(7, 21, 4, liftA ? 7 : 8, K.pants)
       r(12, 21, 4, liftB ? 7 : 8, K.pants)
-      r(10, 21, 1, 8, K.pantsD) // 裤缝
+      r(10, 21, 1, 8, K.pantsD)
       r(5, liftA ? 28 : 29, 6, 2, K.shoe)
       r(11, liftB ? 28 : 29, 6, 2, K.shoe)
     }
@@ -216,34 +273,33 @@ export function characterSheet() {
       r(8, 9, 8, 4, K.coat)
       r(8, 13, 7, 5, K.coat)
       r(8, 18, 6, 3, K.coat)
-      r(8, 9, 1, 12, K.coatD) // 背侧阴影
-      r(14, 10, 3, 8, K.coat) // 近侧手臂
+      r(8, 9, 1, 12, K.coatD)
+      r(14, 10, 3, 8, K.coat)
       r(14, 18, 3, 2, K.coatD)
       r(14, 20, 3, 2, K.skin)
       r(8, 19, 6, 2, K.belt)
     } else {
-      r(5, 9, 13, 4, K.coat) // 肩
-      r(6, 13, 11, 5, K.coat) // 胸
-      r(7, 18, 9, 3, K.coat) // 腰
+      r(5, 9, 13, 4, K.coat)
+      r(6, 13, 11, 5, K.coat)
+      r(7, 18, 9, 3, K.coat)
       r(5, 9, 1, 4, K.coatD)
       r(6, 13, 1, 5, K.coatD)
       r(7, 18, 1, 3, K.coatD)
       r(17, 9, 1, 4, K.coatL)
       r(16, 13, 1, 5, K.coatL)
       if (dir === 'up') {
-        r(11, 9, 1, 10, K.coatD) // 背中缝
+        r(11, 9, 1, 10, K.coatD)
       } else {
-        r(10, 9, 4, 5, K.shirt) // 衬衫 V
-        r(11, 9, 2, 2, K.tie) // 领结
-        r(11, 11, 2, 5, K.tie) // 领带
+        r(10, 9, 4, 5, K.shirt)
+        r(11, 9, 2, 2, K.tie)
+        r(11, 11, 2, 5, K.tie)
         r(11, 12, 1, 4, K.tieD)
-        r(9, 9, 1, 3, K.coatD) // 翻领
+        r(9, 9, 1, 3, K.coatD)
         r(14, 9, 1, 3, K.coatD)
-        r(11, 17, 1, 1, K.btn) // 纽扣
+        r(11, 17, 1, 1, K.btn)
       }
       r(7, 19, 9, 2, K.belt)
       r(11, 19, 2, 2, K.buckle)
-      // 手臂
       r(3, 9, 2, 8, K.coat)
       r(18, 9, 2, 8, K.coat)
       r(3, 17, 2, 2, K.coatD)
@@ -253,46 +309,46 @@ export function characterSheet() {
     }
 
     // ===== 头 =====
-    r(11, 8, 2, 1, K.skinD) // 脖子
+    r(11, 8, 2, 1, K.skinD)
     if (dir === 'up') {
       r(8, 0, 8, 2, K.hair)
       r(7, 1, 10, 3, K.hair)
-      r(6, 2, 12, 6, K.hair) // 后脑全发
-      r(6, 8, 12, 1, K.hairD) // 发脚
-      r(9, 1, 4, 1, K.hairL) // 高光
+      r(6, 2, 12, 6, K.hair)
+      r(6, 8, 12, 1, K.hairD)
+      r(9, 1, 4, 1, K.hairL)
     } else if (side) {
       // 侧面头部收窄（头宽≈13px，与身体比例协调）
       r(6, 0, 8, 2, K.hair)
       r(5, 1, 8, 5, K.hair)
-      r(4, 3, 4, 5, K.hair) // 后脑勺
-      r(11, 3, 6, 5, K.skin) // 侧面脸
-      r(11, 3, 6, 1, K.hair) // 刘海
-      r(13, 5, 1, 1, K.eyeW) // 侧脸眼睛：1×2 小眼，不突出
+      r(4, 3, 4, 5, K.hair)
+      r(11, 3, 6, 5, K.skin)
+      r(11, 3, 6, 1, K.hair)
+      r(13, 5, 1, 1, K.eyeW)
       r(13, 6, 1, 1, K.eye)
-      r(16, 6, 1, 1, K.skinD) // 鼻尖
-      r(13, 7, 2, 1, K.skinD) // 嘴
+      r(16, 6, 1, 1, K.skinD)
+      r(13, 7, 2, 1, K.skinD)
       r(6, 1, 3, 1, K.hairL)
     } else {
       r(8, 0, 8, 2, K.hair)
       r(7, 1, 10, 2, K.hair)
-      r(6, 2, 12, 4, K.hair) // 头发主体
-      r(6, 5, 2, 3, K.hair) // 左鬓角
-      r(16, 5, 2, 3, K.hair) // 右鬓角
-      r(9, 1, 4, 1, K.hairL) // 高光
-      r(8, 4, 8, 5, K.skin) // 脸
-      r(8, 4, 8, 1, K.hair) // 刘海压眉
+      r(6, 2, 12, 4, K.hair)
+      r(6, 5, 2, 3, K.hair)
+      r(16, 5, 2, 3, K.hair)
+      r(9, 1, 4, 1, K.hairL)
+      r(8, 4, 8, 5, K.skin)
+      r(8, 4, 8, 1, K.hair)
       r(9, 4, 1, 1, K.hairD)
       r(11, 4, 1, 1, K.hairD)
       r(13, 4, 1, 1, K.hairD)
-      r(15, 4, 1, 1, K.hairD) // 锯齿刘海
+      r(15, 4, 1, 1, K.hairD)
       r(9, 5, 2, 1, K.hairD)
-      r(13, 5, 2, 1, K.hairD) // 眉
+      r(13, 5, 2, 1, K.hairD)
       r(9, 6, 2, 2, K.eyeW)
       r(13, 6, 2, 2, K.eyeW)
       r(10, 6, 1, 2, K.eye)
-      r(13, 6, 1, 2, K.eye) // 眼
-      r(11, 7, 2, 1, K.skinD) // 鼻
-      r(11, 8, 2, 1, K.skinD) // 嘴
+      r(13, 6, 1, 2, K.eye)
+      r(11, 7, 2, 1, K.skinD)
+      r(11, 8, 2, 1, K.skinD)
     }
   }
 
@@ -302,12 +358,10 @@ export function characterSheet() {
       const ox = f * CW
       const oy = ri * CH
       const drawCell = () => {
-        // 第一遍：全身描边（各矩形外扩 1px）
         paint(dir === 'right' || dir === 'left' ? 'side' : dir, f, (x, y, w, h) => {
           ctx.fillStyle = K.line
           ctx.fillRect(x - 1, y - 1, w + 2, h + 2)
         })
-        // 第二遍：正常上色
         paint(dir === 'right' || dir === 'left' ? 'side' : dir, f, (x, y, w, h, col) => {
           ctx.fillStyle = col
           ctx.fillRect(x, y, w, h)

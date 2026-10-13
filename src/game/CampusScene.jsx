@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -20,6 +20,11 @@ function collides(x, z) {
   }
   for (const t of TREES) {
     if (Math.abs(x - t[0]) < 0.75 && Math.abs(z - t[1]) < 0.75) return true
+  }
+  for (const f of FENCES) {
+    if (f.axis === 'z') {
+      if (Math.abs(x - f.at) < 0.3 && z > f.from - 0.2 && z < f.to + 0.2) return true
+    } else if (Math.abs(z - f.at) < 0.3 && x > f.from - 0.2 && x < f.to + 0.2) return true
   }
   return false
 }
@@ -144,6 +149,9 @@ export default function CampusScene() {
   const flowers = useMemo(() => flowerTexture(), [])
   const track = useMemo(() => trackTexture(), [])
   const spriteTex = useMemo(() => characterSheet(), [])
+  const doorTex = useMemo(() => doorTexture(), [])
+  const awningTex = useMemo(() => stripesTexture(), [])
+  const branchTex = useMemo(() => BRANCH_PATHS.map((p) => pathTexture(false, Math.max(1, Math.round(p.len / 2.6)))), [])
 
   useFrame((state, delta) => {
     const p = player.current
@@ -252,8 +260,8 @@ export default function CampusScene() {
         <planeGeometry args={[100, 100]} />
         <meshLambertMaterial map={grass} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
-        <planeGeometry args={[4.6, 72]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 8.75]}>
+        <planeGeometry args={[4.6, 54.5]} />
         <meshLambertMaterial map={pathV} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.016, 0]}>
@@ -267,6 +275,19 @@ export default function CampusScene() {
           <planeGeometry args={[1.7, 1.7]} />
           <meshLambertMaterial map={flowers} />
         </mesh>
+      ))}
+
+      {/* 岔路（通往各建筑） */}
+      {BRANCH_PATHS.map((p, i) => (
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[p.x, 0.014, p.z]}>
+          <planeGeometry args={[3, p.len]} />
+          <meshLambertMaterial map={branchTex[i]} />
+        </mesh>
+      ))}
+
+      {/* 栅栏（沿两条主路，缺口对齐路口与岔路） */}
+      {FENCES.map((f, i) => (
+        <FenceRun key={i} run={f} />
       ))}
 
       {/* 操场 */}
@@ -305,12 +326,12 @@ export default function CampusScene() {
 
       {/* 建筑 */}
       {BUILDINGS.map((b) => (
-        <Building key={b.id} def={b} />
+        <Building key={b.id} def={b} doorTex={doorTex} awningTex={awningTex} />
       ))}
 
-      {/* 树（三种形态）*/}
+      {/* 树（六种树冠配色：深浅绿 / 黄绿 / 樱花粉 / 金叶）*/}
       {TREES.map(([tx, tz, v], i) => (
-        <Tree key={i} x={tx} z={tz} variant={v} idx={i} />
+        <Tree key={i} x={tx} z={tz} variant={v} />
       ))}
 
       {/* 灌木 */}
@@ -344,12 +365,13 @@ export default function CampusScene() {
   )
 }
 
-function Tree({ x, z, variant, idx }) {
+const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
+
+function Tree({ x, z, variant }) {
   const tall = variant === 1
   const wide = variant === 2
   const trunkH = tall ? 1.5 : 1
   const crown = wide ? [2, 1.4, 2] : tall ? [1.4, 1.8, 1.4] : [1.5, 1.3, 1.5]
-  const greens = ['#3f7a3f', '#468a48', '#3a713c']
   return (
     <group position={[x, 0, z]}>
       <mesh position={[0, trunkH / 2, 0]}>
@@ -358,16 +380,16 @@ function Tree({ x, z, variant, idx }) {
       </mesh>
       <mesh position={[0, trunkH + crown[1] / 2 - 0.1, 0]}>
         <boxGeometry args={crown} />
-        <meshLambertMaterial color={greens[(idx + variant) % 3]} />
+        <meshLambertMaterial color={TREE_CROWNS[variant % TREE_CROWNS.length]} />
       </mesh>
     </group>
   )
 }
 
-function Building({ def }) {
+function Building({ def, doorTex, awningTex }) {
   const [w, h, d] = def.size
   const [bx, bz] = def.pos
-  const wallTex = useMemo(() => buildingTexture(def.wall, def.cols, def.rows), [def])
+  const wallTex = useMemo(() => buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows), [def])
   const signTex = useMemo(() => signTexture(def.name), [def.name])
   const rotationY = def.face === 1 ? 0 : Math.PI
   const extras = []
@@ -395,15 +417,15 @@ function Building({ def }) {
     extras.push(
       <mesh key="plinth" position={[0, -h / 2 + 0.25, 0]}>
         <boxGeometry args={[w + 1.8, 0.5, d + 1.8]} />
-        <meshLambertMaterial color="#7a6a58" />
+        <meshLambertMaterial color={def.plinth} />
       </mesh>,
       <mesh key="p1" position={[-(w / 2 - 0.9), -h / 2 + h * 0.42 + 0.5, d / 2 + 0.55]}>
         <boxGeometry args={[0.5, h * 0.84, 0.5]} />
-        <meshLambertMaterial color="#c9bda6" />
+        <meshLambertMaterial color={def.trim} />
       </mesh>,
       <mesh key="p2" position={[w / 2 - 0.9, -h / 2 + h * 0.42 + 0.5, d / 2 + 0.55]}>
         <boxGeometry args={[0.5, h * 0.84, 0.5]} />
-        <meshLambertMaterial color="#c9bda6" />
+        <meshLambertMaterial color={def.trim} />
       </mesh>,
       <mesh key="top" position={[0, h / 2 + 0.18, 0]}>
         <boxGeometry args={[w + 1.2, 0.32, d + 1.2]} />
@@ -430,7 +452,7 @@ function Building({ def }) {
       <group key="wing" position={[w / 2 + ww / 2, 0, 0.6]}>
         <mesh>
           <boxGeometry args={[ww, wh, d * 0.8]} />
-          <meshLambertMaterial map={buildingTexture(def.wall, 3, 2)} />
+          <meshLambertMaterial map={buildingTexture(def.wall, def.trim, def.plinth, 3, 2)} />
         </mesh>
         <mesh position={[0, wh / 2 + 0.14, 0]}>
           <boxGeometry args={[ww + 0.5, 0.28, d * 0.8 + 0.5]} />
@@ -465,7 +487,7 @@ function Building({ def }) {
     extras.push(
       <mesh key="awn" position={[0, -h / 2 + 2.3, d / 2 + 0.55]}>
         <boxGeometry args={[w * 0.62, 0.24, 1.3]} />
-        <meshLambertMaterial color="#c9553f" />
+        <meshLambertMaterial map={awningTex} />
       </mesh>
     )
   }
@@ -481,10 +503,48 @@ function Building({ def }) {
         <planeGeometry args={[3.3, 0.83]} />
         <meshLambertMaterial map={signTex} />
       </mesh>
-      <mesh position={[0, -h / 2 + 0.85, d / 2 + 0.03]}>
-        <planeGeometry args={[1.2, 1.7]} />
-        <meshLambertMaterial color="#2b2733" />
+      {/* 大门（门框 + 气窗 + 台阶 + 门灯） */}
+      <mesh position={[0, -h / 2 + 1.08, d / 2 + 0.035]}>
+        <planeGeometry args={[1.5, 2.1]} />
+        <meshLambertMaterial map={doorTex} />
       </mesh>
+      <mesh position={[0, -h / 2 + 0.08, d / 2 + 0.5]}>
+        <boxGeometry args={[1.9, 0.16, 0.9]} />
+        <meshLambertMaterial color="#b8b0a2" />
+      </mesh>
+      <mesh position={[-1.05, -h / 2 + 2.32, d / 2 + 0.06]}>
+        <boxGeometry args={[0.2, 0.28, 0.14]} />
+        <meshBasicMaterial color="#ffdf9a" />
+      </mesh>
+      <mesh position={[1.05, -h / 2 + 2.32, d / 2 + 0.06]}>
+        <boxGeometry args={[0.2, 0.28, 0.14]} />
+        <meshBasicMaterial color="#ffdf9a" />
+      </mesh>
+    </group>
+  )
+}
+
+function FenceRun({ run }) {
+  const { axis, at, from, to } = run
+  const len = to - from
+  const count = Math.max(1, Math.floor(len / 2.8))
+  const posts = []
+  for (let i = 0; i <= count; i++) posts.push(from + (len * i) / count)
+  const mid = (from + to) / 2
+  return (
+    <group>
+      {posts.map((t, i) => (
+        <mesh key={i} position={axis === 'z' ? [at, 0.48, t] : [t, 0.48, at]}>
+          <boxGeometry args={[0.14, 0.96, 0.14]} />
+          <meshLambertMaterial color="#cfc9ba" />
+        </mesh>
+      ))}
+      {[0.52, 0.86].map((y, i) => (
+        <mesh key={'r' + i} position={axis === 'z' ? [at, y, mid] : [mid, y, at]}>
+          <boxGeometry args={axis === 'z' ? [0.09, 0.09, len] : [len, 0.09, 0.09]} />
+          <meshLambertMaterial color="#d8d3c6" />
+        </mesh>
+      ))}
     </group>
   )
 }
