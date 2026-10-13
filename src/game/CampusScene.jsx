@@ -287,7 +287,7 @@ export default function CampusScene() {
       {GROUND_PATCHES.map(([x, z, v], i) => (
         <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.004, z]}>
           <circleGeometry args={[[8, 6.5, 9.5][v % 3], 22]} />
-          <meshLambertMaterial map={patchTex} color={['#dedede', '#ffffff', '#cfe0c6'][v % 3]} />
+          <meshLambertMaterial map={patchTex} color={['#f2f2f2', '#ffffff', '#e8efe2'][v % 3]} />
         </mesh>
       ))}
       {DIRT_PATCHES.map(([x, z], i) => (

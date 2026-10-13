@@ -21,18 +21,27 @@ export function canvasTexture(w, h, draw, repeatX = 1, repeatY = 1) {
 
 const rand = (n) => Math.floor(Math.random() * n)
 
-// 32×32 草地：双层棋盘 + 草叶细节（rep 可按用途调整：地面 30 / 色块补丁 5）
+// 128×128 草地：4px 棋盘 + 草叶细节（rep 可按用途调整：地面 30 / 色块补丁 5）
+// 图案尺度=4px 级（世界尺度 10cm ≈ 原 1px@32 版）——mipmap 降采样时格子结构可存活 2-3 级，远景不糊成纯色
 export function grassTexture(rep = 30) {
-  return canvasTexture(32, 32, (ctx) => {
-    for (let y = 0; y < 32; y++) {
-      for (let x = 0; x < 32; x++) {
-        ctx.fillStyle = (x + y) % 2 === 0 ? '#54904b' : '#4a8743'
-        ctx.fillRect(x, y, 1, 1)
+  return canvasTexture(128, 128, (ctx) => {
+    for (let y = 0; y < 128; y += 4) {
+      for (let x = 0; x < 128; x += 4) {
+        ctx.fillStyle = (x + y) % 8 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 4, 4)
       }
     }
-    for (let i = 0; i < 90; i++) {
+    // 草叶（4×6 / 6×4 粗颗粒）
+    for (let i = 0; i < 100; i++) {
       ctx.fillStyle = ['#3f7239', '#5da054', '#437c3c', '#61a85a'][rand(4)]
-      ctx.fillRect(rand(32), rand(32), 1, 2)
+      ctx.fillRect(rand(122), rand(122), rand(2) ? 4 : 6, rand(2) ? 6 : 4)
+    }
+    // 草丛色块（8-14px，远景保留层次）
+    for (let i = 0; i < 18; i++) {
+      ctx.globalAlpha = 0.35 + Math.random() * 0.2
+      ctx.fillStyle = ['#48853f', '#5c9c53', '#437c3c'][rand(3)]
+      ctx.fillRect(rand(112), rand(112), 8 + rand(7), 8 + rand(7))
+      ctx.globalAlpha = 1
     }
   }, rep, rep)
 }
@@ -170,42 +179,42 @@ export function signTexture(text, bg = '#3a2f4a') {
   })
 }
 
-// 花丛补丁（草地底色 + 三色小花，可与草地自然衔接）
+// 花丛补丁（草地底色 + 三色小花，可与草地自然衔接；2px 格降采样可存活）
 export function flowerTexture() {
-  return canvasTexture(32, 32, (ctx) => {
-    for (let y = 0; y < 32; y++) {
-      for (let x = 0; x < 32; x++) {
-        ctx.fillStyle = (x + y) % 2 === 0 ? '#54904b' : '#4a8743'
-        ctx.fillRect(x, y, 1, 1)
+  return canvasTexture(64, 64, (ctx) => {
+    for (let y = 0; y < 64; y += 2) {
+      for (let x = 0; x < 64; x += 2) {
+        ctx.fillStyle = (x + y) % 4 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 2, 2)
       }
     }
     const colors = ['#e8748a', '#f2d857', '#f4f2ea', '#c58ae0']
-    for (let i = 0; i < 26; i++) {
-      const x = 1 + rand(30)
-      const y = 1 + rand(30)
+    for (let i = 0; i < 22; i++) {
+      const x = 2 + rand(58)
+      const y = 2 + rand(56)
       ctx.fillStyle = colors[rand(colors.length)]
-      ctx.fillRect(x, y, 2, 2)
+      ctx.fillRect(x, y, 4, 4)
       ctx.fillStyle = '#3f7239'
-      ctx.fillRect(x, y + 2, 1, 1)
+      ctx.fillRect(x + 1, y + 4, 2, 2)
     }
   })
 }
 
-// 土斑补丁（草地底 + 中央裸土，边缘参差）
+// 土斑补丁（草地底 + 中央裸土，边缘参差；2px 格）
 export function dirtTexture() {
-  return canvasTexture(24, 24, (ctx) => {
-    for (let y = 0; y < 24; y++) {
-      for (let x = 0; x < 24; x++) {
-        ctx.fillStyle = (x + y) % 2 === 0 ? '#54904b' : '#4a8743'
-        ctx.fillRect(x, y, 1, 1)
+  return canvasTexture(48, 48, (ctx) => {
+    for (let y = 0; y < 48; y += 2) {
+      for (let x = 0; x < 48; x += 2) {
+        ctx.fillStyle = (x + y) % 4 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 2, 2)
       }
     }
-    for (let y = 3; y < 21; y++) {
-      for (let x = 3; x < 21; x++) {
-        const d = Math.hypot(x - 12, y - 12) + (Math.random() * 3 - 1.5)
-        if (d < 6.5) {
+    for (let y = 6; y < 42; y += 2) {
+      for (let x = 6; x < 42; x += 2) {
+        const d = Math.hypot(x - 24, y - 24) + (Math.random() * 5 - 2.5)
+        if (d < 13) {
           ctx.fillStyle = ['#8a6f4f', '#7d6448', '#938060'][rand(3)]
-          ctx.fillRect(x, y, 1, 1)
+          ctx.fillRect(x, y, 2, 2)
         }
       }
     }
