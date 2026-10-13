@@ -25,11 +25,13 @@
 ## 本地开发
 
 ```bash
-npm install        # 安装依赖（本机已配置 npmmirror 镜像，国内直连快）
-npm run dev        # 开发服务器 http://127.0.0.1:5173
-npm run build      # 生产构建（提交前自检）
+npm install          # 安装依赖（本机已配置 npmmirror 镜像，国内直连快）
+npm run dev          # 开发服务器 http://127.0.0.1:5173（开发调试用；关闭后不可访问）
+npm run build        # 生产构建（提交前自检）
+npm run build:single # 构建"离线单文件版"→ dist/index.html，双击即玩、无需服务器
 ```
 
+- **随时可玩（离线版）**：双击 `dist/index.html`（或桌面快捷方式「校园叙事RPG(双击即玩)」）——单文件自包含，任何环境任何时间都能打开
 - 操作：WASD / 方向键 移动（当前为 W0 占位场景，迭代 1 替换为正式像素校园）
 - 密钥配置：复制 `.env.example` 为 `.env` 填入 LLM Key；不配置时游戏自动进入演示模式
 
