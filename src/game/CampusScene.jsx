@@ -59,7 +59,7 @@ export default function CampusScene() {
   })()
   const view = useRef(initView)
   const spawn = initView.spawn
-  // Q/E 转向时冻结朝向（露出侧面/正面）；移动或鼠标转向时恢复；?freeze=1 可初始冻结（验收取景用）
+  // 鼠标拖拽时冻结朝向（可看到角色各个面）；Q/E 转视角或移动时恢复"背对镜头"；?freeze=1 可初始冻结（验收取景用）
   const alignPaused = useRef(initView.frozen)
   const gl = useThree((s) => s.gl)
 
@@ -73,16 +73,16 @@ export default function CampusScene() {
       if (e.code === 'KeyP') {
         useGameStore.getState().cyclePixel()
       }
-      // Q / E：每次旋转 90°（带平滑动画），并冻结角色朝向以露出侧面/正面
+      // Q / E：每次旋转 90°（带平滑动画）；旋转中角色保持"背对镜头"，不露出其他面
       if (e.code === 'KeyQ' && !e.repeat) {
         const v = view.current
         v.yawTarget = (v.yawTarget ?? v.yaw) + Math.PI / 2
-        alignPaused.current = true
+        alignPaused.current = false
       }
       if (e.code === 'KeyE' && !e.repeat) {
         const v = view.current
         v.yawTarget = (v.yawTarget ?? v.yaw) - Math.PI / 2
-        alignPaused.current = true
+        alignPaused.current = false
       }
     }
     const up = (e) => {
@@ -101,7 +101,7 @@ export default function CampusScene() {
     const canvas = gl.domElement
     const onDown = (e) => {
       drag.current = { x: e.clientX, y: e.clientY }
-      alignPaused.current = false // 鼠标转视角时恢复"背对镜头"跟随
+      alignPaused.current = true // 鼠标拖拽时冻结朝向：拖动相机可以看到角色的各个面
       try {
         canvas.setPointerCapture(e.pointerId)
       } catch {
@@ -189,7 +189,7 @@ export default function CampusScene() {
     }
 
     // —— 像素小人：默认"背对镜头"随视角自动对齐；
-    //    Q/E 转向时冻结朝向（露出侧面/正面）；鼠标转视角/移动时恢复背对 ——
+    //    鼠标拖拽时冻结朝向（可看到各个面）；Q/E 转视角/移动时恢复背对 ——
     if (moving) alignPaused.current = false
     const camPos = state.camera.position
     const toCam = Math.atan2(camPos.x - p.position.x, camPos.z - p.position.z)
