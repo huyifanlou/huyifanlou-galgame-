@@ -189,6 +189,27 @@ export function flowerTexture() {
   })
 }
 
+// 土斑补丁（草地底 + 中央裸土，边缘参差）
+export function dirtTexture() {
+  return canvasTexture(24, 24, (ctx) => {
+    for (let y = 0; y < 24; y++) {
+      for (let x = 0; x < 24; x++) {
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 1, 1)
+      }
+    }
+    for (let y = 3; y < 21; y++) {
+      for (let x = 3; x < 21; x++) {
+        const d = Math.hypot(x - 12, y - 12) + (Math.random() * 3 - 1.5)
+        if (d < 6.5) {
+          ctx.fillStyle = ['#8a6f4f', '#7d6448', '#938060'][rand(3)]
+          ctx.fillRect(x, y, 1, 1)
+        }
+      }
+    }
+  })
+}
+
 // 操场：圆环跑道 + 内场 + 分道线 + 中线圆
 export function trackTexture() {
   return canvasTexture(256, 160, (ctx, w, h) => {

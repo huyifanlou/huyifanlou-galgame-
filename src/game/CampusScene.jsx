@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, GROUND_PATCHES, DIRT_PATCHES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -152,6 +152,7 @@ export default function CampusScene() {
   const doorTex = useMemo(() => doorTexture(), [])
   const awningTex = useMemo(() => stripesTexture(), [])
   const branchTex = useMemo(() => BRANCH_PATHS.map((p) => pathTexture(false, Math.max(1, Math.round(p.len / 2.6)))), [])
+  const dirtTex = useMemo(() => dirtTexture(), [])
 
   useFrame((state, delta) => {
     const p = player.current
@@ -196,15 +197,19 @@ export default function CampusScene() {
       shadow.current.position.z = p.position.z
     }
 
-    // —— 像素小人：默认"背对镜头"随视角自动对齐；
-    //    鼠标拖拽时冻结朝向（可看到各个面）；Q/E 转视角/移动时恢复背对 ——
-    if (moving) alignPaused.current = false
+    // —— 像素小人：移动时朝移动方向（能看到侧面/正面）；
+    //    站立时平滑转回"背对镜头"；鼠标拖拽冻结朝向（可细看各个面）；Q/E 转视角后自动回背对 ——
     const camPos = state.camera.position
     const toCam = Math.atan2(camPos.x - p.position.x, camPos.z - p.position.z)
-    if (!alignPaused.current) {
+    if (moving) {
+      alignPaused.current = false
+      let turn = Math.atan2(dirX, dirZ) - facing.current
+      turn = Math.atan2(Math.sin(turn), Math.cos(turn))
+      facing.current += turn * Math.min(1, dt * 10)
+    } else if (!alignPaused.current) {
       let alien = toCam + Math.PI - facing.current
       alien = Math.atan2(Math.sin(alien), Math.cos(alien))
-      facing.current += alien * Math.min(1, dt * 6)
+      facing.current += alien * Math.min(1, dt * 4)
     }
     if (sprite.current) {
       sprite.current.rotation.y = toCam // 平面面向相机，朝向由贴图行体现
@@ -274,6 +279,20 @@ export default function CampusScene() {
         <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.008, z]}>
           <planeGeometry args={[1.7, 1.7]} />
           <meshLambertMaterial map={flowers} />
+        </mesh>
+      ))}
+
+      {/* 草地色块（大块深浅绿，打破单调）+ 土斑 */}
+      {GROUND_PATCHES.map(([x, z, v], i) => (
+        <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.004, z]}>
+          <circleGeometry args={[[8, 6.5, 9.5][v % 3], 22]} />
+          <meshLambertMaterial color={['#4c8a44', '#57944e', '#4a8443'][v % 3]} />
+        </mesh>
+      ))}
+      {DIRT_PATCHES.map(([x, z], i) => (
+        <mesh key={'dp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.006, z]}>
+          <circleGeometry args={[2.4, 16]} />
+          <meshLambertMaterial map={dirtTex} />
         </mesh>
       ))}
 
