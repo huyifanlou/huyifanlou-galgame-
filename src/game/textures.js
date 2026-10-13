@@ -156,7 +156,6 @@ export function trackTexture() {
     ctx.stroke()
     rr(18, 18, w - 36, h - 36, 36)
     ctx.stroke()
-    // 内场中线与中圈
     ctx.beginPath()
     ctx.moveTo(w / 2, 28)
     ctx.lineTo(w / 2, h - 28)
@@ -167,112 +166,163 @@ export function trackTexture() {
   })
 }
 
-// 像素小人精灵表：樊楼（金发校服少年）4 方向 × 3 帧（待机/走1/走2）
-// 单元格 24×32；字符：h 金发 / H 深金 / s 皮肤 / S 皮肤暗 / e 眼 / c 外套 / C 外套暗 / w 衬衫 / t 领带 / p 裤 / k 鞋
+// 像素小人精灵表：樊楼（金发校服少年）
+// 4 方向 × 3 帧（待机/走1/走2）；单元格 26×38（含 1px 描边余量）
+// 细节：全身描边、头发高光/鬓角、五官、翻领+衬衫+领带、纽扣、腰带、裤缝、鞋底
 export function characterSheet() {
-  const CW = 24
-  const CH = 32
-  const FULL_W = CW * 3
-  const FULL_H = CH * 4
+  const CW = 26
+  const CH = 38
   const c = document.createElement('canvas')
-  c.width = FULL_W
-  c.height = FULL_H
+  c.width = CW * 3
+  c.height = CH * 4
   const ctx = c.getContext('2d')
 
-  const COL = {
-    hair: '#eccb5a', hairD: '#c9a234', skin: '#f5d9a8', skinD: '#dcbc8e',
-    eye: '#2b3a58', coat: '#46567f', coatD: '#333f5e', shirt: '#f4f1e6',
-    tie: '#b23a44', pants: '#2e3550', shoe: '#262932',
+  const K = {
+    hair: '#eccb5a', hairD: '#c9a234', hairL: '#f6dd82',
+    skin: '#f6dcae', skinD: '#e0c193',
+    eyeW: '#f8f6ee', eye: '#2b3a58',
+    coat: '#46567f', coatD: '#333f5e', coatL: '#55668f',
+    shirt: '#f4f1e6', tie: '#b23a44', tieD: '#8c2c34',
+    btn: '#d8d4c8', belt: '#2a2d3a', buckle: '#c9c2ae',
+    pants: '#2e3550', pantsD: '#232838',
+    shoe: '#23262e', shoeD: '#3a3f4a',
+    line: '#262031',
   }
 
-  function draw(dir, frame, ox, oy) {
-    const r = (x, y, w, h, col) => {
-      ctx.fillStyle = col
-      ctx.fillRect(ox + x, oy + y, w, h)
+  // 画一个方向的一帧；r(x, y, w, h, color)
+  function paint(dir, frame, r) {
+    const side = dir === 'side'
+
+    // ===== 双腿 =====
+    if (side) {
+      const fwd = frame === 1 ? 2 : 0
+      const bwd = frame === 2 ? 2 : 0
+      r(12 + fwd, 21, 4, 8, K.pants) // 前腿
+      r(8 - bwd, 21, 4, 8, K.pantsD) // 后腿
+      r(11 + fwd, 29, 6, 2, K.shoe)
+      r(6 - bwd, 29, 6, 2, K.shoeD)
+    } else {
+      const liftA = frame === 1
+      const liftB = frame === 2
+      r(7, 21, 4, liftA ? 7 : 8, K.pants)
+      r(12, 21, 4, liftB ? 7 : 8, K.pants)
+      r(10, 21, 1, 8, K.pantsD) // 裤缝
+      r(5, liftA ? 28 : 29, 6, 2, K.shoe)
+      r(11, liftB ? 28 : 29, 6, 2, K.shoe)
     }
 
-    // —— 头 ——
-    if (dir === 'up') {
-      r(6, 1, 12, 2, COL.hair)
-      r(4, 3, 16, 6, COL.hair)
-      r(6, 4, 12, 1, COL.hairD)
-      r(4, 7, 3, 3, COL.hair)
-      r(17, 7, 3, 3, COL.hair)
-    } else if (dir === 'side') {
-      r(5, 1, 12, 2, COL.hair)
-      r(4, 3, 11, 6, COL.hair)
-      r(4, 7, 4, 3, COL.hair)
-      r(12, 3, 7, 5, COL.skin)
-      r(12, 3, 7, 1, COL.hair)
-      r(16, 5, 2, 2, COL.eye)
+    // ===== 躯干（校服）=====
+    if (side) {
+      r(8, 9, 8, 4, K.coat)
+      r(8, 13, 7, 5, K.coat)
+      r(8, 18, 6, 3, K.coat)
+      r(8, 9, 1, 12, K.coatD) // 背侧阴影
+      r(14, 10, 3, 8, K.coat) // 近侧手臂
+      r(14, 18, 3, 2, K.coatD)
+      r(14, 20, 3, 2, K.skin)
+      r(8, 19, 6, 2, K.belt)
     } else {
-      r(6, 1, 12, 2, COL.hair)
-      r(4, 3, 16, 4, COL.hair)
-      r(4, 6, 3, 3, COL.hair)
-      r(17, 6, 3, 3, COL.hair)
-      r(7, 3, 10, 5, COL.skin)
-      r(7, 3, 10, 1, COL.hair)
-      r(8, 5, 2, 2, COL.eye)
-      r(14, 5, 2, 2, COL.eye)
-      r(11, 7, 2, 1, COL.skinD)
-    }
-
-    // —— 颈与躯干 ——
-    r(11, 8, 2, 1, COL.skinD)
-    if (dir === 'side') {
-      r(6, 9, 10, 8, COL.coat)
-      r(6, 9, 10, 1, COL.coatD)
-      r(14, 10, 3, 6, COL.coatD)
-      r(14, 16, 3, 2, COL.skin)
-      r(6, 9, 1, 8, COL.coatD)
-    } else {
-      r(7, 9, 10, 8, COL.coat)
-      r(7, 9, 1, 8, COL.coatD)
-      r(16, 9, 1, 8, COL.coatD)
-      // 手臂
-      r(5, 9, 2, 8, COL.coat)
-      r(17, 9, 2, 8, COL.coat)
-      r(5, 16, 2, 2, COL.skin)
-      r(17, 16, 2, 2, COL.skin)
+      r(5, 9, 13, 4, K.coat) // 肩
+      r(6, 13, 11, 5, K.coat) // 胸
+      r(7, 18, 9, 3, K.coat) // 腰
+      r(5, 9, 1, 4, K.coatD)
+      r(6, 13, 1, 5, K.coatD)
+      r(7, 18, 1, 3, K.coatD)
+      r(17, 9, 1, 4, K.coatL)
+      r(16, 13, 1, 5, K.coatL)
       if (dir === 'up') {
-        r(11, 9, 2, 7, COL.coatD)
+        r(11, 9, 1, 10, K.coatD) // 背中缝
       } else {
-        r(11, 9, 2, 6, COL.shirt)
-        r(11, 9, 2, 3, COL.tie)
+        r(10, 9, 4, 5, K.shirt) // 衬衫 V
+        r(11, 9, 2, 2, K.tie) // 领结
+        r(11, 11, 2, 5, K.tie) // 领带
+        r(11, 12, 1, 4, K.tieD)
+        r(9, 9, 1, 3, K.coatD) // 翻领
+        r(14, 9, 1, 3, K.coatD)
+        r(11, 17, 1, 1, K.btn) // 纽扣
       }
+      r(7, 19, 9, 2, K.belt)
+      r(11, 19, 2, 2, K.buckle)
+      // 手臂
+      r(3, 9, 2, 8, K.coat)
+      r(18, 9, 2, 8, K.coat)
+      r(3, 17, 2, 2, K.coatD)
+      r(18, 17, 2, 2, K.coatD)
+      r(3, 19, 2, 2, K.skin)
+      r(18, 19, 2, 2, K.skin)
     }
 
-    // —— 腿（frame 1/2 交替抬腿）——
-    if (dir === 'side') {
-      const frontLift = frame === 1
-      const backLift = frame === 2
-      r(12, 17, 3, frontLift ? 5 : 6, COL.pants)
-      r(8, 17, 3, backLift ? 5 : 6, '#232a42')
-      r(11, frontLift ? 22 : 23, 4, 2, COL.shoe)
-      r(7, backLift ? 22 : 23, 4, 2, COL.shoe)
+    // ===== 头 =====
+    r(11, 8, 2, 1, K.skinD) // 脖子
+    if (dir === 'up') {
+      r(8, 0, 8, 2, K.hair)
+      r(7, 1, 10, 3, K.hair)
+      r(6, 2, 12, 6, K.hair) // 后脑全发
+      r(6, 8, 12, 1, K.hairD) // 发脚
+      r(9, 1, 4, 1, K.hairL) // 高光
+    } else if (side) {
+      r(7, 0, 9, 2, K.hair)
+      r(6, 1, 10, 5, K.hair)
+      r(5, 3, 5, 5, K.hair) // 后脑勺
+      r(14, 3, 6, 5, K.skin) // 侧面脸
+      r(14, 3, 6, 1, K.hair) // 刘海
+      r(16, 5, 2, 2, K.eyeW)
+      r(17, 5, 1, 2, K.eye)
+      r(19, 6, 1, 1, K.skinD) // 鼻尖
+      r(17, 7, 2, 1, K.skinD) // 嘴
+      r(7, 1, 3, 1, K.hairL)
     } else {
-      const leftLift = frame === 1
-      const rightLift = frame === 2
-      r(8, 17, 3, leftLift ? 5 : 6, COL.pants)
-      r(13, 17, 3, rightLift ? 5 : 6, COL.pants)
-      r(7, leftLift ? 22 : 23, 4, 2, COL.shoe)
-      r(13, rightLift ? 22 : 23, 4, 2, COL.shoe)
+      r(8, 0, 8, 2, K.hair)
+      r(7, 1, 10, 2, K.hair)
+      r(6, 2, 12, 4, K.hair) // 头发主体
+      r(6, 5, 2, 3, K.hair) // 左鬓角
+      r(16, 5, 2, 3, K.hair) // 右鬓角
+      r(9, 1, 4, 1, K.hairL) // 高光
+      r(8, 4, 8, 5, K.skin) // 脸
+      r(8, 4, 8, 1, K.hair) // 刘海压眉
+      r(9, 4, 1, 1, K.hairD)
+      r(11, 4, 1, 1, K.hairD)
+      r(13, 4, 1, 1, K.hairD)
+      r(15, 4, 1, 1, K.hairD) // 锯齿刘海
+      r(9, 5, 2, 1, K.hairD)
+      r(13, 5, 2, 1, K.hairD) // 眉
+      r(9, 6, 2, 2, K.eyeW)
+      r(13, 6, 2, 2, K.eyeW)
+      r(10, 6, 1, 2, K.eye)
+      r(13, 6, 1, 2, K.eye) // 眼
+      r(11, 7, 2, 1, K.skinD) // 鼻
+      r(11, 8, 2, 1, K.skinD) // 嘴
     }
   }
 
   const rows = ['down', 'up', 'left', 'right']
-  rows.forEach((dir, r) => {
+  rows.forEach((dir, ri) => {
     for (let f = 0; f < 3; f++) {
       const ox = f * CW
-      const oy = r * CH
+      const oy = ri * CH
+      const drawCell = () => {
+        // 第一遍：全身描边（各矩形外扩 1px）
+        paint(dir === 'right' || dir === 'left' ? 'side' : dir, f, (x, y, w, h) => {
+          ctx.fillStyle = K.line
+          ctx.fillRect(x - 1, y - 1, w + 2, h + 2)
+        })
+        // 第二遍：正常上色
+        paint(dir === 'right' || dir === 'left' ? 'side' : dir, f, (x, y, w, h, col) => {
+          ctx.fillStyle = col
+          ctx.fillRect(x, y, w, h)
+        })
+      }
       if (dir === 'left') {
         ctx.save()
-        ctx.translate(ox + CW, oy)
+        ctx.translate(ox + CW - 1, oy + 1)
         ctx.scale(-1, 1)
-        draw('side', f, 0, 0)
+        drawCell()
         ctx.restore()
       } else {
-        draw(dir === 'right' ? 'side' : dir, f, ox, oy)
+        ctx.save()
+        ctx.translate(ox + 1, oy + 1)
+        drawCell()
+        ctx.restore()
       }
     }
   })

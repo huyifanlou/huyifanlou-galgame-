@@ -32,6 +32,7 @@ export default function CampusScene() {
   const keys = useRef({})
   const drag = useRef(null)
   const camInit = useRef(false)
+  const facing = useRef(Math.PI) // 角色朝向（世界角：0=+z 南，π=北）；初始面朝北（背对初始相机）
   // 初始视角支持 URL 调试参数（录像取景 / 验收用）：
   //   ?yaw=1.57&pitch=1.2&dist=30   直接指定角度
   //   ?at=-21,7.5                   相机对准世界坐标点（玩家出生点 (0,4) 相对计算）
@@ -63,7 +64,7 @@ export default function CampusScene() {
   useEffect(() => {
     const down = (e) => {
       keys.current[e.code] = true
-      if (e.code === 'KeyE') {
+      if (e.code === 'KeyF') {
         const st = useGameStore.getState()
         if (st.near) st.showToast(`「${st.near}」内部将在后续迭代开放`)
       }
@@ -135,6 +136,13 @@ export default function CampusScene() {
     if (!p) return
     const dt = Math.min(delta, 0.05)
     const k = keys.current
+
+    // Q / E 旋转视角
+    const rot = (k.KeyQ ? 1 : 0) - (k.KeyE ? 1 : 0)
+    if (rot !== 0) {
+      view.current.yaw += rot * 1.8 * dt
+    }
+
     const f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0)
     const r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0)
     const yaw = view.current.yaw
@@ -162,20 +170,22 @@ export default function CampusScene() {
       shadow.current.position.z = p.position.z
     }
 
-    // —— 像素小人：朝向 + 走路动画 + 面向相机 ——
+    // —— 像素小人：移动决定朝向；绕视角时按相对角看到不同面（不自动面向镜头）——
+    if (moving) {
+      facing.current = Math.atan2(dirX, dirZ)
+    }
     if (sprite.current) {
-      let row = 0
-      let frame = 0
-      if (moving) {
-        const mx = dirX * Math.cos(yaw) - dirZ * Math.sin(yaw)
-        const mz = -dirX * Math.sin(yaw) - dirZ * Math.cos(yaw)
-        if (Math.abs(mx) > Math.abs(mz)) row = mx > 0 ? 3 : 2
-        else row = mz > 0 ? 1 : 0
-        frame = 1 + (Math.floor(state.clock.elapsedTime * 8) % 2)
-      }
-      spriteTex.offset.set(frame / 3, (3 - row) / 4)
       const cam = state.camera
-      sprite.current.rotation.y = Math.atan2(cam.position.x - p.position.x, cam.position.z - p.position.z)
+      const toCam = Math.atan2(cam.position.x - p.position.x, cam.position.z - p.position.z)
+      sprite.current.rotation.y = toCam // 平面面向相机，朝向由贴图行体现
+      let d = facing.current - (toCam + Math.PI)
+      d = Math.atan2(Math.sin(d), Math.cos(d))
+      let row
+      if (Math.abs(d) < Math.PI / 4) row = 1 // 背面朝镜头
+      else if (Math.abs(d) > (3 * Math.PI) / 4) row = 0 // 正面
+      else row = d < 0 ? 3 : 2 // 3=右侧面 2=左侧面
+      const frame = moving ? 1 + (Math.floor(state.clock.elapsedTime * 8) % 2) : 0
+      spriteTex.offset.set(frame / 3, (3 - row) / 4)
     }
 
     // 交互检测（建筑正门 / 操场 / 池塘）
@@ -303,8 +313,8 @@ export default function CampusScene() {
 
       {/* 角色：像素小人（樊楼·金发校服少年）*/}
       <group ref={player} position={[spawn.x, 0, spawn.z]}>
-        <mesh ref={sprite} position={[0, 0.5, 0]}>
-          <planeGeometry args={[1.15, 1.53]} />
+        <mesh ref={sprite} position={[0, 0.58, 0]}>
+          <planeGeometry args={[1.12, 1.64]} />
           <meshBasicMaterial map={spriteTex} transparent alphaTest={0.4} side={THREE.DoubleSide} />
         </mesh>
       </group>
