@@ -201,20 +201,19 @@ export function flowerTexture() {
   })
 }
 
-// 土斑补丁（草地底 + 中央裸土，边缘参差）
-// 格宽对齐主草地：土斑面片 4.8u / 48 格 = 10cm ≈ 主草地 10.4cm
+// 土斑补丁（仅裸土本体，透明底）
+// 不再携带贴片草地环（会与真实草地形成割裂）；边缘用像素抖动 + 稀疏碎土与主草地自然交融
+// 世界尺度：面片 4.8u / 96px → 1px=5cm；土块半径≈1.25u，颗粒 2px=10cm 与主草地节奏一致
 export function dirtTexture() {
   return canvasTexture(96, 96, (ctx) => {
-    for (let y = 0; y < 96; y += 2) {
-      for (let x = 0; x < 96; x += 2) {
-        ctx.fillStyle = (x + y) % 4 === 0 ? '#54904b' : '#4a8743'
-        ctx.fillRect(x, y, 2, 2)
-      }
-    }
-    for (let y = 8; y < 88; y += 2) {
-      for (let x = 8; x < 88; x += 2) {
-        const d = Math.hypot(x - 48, y - 48) + (Math.random() * 9 - 4.5)
-        if (d < 26) {
+    for (let y = 4; y < 92; y += 2) {
+      for (let x = 4; x < 92; x += 2) {
+        const d = Math.hypot(x - 48, y - 48) + (Math.random() * 7 - 3.5)
+        let solid = 0
+        if (d < 24) solid = 1 // 土块本体
+        else if (d < 29) solid = Math.random() < 0.5 ? 1 : 0 // 像素抖动边缘
+        else if (d < 34) solid = Math.random() < 0.12 ? 1 : 0 // 外围碎土点
+        if (solid) {
           ctx.fillStyle = ['#8a6f4f', '#7d6448', '#938060'][rand(3)]
           ctx.fillRect(x, y, 2, 2)
         }

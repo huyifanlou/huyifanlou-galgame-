@@ -286,7 +286,7 @@ export default function CampusScene() {
       {DIRT_PATCHES.map(([x, z], i) => (
         <mesh key={'dp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]}>
           <circleGeometry args={[2.4, 16]} />
-          <meshLambertMaterial map={dirtTex} />
+          <meshLambertMaterial map={dirtTex} alphaTest={0.4} />
         </mesh>
       ))}
 
