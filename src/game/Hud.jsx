@@ -28,7 +28,9 @@ export default function Hud() {
       {/* 左上：标题与操作说明 */}
       <div style={{ ...base, left: 16, top: 14 }}>
         <div style={{ fontWeight: 700, fontSize: 18 }}>（游戏名待定）· 校园叙事 RPG</div>
-        <div style={{ marginTop: 6, opacity: 0.85 }}>WASD / 方向键 移动 ｜ E 交互</div>
+        <div style={{ marginTop: 6, opacity: 0.85 }}>
+          WASD / 方向键 移动 ｜ E 交互 ｜ 拖拽 旋转视角 ｜ 滚轮 缩放 ｜ P 画质
+        </div>
       </div>
 
       {/* 右上：时间（迭代 2 接入日程系统） */}

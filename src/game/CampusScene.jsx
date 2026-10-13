@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { BUILDINGS, TREES } from './campus.js'
 import { grassTexture, pathTexture, buildingTexture, signTexture } from './textures.js'
@@ -18,11 +18,14 @@ function collides(x, z) {
   return false
 }
 
-// 迭代 1：正式像素校园场景（教学楼 / 宿舍楼 / 图书馆 / 食堂 + 道路 + 树木）
+// 迭代 1（含体验修正）：正式像素校园 + 拖拽旋转视角 + 滚轮缩放 + 画质档位
 export default function CampusScene() {
   const player = useRef()
   const shadow = useRef()
   const keys = useRef({})
+  const drag = useRef(null)
+  const view = useRef({ yaw: 0, pitch: 0.6, dist: 13 })
+  const gl = useThree((s) => s.gl)
 
   useEffect(() => {
     const down = (e) => {
@@ -30,6 +33,9 @@ export default function CampusScene() {
       if (e.code === 'KeyE') {
         const st = useGameStore.getState()
         if (st.near) st.showToast(`「${st.near}」内部将在后续迭代开放`)
+      }
+      if (e.code === 'KeyP') {
+        useGameStore.getState().cyclePixel()
       }
     }
     const up = (e) => {
@@ -43,6 +49,47 @@ export default function CampusScene() {
     }
   }, [])
 
+  // 鼠标拖拽旋转视角 + 滚轮缩放
+  useEffect(() => {
+    const canvas = gl.domElement
+    const onDown = (e) => {
+      drag.current = { x: e.clientX, y: e.clientY }
+      try {
+        canvas.setPointerCapture(e.pointerId)
+      } catch {
+        /* 忽略 */
+      }
+      canvas.style.cursor = 'grabbing'
+    }
+    const onMove = (e) => {
+      if (!drag.current) return
+      const dx = e.clientX - drag.current.x
+      const dy = e.clientY - drag.current.y
+      drag.current = { x: e.clientX, y: e.clientY }
+      view.current.yaw -= dx * 0.005
+      view.current.pitch = THREE.MathUtils.clamp(view.current.pitch + dy * 0.004, 0.3, 1.2)
+    }
+    const onUp = () => {
+      drag.current = null
+      canvas.style.cursor = 'grab'
+    }
+    const onWheel = (e) => {
+      e.preventDefault()
+      view.current.dist = THREE.MathUtils.clamp(view.current.dist + e.deltaY * 0.01, 6, 22)
+    }
+    canvas.style.cursor = 'grab'
+    canvas.addEventListener('pointerdown', onDown)
+    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointerup', onUp)
+    canvas.addEventListener('wheel', onWheel, { passive: false })
+    return () => {
+      canvas.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('pointermove', onMove)
+      window.removeEventListener('pointerup', onUp)
+      canvas.removeEventListener('wheel', onWheel)
+    }
+  }, [gl])
+
   const grass = useMemo(() => grassTexture(), [])
   const pathV = useMemo(() => pathTexture(false), [])
   const pathH = useMemo(() => pathTexture(true), [])
@@ -52,29 +99,29 @@ export default function CampusScene() {
     if (!p) return
     const dt = Math.min(delta, 0.05)
     const k = keys.current
-    const ix = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0)
-    const iz = (k.KeyS || k.ArrowDown ? 1 : 0) - (k.KeyW || k.ArrowUp ? 1 : 0)
+    const f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0)
+    const r = (k.KeyD || k.ArrowRight ? 1 : 0) - (k.KeyA || k.ArrowLeft ? 1 : 0)
+    const yaw = view.current.yaw
 
-    if (ix !== 0 || iz !== 0) {
-      const len = Math.hypot(ix, iz)
-      const dirX = ix / len
-      const dirZ = iz / len
-      // 逐轴移动 + 碰撞（撞墙时只取消该轴，实现沿墙滑动）
+    if (f !== 0 || r !== 0) {
+      // 移动方向随视角（W = 屏幕深处方向）
+      let dirX = -Math.sin(yaw) * f + Math.cos(yaw) * r
+      let dirZ = -Math.cos(yaw) * f - Math.sin(yaw) * r
+      const len = Math.hypot(dirX, dirZ)
+      dirX /= len
+      dirZ /= len
       const nx = THREE.MathUtils.clamp(p.position.x + dirX * MOVE_SPEED * dt, -BOUND, BOUND)
       if (!collides(nx, p.position.z)) p.position.x = nx
       const nz = THREE.MathUtils.clamp(p.position.z + dirZ * MOVE_SPEED * dt, -BOUND, BOUND)
       if (!collides(p.position.x, nz)) p.position.z = nz
-      // 平滑转向
       let diff = Math.atan2(dirX, dirZ) - p.rotation.y
       diff = Math.atan2(Math.sin(diff), Math.cos(diff))
       p.rotation.y += diff * Math.min(1, dt * 12)
-      // 走路摆动
       p.position.y = Math.abs(Math.sin(state.clock.elapsedTime * 10)) * 0.06
     } else {
       p.position.y *= 0.8
     }
 
-    // 影子跟随
     if (shadow.current) {
       shadow.current.position.x = p.position.x
       shadow.current.position.z = p.position.z
@@ -92,12 +139,16 @@ export default function CampusScene() {
     }
     useGameStore.getState().setNear(near)
 
-    // 跟随相机
+    // 跟随相机（球坐标：拖拽改变 yaw/pitch，滚轮改变距离）
+    const { yaw: vy, pitch, dist } = view.current
+    const cx = p.position.x + Math.sin(vy) * Math.cos(pitch) * dist
+    const cz = p.position.z + Math.cos(vy) * Math.cos(pitch) * dist
+    const cy = p.position.y + Math.sin(pitch) * dist
     const cam = state.camera
-    const t = Math.min(1, dt * 4)
-    cam.position.x += (p.position.x - cam.position.x) * t
-    cam.position.z += (p.position.z + 12 - cam.position.z) * t
-    cam.position.y += (8.5 - cam.position.y) * t
+    const t = Math.min(1, dt * 5)
+    cam.position.x += (cx - cam.position.x) * t
+    cam.position.y += (cy - cam.position.y) * t
+    cam.position.z += (cz - cam.position.z) * t
     cam.lookAt(p.position.x, 1.2, p.position.z)
   })
 
@@ -105,7 +156,7 @@ export default function CampusScene() {
     <>
       <ambientLight intensity={1.05} />
       <directionalLight position={[14, 20, 10]} intensity={1.5} />
-      <fog attach="fog" args={['#10141c', 36, 80]} />
+      <fog attach="fog" args={['#10141c', 36, 90]} />
 
       {/* 草地与十字道路 */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
@@ -174,22 +225,18 @@ function Building({ def }) {
 
   return (
     <group position={[bx, h / 2, bz]} rotation={[0, rotationY, 0]}>
-      {/* 楼体 */}
       <mesh>
         <boxGeometry args={[w, h, d]} />
         <meshLambertMaterial map={wallTex} />
       </mesh>
-      {/* 屋檐 */}
       <mesh position={[0, h / 2 + 0.16, 0]}>
         <boxGeometry args={[w + 0.7, 0.32, d + 0.7]} />
         <meshLambertMaterial color={def.roof} />
       </mesh>
-      {/* 招牌（正面） */}
       <mesh position={[0, h * 0.28, d / 2 + 0.04]}>
-        <planeGeometry args={[2.9, 0.72]} />
+        <planeGeometry args={[3.3, 0.83]} />
         <meshLambertMaterial map={signTex} />
       </mesh>
-      {/* 大门 */}
       <mesh position={[0, -h / 2 + 0.85, d / 2 + 0.03]}>
         <planeGeometry args={[1.2, 1.7]} />
         <meshLambertMaterial color="#2b2733" />

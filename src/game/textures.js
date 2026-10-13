@@ -67,15 +67,15 @@ export function buildingTexture(wall, cols, rows) {
 }
 
 export function signTexture(text, bg = '#3a2f4a') {
-  return canvasTexture(192, 48, (ctx, w, h) => {
+  return canvasTexture(224, 56, (ctx, w, h) => {
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, w, h)
     ctx.strokeStyle = 'rgba(255,255,255,0.35)'
     ctx.strokeRect(2, 2, w - 4, h - 4)
     ctx.fillStyle = '#ffffff'
-    ctx.font = 'bold 30px "Microsoft YaHei", sans-serif'
+    ctx.font = 'bold 36px "Microsoft YaHei", sans-serif'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(text, w / 2, h / 2 + 1)
+    ctx.fillText(text, w / 2, h / 2 + 2)
   })
 }

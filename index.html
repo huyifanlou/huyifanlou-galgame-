@@ -13,11 +13,13 @@
         background: #10141c;
         overflow: hidden;
       }
-      /* HD-2D 像素化渲染的关键：画布以 1/4 分辨率渲染（见 App.jsx dpr），
+      /* HD-2D 像素化渲染的关键：画布以低分辨率渲染（见 App.jsx dpr），
          再通过最近邻放大到全屏，得到锐利的复古像素质感 */
       canvas {
         image-rendering: pixelated;
         image-rendering: crisp-edges;
+        cursor: grab;
+        touch-action: none;
       }
     </style>
   </head>
