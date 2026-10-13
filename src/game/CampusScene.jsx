@@ -277,7 +277,7 @@ export default function CampusScene() {
 
       {/* 花丛 */}
       {FLOWERS.map(([x, z], i) => (
-        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.008, z]}>
+        <mesh key={i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.012, z]}>
           <planeGeometry args={[1.7, 1.7]} />
           <meshLambertMaterial map={flowers} />
         </mesh>
@@ -285,13 +285,12 @@ export default function CampusScene() {
 
       {/* 草地色块（大块深浅绿，打破单调）+ 土斑 */}
       {GROUND_PATCHES.map(([x, z, v], i) => (
-        <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.004, z]}>
+        <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.008, z]}>
           <circleGeometry args={[[8, 6.5, 9.5][v % 3], 22]} />
           <meshLambertMaterial map={patchTex} color={['#f2f2f2', '#ffffff', '#e8efe2'][v % 3]} />
         </mesh>
-      ))}
-      {DIRT_PATCHES.map(([x, z], i) => (
-        <mesh key={'dp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.006, z]}>
+      ))}      {DIRT_PATCHES.map(([x, z], i) => (
+        <mesh key={'dp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]}>
           <circleGeometry args={[2.4, 16]} />
           <meshLambertMaterial map={dirtTex} />
         </mesh>

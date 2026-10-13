@@ -10,8 +10,8 @@ export function canvasTexture(w, h, draw, repeatX = 1, repeatY = 1) {
   draw(ctx, w, h)
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter
-  // 远处使用最近邻 mipmap：保持像素清晰，不用线性插值（线性会把远景糊掉）
-  t.minFilter = THREE.NearestMipmapNearestFilter
+  // mip 层级之间线性过渡（消除移动时"虚影"跳变），层内保持最近邻（像素块感）
+  t.minFilter = THREE.NearestMipmapLinearFilter
   t.anisotropy = 16
   t.wrapS = t.wrapT = THREE.RepeatWrapping
   t.repeat.set(repeatX, repeatY)

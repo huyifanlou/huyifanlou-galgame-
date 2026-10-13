@@ -1,15 +1,17 @@
 import { create } from 'zustand'
 
-// 画面清晰度档位（dpr = 渲染分辨率比例；1 = 原生分辨率）
-const PIXEL_LEVELS = [0.5, 0.75, 1, 1.25, 1.5]
-const PIXEL_NAMES = { 0.5: '复古（像素大颗粒）', 0.75: '柔和', 1: '高清', 1.25: '高清+', 1.5: '超清（默认）' }
+// 画面清晰度档位（dpr = 渲染分辨率比例；1 = 原生分辨率；>1 为超采样抗闪烁）
+const PIXEL_LEVELS = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const PIXEL_NAMES = { 0.5: '复古（像素大颗粒）', 0.75: '柔和', 1: '高清', 1.25: '高清+', 1.5: '超清', 2: '极清（超采样抗闪烁）' }
 
-// 默认档位随屏幕缩放自适应：100% 屏 → 1，125% 屏 → 1.25，150% 屏 → 1.5（保证与物理像素 1:1，不糊）
+// 默认档位 = 屏幕缩放的 1.6 倍（取 0.5 的整数步），上限 2、下限 1.25：
+// 高分辨率渲染后缩小显示 = 超采样，能同时提升清晰度并压制移动时的纹理闪烁
 const defaultDpr = (() => {
   try {
-    return Math.min(1.5, Math.max(1, window.devicePixelRatio || 1))
+    const base = (window.devicePixelRatio || 1) * 1.6
+    return Math.min(2, Math.max(1.25, Math.round(base * 2) / 2))
   } catch {
-    return 1
+    return 1.5
   }
 })()
 
