@@ -179,19 +179,20 @@ export function signTexture(text, bg = '#3a2f4a') {
   })
 }
 
-// 花丛补丁（草地底色 + 三色小花，可与草地自然衔接；2px 格降采样可存活）
+// 花丛补丁（草地底色 + 三色小花，可与草地自然衔接）
+// 格宽对齐主草地：花丛面片 1.7u / 16 格 = 10.6cm ≈ 主草地 10.4cm，像素节奏一致
 export function flowerTexture() {
   return canvasTexture(64, 64, (ctx) => {
-    for (let y = 0; y < 64; y += 2) {
-      for (let x = 0; x < 64; x += 2) {
-        ctx.fillStyle = (x + y) % 4 === 0 ? '#54904b' : '#4a8743'
-        ctx.fillRect(x, y, 2, 2)
+    for (let y = 0; y < 64; y += 4) {
+      for (let x = 0; x < 64; x += 4) {
+        ctx.fillStyle = (x + y) % 8 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 4, 4)
       }
     }
     const colors = ['#e8748a', '#f2d857', '#f4f2ea', '#c58ae0']
-    for (let i = 0; i < 22; i++) {
-      const x = 2 + rand(58)
-      const y = 2 + rand(56)
+    for (let i = 0; i < 18; i++) {
+      const x = 2 + rand(56)
+      const y = 2 + rand(54)
       ctx.fillStyle = colors[rand(colors.length)]
       ctx.fillRect(x, y, 4, 4)
       ctx.fillStyle = '#3f7239'
@@ -200,19 +201,20 @@ export function flowerTexture() {
   })
 }
 
-// 土斑补丁（草地底 + 中央裸土，边缘参差；2px 格）
+// 土斑补丁（草地底 + 中央裸土，边缘参差）
+// 格宽对齐主草地：土斑面片 4.8u / 48 格 = 10cm ≈ 主草地 10.4cm
 export function dirtTexture() {
-  return canvasTexture(48, 48, (ctx) => {
-    for (let y = 0; y < 48; y += 2) {
-      for (let x = 0; x < 48; x += 2) {
+  return canvasTexture(96, 96, (ctx) => {
+    for (let y = 0; y < 96; y += 2) {
+      for (let x = 0; x < 96; x += 2) {
         ctx.fillStyle = (x + y) % 4 === 0 ? '#54904b' : '#4a8743'
         ctx.fillRect(x, y, 2, 2)
       }
     }
-    for (let y = 6; y < 42; y += 2) {
-      for (let x = 6; x < 42; x += 2) {
-        const d = Math.hypot(x - 24, y - 24) + (Math.random() * 5 - 2.5)
-        if (d < 13) {
+    for (let y = 8; y < 88; y += 2) {
+      for (let x = 8; x < 88; x += 2) {
+        const d = Math.hypot(x - 48, y - 48) + (Math.random() * 9 - 4.5)
+        if (d < 26) {
           ctx.fillStyle = ['#8a6f4f', '#7d6448', '#938060'][rand(3)]
           ctx.fillRect(x, y, 2, 2)
         }
