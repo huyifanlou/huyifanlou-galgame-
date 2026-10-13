@@ -10,7 +10,9 @@ export function canvasTexture(w, h, draw, repeatX = 1, repeatY = 1) {
   draw(ctx, w, h)
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter
-  t.minFilter = THREE.LinearMipmapLinearFilter
+  // 远处使用最近邻 mipmap：保持像素清晰，不用线性插值（线性会把远景糊掉）
+  t.minFilter = THREE.NearestMipmapNearestFilter
+  t.anisotropy = 8
   t.wrapS = t.wrapT = THREE.RepeatWrapping
   t.repeat.set(repeatX, repeatY)
   t.colorSpace = THREE.SRGBColorSpace
@@ -19,8 +21,8 @@ export function canvasTexture(w, h, draw, repeatX = 1, repeatY = 1) {
 
 const rand = (n) => Math.floor(Math.random() * n)
 
-// 32×32 草地：双层棋盘 + 草叶细节
-export function grassTexture() {
+// 32×32 草地：双层棋盘 + 草叶细节（rep 可按用途调整：地面 30 / 色块补丁 5）
+export function grassTexture(rep = 30) {
   return canvasTexture(32, 32, (ctx) => {
     for (let y = 0; y < 32; y++) {
       for (let x = 0; x < 32; x++) {
@@ -32,7 +34,7 @@ export function grassTexture() {
       ctx.fillStyle = ['#3f7239', '#5da054', '#437c3c', '#61a85a'][rand(4)]
       ctx.fillRect(rand(32), rand(32), 1, 2)
     }
-  }, 30, 30)
+  }, rep, rep)
 }
 
 // 32×32 石板路：2×2 石板 + 勾缝 + 磨损

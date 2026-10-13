@@ -153,6 +153,7 @@ export default function CampusScene() {
   const awningTex = useMemo(() => stripesTexture(), [])
   const branchTex = useMemo(() => BRANCH_PATHS.map((p) => pathTexture(false, Math.max(1, Math.round(p.len / 2.6)))), [])
   const dirtTex = useMemo(() => dirtTexture(), [])
+  const patchTex = useMemo(() => grassTexture(5), []) // 草地色块：贴草地纹理（避免纯色圆盘发糊）
 
   useFrame((state, delta) => {
     const p = player.current
@@ -286,7 +287,7 @@ export default function CampusScene() {
       {GROUND_PATCHES.map(([x, z, v], i) => (
         <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.004, z]}>
           <circleGeometry args={[[8, 6.5, 9.5][v % 3], 22]} />
-          <meshLambertMaterial color={['#4c8a44', '#57944e', '#4a8443'][v % 3]} />
+          <meshLambertMaterial map={patchTex} color={['#dedede', '#ffffff', '#cfe0c6'][v % 3]} />
         </mesh>
       ))}
       {DIRT_PATCHES.map(([x, z], i) => (
