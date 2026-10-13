@@ -89,9 +89,9 @@ const TREE_TYPES = [0, 1, 2, 0, 5, 1, 0, 2, 1, 0, 2, 4, 0, 1, 5, 2, 1, 0, 2, 4, 
 export const TREES = scatter(34, rnd, { minGap: 2.2 }).map(([x, z], i) => [x, z, TREE_TYPES[i % TREE_TYPES.length]])
 export const BUSHES = scatter(26, rnd, { minGap: 1.2, others: TREES }).map(([x, z], i) => [x, z, i % 4])
 export const FLOWERS = scatter(22, rnd, { minGap: 1.0, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
-// 地面色彩斑块（大块深浅草地）与土斑（点缀在草地上，不与路面冲突：渲染层级低于路面）
-export const GROUND_PATCHES = scatter(10, rnd, { minGap: 6 }).map(([x, z], i) => [x, z, i % 3])
-export const DIRT_PATCHES = scatter(7, rnd, { minGap: 4, others: GROUND_PATCHES }).map(([x, z]) => [x, z])
+// 土斑（点缀在草地上，不与路面冲突：渲染层级低于路面）
+// 注：曾用"草地色块"圆盘（GROUND_PATCHES）做地面深浅变化，因贴地叠层与主草地纹理密度不一致、远处呈现圆形淡影，已移除；地面层次改由草地纹理内置的草丛色块承担
+export const DIRT_PATCHES = scatter(7, rnd, { minGap: 4 }).map(([x, z]) => [x, z])
 
 // 可交互点位（建筑正门 + 操场 + 池塘）
 export const SPOTS = [

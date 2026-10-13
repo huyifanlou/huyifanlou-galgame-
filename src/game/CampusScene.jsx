@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, GROUND_PATCHES, DIRT_PATCHES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
   flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture,
@@ -153,7 +153,6 @@ export default function CampusScene() {
   const awningTex = useMemo(() => stripesTexture(), [])
   const branchTex = useMemo(() => BRANCH_PATHS.map((p) => pathTexture(false, Math.max(1, Math.round(p.len / 2.6)))), [])
   const dirtTex = useMemo(() => dirtTexture(), [])
-  const patchTex = useMemo(() => grassTexture(5), []) // 草地色块：贴草地纹理（避免纯色圆盘发糊）
 
   useFrame((state, delta) => {
     const p = player.current
@@ -283,13 +282,8 @@ export default function CampusScene() {
         </mesh>
       ))}
 
-      {/* 草地色块（大块深浅绿，打破单调）+ 土斑 */}
-      {GROUND_PATCHES.map(([x, z, v], i) => (
-        <mesh key={'gp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.008, z]}>
-          <circleGeometry args={[[8, 6.5, 9.5][v % 3], 22]} />
-          <meshLambertMaterial map={patchTex} color={['#f2f2f2', '#ffffff', '#e8efe2'][v % 3]} />
-        </mesh>
-      ))}      {DIRT_PATCHES.map(([x, z], i) => (
+      {/* 土斑 */}
+      {DIRT_PATCHES.map(([x, z], i) => (
         <mesh key={'dp' + i} rotation={[-Math.PI / 2, 0, 0]} position={[x, 0.01, z]}>
           <circleGeometry args={[2.4, 16]} />
           <meshLambertMaterial map={dirtTex} />
