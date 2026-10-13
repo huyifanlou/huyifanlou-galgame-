@@ -29,7 +29,7 @@ export default function Hud() {
       <div style={{ ...base, left: 16, top: 14 }}>
         <div style={{ fontWeight: 700, fontSize: 18 }}>（游戏名待定）· 校园叙事 RPG</div>
         <div style={{ marginTop: 6, opacity: 0.85 }}>
-          WASD / 方向键 移动 ｜ F 交互 ｜ Q / E 转视角 ｜ 拖拽旋转 ｜ 滚轮缩放 ｜ P 画质
+          WASD / 方向键 移动 ｜ F 交互 ｜ Q / E 转视角（每次90°） ｜ 拖拽旋转 ｜ 滚轮缩放 ｜ P 画质
         </div>
       </div>
 

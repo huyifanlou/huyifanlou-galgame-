@@ -32,7 +32,7 @@ export default function CampusScene() {
   const keys = useRef({})
   const drag = useRef(null)
   const camInit = useRef(false)
-  const facing = useRef(Math.PI) // 角色朝向（世界角：0=+z 南，π=北）；初始面朝北（背对初始相机）
+  const facing = useRef(Math.PI) // 角色朝向（世界角：0=+z 南，π=北）；默认背对镜头
   // 初始视角支持 URL 调试参数（录像取景 / 验收用）：
   //   ?yaw=1.57&pitch=1.2&dist=30   直接指定角度
   //   ?at=-21,7.5                   相机对准世界坐标点（玩家出生点 (0,4) 相对计算）
@@ -52,13 +52,15 @@ export default function CampusScene() {
           yaw = Math.atan2(spawn.x - ax, spawn.z - az)
         }
       }
-      return { yaw, pitch: Math.min(1.35, Math.max(0.3, num('pitch', 0.6))), dist: Math.min(40, Math.max(6, num('dist', 13))), spawn }
+      return { yaw, pitch: Math.min(1.35, Math.max(0.3, num('pitch', 0.6))), dist: Math.min(40, Math.max(6, num('dist', 13))), spawn, frozen: q.get('freeze') === '1' }
     } catch {
-      return { yaw: 0, pitch: 0.6, dist: 13, spawn: { x: 0, z: 4 } }
+      return { yaw: 0, pitch: 0.6, dist: 13, spawn: { x: 0, z: 4 }, frozen: false }
     }
   })()
   const view = useRef(initView)
   const spawn = initView.spawn
+  // Q/E 转向时冻结朝向（露出侧面/正面）；移动或鼠标转向时恢复；?freeze=1 可初始冻结（验收取景用）
+  const alignPaused = useRef(initView.frozen)
   const gl = useThree((s) => s.gl)
 
   useEffect(() => {
@@ -70,6 +72,17 @@ export default function CampusScene() {
       }
       if (e.code === 'KeyP') {
         useGameStore.getState().cyclePixel()
+      }
+      // Q / E：每次旋转 90°（带平滑动画），并冻结角色朝向以露出侧面/正面
+      if (e.code === 'KeyQ' && !e.repeat) {
+        const v = view.current
+        v.yawTarget = (v.yawTarget ?? v.yaw) + Math.PI / 2
+        alignPaused.current = true
+      }
+      if (e.code === 'KeyE' && !e.repeat) {
+        const v = view.current
+        v.yawTarget = (v.yawTarget ?? v.yaw) - Math.PI / 2
+        alignPaused.current = true
       }
     }
     const up = (e) => {
@@ -88,6 +101,7 @@ export default function CampusScene() {
     const canvas = gl.domElement
     const onDown = (e) => {
       drag.current = { x: e.clientX, y: e.clientY }
+      alignPaused.current = false // 鼠标转视角时恢复"背对镜头"跟随
       try {
         canvas.setPointerCapture(e.pointerId)
       } catch {
@@ -137,10 +151,14 @@ export default function CampusScene() {
     const dt = Math.min(delta, 0.05)
     const k = keys.current
 
-    // Q / E 旋转视角
-    const rot = (k.KeyQ ? 1 : 0) - (k.KeyE ? 1 : 0)
-    if (rot !== 0) {
-      view.current.yaw += rot * 1.8 * dt
+    // Q / E：以 90° 步进平滑旋转到目标角度
+    const vt = view.current
+    if (vt.yawTarget != null) {
+      vt.yaw += (vt.yawTarget - vt.yaw) * Math.min(1, dt * 7)
+      if (Math.abs(vt.yawTarget - vt.yaw) < 0.01) {
+        vt.yaw = vt.yawTarget
+        vt.yawTarget = null
+      }
     }
 
     const f = (k.KeyW || k.ArrowUp ? 1 : 0) - (k.KeyS || k.ArrowDown ? 1 : 0)
@@ -170,13 +188,17 @@ export default function CampusScene() {
       shadow.current.position.z = p.position.z
     }
 
-    // —— 像素小人：移动决定朝向；绕视角时按相对角看到不同面（不自动面向镜头）——
-    if (moving) {
-      facing.current = Math.atan2(dirX, dirZ)
+    // —— 像素小人：默认"背对镜头"随视角自动对齐；
+    //    Q/E 转向时冻结朝向（露出侧面/正面）；鼠标转视角/移动时恢复背对 ——
+    if (moving) alignPaused.current = false
+    const camPos = state.camera.position
+    const toCam = Math.atan2(camPos.x - p.position.x, camPos.z - p.position.z)
+    if (!alignPaused.current) {
+      let alien = toCam + Math.PI - facing.current
+      alien = Math.atan2(Math.sin(alien), Math.cos(alien))
+      facing.current += alien * Math.min(1, dt * 6)
     }
     if (sprite.current) {
-      const cam = state.camera
-      const toCam = Math.atan2(cam.position.x - p.position.x, cam.position.z - p.position.z)
       sprite.current.rotation.y = toCam // 平面面向相机，朝向由贴图行体现
       let d = facing.current - (toCam + Math.PI)
       d = Math.atan2(Math.sin(d), Math.cos(d))

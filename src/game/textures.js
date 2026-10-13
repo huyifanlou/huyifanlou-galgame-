@@ -261,16 +261,17 @@ export function characterSheet() {
       r(6, 8, 12, 1, K.hairD) // 发脚
       r(9, 1, 4, 1, K.hairL) // 高光
     } else if (side) {
-      r(7, 0, 9, 2, K.hair)
-      r(6, 1, 10, 5, K.hair)
-      r(5, 3, 5, 5, K.hair) // 后脑勺
-      r(14, 3, 6, 5, K.skin) // 侧面脸
-      r(14, 3, 6, 1, K.hair) // 刘海
-      r(16, 5, 2, 2, K.eyeW)
-      r(17, 5, 1, 2, K.eye)
-      r(19, 6, 1, 1, K.skinD) // 鼻尖
-      r(17, 7, 2, 1, K.skinD) // 嘴
-      r(7, 1, 3, 1, K.hairL)
+      // 侧面头部收窄（头宽≈13px，与身体比例协调）
+      r(6, 0, 8, 2, K.hair)
+      r(5, 1, 8, 5, K.hair)
+      r(4, 3, 4, 5, K.hair) // 后脑勺
+      r(11, 3, 6, 5, K.skin) // 侧面脸
+      r(11, 3, 6, 1, K.hair) // 刘海
+      r(13, 5, 1, 1, K.eyeW) // 侧脸眼睛：1×2 小眼，不突出
+      r(13, 6, 1, 1, K.eye)
+      r(16, 6, 1, 1, K.skinD) // 鼻尖
+      r(13, 7, 2, 1, K.skinD) // 嘴
+      r(6, 1, 3, 1, K.hairL)
     } else {
       r(8, 0, 8, 2, K.hair)
       r(7, 1, 10, 2, K.hair)
