@@ -154,8 +154,9 @@ export default function CampusScene() {
 
   return (
     <>
-      <ambientLight intensity={1.05} />
-      <directionalLight position={[14, 20, 10]} intensity={1.5} />
+      <ambientLight intensity={0.95} />
+      <hemisphereLight args={['#d8ecff', '#3f5a36', 0.5]} />
+      <directionalLight position={[14, 20, 10]} intensity={1.4} />
       <fog attach="fog" args={['#10141c', 36, 90]} />
 
       {/* 草地与十字道路 */}

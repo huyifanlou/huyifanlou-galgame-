@@ -11,7 +11,7 @@ export default function App() {
     <>
       <Canvas
         dpr={dpr}
-        gl={{ antialias: false, powerPreference: 'high-performance' }}
+        gl={{ antialias: true, powerPreference: 'high-performance' }}
         camera={{ fov: 46, near: 0.1, far: 200, position: [0, 8, 13] }}
       >
         <color attach="background" args={['#10141c']} />

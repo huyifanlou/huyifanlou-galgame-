@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 
-// 画面清晰度档位（dpr = 渲染分辨率比例，越小像素颗粒越大）
-const PIXEL_LEVELS = [0.25, 0.4, 0.5, 0.75]
-const PIXEL_NAMES = { 0.25: '低（颗粒感强）', 0.4: '标准', 0.5: '清晰', 0.75: '细腻' }
+// 画面清晰度档位（dpr = 渲染分辨率比例；1 = 原生分辨率）
+const PIXEL_LEVELS = [0.5, 0.75, 1, 1.5]
+const PIXEL_NAMES = { 0.5: '复古（像素大颗粒）', 0.75: '柔和', 1: '高清（默认）', 1.5: '超清' }
 
 // 全局游戏状态（迭代 2 起接入时间/属性系统；当前承载交互提示、画质与 HUD 信息）
 export const useGameStore = create((set) => ({
@@ -10,7 +10,7 @@ export const useGameStore = create((set) => ({
   day: '第 1 天 · 上午',
   toast: '',
   toastId: 0,
-  pixelDpr: 0.5,
+  pixelDpr: 1,
   setNear: (near) => set((s) => (s.near === near ? {} : { near })),
   showToast: (toast) => set({ toast, toastId: Date.now() }),
   clearToast: () => set({ toast: '' }),
