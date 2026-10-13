@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { useGameStore } from './store.js'
 
+// 构建版本号：每次重建手动+1（右下角常驻小字，用于肉眼确认浏览器加载的是哪一版）
+export const BUILD_VERSION = 'v0.13'
+
 const base = {
   position: 'fixed',
   color: '#e7e9ee',
@@ -54,6 +57,11 @@ export default function Hud() {
           按 <b>F</b> 进入「{near}」
         </div>
       )}
+
+      {/* 右下：构建版本号（可见即可确认页面为最新构建，避免浏览器缓存旧版） */}
+      <div style={{ ...base, right: 14, bottom: 10, fontSize: 12, opacity: 0.55 }}>
+        {BUILD_VERSION} · 2026-10-13
+      </div>
 
       {/* 提示条 */}
       {toast && (
