@@ -41,7 +41,7 @@ export const FENCES = [
 
 // —— 植被：确定性随机 + 排除区，自然散布且每次加载布局一致 ——
 // 主角家（日式二层独栋小别墅；樊楼独居——剧情关键场景，第1/3/4/7章发生地）
-export const VILLA = { x: 23, z: 24, w: 8.4, h: 5.4, d: 7, face: -1 }
+export const VILLA = { x: 0, z: 34, w: 8.4, h: 5.4, d: 7, face: -1 } // 位于南端道路尽头，门朝北正对马路
 const KEEPOUT = [
   { x: VILLA.x, z: VILLA.z, hw: VILLA.w / 2 + 2.4, hd: VILLA.d / 2 + 2.4 },
   ...BUILDINGS.map((b) => ({ x: b.pos[0], z: b.pos[1], hw: b.size[0] / 2 + 2.2, hd: b.size[2] / 2 + 2.2 })),
@@ -100,7 +100,7 @@ export const DIRT_PATCHES = scatter(7, rnd, { minGap: 4 }).map(([x, z]) => [x, z
 // 注意避开操场(x-29..-13, z2.5..12.5)与池塘(center -25,-14 r3)——横路南侧西端灯移至 x=-32 绕开操场
 export const LAMPS = [
   ...[-14, -4, 6, 16, 26].map((z) => [-3.7, z, 0]), // 竖路西侧，灯臂朝东
-  ...[-9, 1, 11, 21, 31].map((z) => [3.7, z, Math.PI]), // 竖路东侧，灯臂朝西
+  ...[-9, 1, 11, 21, 27.5].map((z) => [3.7, z, Math.PI]), // 竖路东侧，灯臂朝西（27.5 为避让路头别墅）
   ...[-26, -14, 14, 26].map((x) => [x, -3.7, -Math.PI / 2]), // 横路北侧，灯臂朝南
   ...[-32, -8, 8, 20].map((x) => [x, 3.7, Math.PI / 2]), // 横路南侧，灯臂朝北
 ]
