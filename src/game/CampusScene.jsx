@@ -4,12 +4,59 @@ import * as THREE from 'three'
 import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
 const MOVE_SPEED = 6
 const BOUND = 30
+
+// ── 昼夜配置（灯光/雾，逐帧按 nightMix 插值实现平滑过渡）──
+const FX_DAY = {
+  amb: 0.95, hemi: 0.5, dir: 1.42,
+  hemiSky: new THREE.Color('#d8ecff'), hemiGnd: new THREE.Color('#3f5a36'), dirCol: new THREE.Color('#fff4da'),
+  fog: new THREE.Color('#cfe3f4'), fogNear: 46, fogFar: 98,
+}
+const FX_NIGHT = {
+  amb: 0.4, hemi: 0.42, dir: 0.55,
+  hemiSky: new THREE.Color('#31426b'), hemiGnd: new THREE.Color('#141f19'), dirCol: new THREE.Color('#9fb8e8'),
+  fog: new THREE.Color('#0e1626'), fogNear: 34, fogFar: 88,
+}
+// 天气/天空混合值：0=白天 1=夜晚（ref 由主组件逐帧更新，配合透明度交叉淡化两层天穹）
+
+// 天空穹顶：内层为夜穹（星空+月亮），透明度随 nightMix 交叉淡化；云以纹理偏移缓慢飘动
+function SkyDome({ mix, initialNight }) {
+  const dayTex = useMemo(() => skyTexture('day'), [])
+  const nightTex = useMemo(() => skyTexture('night'), [])
+  const nightMat = useRef()
+  const nightMesh = useRef()
+  useFrame((_, dt) => {
+    if (nightMat.current) nightMat.current.opacity = mix.current
+    // 星空极慢旋转（星点爬行即自然闪烁）+ 云飘动
+    if (nightMesh.current) nightMesh.current.rotation.y += dt * 0.004
+    dayTex.offset.x -= dt * 0.0045
+  })
+  return (
+    <>
+      <mesh>
+        <sphereGeometry args={[170, 24, 16]} />
+        <meshBasicMaterial map={dayTex} side={THREE.BackSide} fog={false} />
+      </mesh>
+      <mesh ref={nightMesh}>
+        <sphereGeometry args={[168, 24, 16]} />
+        <meshBasicMaterial
+          ref={nightMat}
+          map={nightTex}
+          side={THREE.BackSide}
+          fog={false}
+          transparent
+          opacity={initialNight ? 1 : 0}
+          depthWrite={false}
+        />
+      </mesh>
+    </>
+  )
+}
 
 // 碰撞：建筑 AABB + 树干（小方框）
 function collides(x, z) {
@@ -57,9 +104,9 @@ export default function CampusScene() {
           yaw = Math.atan2(spawn.x - ax, spawn.z - az)
         }
       }
-      return { yaw, pitch: Math.min(1.35, Math.max(0.3, num('pitch', 0.6))), dist: Math.min(40, Math.max(6, num('dist', 13))), spawn, frozen: q.get('freeze') === '1' }
+      return { yaw, pitch: Math.min(1.35, Math.max(0.3, num('pitch', 0.38))), dist: Math.min(40, Math.max(6, num('dist', 13))), spawn, frozen: q.get('freeze') === '1' }
     } catch {
-      return { yaw: 0, pitch: 0.6, dist: 13, spawn: { x: 0, z: 4 }, frozen: false }
+      return { yaw: 0, pitch: 0.38, dist: 13, spawn: { x: 0, z: 4 }, frozen: false }
     }
   })()
   const view = useRef(initView)
@@ -67,6 +114,14 @@ export default function CampusScene() {
   // 鼠标拖拽时冻结朝向（可看到角色各个面）；Q/E 转视角或移动时恢复"背对镜头"；?freeze=1 可初始冻结（验收取景用）
   const alignPaused = useRef(initView.frozen)
   const gl = useThree((s) => s.gl)
+
+  // 昼夜：单一混合值驱动灯光/雾/天穹交叉淡化（0=白天 1=夜晚）
+  const initialNight = useMemo(() => useGameStore.getState().phase === 'night', [])
+  const mixRef = useRef(initialNight ? 1 : 0)
+  const ambRef = useRef()
+  const hemiRef = useRef()
+  const dirRef = useRef()
+  const fogRef = useRef()
 
   useEffect(() => {
     const down = (e) => {
@@ -77,6 +132,10 @@ export default function CampusScene() {
       }
       if (e.code === 'KeyP') {
         useGameStore.getState().cyclePixel()
+      }
+      // T：白天 ⇄ 夜晚（天空/灯光/雾平滑过渡）
+      if (e.code === 'KeyT' && !e.repeat) {
+        useGameStore.getState().togglePhase()
       }
       // Q / E：每次旋转 90°（带平滑动画）；旋转中角色保持"背对镜头"，不露出其他面
       if (e.code === 'KeyQ' && !e.repeat) {
@@ -143,7 +202,7 @@ export default function CampusScene() {
     }
   }, [gl])
 
-  const grass = useMemo(() => grassTexture(), [])
+  const grass = useMemo(() => grassTexture(60), [])
   const pathV = useMemo(() => pathTexture(false), [])
   const pathH = useMemo(() => pathTexture(true), [])
   const flowers = useMemo(() => flowerTexture(), [])
@@ -253,16 +312,39 @@ export default function CampusScene() {
 
   const ground = GROUNDS[0]
 
+  // 昼夜过渡：逐帧把灯光/雾插值到目标相位（约 1 秒完成）
+  useFrame((_, dt) => {
+    const target = useGameStore.getState().phase === 'night' ? 1 : 0
+    const m = mixRef.current + (target - mixRef.current) * Math.min(1, dt * 1.8)
+    mixRef.current = m
+    if (ambRef.current) ambRef.current.intensity = THREE.MathUtils.lerp(FX_DAY.amb, FX_NIGHT.amb, m)
+    if (hemiRef.current) {
+      hemiRef.current.intensity = THREE.MathUtils.lerp(FX_DAY.hemi, FX_NIGHT.hemi, m)
+      hemiRef.current.color.lerpColors(FX_DAY.hemiSky, FX_NIGHT.hemiSky, m)
+      hemiRef.current.groundColor.lerpColors(FX_DAY.hemiGnd, FX_NIGHT.hemiGnd, m)
+    }
+    if (dirRef.current) {
+      dirRef.current.intensity = THREE.MathUtils.lerp(FX_DAY.dir, FX_NIGHT.dir, m)
+      dirRef.current.color.lerpColors(FX_DAY.dirCol, FX_NIGHT.dirCol, m)
+    }
+    if (fogRef.current) {
+      fogRef.current.color.lerpColors(FX_DAY.fog, FX_NIGHT.fog, m)
+      fogRef.current.near = THREE.MathUtils.lerp(FX_DAY.fogNear, FX_NIGHT.fogNear, m)
+      fogRef.current.far = THREE.MathUtils.lerp(FX_DAY.fogFar, FX_NIGHT.fogFar, m)
+    }
+  })
+
   return (
     <>
-      <ambientLight intensity={0.95} />
-      <hemisphereLight args={['#d8ecff', '#3f5a36', 0.5]} />
-      <directionalLight position={[14, 20, 10]} intensity={1.4} />
-      <fog attach="fog" args={['#10141c', 36, 90]} />
+      <ambientLight ref={ambRef} intensity={0.95} />
+      <hemisphereLight ref={hemiRef} args={['#d8ecff', '#3f5a36', 0.5]} />
+      <directionalLight ref={dirRef} position={[14, 20, 10]} intensity={1.4} />
+      <fog ref={fogRef} attach="fog" args={['#cfe3f4', 46, 110]} />
+      <SkyDome mix={mixRef} initialNight={initialNight} />
 
-      {/* 草地与十字道路 */}
+      {/* 草地与十字道路（草地 200×200 延伸到雾中，地平线无生硬接缝） */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[200, 200]} />
         <meshLambertMaterial map={grass} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 8.75]}>

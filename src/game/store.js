@@ -15,16 +15,36 @@ const defaultDpr = (() => {
   }
 })()
 
-// 全局游戏状态（迭代 2 起接入时间/属性系统；当前承载交互提示、画质与 HUD 信息）
+// 昼夜相位（T 键手动切换；?phase=night 供验收取景；迭代 2 的日程系统将自动驱动）
+const urlPhase = (() => {
+  try {
+    return new URLSearchParams(window.location.search).get('phase') === 'night' ? 'night' : 'day'
+  } catch {
+    return 'day'
+  }
+})()
+
+// 全局游戏状态（迭代 2 起接入时间/属性系统；当前承载交互提示、画质、昼夜与 HUD 信息）
 export const useGameStore = create((set) => ({
   near: null, // 面前可交互的地点名
-  day: '第 1 天 · 上午',
+  day: urlPhase === 'night' ? '第 1 天 · 夜晚' : '第 1 天 · 白天',
+  phase: urlPhase, // 'day' | 'night'（白天=蓝天白云，夜晚=星空月亮）
   toast: '',
   toastId: 0,
   pixelDpr: defaultDpr,
   setNear: (near) => set((s) => (s.near === near ? {} : { near })),
   showToast: (toast) => set({ toast, toastId: Date.now() }),
   clearToast: () => set({ toast: '' }),
+  togglePhase: () =>
+    set((s) => {
+      const phase = s.phase === 'day' ? 'night' : 'day'
+      return {
+        phase,
+        day: `第 1 天 · ${phase === 'night' ? '夜晚' : '白天'}`,
+        toast: phase === 'night' ? '入夜了……（T 键切换昼夜）' : '天亮了（T 键切换昼夜）',
+        toastId: Date.now(),
+      }
+    }),
   cyclePixel: () =>
     set((s) => {
       const i = PIXEL_LEVELS.indexOf(s.pixelDpr)
