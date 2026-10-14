@@ -15,33 +15,73 @@ const defaultDpr = (() => {
   }
 })()
 
-// 昼夜相位（T 键手动切换；?phase=night 供验收取景；迭代 2 的日程系统将自动驱动）
-const urlPhase = (() => {
+// 游戏时钟与昼夜相位：一天 24 小时（1440 分钟），起点 08:00
+// 时间速度 = 每 1 真实秒推进的游戏分钟数；0=暂停。昼夜天空/灯光由时钟驱动（见 CampusScene）
+const urlQ = (() => {
   try {
-    return new URLSearchParams(window.location.search).get('phase') === 'night' ? 'night' : 'day'
+    return new URLSearchParams(window.location.search)
   } catch {
-    return 'day'
+    return null
   }
 })()
+const urlTimeRaw = urlQ ? urlQ.get('time') : null
+const urlTime = urlTimeRaw !== null && urlTimeRaw !== '' && Number.isFinite(parseFloat(urlTimeRaw)) ? parseFloat(urlTimeRaw) : null
+// ?time=18.5 直接定表并按暂停验收；?phase=night 兼容旧验收参数（等价 time=21）
+const initMinutes = urlTime !== null ? (((urlTime % 24) + 24) % 24) * 60 : urlQ && urlQ.get('phase') === 'night' ? 21 * 60 : 8 * 60
+const initSpeed = urlTime !== null || (urlQ && urlQ.get('phase')) ? 0 : 6
 
-// 全局游戏状态（迭代 2 起接入时间/属性系统；当前承载交互提示、画质、昼夜与 HUD 信息）
+// 全局游戏状态（迭代 2 日程系统在此基础上扩展属性/行动；当前承载时间、交互提示、画质与 HUD）
 export const useGameStore = create((set) => ({
   near: null, // 面前可交互的地点名
-  day: urlPhase === 'night' ? '第 1 天 · 夜晚' : '第 1 天 · 白天',
-  phase: urlPhase, // 'day' | 'night'（白天=蓝天白云，夜晚=星空月亮）
+  gameMinutes: initMinutes, // 当日分钟数（0-1440）
+  dayNum: 1, // 第几天
+  timeSpeed: initSpeed, // 每真实秒推进的游戏分钟数（0=暂停）
   toast: '',
   toastId: 0,
   pixelDpr: defaultDpr,
   setNear: (near) => set((s) => (s.near === near ? {} : { near })),
   showToast: (toast) => set({ toast, toastId: Date.now() }),
   clearToast: () => set({ toast: '' }),
-  togglePhase: () =>
+  // 时间推进（由 CampusScene 每帧调用；按整数分钟变化节流，避免每帧全部重渲染）
+  tick: (dt) =>
     set((s) => {
-      const phase = s.phase === 'day' ? 'night' : 'day'
+      if (!s.timeSpeed) return {}
+      let m = s.gameMinutes + dt * s.timeSpeed
+      let d = s.dayNum
+      while (m >= 1440) {
+        m -= 1440
+        d += 1
+      }
+      if (Math.floor(m) === Math.floor(s.gameMinutes)) return {}
+      return { gameMinutes: m, dayNum: d }
+    }),
+  setSpeed: (timeSpeed) =>
+    set({
+      timeSpeed,
+      toast:
+        timeSpeed === 0
+          ? '时间已暂停（0/1/2/3 切换速度）'
+          : `时间速度：${timeSpeed}×（1 秒 = ${timeSpeed} 游戏分钟）`,
+      toastId: Date.now(),
+    }),
+  // 手动调整时间（T=+12h、[ ]=±1h）
+  advanceTime: (min) =>
+    set((s) => {
+      let m = s.gameMinutes + min
+      let d = s.dayNum
+      while (m >= 1440) {
+        m -= 1440
+        d += 1
+      }
+      while (m < 0) {
+        m += 1440
+        if (d > 1) d -= 1
+        else m = 0
+      }
       return {
-        phase,
-        day: `第 1 天 · ${phase === 'night' ? '夜晚' : '白天'}`,
-        toast: phase === 'night' ? '入夜了……（T 键切换昼夜）' : '天亮了（T 键切换昼夜）',
+        gameMinutes: m,
+        dayNum: d,
+        toast: `时间 ${min > 0 ? '+' : ''}${min / 60} 小时（T 跳 12h ｜ [ ] ±1h）`,
         toastId: Date.now(),
       }
     }),

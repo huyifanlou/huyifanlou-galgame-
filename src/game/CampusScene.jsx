@@ -22,16 +22,44 @@ const FX_NIGHT = {
   hemiSky: new THREE.Color('#31426b'), hemiGnd: new THREE.Color('#141f19'), dirCol: new THREE.Color('#9fb8e8'),
   fog: new THREE.Color('#0e1626'), fogNear: 34, fogFar: 88,
 }
-// 天气/天空混合值：0=白天 1=夜晚（ref 由主组件逐帧更新，配合透明度交叉淡化两层天穹）
+// 清晨/黄昏暖色（时间驱动的金色时刻）
+const WARM_DIR = new THREE.Color('#ff9a4a')
+const WARM_FOG = new THREE.Color('#e0b28e')
+const WARM_SKY = new THREE.Color('#ffcf9e')
+const WHITE = new THREE.Color('#ffffff')
 
-// 天空穹顶：内层为夜穹（星空+月亮），透明度随 nightMix 交叉淡化；云以纹理偏移缓慢飘动
+const smooth = (x) => x * x * (3 - 2 * x)
+// 夜晚混合值：0=白天 1=夜晚（清晨 5-7 点天亮，黄昏 17:30-20:00 入夜）
+function nightMixAt(h) {
+  if (h < 5) return 1
+  if (h < 7) return 1 - smooth((h - 5) / 2)
+  if (h < 17.5) return 0
+  if (h < 20) return smooth((h - 17.5) / 2.5)
+  return 1
+}
+// 暖色强度：清晨 ~6:30 / 黄昏 ~18:30 达峰
+function warmAt(h) {
+  const w1 = Math.max(0, 1 - Math.abs(h - 6.5) / 1.8)
+  const w2 = Math.max(0, 1 - Math.abs(h - 18.4) / 2.2)
+  return Math.min(1, Math.max(w1, w2))
+}
+// 天空混合值：0=白天 1=夜晚（ref 由主组件逐帧更新，配合透明度交叉淡化两层天穹）
+
+// 天空穹顶：内层为夜穹（星空+月亮），透明度随时钟交叉淡化；白天穹随时钟染上晨昏暖色；云缓漂、星空极慢旋转
 function SkyDome({ mix, initialNight }) {
   const dayTex = useMemo(() => skyTexture('day'), [])
   const nightTex = useMemo(() => skyTexture('night'), [])
   const nightMat = useRef()
   const nightMesh = useRef()
+  const dayMat = useRef()
   useFrame((_, dt) => {
-    if (nightMat.current) nightMat.current.opacity = mix.current
+    const m = mix.current
+    if (nightMat.current) nightMat.current.opacity = THREE.MathUtils.clamp((m - 0.35) / 0.45, 0, 1)
+    if (dayMat.current) {
+      const h = useGameStore.getState().gameMinutes / 60
+      const warm = warmAt(h) * (1 - m * 0.65)
+      dayMat.current.color.lerpColors(WHITE, WARM_SKY, warm * 0.8)
+    }
     // 星空极慢旋转（星点爬行即自然闪烁）+ 云飘动
     if (nightMesh.current) nightMesh.current.rotation.y += dt * 0.004
     dayTex.offset.x -= dt * 0.0045
@@ -40,7 +68,7 @@ function SkyDome({ mix, initialNight }) {
     <>
       <mesh>
         <sphereGeometry args={[170, 24, 16]} />
-        <meshBasicMaterial map={dayTex} side={THREE.BackSide} fog={false} />
+        <meshBasicMaterial ref={dayMat} map={dayTex} side={THREE.BackSide} fog={false} />
       </mesh>
       <mesh ref={nightMesh}>
         <sphereGeometry args={[168, 24, 16]} />
@@ -115,8 +143,8 @@ export default function CampusScene() {
   const alignPaused = useRef(initView.frozen)
   const gl = useThree((s) => s.gl)
 
-  // 昼夜：单一混合值驱动灯光/雾/天穹交叉淡化（0=白天 1=夜晚）
-  const initialNight = useMemo(() => useGameStore.getState().phase === 'night', [])
+  // 昼夜：单一混合值驱动灯光/雾/天穹交叉淡化（0=白天 1=夜晚），由游戏时钟逐帧计算
+  const initialNight = useMemo(() => nightMixAt(useGameStore.getState().gameMinutes / 60) > 0.5, [])
   const mixRef = useRef(initialNight ? 1 : 0)
   const ambRef = useRef()
   const hemiRef = useRef()
@@ -133,9 +161,17 @@ export default function CampusScene() {
       if (e.code === 'KeyP') {
         useGameStore.getState().cyclePixel()
       }
-      // T：白天 ⇄ 夜晚（天空/灯光/雾平滑过渡）
+      // T：时间快进 12 小时；0/1/2/3：时间速度（暂停/1×/6×/30×）；[ ]：±1 小时
       if (e.code === 'KeyT' && !e.repeat) {
-        useGameStore.getState().togglePhase()
+        useGameStore.getState().advanceTime(720)
+      }
+      if (!e.repeat) {
+        if (e.code === 'Digit0') useGameStore.getState().setSpeed(0)
+        if (e.code === 'Digit1') useGameStore.getState().setSpeed(1)
+        if (e.code === 'Digit2') useGameStore.getState().setSpeed(6)
+        if (e.code === 'Digit3') useGameStore.getState().setSpeed(30)
+        if (e.code === 'BracketLeft') useGameStore.getState().advanceTime(-60)
+        if (e.code === 'BracketRight') useGameStore.getState().advanceTime(60)
       }
       // Q / E：每次旋转 90°（带平滑动画）；旋转中角色保持"背对镜头"，不露出其他面
       if (e.code === 'KeyQ' && !e.repeat) {
@@ -312,10 +348,12 @@ export default function CampusScene() {
 
   const ground = GROUNDS[0]
 
-  // 昼夜过渡：逐帧把灯光/雾插值到目标相位（约 1 秒完成）
+  // 时间推进 + 昼夜过渡：逐帧按游戏时钟计算灯光/雾（含晨昏暖色）
   useFrame((_, dt) => {
-    const target = useGameStore.getState().phase === 'night' ? 1 : 0
-    const m = mixRef.current + (target - mixRef.current) * Math.min(1, dt * 1.8)
+    useGameStore.getState().tick(dt)
+    const h = useGameStore.getState().gameMinutes / 60
+    const m = nightMixAt(h)
+    const warm = warmAt(h) * (1 - m * 0.65)
     mixRef.current = m
     if (ambRef.current) ambRef.current.intensity = THREE.MathUtils.lerp(FX_DAY.amb, FX_NIGHT.amb, m)
     if (hemiRef.current) {
@@ -325,10 +363,10 @@ export default function CampusScene() {
     }
     if (dirRef.current) {
       dirRef.current.intensity = THREE.MathUtils.lerp(FX_DAY.dir, FX_NIGHT.dir, m)
-      dirRef.current.color.lerpColors(FX_DAY.dirCol, FX_NIGHT.dirCol, m)
+      dirRef.current.color.lerpColors(FX_DAY.dirCol, FX_NIGHT.dirCol, m).lerp(WARM_DIR, warm * 0.75)
     }
     if (fogRef.current) {
-      fogRef.current.color.lerpColors(FX_DAY.fog, FX_NIGHT.fog, m)
+      fogRef.current.color.lerpColors(FX_DAY.fog, FX_NIGHT.fog, m).lerp(WARM_FOG, warm * 0.45)
       fogRef.current.near = THREE.MathUtils.lerp(FX_DAY.fogNear, FX_NIGHT.fogNear, m)
       fogRef.current.far = THREE.MathUtils.lerp(FX_DAY.fogFar, FX_NIGHT.fogFar, m)
     }
