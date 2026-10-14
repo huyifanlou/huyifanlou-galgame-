@@ -69,8 +69,9 @@ export function pathTexture(horizontal = false, rep = 14) {
 }
 
 // 建筑外墙（高密度版：cell=32，立面约 19px/世界单位，为原版 3.2 倍；图案世界尺度不变）
-// 砖石噪点 + 檐口/双线楼层带 + 基座 + 窗（框/窗帘/花箱/亮灯）+ 空调外机/窗台/宣传横幅
-export function buildingTexture(wall, trim, plinth, cols, rows, banner = false) {
+// opts.lit：亮窗概率（白天低≈0.05 素净、夜晚高≈0.55 暖灯），由 Building 随昼夜切换两套贴图
+// 配色协调原则：玻璃冷蓝灰为主，窗帘/花箱用低饱和素色，避免"五颜六色"
+export function buildingTexture(wall, trim, plinth, cols, rows, { banner = false, lit = 0.3 } = {}) {
   const cell = 32
   return canvasTexture(cols * cell, rows * cell + 40, (ctx, w, h) => {
     ctx.fillStyle = wall
@@ -101,23 +102,30 @@ export function buildingTexture(wall, trim, plinth, cols, rows, banner = false) 
     // 窗户
     for (let r = 0; r < rows; r++) {
       for (let c2 = 0; c2 < cols; c2++) {
-        const lit = Math.random() < 0.3
-        const kind = rand(10) // 0/1 窗帘 · 2 花箱 · 3 空调 · 其余普通
+        const isLit = Math.random() < lit
+        const kind = rand(10) // 0/1 素色窗帘 · 2 花箱 · 3 空调 · 其余普通
         const wx = c2 * cell + 7
         const wy = r * cell + 10
         ctx.fillStyle = trim
         ctx.fillRect(wx - 3, wy - 3, 26, 26) // 窗框
-        ctx.fillStyle = lit ? '#ffd98a' : '#2c3548'
+        ctx.fillStyle = isLit ? '#ffd98a' : '#2c3548'
         ctx.fillRect(wx, wy, 20, 20)
-        ctx.fillStyle = lit ? '#ffe9b8' : '#3d4a63'
-        ctx.fillRect(wx, wy, 20, 3)
-        if (kind <= 1 && !lit) {
-          ctx.fillStyle = '#c96a5a' // 暖色窗帘
-          ctx.fillRect(wx, wy, 20, 6)
+        if (isLit) {
+          ctx.fillStyle = '#ffe9b8'
+          ctx.fillRect(wx, wy, 20, 3)
+        } else if (Math.random() < 0.35) {
+          // 玻璃反光（左上斜光斑，冷灰蓝——素净的丰富感）
+          ctx.fillStyle = 'rgba(170,195,225,0.30)'
+          ctx.fillRect(wx + 2, wy + 2, 7, 3)
+          ctx.fillRect(wx + 4, wy + 5, 5, 3)
         }
-        if (kind === 2) {
-          ctx.fillStyle = '#4a8a3a' // 窗台花箱
-          ctx.fillRect(wx, wy + 20, 20, 6)
+        if (kind <= 1 && !isLit) {
+          ctx.fillStyle = '#a08b80' // 素色窗帘（低饱和暖灰）
+          ctx.fillRect(wx, wy, 20, 7)
+        }
+        if (kind === 2 && !isLit) {
+          ctx.fillStyle = '#3f6e35' // 窗台绿植（低饱和深绿）
+          ctx.fillRect(wx, wy + 21, 20, 5)
         }
         ctx.fillStyle = 'rgba(0,0,0,0.3)'
         ctx.fillRect(wx, wy + 17, 20, 3)

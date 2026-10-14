@@ -568,7 +568,37 @@ function Tree({ x, z, variant }) {
 function Building({ def, doorTex, awningTex }) {
   const [w, h, d] = def.size
   const [bx, bz] = def.pos
-  const wallTex = useMemo(() => buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows, def.banner), [def])
+  // 两套窗户贴图：白天素净（极少亮灯+冷灰反光）/ 夜晚暖灯（亮窗率高），随昼夜自动切换
+  const wallTexs = useMemo(
+    () => [
+      buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows, { banner: def.banner, lit: 0.05 }),
+      buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows, { banner: def.banner, lit: 0.55 }),
+    ],
+    [def]
+  )
+  const wingTexs = useMemo(
+    () => [
+      buildingTexture(def.wall, def.trim, def.plinth, 3, 2, { lit: 0.05 }),
+      buildingTexture(def.wall, def.trim, def.plinth, 3, 2, { lit: 0.55 }),
+    ],
+    [def]
+  )
+  const wallMat = useRef()
+  const wingMat = useRef()
+  useFrame(() => {
+    const night = nightMixAt(useGameStore.getState().gameMinutes / 60) > 0.45
+    for (const [r, texs] of [
+      [wallMat, wallTexs],
+      [wingMat, wingTexs],
+    ]) {
+      const mt = r.current
+      if (mt && mt.userData.night !== night) {
+        mt.userData.night = night
+        mt.map = night ? texs[1] : texs[0]
+        mt.needsUpdate = true
+      }
+    }
+  })
   const signTex = useMemo(() => signTexture(def.name), [def.name])
   const rotationY = def.face === 1 ? 0 : Math.PI
   const extras = []
@@ -670,7 +700,7 @@ function Building({ def, doorTex, awningTex }) {
       <group key="wing" position={[w / 2 + ww / 2, 0, 0.6]}>
         <mesh>
           <boxGeometry args={[ww, wh, d * 0.8]} />
-          <meshLambertMaterial map={buildingTexture(def.wall, def.trim, def.plinth, 3, 2)} />
+          <meshLambertMaterial ref={wingMat} map={wingTexs[0]} />
         </mesh>
         <mesh position={[0, wh / 2 + 0.14, 0]}>
           <boxGeometry args={[ww + 0.5, 0.28, d * 0.8 + 0.5]} />
@@ -714,7 +744,7 @@ function Building({ def, doorTex, awningTex }) {
     <group position={[bx, h / 2, bz]} rotation={[0, rotationY, 0]}>
       <mesh>
         <boxGeometry args={[w, h, d]} />
-        <meshLambertMaterial map={wallTex} />
+        <meshLambertMaterial ref={wallMat} map={wallTexs[0]} />
       </mesh>
       {extras}
       <mesh position={[0, h * 0.28, d / 2 + 0.04]}>
