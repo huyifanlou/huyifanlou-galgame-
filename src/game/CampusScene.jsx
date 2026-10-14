@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -27,6 +27,8 @@ const WARM_DIR = new THREE.Color('#ff9a4a')
 const WARM_FOG = new THREE.Color('#e0b28e')
 const WARM_SKY = new THREE.Color('#ffcf9e')
 const WHITE = new THREE.Color('#ffffff')
+const LAMP_GLASS_OFF = new THREE.Color('#d5dbe4')
+const LAMP_GLASS_ON = new THREE.Color('#ffd98a')
 
 const smooth = (x) => x * x * (3 - 2 * x)
 // 夜晚混合值：0=白天 1=夜晚（清晨 5-7 点天亮，黄昏 17:30-20:00 入夜）
@@ -100,6 +102,9 @@ function collides(x, z) {
     if (f.axis === 'z') {
       if (Math.abs(x - f.at) < 0.3 && z > f.from - 0.2 && z < f.to + 0.2) return true
     } else if (Math.abs(z - f.at) < 0.3 && x > f.from - 0.2 && x < f.to + 0.2) return true
+  }
+  for (const l of LAMPS) {
+    if (Math.abs(x - l[0]) < 0.4 && Math.abs(z - l[1]) < 0.4) return true
   }
   return false
 }
@@ -248,6 +253,12 @@ export default function CampusScene() {
   const awningTex = useMemo(() => stripesTexture(), [])
   const branchTex = useMemo(() => BRANCH_PATHS.map((p) => pathTexture(false, Math.max(1, Math.round(p.len / 2.6)))), [])
   const dirtTex = useMemo(() => dirtTexture(), [])
+  // 路灯共享材质（玻璃颜色与地面光池随昼夜混合值变化）
+  const lampGlass = useMemo(() => new THREE.MeshBasicMaterial({ color: '#d5dbe4' }), [])
+  const lampPool = useMemo(
+    () => new THREE.MeshBasicMaterial({ map: lampGlowTexture(), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }),
+    []
+  )
 
   useFrame((state, delta) => {
     const p = player.current
@@ -370,6 +381,9 @@ export default function CampusScene() {
       fogRef.current.near = THREE.MathUtils.lerp(FX_DAY.fogNear, FX_NIGHT.fogNear, m)
       fogRef.current.far = THREE.MathUtils.lerp(FX_DAY.fogFar, FX_NIGHT.fogFar, m)
     }
+    // 路灯：黄昏起渐亮（灯头玻璃变暖 + 地面光池淡入）
+    lampGlass.color.lerpColors(LAMP_GLASS_OFF, LAMP_GLASS_ON, m)
+    lampPool.opacity = m * 0.68
   })
 
   return (
@@ -421,6 +435,11 @@ export default function CampusScene() {
       {/* 栅栏（沿两条主路，缺口对齐路口与岔路） */}
       {FENCES.map((f, i) => (
         <FenceRun key={i} run={f} />
+      ))}
+
+      {/* 路灯（沿主路两侧，晚上随昼夜混合值自动点亮 + 地面光池） */}
+      {LAMPS.map(([x, z, r], i) => (
+        <StreetLamp key={'lp' + i} x={x} z={z} r={r} glassMat={lampGlass} poolMat={lampPool} />
       ))}
 
       {/* 操场 */}
@@ -522,7 +541,7 @@ function Tree({ x, z, variant }) {
 function Building({ def, doorTex, awningTex }) {
   const [w, h, d] = def.size
   const [bx, bz] = def.pos
-  const wallTex = useMemo(() => buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows), [def])
+  const wallTex = useMemo(() => buildingTexture(def.wall, def.trim, def.plinth, def.cols, def.rows, def.banner), [def])
   const signTex = useMemo(() => signTexture(def.name), [def.name])
   const rotationY = def.face === 1 ? 0 : Math.PI
   const extras = []
@@ -574,7 +593,46 @@ function Building({ def, doorTex, awningTex }) {
       <mesh key="roof" position={[0, h / 2 + 0.16, 0]}>
         <boxGeometry args={[w + 0.7, 0.32, d + 0.7]} />
         <meshLambertMaterial color={def.roof} />
+      </mesh>,
+      // 女儿墙（平屋顶四周矮墙）
+      <mesh key="parapet" position={[0, h / 2 + 0.42, 0]}>
+        <boxGeometry args={[w + 0.82, 0.22, d + 0.82]} />
+        <meshLambertMaterial color={def.plinth} />
       </mesh>
+    )
+  }
+
+  // 屋顶设备（空调机组 + 楼梯间 + 排气管）
+  if (def.roofProps) {
+    extras.push(
+      <group key="rp" position={[0, h / 2 + 0.6, 0]}>
+        <mesh position={[-w * 0.22, 0, -d * 0.12]}>
+          <boxGeometry args={[1.7, 0.75, 1.2]} />
+          <meshLambertMaterial color="#a8adb5" />
+        </mesh>
+        <mesh position={[w * 0.24, 0.03, d * 0.1]}>
+          <boxGeometry args={[1, 0.55, 0.8]} />
+          <meshLambertMaterial color="#9aa2ac" />
+        </mesh>
+        <mesh position={[w * 0.24, -0.28, d * 0.1]}>
+          <boxGeometry args={[1.1, 0.16, 0.9]} />
+          <meshLambertMaterial color="#7d838c" />
+        </mesh>
+      </group>
+    )
+  }
+  if (def.vent) {
+    extras.push(
+      <group key="vent" position={[w * 0.28, h / 2 + 1.05, 0]}>
+        <mesh>
+          <boxGeometry args={[0.28, 2.0, 0.28]} />
+          <meshLambertMaterial color="#8a9099" />
+        </mesh>
+        <mesh position={[0, 1.05, 0]}>
+          <boxGeometry args={[0.62, 0.22, 0.62]} />
+          <meshLambertMaterial color="#6f757e" />
+        </mesh>
+      </group>
     )
   }
 
@@ -652,6 +710,54 @@ function Building({ def, doorTex, awningTex }) {
       <mesh position={[1.05, -h / 2 + 2.32, d / 2 + 0.06]}>
         <boxGeometry args={[0.2, 0.28, 0.14]} />
         <meshBasicMaterial color="#ffdf9a" />
+      </mesh>
+      {/* 雨落管（正面两侧竖管） */}
+      <mesh position={[-(w / 2 - 0.35), 0, d / 2 + 0.08]}>
+        <boxGeometry args={[0.16, h - 0.5, 0.16]} />
+        <meshLambertMaterial color={def.plinth} />
+      </mesh>
+      <mesh position={[w / 2 - 0.35, 0, d / 2 + 0.08]}>
+        <boxGeometry args={[0.16, h - 0.5, 0.16]} />
+        <meshLambertMaterial color={def.plinth} />
+      </mesh>
+      {/* 门前绿篱（两侧花坛） */}
+      <mesh position={[-1.95, -h / 2 + 0.32, d / 2 + 0.55]}>
+        <boxGeometry args={[1.3, 0.62, 0.55]} />
+        <meshLambertMaterial color="#3d7a37" />
+      </mesh>
+      <mesh position={[1.95, -h / 2 + 0.32, d / 2 + 0.55]}>
+        <boxGeometry args={[1.3, 0.62, 0.55]} />
+        <meshLambertMaterial color="#3d7a37" />
+      </mesh>
+    </group>
+  )
+}
+
+// 路灯：灯柱 + 灯臂 + 灯头（玻璃随昼夜变色）+ 地面光池（晚上亮起）
+function StreetLamp({ x, z, r, glassMat, poolMat }) {
+  return (
+    <group position={[x, 0, z]} rotation={[0, r, 0]}>
+      <mesh position={[0, 0.16, 0]}>
+        <boxGeometry args={[0.42, 0.32, 0.42]} />
+        <meshLambertMaterial color="#4a4f58" />
+      </mesh>
+      <mesh position={[0, 1.85, 0]}>
+        <boxGeometry args={[0.16, 3.4, 0.16]} />
+        <meshLambertMaterial color="#3a3f4a" />
+      </mesh>
+      <mesh position={[0.42, 3.48, 0]}>
+        <boxGeometry args={[0.9, 0.12, 0.12]} />
+        <meshLambertMaterial color="#3a3f4a" />
+      </mesh>
+      <mesh position={[0.8, 3.36, 0]}>
+        <boxGeometry args={[0.46, 0.16, 0.36]} />
+        <meshLambertMaterial color="#2f333c" />
+      </mesh>
+      <mesh position={[0.8, 3.26, 0]} material={glassMat}>
+        <boxGeometry args={[0.38, 0.1, 0.3]} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.78, 0.02, 0]} material={poolMat}>
+        <circleGeometry args={[2.1, 20]} />
       </mesh>
     </group>
   )

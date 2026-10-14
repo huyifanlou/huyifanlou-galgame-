@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useGameStore } from './store.js'
 
 // 构建版本号：每次重建手动+1（右下角常驻小字，用于肉眼确认浏览器加载的是哪一版）
-export const BUILD_VERSION = 'v0.20'
+export const BUILD_VERSION = 'v0.21'
 
 const base = {
   position: 'fixed',

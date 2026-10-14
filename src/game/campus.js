@@ -1,10 +1,10 @@
 // 校园数据：单一数据源——渲染、碰撞、交互检测都从这里生成
 
 export const BUILDINGS = [
-  { id: 'teach', name: '教学楼', pos: [-16, -12], size: [10, 5, 6], wall: '#d8c9a6', trim: '#f2ecdf', plinth: '#9a8a70', roof: '#7a4a3a', cols: 6, rows: 4, face: 1, style: 'flat', wing: true, antenna: true },
-  { id: 'dorm', name: '宿舍楼', pos: [14, -10], size: [8, 5.4, 5], wall: '#c98d6b', trim: '#f0e2d0', plinth: '#8a6a52', roof: '#46536b', cols: 5, rows: 4, face: 1, style: 'gable', tank: true },
+  { id: 'teach', name: '教学楼', pos: [-16, -12], size: [10, 5, 6], wall: '#d8c9a6', trim: '#f2ecdf', plinth: '#9a8a70', roof: '#7a4a3a', cols: 6, rows: 4, face: 1, style: 'flat', wing: true, antenna: true, banner: true, roofProps: true },
+  { id: 'dorm', name: '宿舍楼', pos: [14, -10], size: [8, 5.4, 5], wall: '#c98d6b', trim: '#f0e2d0', plinth: '#8a6a52', roof: '#46536b', cols: 5, rows: 4, face: 1, style: 'gable', tank: true, banner: true },
   { id: 'library', name: '图书馆', pos: [0, -22], size: [12, 4.2, 6], wall: '#c9c3b6', trim: '#e9e5da', plinth: '#8f8a80', roof: '#3f5a4a', cols: 7, rows: 3, face: 1, style: 'grand' },
-  { id: 'canteen', name: '食堂', pos: [20, 10], size: [9, 3.4, 5], wall: '#e0b34e', trim: '#fff3d6', plinth: '#a07838', roof: '#a03c30', cols: 5, rows: 2, face: -1, style: 'gable', awning: true },
+  { id: 'canteen', name: '食堂', pos: [20, 10], size: [9, 3.4, 5], wall: '#e0b34e', trim: '#fff3d6', plinth: '#a07838', roof: '#a03c30', cols: 5, rows: 2, face: -1, style: 'gable', awning: true, vent: true },
 ]
 
 export const GROUNDS = [
@@ -92,6 +92,14 @@ export const FLOWERS = scatter(22, rnd, { minGap: 1.0, others: [...TREES, ...BUS
 // 土斑（点缀在草地上，不与路面冲突：渲染层级低于路面）
 // 注：曾用"草地色块"圆盘（GROUND_PATCHES）做地面深浅变化，因贴地叠层与主草地纹理密度不一致、远处呈现圆形淡影，已移除；地面层次改由草地纹理内置的草丛色块承担
 export const DIRT_PATCHES = scatter(7, rnd, { minGap: 4 }).map(([x, z]) => [x, z])
+
+// 路灯（沿主路两侧，灯臂朝路面；晚上自动点亮 + 地面光池）
+export const LAMPS = [
+  ...[-14, -4, 6, 16, 26].map((z) => [-3.7, z, 0]), // 竖路西侧，灯臂朝东
+  ...[-9, 1, 11, 21, 31].map((z) => [3.7, z, Math.PI]), // 竖路东侧，灯臂朝西
+  ...[-26, -14, 14, 26].map((x) => [x, -3.7, -Math.PI / 2]), // 横路北侧，灯臂朝南
+  ...[-20, -8, 8, 20].map((x) => [x, 3.7, Math.PI / 2]), // 横路南侧，灯臂朝北
+]
 
 // 可交互点位（建筑正门 + 操场 + 池塘）
 export const SPOTS = [

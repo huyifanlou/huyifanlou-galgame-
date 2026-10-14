@@ -68,8 +68,8 @@ export function pathTexture(horizontal = false, rep = 14) {
   }, horizontal ? rep : 1, horizontal ? 1 : rep)
 }
 
-// 建筑外墙：砖石噪点 + 檐口/楼层线（trim）+ 基座（plinth）+ 窗（框/窗帘/花箱/亮灯）
-export function buildingTexture(wall, trim, plinth, cols, rows) {
+// 建筑外墙：砖石噪点 + 檐口/楼层线（trim）+ 基座（plinth）+ 窗（框/窗帘/花箱/亮灯）+ 空调外机/窗台/宣传横幅
+export function buildingTexture(wall, trim, plinth, cols, rows, banner = false) {
   const cell = 10
   return canvasTexture(cols * cell, rows * cell + 14, (ctx, w, h) => {
     ctx.fillStyle = wall
@@ -81,12 +81,14 @@ export function buildingTexture(wall, trim, plinth, cols, rows) {
       ctx.fillStyle = 'rgba(255,255,255,0.05)'
       ctx.fillRect(rand(w), rand(h), 1, 1)
     }
-    // 檐口与楼层线
+    // 檐口与楼层线（双线砖带）
     ctx.fillStyle = trim
     ctx.fillRect(0, 0, w, 3)
     for (let r = 1; r < rows; r++) {
       ctx.fillStyle = trim
-      ctx.fillRect(0, r * cell + 4, w, 1)
+      ctx.fillRect(0, r * cell + 4, w, 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillRect(0, r * cell + 6, w, 1)
     }
     // 基座
     ctx.fillStyle = plinth
@@ -97,7 +99,7 @@ export function buildingTexture(wall, trim, plinth, cols, rows) {
     for (let r = 0; r < rows; r++) {
       for (let c2 = 0; c2 < cols; c2++) {
         const lit = Math.random() < 0.3
-        const kind = rand(10) // 0/1 窗帘 · 2 花箱 · 其余普通
+        const kind = rand(10) // 0/1 窗帘 · 2 花箱 · 3 空调 · 其余普通
         const wx = c2 * cell + 2
         const wy = r * cell + 3
         ctx.fillStyle = trim
@@ -116,7 +118,26 @@ export function buildingTexture(wall, trim, plinth, cols, rows) {
         }
         ctx.fillStyle = 'rgba(0,0,0,0.3)'
         ctx.fillRect(wx, wy + 5, 6, 1)
+        // 窗台阴影 + 空调外机
+        ctx.fillStyle = 'rgba(0,0,0,0.22)'
+        ctx.fillRect(wx, wy + 8, 6, 1)
+        if (kind === 3) {
+          ctx.fillStyle = '#9aa2ac'
+          ctx.fillRect(wx + 1, wy + 8, 4, 3)
+          ctx.fillStyle = 'rgba(0,0,0,0.25)'
+          ctx.fillRect(wx + 1, wy + 10, 4, 1)
+        }
       }
+    }
+    // 宣传横幅（红底黄字带，挂在二层窗带上方；校园气息）
+    if (banner) {
+      const by = cell + 13
+      ctx.fillStyle = 'rgba(0,0,0,0.18)'
+      ctx.fillRect(4, by + 8, w - 8, 1)
+      ctx.fillStyle = '#c0392b'
+      ctx.fillRect(4, by, w - 8, 8)
+      ctx.fillStyle = '#f5d04e'
+      for (let x = 8; x < w - 11; x += 7) ctx.fillRect(x, by + 2, 4, 4)
     }
   })
 }
@@ -355,6 +376,30 @@ export function skyTexture(phase = 'day') {
   t.generateMipmaps = false
   t.wrapS = THREE.RepeatWrapping
   t.wrapT = THREE.ClampToEdgeWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+// 路灯地面光池（8 级像素环渐变，加色混合；晚上随昼夜混合值淡入）
+export function lampGlowTexture() {
+  const c = document.createElement('canvas')
+  c.width = 64
+  c.height = 64
+  const ctx = c.getContext('2d')
+  for (let y = 0; y < 64; y++) {
+    for (let x = 0; x < 64; x++) {
+      const d = Math.hypot(x - 31.5, y - 31.5) / 32
+      if (d > 1) continue
+      const a = Math.round((1 - d) * 7) / 7 * 0.85
+      if (a <= 0.01) continue
+      ctx.fillStyle = `rgba(255,214,140,${a.toFixed(2)})`
+      ctx.fillRect(x, y, 1, 1)
+    }
+  }
+  const t = new THREE.CanvasTexture(c)
+  t.magFilter = THREE.NearestFilter
+  t.minFilter = THREE.NearestFilter
+  t.generateMipmaps = false
   t.colorSpace = THREE.SRGBColorSpace
   return t
 }
