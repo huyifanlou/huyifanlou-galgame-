@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, MOUNTAINS, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
   flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
@@ -517,6 +517,35 @@ export default function CampusScene() {
         <Tree key={'bt' + i} x={x} z={z} variant={v} />
       ))}
 
+      {/* 环绕大山（62-90 半径连绵山脊，比建筑高 1.5-3 倍） */}
+      {MOUNTAINS.map((m, i) => (
+        <Mountain key={'mt' + i} m={m} />
+      ))}
+
+      {/* 小石头（草地与环带点缀） */}
+      {[...SMALL_ROCKS, ...BORDER_ROCKS].map(([x, z], i) => (
+        <group key={'sr' + i} position={[x, 0, z]}>
+          <mesh position={[0, 0.18 + (i % 2) * 0.1, 0]} rotation={[0, (i * 1.3) % 6.28, 0]}>
+            <boxGeometry args={[0.5 + (i % 3) * 0.2, 0.36 + (i % 2) * 0.18, 0.45 + (i % 2) * 0.22]} />
+            <meshLambertMaterial color={['#8d8d94', '#7b7b82', '#9aa0a6'][i % 3]} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* 池塘芦苇（池沿细杆丛） */}
+      {REEDS.map(([x, z, h, t], i) => (
+        <group key={'rd' + i} position={[x, 0, z]}>
+          <mesh position={[0, h / 2, 0]}>
+            <boxGeometry args={[0.12, h, 0.12]} />
+            <meshLambertMaterial color={['#7a8a4a', '#6a7a42', '#85925a'][t]} />
+          </mesh>
+          <mesh position={[0.16, (h * 0.8) / 2, 0.1]} rotation={[0, 0.6, 0.12]}>
+            <boxGeometry args={[0.1, h * 0.8, 0.1]} />
+            <meshLambertMaterial color={['#85925a', '#7a8a4a', '#6a7a42'][t]} />
+          </mesh>
+        </group>
+      ))}
+
       {/* 灌木 */}
       {BUSHES.map(([x, z], i) => (
         <Bush key={i} x={x} z={z} i={i} />
@@ -622,6 +651,44 @@ function Rockery({ x, z, s }) {
 }
 
 function Tree({ x, z, variant }) {
+  if (variant === 6) {
+    // 松树：三层锥形（植被多样性）
+    return (
+      <group position={[x, 0, z]}>
+        <mesh position={[0, 0.4, 0]}>
+          <boxGeometry args={[0.36, 0.8, 0.36]} />
+          <meshLambertMaterial color="#6b4a2f" />
+        </mesh>
+        <mesh position={[0, 1.15, 0]}>
+          <coneGeometry args={[1.05, 1.2, 6]} />
+          <meshLambertMaterial color="#2f6231" flatShading />
+        </mesh>
+        <mesh position={[0, 1.85, 0]}>
+          <coneGeometry args={[0.85, 1.1, 6]} />
+          <meshLambertMaterial color="#356e37" flatShading />
+        </mesh>
+        <mesh position={[0, 2.5, 0]}>
+          <coneGeometry args={[0.62, 1.0, 6]} />
+          <meshLambertMaterial color="#3d7a3f" flatShading />
+        </mesh>
+      </group>
+    )
+  }
+  if (variant === 7) {
+    // 柏树：高瘦深绿
+    return (
+      <group position={[x, 0, z]}>
+        <mesh position={[0, 0.3, 0]}>
+          <boxGeometry args={[0.3, 0.6, 0.3]} />
+          <meshLambertMaterial color="#5c4630" />
+        </mesh>
+        <mesh position={[0, 1.9, 0]}>
+          <coneGeometry args={[0.55, 3.0, 6]} />
+          <meshLambertMaterial color="#284f2b" flatShading />
+        </mesh>
+      </group>
+    )
+  }
   const tall = variant === 1
   const wide = variant === 2
   const trunkH = tall ? 1.5 : 1
@@ -636,6 +703,30 @@ function Tree({ x, z, variant }) {
         <boxGeometry args={crown} />
         <meshLambertMaterial color={TREE_CROWNS[variant % TREE_CROWNS.length]} />
       </mesh>
+    </group>
+  )
+}
+
+// 大山（环绕校区：低模锥形山体 + 错位次峰 + 雪顶，配合雾气成为远景山脊）
+const MOUNTAIN_COLORS = ['#5f7368', '#54685e', '#6a7e72']
+function Mountain({ m }) {
+  const [x, z, r, h, ci, snow, ry] = m
+  return (
+    <group position={[x, 0, z]} rotation={[0, ry, 0]}>
+      <mesh position={[0, h / 2, 0]}>
+        <coneGeometry args={[r, h, 5]} />
+        <meshLambertMaterial color={MOUNTAIN_COLORS[ci]} flatShading />
+      </mesh>
+      <mesh position={[r * 0.55, h * 0.31, r * 0.3]}>
+        <coneGeometry args={[r * 0.55, h * 0.62, 5]} />
+        <meshLambertMaterial color={MOUNTAIN_COLORS[(ci + 1) % 3]} flatShading />
+      </mesh>
+      {snow ? (
+        <mesh position={[0, h * 0.82, 0]}>
+          <coneGeometry args={[r * 0.34, h * 0.36, 5]} />
+          <meshLambertMaterial color="#e8eef2" flatShading />
+        </mesh>
+      ) : null}
     </group>
   )
 }

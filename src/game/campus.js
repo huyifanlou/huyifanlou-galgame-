@@ -84,8 +84,8 @@ function scatter(count, rnd, { bound = 28, minGap = 0, others = [] } = {}) {
 }
 
 const rnd = lcgRand(20261013)
-// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶
-const TREE_TYPES = [0, 1, 2, 0, 5, 1, 0, 2, 1, 0, 2, 4, 0, 1, 5, 2, 1, 0, 2, 4, 1, 0, 2, 5, 0, 1, 0, 2, 4, 1, 2, 0, 1, 5]
+// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶，6 = 松树，7 = 柏树（多样性）
+const TREE_TYPES = [0, 1, 2, 0, 5, 1, 6, 2, 1, 0, 2, 4, 0, 1, 5, 2, 7, 0, 2, 4, 1, 6, 2, 5, 0, 1, 0, 2, 4, 7, 2, 6, 1, 5]
 export const TREES = scatter(34, rnd, { minGap: 2.2 }).map(([x, z], i) => [x, z, TREE_TYPES[i % TREE_TYPES.length]])
 export const BUSHES = scatter(26, rnd, { minGap: 1.2, others: TREES }).map(([x, z], i) => [x, z, i % 4])
 export const FLOWERS = scatter(22, rnd, { minGap: 1.0, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
@@ -167,7 +167,60 @@ export const BORDER_TREES = (() => {
     const z = Math.round(Math.cos(a) * r * 10) / 10
     if (Math.abs(x) < 4.5 && Math.abs(z) < 44) continue // 竖路走廊
     if (Math.abs(z) < 4.5 && Math.abs(x) < 44) continue // 横路走廊
-    out.push([x, z, rndBorder(6)])
+    const vv = rndBorder(10)
+    out.push([x, z, vv < 6 ? vv : vv < 8 ? 6 : 7]) // 60% 常规树 + 20% 松树 + 20% 柏树
+  }
+  return out
+})()
+
+// 大山环：62-90 半径的连绵山脊（低模锥形 + 次峰 + 雪顶；比建筑高 1.5-3 倍，配合雾气围住远景）
+const rndMount = lcgRand(20261017)
+export const MOUNTAINS = (() => {
+  const out = []
+  const N = 20
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + (rndMount(100) / 100 - 0.5) * 0.22
+    const r = 56 + rndMount(2600) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    const rad = 14 + rndMount(1600) / 100
+    const h = 14 + rndMount(1200) / 100
+    out.push([x, z, rad, h, rndMount(3), h >= 19 ? 1 : 0, (rndMount(100) / 100) * Math.PI])
+  }
+  return out
+})()
+
+// 小石头（草地与环带点缀）：校区内 12 块 + 校界外 22 块
+export const SMALL_ROCKS = scatter(12, rnd, { minGap: 2.5, others: [...TREES, ...BUSHES, ...FLOWERS] }).map(([x, z]) => [x, z])
+const rndRock = lcgRand(20261019)
+export const BORDER_ROCKS = (() => {
+  const out = []
+  let guard = 0
+  while (out.length < 22 && guard++ < 800) {
+    const a = (rndRock(3600) / 3600) * Math.PI * 2
+    const r = 33 + rndRock(1400) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
+    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
+    out.push([x, z])
+  }
+  return out
+})()
+
+// 池塘芦苇（沿池沿一圈，细杆丛，微黄绿）
+const rndReed = lcgRand(20261018)
+export const REEDS = (() => {
+  const out = []
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2 + (rndReed(100) / 100 - 0.5) * 0.35
+    const r = 3.75 + rndReed(50) / 100
+    out.push([
+      Math.round((POND.pos[0] + Math.cos(a) * r) * 100) / 100,
+      Math.round((POND.pos[1] + Math.sin(a) * r) * 100) / 100,
+      0.7 + rndReed(70) / 100,
+      rndReed(3),
+    ])
   }
   return out
 })()
