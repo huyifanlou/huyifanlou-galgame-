@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, MOUNTAINS, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture, wallTexture, starOverlayTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -272,6 +272,12 @@ export default function CampusScene() {
     () => new THREE.MeshBasicMaterial({ map: lampGlowTexture(), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }),
     []
   )
+  // 盒子世界围墙材质（手绘像素风景；无雾、不受灯光，颜色随昼夜染色）+ 夜空叠加层
+  const wallMat = useMemo(() => new THREE.MeshBasicMaterial({ map: wallTexture(), fog: false }), [])
+  const starMat = useMemo(
+    () => new THREE.MeshBasicMaterial({ map: starOverlayTexture(), transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }),
+    []
+  )
 
   useFrame((state, delta) => {
     const p = player.current
@@ -397,6 +403,9 @@ export default function CampusScene() {
     // 路灯：黄昏起渐亮（灯头玻璃变暖 + 地面光池淡入）
     lampGlass.color.lerpColors(LAMP_GLASS_OFF, LAMP_GLASS_ON, m)
     lampPool.opacity = m * 0.68
+    // 围墙：昼夜染色（白天原色，夜晚压暗偏蓝，晨昏微暖）+ 夜空叠加层淡入
+    wallMat.color.lerpColors(WHITE, WALL_NIGHT, m).lerp(WARM_FOG, warm * 0.25)
+    starMat.opacity = m * 0.9
   })
 
   return (
@@ -517,10 +526,8 @@ export default function CampusScene() {
         <Tree key={'bt' + i} x={x} z={z} variant={v} />
       ))}
 
-      {/* 环绕大山（62-90 半径连绵山脊，比建筑高 1.5-3 倍） */}
-      {MOUNTAINS.map((m, i) => (
-        <Mountain key={'mt' + i} m={m} />
-      ))}
+      {/* 盒子世界围墙（四周高墙贴手绘像素风景：层叠山脉/森林/雾带 + 夜空叠加层） */}
+      <BoxWalls mat={wallMat} starMat={starMat} />
 
       {/* 小石头（草地与环带点缀） */}
       {[...SMALL_ROCKS, ...BORDER_ROCKS].map(([x, z], i) => (
@@ -707,40 +714,34 @@ function Tree({ x, z, variant }) {
   )
 }
 
-// 大山（环绕校区：山麓林坡 + 倾角主峰 + 两个错落侧峰 + 雪顶；深青绿三色，雾后仍可读）
-const MOUNTAIN_COLORS = ['#44614f', '#3c5949', '#4d6b59']
-const MOUNTAIN_FOOT = '#37543b'
-function Mountain({ m }) {
-  const [x, z, r, h, ci, snow, ry, tilt] = m
+// 盒子世界围墙（4 面，各取 8192 全景的 1/4 段；材质无雾不受灯光，颜色按昼夜染色）
+// 高 34（顶约 20°仰角）；风景绘制在可见带（墙下部），夜空叠加层（starMat）夜晚淡入
+const WALL_DIST = 82
+const WALL_H = 34
+const WALL_NIGHT = new THREE.Color('#3d4a66')
+function BoxWalls({ mat, starMat }) {
+  const geos = useMemo(
+    () =>
+      [0, 1, 2, 3].map((q) => {
+        const g = new THREE.PlaneGeometry(WALL_DIST * 2, WALL_H)
+        const uv = g.attributes.uv
+        for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 0.25 + q * 0.25)
+        return g
+      }),
+    []
+  )
   return (
-    <group position={[x, 0, z]} rotation={[0, ry, 0]}>
-      {/* 山麓林坡（宽矮暗绿，与树带衔接） */}
-      <mesh position={[0, (h * 0.22) / 2, 0]}>
-        <coneGeometry args={[r * 1.35, h * 0.22, 7]} />
-        <meshLambertMaterial color={MOUNTAIN_FOOT} flatShading />
-      </mesh>
-      {/* 主峰（轻倾角，非正三角） */}
-      <mesh position={[0, h / 2, 0]} rotation={[tilt, 0, tilt * 0.7]}>
-        <coneGeometry args={[r, h, 6]} />
-        <meshLambertMaterial color={MOUNTAIN_COLORS[ci]} flatShading />
-      </mesh>
-      {/* 侧峰 ×2（错落，构成山脊） */}
-      <mesh position={[r * 0.72, (h * 0.6) / 2, r * 0.34]}>
-        <coneGeometry args={[r * 0.52, h * 0.6, 5]} />
-        <meshLambertMaterial color={MOUNTAIN_COLORS[(ci + 1) % 3]} flatShading />
-      </mesh>
-      <mesh position={[-r * 0.6, (h * 0.45) / 2, -r * 0.3]}>
-        <coneGeometry args={[r * 0.46, h * 0.45, 7]} />
-        <meshLambertMaterial color={MOUNTAIN_COLORS[(ci + 2) % 3]} flatShading />
-      </mesh>
-      {/* 雪顶（主峰顶部） */}
-      {snow ? (
-        <mesh position={[0, h * 0.84, 0]} rotation={[tilt, 0, tilt * 0.7]}>
-          <coneGeometry args={[r * 0.3, h * 0.32, 6]} />
-          <meshLambertMaterial color="#e6ecf0" flatShading />
-        </mesh>
-      ) : null}
-    </group>
+    <>
+      <mesh geometry={geos[0]} position={[0, WALL_H / 2 - 2, -WALL_DIST]} material={mat} />
+      <mesh geometry={geos[1]} position={[0, WALL_H / 2 - 2, WALL_DIST]} rotation={[0, Math.PI, 0]} material={mat} />
+      <mesh geometry={geos[2]} position={[-WALL_DIST, WALL_H / 2 - 2, 0]} rotation={[0, Math.PI / 2, 0]} material={mat} />
+      <mesh geometry={geos[3]} position={[WALL_DIST, WALL_H / 2 - 2, 0]} rotation={[0, -Math.PI / 2, 0]} material={mat} />
+      {/* 夜空叠加层（星星+月亮；夜晚淡入） */}
+      <mesh geometry={geos[0]} position={[0, WALL_H / 2 - 2, -WALL_DIST + 0.6]} material={starMat} />
+      <mesh geometry={geos[1]} position={[0, WALL_H / 2 - 2, WALL_DIST - 0.6]} rotation={[0, Math.PI, 0]} material={starMat} />
+      <mesh geometry={geos[2]} position={[-WALL_DIST + 0.6, WALL_H / 2 - 2, 0]} rotation={[0, Math.PI / 2, 0]} material={starMat} />
+      <mesh geometry={geos[3]} position={[WALL_DIST - 0.6, WALL_H / 2 - 2, 0]} rotation={[0, -Math.PI / 2, 0]} material={starMat} />
+    </>
   )
 }
 

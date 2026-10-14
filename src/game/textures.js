@@ -426,7 +426,7 @@ export function skyTexture(phase = 'day') {
   if (phase === 'day') {
     // 渐变下沉：默认视角只能看到地平线上方 0-6°（画布 y≈238-256），把亮蓝与云放在该带内
     bandGrad(['#3f86cf', '#4b93d6', '#599edc', '#68aae2', '#79b9e8', '#8cc6ee', '#9fd2f2', '#b2dcf5', '#c0e3f6', '#cfe8f8'])
-    // 像素云（底影 + 白色主体；主带 cy 232-248 = 抬头即见的低空云；少量较高作深度；x±1024 重复保证平铺无缝）
+    // 像素云（底影 + 白色主体；x±1024 重复保证平铺无缝）
     const CLOUD = [
       [3, 0, 10, 3],
       [1, 2, 16, 3],
@@ -440,42 +440,43 @@ export function skyTexture(phase = 'day') {
       ctx.fillStyle = '#ffffff'
       for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * s, cy + y * s, w * s, h * s)
     }
+    // 云带：墙顶之上（约 25-45°仰角低带之上的可见区），确保任何常规视角可见
     for (let i = 0; i < 9; i++) {
       const s = 2 + rnd(3)
       const cx = rnd(W)
-      const cy = Math.min(230 + rnd(20), 252 - 11 * s) // 低空主带
+      const cy = Math.min(130 + rnd(62), 248 - 11 * s)
       for (const off of [-W, 0, W]) drawCloud(cx + off, cy, s)
     }
     for (let i = 0; i < 5; i++) {
       const s = 2 + rnd(2)
       const cx = rnd(W)
-      const cy = 200 + rnd(30) // 稍高云（抬头可见）
+      const cy = 104 + rnd(30)
       for (const off of [-W, 0, W]) drawCloud(cx + off, cy, s)
     }
   } else {
     bandGrad(['#04060e', '#060a15', '#080f1e', '#0b1427', '#0f1b31', '#14223c', '#192a47', '#203352'])
-    // 星星：密布低空带 y238-256（默认视角可见）+ 200-238 纵深散布
+    // 星星：密布于墙顶之上的可见区（140-198 ≈ 20-40°仰角）+ 更高考度纵深散布
     for (let i = 0; i < 220; i++) {
       ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff', '#ffeecf'][rnd(4)]
       const big = Math.random() < 0.1
-      ctx.fillRect(rnd(W), 238 + rnd(18), big ? 2 : 1, big ? 2 : 1)
+      ctx.fillRect(rnd(W), 140 + rnd(58), big ? 2 : 1, big ? 2 : 1)
     }
     for (let i = 0; i < 110; i++) {
       ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff'][rnd(3)]
-      ctx.fillRect(rnd(W), 200 + rnd(38), 1, 1)
+      ctx.fillRect(rnd(W), 118 + rnd(82), 1, 1)
     }
     for (let i = 0; i < 9; i++) {
       const x = 40 + rnd(W - 80)
-      const y = 216 + rnd(32)
+      const y = 148 + rnd(48)
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(x - 1, y, 3, 1)
       ctx.fillRect(x, y - 1, 1, 3)
       ctx.fillStyle = '#eef4ff'
       ctx.fillRect(x, y, 1, 1)
     }
-    // 块状像素月亮（2px 方块拼圆）+ 陨石坑（低空 y≈250 = 抬头即见月）
+    // 块状像素月亮（墙顶之上，约 30°仰角）+ 陨石坑
     const mx = 745
-    const my = 250
+    const my = 172
     const R = 10
     const B = 2
     ctx.fillStyle = '#eef2df'
@@ -520,6 +521,141 @@ export function lampGlowTexture() {
   t.magFilter = THREE.NearestFilter
   t.minFilter = THREE.NearestFilter
   t.generateMipmaps = false
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+// 盒子世界围墙（8192×768 全景画布，分 4 段供四面墙各取一段）
+// 关键：可见视角带只覆盖墙的下部 0-12/34 高（约画布 y 497-768），因此全部风景压缩绘制在该带内；
+// 风景以上为天底渐变（与穹顶地平线色调衔接）。白天原色显示（fog=false），夜晚由材质 color 压暗。
+export function wallTexture() {
+  const c = document.createElement('canvas')
+  c.width = 8192
+  c.height = 768
+  const ctx = c.getContext('2d')
+  const rnd = (n) => Math.floor(Math.random() * n)
+  const H = 768
+
+  // 天底（上高下亮的像素分带渐变，与穹顶地平线色 #cfe3f4 衔接）
+  const skyBands = ['#9fc2de', '#a8c8e2', '#b2cfe6', '#bcd6ea', '#c6ddee', '#cfe3f4']
+  skyBands.forEach((col, i) => {
+    ctx.fillStyle = col
+    ctx.fillRect(0, Math.floor((i * 520) / skyBands.length), 8192, Math.ceil(520 / skyBands.length) + 1)
+  })
+  ctx.fillStyle = '#cfe3f4'
+  ctx.fillRect(0, 520, 8192, H - 520)
+
+  // 像素山脊（可见带 500-768 内：远/中/近三层，带雪顶与雾带）
+  const ridge = (x0, w, baseY, amp, color, snow) => {
+    const step = 28
+    const pts = []
+    let h = baseY - amp * 0.5
+    for (let x = 0; x <= w + step; x += step) {
+      h += (rnd(3) - 1) * (amp * 0.24)
+      h = Math.max(baseY - amp, Math.min(baseY - amp * 0.06, h))
+      pts.push(h)
+    }
+    const hAt = (x) => {
+      const i = Math.min(pts.length - 1, Math.floor(x / step))
+      const j = Math.min(pts.length - 1, i + 1)
+      const t = (x - i * step) / step
+      return pts[i] + (pts[j] - pts[i]) * t
+    }
+    for (let x = 0; x < w; x += 6) {
+      const y = Math.round(hAt(x) / 6) * 6
+      ctx.fillStyle = color
+      ctx.fillRect(x0 + x, y, 6, H - y)
+    }
+    if (snow) {
+      for (let x = 0; x < w; x += 6) {
+        const y = Math.round(hAt(x) / 6) * 6
+        if (y < baseY - amp * 0.55) {
+          ctx.fillStyle = ['#eef3f6', '#dde8ee'][rnd(2)]
+          ctx.fillRect(x0 + x, y, 6, 14 + rnd(18))
+        }
+      }
+    }
+  }
+  const mist = (x0, w, y, ht, alpha) => {
+    ctx.fillStyle = `rgba(222,236,244,${alpha})`
+    ctx.fillRect(x0, y, w, ht)
+    for (let x = 0; x < w; x += 12) {
+      if (rnd(2)) ctx.fillRect(x0 + x, y - 6, 12, 6)
+    }
+  }
+  const pineBand = (x0, w, topY, color) => {
+    for (let x = 0; x < w; x += 16) {
+      const th = 34 + rnd(38)
+      ctx.fillStyle = color
+      ctx.fillRect(x0 + x, topY - th + rnd(14), 16, H - (topY - th))
+    }
+  }
+
+  for (let q = 0; q < 4; q++) {
+    const x0 = q * 2048
+    // 风景压缩绘制在"可见带"（仰角 0-7° ≈ 画布 y 406-610）：远山（约6.5°）/中山/近山/松林
+    ridge(x0, 2048, 468, 62, '#8ea8b6', true) // 远山（青灰+雪，峰约 406）
+    mist(x0, 2048, 462, 12, 0.35)
+    ridge(x0, 2048, 552, 56, '#647f74', true) // 中山（青绿，峰约 496）
+    mist(x0, 2048, 546, 11, 0.3)
+    ridge(x0, 2048, 636, 52, '#46604d', false) // 近山（深绿，峰约 584）
+    pineBand(x0, 2048, 668, '#354b3c') // 山脚松林（两层）
+    pineBand(x0, 2048, 714, '#2c4033')
+  }
+
+  const t = new THREE.CanvasTexture(c)
+  t.magFilter = THREE.NearestFilter
+  t.minFilter = THREE.NearestMipmapLinearFilter
+  t.anisotropy = 8
+  t.wrapS = THREE.ClampToEdgeWrapping
+  t.wrapT = THREE.ClampToEdgeWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
+// 围墙夜空叠加层（透明底；星星 + 月亮绘制在天底区，夜晚由材质 opacity 淡入，加色混合）
+export function starOverlayTexture() {
+  const c = document.createElement('canvas')
+  c.width = 8192
+  c.height = 768
+  const ctx = c.getContext('2d')
+  const rnd = (n) => Math.floor(Math.random() * n)
+  // 星星（分布在天底区 y 100-560：覆盖各俯角可见的夜空带）
+  for (let i = 0; i < 900; i++) {
+    ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff', '#ffeecf'][rnd(4)]
+    const big = Math.random() < 0.1
+    ctx.fillRect(rnd(8192), 100 + rnd(460), big ? 3 : 1, big ? 3 : 1)
+  }
+  // 亮星（十字星光）
+  for (let i = 0; i < 22; i++) {
+    const x = 60 + rnd(8060)
+    const y = 120 + rnd(400)
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(x - 2, y, 5, 1)
+    ctx.fillRect(x, y - 2, 1, 5)
+    ctx.fillStyle = '#eef4ff'
+    ctx.fillRect(x, y, 1, 1)
+  }
+  // 块状像素月亮（2px 方块拼圆，位于夜空带中部）+ 陨石坑
+  const mx = 5900
+  const my = 330
+  const R = 22
+  const B = 3
+  ctx.fillStyle = '#f2f6e6'
+  for (let yy = -R; yy < R; yy += B) {
+    for (let xx = -R; xx < R; xx += B) {
+      if (Math.hypot(xx + B / 2, yy + B / 2) <= R) ctx.fillRect(mx + xx, my + yy, B, B)
+    }
+  }
+  ctx.fillStyle = '#cdd8bc'
+  ctx.fillRect(mx - 13, my - 9, 9, 9)
+  ctx.fillRect(mx + 5, my + 3, 10, 8)
+  const t = new THREE.CanvasTexture(c)
+  t.magFilter = THREE.NearestFilter
+  t.minFilter = THREE.NearestFilter
+  t.generateMipmaps = false
+  t.wrapS = THREE.ClampToEdgeWrapping
+  t.wrapT = THREE.ClampToEdgeWrapping
   t.colorSpace = THREE.SRGBColorSpace
   return t
 }
