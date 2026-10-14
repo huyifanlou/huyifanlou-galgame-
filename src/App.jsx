@@ -11,6 +11,7 @@ export default function App() {
     <>
       <Canvas
         dpr={dpr}
+        shadows="soft"
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         camera={{ fov: 46, near: 0.5, far: 200, position: [0, 8, 13] }}
       >

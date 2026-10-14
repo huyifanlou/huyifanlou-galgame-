@@ -13,7 +13,7 @@ const BOUND = 30
 
 // ── 昼夜配置（灯光/雾，逐帧按 nightMix 插值实现平滑过渡）──
 const FX_DAY = {
-  amb: 0.95, hemi: 0.5, dir: 1.42,
+  amb: 0.82, hemi: 0.46, dir: 1.42,
   hemiSky: new THREE.Color('#d8ecff'), hemiGnd: new THREE.Color('#3f5a36'), dirCol: new THREE.Color('#fff4da'),
   fog: new THREE.Color('#cfe3f4'), fogNear: 46, fogFar: 98,
 }
@@ -147,6 +147,18 @@ export default function CampusScene() {
   // 鼠标拖拽时冻结朝向（可看到角色各个面）；Q/E 转视角或移动时恢复"背对镜头"；?freeze=1 可初始冻结（验收取景用）
   const alignPaused = useRef(initView.frozen)
   const gl = useThree((s) => s.gl)
+  const scene = useThree((s) => s.scene)
+
+  // 阴影总开关：所有实体网格（Lambert 材质）投射并接收阴影；
+  // 天空/光池/精灵等（Basic 材质）自动排除——透明贴片不会投出方块影
+  useEffect(() => {
+    scene.traverse((o) => {
+      if (o.isMesh && o.material && o.material.isMeshLambertMaterial) {
+        o.castShadow = true
+        o.receiveShadow = true
+      }
+    })
+  }, [scene])
 
   // 昼夜：单一混合值驱动灯光/雾/天穹交叉淡化（0=白天 1=夜晚），由游戏时钟逐帧计算
   const initialNight = useMemo(() => nightMixAt(useGameStore.getState().gameMinutes / 60) > 0.5, [])
@@ -388,9 +400,24 @@ export default function CampusScene() {
 
   return (
     <>
-      <ambientLight ref={ambRef} intensity={0.95} />
-      <hemisphereLight ref={hemiRef} args={['#d8ecff', '#3f5a36', 0.5]} />
-      <directionalLight ref={dirRef} position={[14, 20, 10]} intensity={1.4} />
+      <ambientLight ref={ambRef} intensity={0.82} />
+      <hemisphereLight ref={hemiRef} args={['#d8ecff', '#3f5a36', 0.46]} />
+      <directionalLight
+        ref={dirRef}
+        position={[14, 20, 10]}
+        intensity={1.42}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-left={-48}
+        shadow-camera-right={48}
+        shadow-camera-top={48}
+        shadow-camera-bottom={-48}
+        shadow-camera-near={1}
+        shadow-camera-far={90}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.5}
+      />
       <fog ref={fogRef} attach="fog" args={['#cfe3f4', 46, 110]} />
       <SkyDome mix={mixRef} initialNight={initialNight} />
 

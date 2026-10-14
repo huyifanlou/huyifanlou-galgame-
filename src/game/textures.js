@@ -46,98 +46,101 @@ export function grassTexture(rep = 30) {
   }, rep, rep)
 }
 
-// 32×32 石板路：2×2 石板 + 勾缝 + 磨损
+// 64×64 石板路：2×2 石板 + 勾缝 + 磨损（高密度版，世界布局不变、纹理密度 ×2）
 export function pathTexture(horizontal = false, rep = 14) {
-  return canvasTexture(32, 32, (ctx) => {
+  return canvasTexture(64, 64, (ctx) => {
     ctx.fillStyle = '#a49c8d'
-    ctx.fillRect(0, 0, 32, 32)
+    ctx.fillRect(0, 0, 64, 64)
     for (let by = 0; by < 2; by++) {
       for (let bx = 0; bx < 2; bx++) {
         ctx.fillStyle = ['#c1b9ac', '#b8b0a3', '#bdb4a6', '#b3ab9d'][rand(4)]
-        ctx.fillRect(bx * 16 + 1, by * 16 + 1, 14, 14)
-        for (let i = 0; i < 5; i++) {
+        ctx.fillRect(bx * 32 + 2, by * 32 + 2, 28, 28)
+        for (let i = 0; i < 10; i++) {
           ctx.fillStyle = 'rgba(122,114,102,0.45)'
-          ctx.fillRect(bx * 16 + 1 + rand(14), by * 16 + 1 + rand(14), 2, 1)
+          ctx.fillRect(bx * 32 + 2 + rand(28), by * 32 + 2 + rand(28), 4, 2)
         }
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 6; i++) {
           ctx.fillStyle = 'rgba(230,226,216,0.5)'
-          ctx.fillRect(bx * 16 + 1 + rand(14), by * 16 + 1 + rand(14), 1, 1)
+          ctx.fillRect(bx * 32 + 2 + rand(28), by * 32 + 2 + rand(28), 2, 2)
         }
       }
     }
   }, horizontal ? rep : 1, horizontal ? 1 : rep)
 }
 
-// 建筑外墙：砖石噪点 + 檐口/楼层线（trim）+ 基座（plinth）+ 窗（框/窗帘/花箱/亮灯）+ 空调外机/窗台/宣传横幅
+// 建筑外墙（高密度版：cell=32，立面约 19px/世界单位，为原版 3.2 倍；图案世界尺度不变）
+// 砖石噪点 + 檐口/双线楼层带 + 基座 + 窗（框/窗帘/花箱/亮灯）+ 空调外机/窗台/宣传横幅
 export function buildingTexture(wall, trim, plinth, cols, rows, banner = false) {
-  const cell = 10
-  return canvasTexture(cols * cell, rows * cell + 14, (ctx, w, h) => {
+  const cell = 32
+  return canvasTexture(cols * cell, rows * cell + 40, (ctx, w, h) => {
     ctx.fillStyle = wall
     ctx.fillRect(0, 0, w, h)
     // 砖石噪点
-    for (let i = 0; i < Math.floor((w * h) / 20); i++) {
+    for (let i = 0; i < Math.floor((w * h) / 24); i++) {
       ctx.fillStyle = 'rgba(0,0,0,0.05)'
-      ctx.fillRect(rand(w), rand(h), 2, 1)
+      ctx.fillRect(rand(w), rand(h), 6, 3)
       ctx.fillStyle = 'rgba(255,255,255,0.05)'
-      ctx.fillRect(rand(w), rand(h), 1, 1)
+      ctx.fillRect(rand(w), rand(h), 3, 3)
     }
-    // 檐口与楼层线（双线砖带）
+    // 檐口与楼层线（双线砖带 + 阴影线）
     ctx.fillStyle = trim
-    ctx.fillRect(0, 0, w, 3)
+    ctx.fillRect(0, 0, w, 8)
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'
+    ctx.fillRect(0, 8, w, 3)
     for (let r = 1; r < rows; r++) {
       ctx.fillStyle = trim
-      ctx.fillRect(0, r * cell + 4, w, 2)
+      ctx.fillRect(0, r * cell + 12, w, 7)
       ctx.fillStyle = 'rgba(0,0,0,0.15)'
-      ctx.fillRect(0, r * cell + 6, w, 1)
+      ctx.fillRect(0, r * cell + 19, w, 3)
     }
     // 基座
     ctx.fillStyle = plinth
-    ctx.fillRect(0, h - 8, w, 8)
+    ctx.fillRect(0, h - 24, w, 24)
     ctx.fillStyle = 'rgba(0,0,0,0.18)'
-    ctx.fillRect(0, h - 3, w, 3)
+    ctx.fillRect(0, h - 9, w, 9)
     // 窗户
     for (let r = 0; r < rows; r++) {
       for (let c2 = 0; c2 < cols; c2++) {
         const lit = Math.random() < 0.3
         const kind = rand(10) // 0/1 窗帘 · 2 花箱 · 3 空调 · 其余普通
-        const wx = c2 * cell + 2
-        const wy = r * cell + 3
+        const wx = c2 * cell + 7
+        const wy = r * cell + 10
         ctx.fillStyle = trim
-        ctx.fillRect(wx - 1, wy - 1, 8, 8) // 窗框
+        ctx.fillRect(wx - 3, wy - 3, 26, 26) // 窗框
         ctx.fillStyle = lit ? '#ffd98a' : '#2c3548'
-        ctx.fillRect(wx, wy, 6, 6)
+        ctx.fillRect(wx, wy, 20, 20)
         ctx.fillStyle = lit ? '#ffe9b8' : '#3d4a63'
-        ctx.fillRect(wx, wy, 6, 1)
+        ctx.fillRect(wx, wy, 20, 3)
         if (kind <= 1 && !lit) {
           ctx.fillStyle = '#c96a5a' // 暖色窗帘
-          ctx.fillRect(wx, wy, 6, 2)
+          ctx.fillRect(wx, wy, 20, 6)
         }
         if (kind === 2) {
           ctx.fillStyle = '#4a8a3a' // 窗台花箱
-          ctx.fillRect(wx, wy + 6, 6, 2)
+          ctx.fillRect(wx, wy + 20, 20, 6)
         }
         ctx.fillStyle = 'rgba(0,0,0,0.3)'
-        ctx.fillRect(wx, wy + 5, 6, 1)
+        ctx.fillRect(wx, wy + 17, 20, 3)
         // 窗台阴影 + 空调外机
         ctx.fillStyle = 'rgba(0,0,0,0.22)'
-        ctx.fillRect(wx, wy + 8, 6, 1)
+        ctx.fillRect(wx, wy + 26, 20, 3)
         if (kind === 3) {
           ctx.fillStyle = '#9aa2ac'
-          ctx.fillRect(wx + 1, wy + 8, 4, 3)
+          ctx.fillRect(wx + 3, wy + 26, 13, 10)
           ctx.fillStyle = 'rgba(0,0,0,0.25)'
-          ctx.fillRect(wx + 1, wy + 10, 4, 1)
+          ctx.fillRect(wx + 3, wy + 33, 13, 3)
         }
       }
     }
     // 宣传横幅（红底黄字带，挂在二层窗带上方；校园气息）
     if (banner) {
-      const by = cell + 13
+      const by = cell + 44
       ctx.fillStyle = 'rgba(0,0,0,0.18)'
-      ctx.fillRect(4, by + 8, w - 8, 1)
+      ctx.fillRect(12, by + 26, w - 24, 3)
       ctx.fillStyle = '#c0392b'
-      ctx.fillRect(4, by, w - 8, 8)
+      ctx.fillRect(12, by, w - 24, 26)
       ctx.fillStyle = '#f5d04e'
-      for (let x = 8; x < w - 11; x += 7) ctx.fillRect(x, by + 2, 4, 4)
+      for (let x = 26; x < w - 38; x += 22) ctx.fillRect(x, by + 7, 13, 12)
     }
   })
 }
