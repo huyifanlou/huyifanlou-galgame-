@@ -404,29 +404,30 @@ export function pondTexture() {
 // 注意：天穹关闭 mipmap（星星只有 1-2 像素，会降采样消失；星点爬行即自然闪烁）
 export function skyTexture(phase = 'day') {
   const c = document.createElement('canvas')
-  c.width = 1024
-  c.height = 512
+  c.width = 2048
+  c.height = 1024
   const ctx = c.getContext('2d')
-  const W = 1024
+  const W = 2048
+  const H = 1024
 
   const bandGrad = (colors) => {
-    // 天顶→地平线（y 0→256）分带渐变，地平线以下用最后一色填满
+    // 天顶→地平线（y 0→512）分带渐变，地平线以下用最后一色填满
     const n = colors.length
-    const step = 256 / n
+    const step = 512 / n
     colors.forEach((col, i) => {
       ctx.fillStyle = col
       ctx.fillRect(0, Math.floor(i * step), W, Math.ceil(step) + 1)
     })
     ctx.fillStyle = colors[n - 1]
-    ctx.fillRect(0, 256, W, 256)
+    ctx.fillRect(0, 512, W, 512)
   }
 
   const rnd = (n) => Math.floor(Math.random() * n)
 
   if (phase === 'day') {
-    // 渐变下沉：默认视角只能看到地平线上方 0-6°（画布 y≈238-256），把亮蓝与云放在该带内
+    // 渐变下沉：默认视角只能看到地平线上方 0-6°（画布 y≈476-512），把亮蓝与云放在该带内
     bandGrad(['#3f86cf', '#4b93d6', '#599edc', '#68aae2', '#79b9e8', '#8cc6ee', '#9fd2f2', '#b2dcf5', '#c0e3f6', '#cfe8f8'])
-    // 像素云（底影 + 白色主体；主带 cy 232-248 = 抬头即见的低空云；少量较高作深度；x±1024 重复保证平铺无缝）
+    // 像素云（2048 画布：云体尺度 ×2 保持视觉大小，边缘加细部阴影/高光，细节密度翻倍）
     const CLOUD = [
       [3, 0, 10, 3],
       [1, 2, 16, 3],
@@ -435,59 +436,74 @@ export function skyTexture(phase = 'day') {
       [6, 8, 7, 2],
     ]
     const drawCloud = (cx, cy, s) => {
+      const S = s * 2 // 画布放大 2 倍，云体同倍保持视觉尺度
+      // 细部底影（两级）
+      ctx.fillStyle = '#b8cee0'
+      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * S, cy + (y + 1.55) * S + 2, w * S, h * S * 0.5)
       ctx.fillStyle = '#c9dcee'
-      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * s, cy + (y + 1) * s, w * s, h * s)
+      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * S, cy + (y + 1) * S, w * S, h * S)
+      // 白色主体 + 顶部高光边
       ctx.fillStyle = '#ffffff'
-      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * s, cy + y * s, w * s, h * s)
+      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * S, cy + y * S, w * S, h * S)
+      ctx.fillStyle = '#f2f8fd'
+      for (const [x, y, w, h] of CLOUD) ctx.fillRect(cx + x * S, cy + y * S, w * S, 3)
+      // 底缘像素抖动（细部感）
+      for (let i = 0; i < 10; i++) {
+        ctx.fillStyle = 'rgba(201,220,238,0.85)'
+        ctx.fillRect(cx + (2 + rnd(16)) * S, cy + 11 * S + rnd(4), 4, 3)
+      }
     }
     for (let i = 0; i < 9; i++) {
       const s = 2 + rnd(3)
       const cx = rnd(W)
-      const cy = Math.min(230 + rnd(20), 252 - 11 * s) // 低空主带
+      const cy = Math.min(460 + rnd(40), 504 - 22 * s)
       for (const off of [-W, 0, W]) drawCloud(cx + off, cy, s)
     }
     for (let i = 0; i < 5; i++) {
       const s = 2 + rnd(2)
       const cx = rnd(W)
-      const cy = 200 + rnd(30) // 稍高云（抬头可见）
+      const cy = 400 + rnd(60)
       for (const off of [-W, 0, W]) drawCloud(cx + off, cy, s)
     }
   } else {
     bandGrad(['#04060e', '#060a15', '#080f1e', '#0b1427', '#0f1b31', '#14223c', '#192a47', '#203352'])
-    // 星星：密布低空带 y238-256（默认视角可见）+ 200-238 纵深散布
-    for (let i = 0; i < 220; i++) {
+    // 星星：高分辨率画布下 1-2px = 更细腻的星点（密度翻倍保持星海感）
+    for (let i = 0; i < 380; i++) {
       ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff', '#ffeecf'][rnd(4)]
       const big = Math.random() < 0.1
-      ctx.fillRect(rnd(W), 238 + rnd(18), big ? 2 : 1, big ? 2 : 1)
+      ctx.fillRect(rnd(W), 476 + rnd(36), big ? 2 : 1, big ? 2 : 1)
     }
-    for (let i = 0; i < 110; i++) {
+    for (let i = 0; i < 220; i++) {
       ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff'][rnd(3)]
-      ctx.fillRect(rnd(W), 200 + rnd(38), 1, 1)
+      ctx.fillRect(rnd(W), 400 + rnd(76), 1, 1)
     }
-    for (let i = 0; i < 9; i++) {
-      const x = 40 + rnd(W - 80)
-      const y = 216 + rnd(32)
+    for (let i = 0; i < 12; i++) {
+      const x = 80 + rnd(W - 160)
+      const y = 432 + rnd(64)
       ctx.fillStyle = '#ffffff'
       ctx.fillRect(x - 1, y, 3, 1)
       ctx.fillRect(x, y - 1, 1, 3)
       ctx.fillStyle = '#eef4ff'
       ctx.fillRect(x, y, 1, 1)
     }
-    // 块状像素月亮（2px 方块拼圆）+ 陨石坑（低空 y≈250 = 抬头即见月）
-    const mx = 745
-    const my = 250
-    const R = 10
-    const B = 2
+    // 块状像素月亮（高分辨率版：R20 / 3px 方块 / 三级陨石坑）
+    const mx = 1490
+    const my = 500
+    const R = 20
+    const B = 3
     ctx.fillStyle = '#eef2df'
     for (let yy = -R; yy < R; yy += B) {
       for (let xx = -R; xx < R; xx += B) {
         if (Math.hypot(xx + B / 2, yy + B / 2) <= R) ctx.fillRect(mx + xx, my + yy, B, B)
       }
     }
-    ctx.fillStyle = '#c9d4b8'
-    ctx.fillRect(mx - 6, my - 4, 4, 4)
-    ctx.fillRect(mx + 2, my + 2, 4, 4)
-    ctx.fillRect(mx - 2, my + 6, 2, 2)
+    ctx.fillStyle = '#d3dcc4'
+    ctx.fillRect(mx - 12, my - 8, 9, 9)
+    ctx.fillRect(mx + 3, my + 2, 9, 6)
+    ctx.fillRect(mx - 3, my + 9, 6, 6)
+    ctx.fillStyle = '#c2ccb2'
+    ctx.fillRect(mx - 11, my - 7, 3, 3)
+    ctx.fillRect(mx + 5, my + 3, 4, 3)
   }
 
   const t = new THREE.CanvasTexture(c)
@@ -522,6 +538,61 @@ export function lampGlowTexture() {
   t.generateMipmaps = false
   t.colorSpace = THREE.SRGBColorSpace
   return t
+}
+
+// 主角家外墙（日式：上白灰泥+木格窗 / 下木板墙+和纸格子门；canvas 256×192）
+export function villaTexture() {
+  return canvasTexture(256, 192, (ctx, w, h) => {
+    // 上层：白灰泥 + 檐下阴影
+    ctx.fillStyle = '#ece5d6'
+    ctx.fillRect(0, 0, w, 100)
+    ctx.fillStyle = '#d9d2c2'
+    ctx.fillRect(0, 0, w, 4)
+    ctx.fillStyle = 'rgba(0,0,0,0.12)'
+    ctx.fillRect(0, 92, w, 8)
+    // 上层两扇木格窗（白纸底 + 木格 + 木框）
+    for (const wx of [36, 156]) {
+      ctx.fillStyle = '#8a6a48'
+      ctx.fillRect(wx - 4, 26, 68, 60)
+      ctx.fillStyle = '#f0efe6'
+      ctx.fillRect(wx, 30, 60, 52)
+      ctx.fillStyle = '#8a6a48'
+      for (let i = 1; i < 4; i++) ctx.fillRect(wx + i * 15, 30, 2, 52)
+      for (let j = 1; j < 3; j++) ctx.fillRect(wx, 30 + j * 17, 60, 2)
+      ctx.fillStyle = 'rgba(0,0,0,0.15)'
+      ctx.fillRect(wx, 80, 60, 2)
+    }
+    // 下层：竖木板墙
+    for (let x = 0; x < w; x += 8) {
+      ctx.fillStyle = ['#b98d5e', '#ad8153', '#c2955f', '#a87e52'][Math.floor(x / 8) % 4]
+      ctx.fillRect(x, 100, 8, 92)
+      ctx.fillStyle = 'rgba(0,0,0,0.14)'
+      ctx.fillRect(x, 100, 1, 92)
+    }
+    // 和纸格子门（正门 + 侧窗）
+    const drawShoji = (sx, sw, sy, sh) => {
+      ctx.fillStyle = '#6b503a'
+      ctx.fillRect(sx - 3, sy - 3, sw + 6, sh + 6)
+      ctx.fillStyle = '#f2efe2'
+      ctx.fillRect(sx, sy, sw, sh)
+      ctx.fillStyle = '#7a5a3e'
+      for (let i = 1; i < Math.floor(sw / 14); i++) ctx.fillRect(sx + i * 14, sy, 2, sh)
+      for (let j = 1; j < Math.floor(sh / 14); j++) ctx.fillRect(sx, sy + j * 14, sw, 2)
+    }
+    drawShoji(104, 48, 108, 76)
+    drawShoji(16, 34, 116, 56)
+    drawShoji(196, 34, 116, 56)
+    // 木板墙细纹与风化
+    for (let i = 0; i < 90; i++) {
+      ctx.fillStyle = ['rgba(0,0,0,0.08)', 'rgba(255,255,255,0.06)'][i % 2]
+      ctx.fillRect(rand(w), 104 + rand(84), 2, 1)
+    }
+    // 灰泥细噪点
+    for (let i = 0; i < 60; i++) {
+      ctx.fillStyle = ['rgba(0,0,0,0.04)', 'rgba(255,255,255,0.06)'][i % 2]
+      ctx.fillRect(rand(w), rand(88), 2, 2)
+    }
+  })
 }
 
 // 像素小人精灵表：樊楼（金发校服少年）

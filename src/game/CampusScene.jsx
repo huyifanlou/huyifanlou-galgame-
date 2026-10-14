@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS, VILLA } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture, villaTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -106,6 +106,8 @@ function collides(x, z) {
   for (const l of LAMPS) {
     if (Math.abs(x - l[0]) < 0.4 && Math.abs(z - l[1]) < 0.4) return true
   }
+  // 主角家（日式小别墅）
+  if (Math.abs(x - VILLA.x) < VILLA.w / 2 + 0.45 && Math.abs(z - VILLA.z) < VILLA.d / 2 + 0.45) return true
   return false
 }
 
@@ -501,6 +503,9 @@ export default function CampusScene() {
         <Building key={b.id} def={b} doorTex={doorTex} awningTex={awningTex} />
       ))}
 
+      {/* 主角家（日式二层独栋小别墅） */}
+      <Villa def={VILLA} />
+
       {/* 树（六种树冠配色：深浅绿 / 黄绿 / 樱花粉 / 金叶）*/}
       {TREES.map(([tx, tz, v], i) => (
         <Tree key={i} x={tx} z={tz} variant={v} />
@@ -569,6 +574,141 @@ export default function CampusScene() {
 }
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
+
+// 主角家：日式二层独栋小别墅（白灰泥+木格窗+双层大屋檐+白色封檐+玄关雨棚+石灯笼+竹丛+砂石小院+前院木篱）
+function Villa({ def }) {
+  const [w, h, d] = [def.w, def.h, def.d]
+  const tex = useMemo(() => villaTexture(), [])
+  const tile = '#3c434c'
+  const ridge = '#2b3038'
+  const wood = '#8a6a48'
+  const rotY = def.face === 1 ? 0 : Math.PI
+  const a1 = 0.46
+  const slope1 = d / 2 / Math.cos(a1) + 1.3
+  const y1 = h / 2 + 0.28
+  const a2 = 0.52
+  const slope2 = (d * 0.3) / Math.cos(a2) + 0.6
+  const y2 = h / 2 + 1.5
+  return (
+    <group position={[def.x, h / 2, def.z]} rotation={[0, rotY, 0]}>
+      <mesh>
+        <boxGeometry args={[w, h, d]} />
+        <meshLambertMaterial map={tex} />
+      </mesh>
+      {/* 一层大屋檐（出挑深 + 白色封檐板） */}
+      <mesh position={[0, y1, d / 4 + 0.15]} rotation={[a1, 0, 0]}>
+        <boxGeometry args={[w + 2.6, 0.2, slope1]} />
+        <meshLambertMaterial color={tile} />
+      </mesh>
+      <mesh position={[0, y1, -d / 4 - 0.15]} rotation={[-a1, 0, 0]}>
+        <boxGeometry args={[w + 2.6, 0.2, slope1]} />
+        <meshLambertMaterial color={tile} />
+      </mesh>
+      <mesh position={[0, y1 - 0.3, d / 2 + 1.2]}>
+        <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
+        <meshLambertMaterial color="#ddd2c0" />
+      </mesh>
+      <mesh position={[0, y1 - 0.3, -d / 2 - 1.2]}>
+        <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
+        <meshLambertMaterial color="#ddd2c0" />
+      </mesh>
+      {/* 二层小屋顶（双段式 + 屋脊） */}
+      <mesh position={[0, y2, d * 0.12 + 0.05]} rotation={[a2, 0, 0]}>
+        <boxGeometry args={[w * 0.72 + 1.6, 0.18, slope2]} />
+        <meshLambertMaterial color={tile} />
+      </mesh>
+      <mesh position={[0, y2, -d * 0.12 - 0.05]} rotation={[-a2, 0, 0]}>
+        <boxGeometry args={[w * 0.72 + 1.6, 0.18, slope2]} />
+        <meshLambertMaterial color={tile} />
+      </mesh>
+      <mesh position={[0, y2 + 0.42, 0]}>
+        <boxGeometry args={[w * 0.72 + 1.7, 0.16, 0.3]} />
+        <meshLambertMaterial color={ridge} />
+      </mesh>
+      {/* 玄关雨棚 + 木柱 + 石阶 */}
+      <mesh position={[0, -h / 2 + 2.5, d / 2 + 0.85]} rotation={[0.5, 0, 0]}>
+        <boxGeometry args={[3, 0.14, 1.7]} />
+        <meshLambertMaterial color={tile} />
+      </mesh>
+      <mesh position={[-1.35, -h / 2 + 1.2, d / 2 + 1.35]}>
+        <boxGeometry args={[0.16, 2.4, 0.16]} />
+        <meshLambertMaterial color={wood} />
+      </mesh>
+      <mesh position={[1.35, -h / 2 + 1.2, d / 2 + 1.35]}>
+        <boxGeometry args={[0.16, 2.4, 0.16]} />
+        <meshLambertMaterial color={wood} />
+      </mesh>
+      <mesh position={[0, -h / 2 + 0.08, d / 2 + 0.55]}>
+        <boxGeometry args={[2.0, 0.16, 1.0]} />
+        <meshLambertMaterial color="#b8b0a2" />
+      </mesh>
+      {/* 砂石小院 */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.6, -h / 2 + 0.006, d / 2 + 1.9]}>
+        <planeGeometry args={[4.2, 2.4]} />
+        <meshLambertMaterial color="#cfc9ba" />
+      </mesh>
+      {/* 石灯笼（暖光窗） */}
+      <group position={[2.9, -h / 2, d / 2 + 1.1]}>
+        <mesh position={[0, 0.12, 0]}>
+          <boxGeometry args={[0.5, 0.24, 0.5]} />
+          <meshLambertMaterial color="#8d8d94" />
+        </mesh>
+        <mesh position={[0, 0.55, 0]}>
+          <boxGeometry args={[0.22, 0.62, 0.22]} />
+          <meshLambertMaterial color="#84848b" />
+        </mesh>
+        <mesh position={[0, 0.95, 0]}>
+          <boxGeometry args={[0.5, 0.34, 0.5]} />
+          <meshLambertMaterial color="#8d8d94" />
+        </mesh>
+        <mesh position={[0, 0.95, 0.26]}>
+          <boxGeometry args={[0.26, 0.2, 0.04]} />
+          <meshBasicMaterial color="#ffdf9a" />
+        </mesh>
+        <mesh position={[0, 1.2, 0]}>
+          <boxGeometry args={[0.62, 0.16, 0.62]} />
+          <meshLambertMaterial color="#6f6f76" />
+        </mesh>
+      </group>
+      {/* 竹丛（三杆 + 枝叶） */}
+      {[
+        [-w / 2 - 0.8, 3.8],
+        [-w / 2 - 0.5, 3.1],
+        [-w / 2 - 1.05, 4.3],
+      ].map(([bx, bh], i) => (
+        <group key={i} position={[bx, -h / 2, d / 2 - 1.2 + i * 0.6]}>
+          <mesh position={[0, bh / 2, 0]}>
+            <boxGeometry args={[0.12, bh, 0.12]} />
+            <meshLambertMaterial color={['#5a8a4a', '#4a7a3e', '#639455'][i % 3]} />
+          </mesh>
+          <mesh position={[0.3, bh - 0.5, 0]}>
+            <boxGeometry args={[0.6, 0.16, 0.16]} />
+            <meshLambertMaterial color="#4a7a3e" />
+          </mesh>
+          <mesh position={[-0.28, bh - 0.9, 0.1]}>
+            <boxGeometry args={[0.5, 0.14, 0.14]} />
+            <meshLambertMaterial color="#5a8a4a" />
+          </mesh>
+        </group>
+      ))}
+      {/* 前院木篱（两横杆 + 立柱） */}
+      {[-2.6, -1.2, 0.2, 1.6, 3.0].map((px, i) => (
+        <mesh key={'fp' + i} position={[px, -h / 2 + 0.45, d / 2 + 3.0]}>
+          <boxGeometry args={[0.14, 0.9, 0.14]} />
+          <meshLambertMaterial color="#a87e52" />
+        </mesh>
+      ))}
+      <mesh position={[0.2, -h / 2 + 0.72, d / 2 + 3.0]}>
+        <boxGeometry args={[5.8, 0.1, 0.08]} />
+        <meshLambertMaterial color="#b98d5e" />
+      </mesh>
+      <mesh position={[0.2, -h / 2 + 0.38, d / 2 + 3.0]}>
+        <boxGeometry args={[5.8, 0.1, 0.08]} />
+        <meshLambertMaterial color="#b98d5e" />
+      </mesh>
+    </group>
+  )
+}
 
 // 远景建筑（四种风格：flat 平顶办公楼 / gable 坡顶居民楼 / tower 高层塔楼 / grand 公共建筑；带基座压地线）
 function DistantBuilding({ b }) {

@@ -40,7 +40,10 @@ export const FENCES = [
 ]
 
 // —— 植被：确定性随机 + 排除区，自然散布且每次加载布局一致 ——
+// 主角家（日式二层独栋小别墅；樊楼独居——剧情关键场景，第1/3/4/7章发生地）
+export const VILLA = { x: 23, z: 24, w: 8.4, h: 5.4, d: 7, face: -1 }
 const KEEPOUT = [
+  { x: VILLA.x, z: VILLA.z, hw: VILLA.w / 2 + 2.4, hd: VILLA.d / 2 + 2.4 },
   ...BUILDINGS.map((b) => ({ x: b.pos[0], z: b.pos[1], hw: b.size[0] / 2 + 2.2, hd: b.size[2] / 2 + 2.2 })),
   { x: 0, z: 0, hw: 3.0, hd: 37 },
   { x: 0, z: 0, hw: 37, hd: 3.0 },
@@ -235,6 +238,7 @@ export const SPOTS = [
     z: b.pos[1] + b.face * (b.size[2] / 2 + 0.9),
     r: 2.4,
   })),
+  { name: '家', x: VILLA.x, z: VILLA.z - VILLA.d / 2 - 1.2, r: 2.4 },
   { name: '操场', x: GROUNDS[0].pos[0] + GROUNDS[0].size[0] / 2 - 2.4, z: GROUNDS[0].pos[1], r: 2.6 },
   { name: '池塘', x: POND.pos[0] + POND.r + 1.2, z: POND.pos[1], r: 2.2 },
 ]
