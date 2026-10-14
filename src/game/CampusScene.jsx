@@ -723,7 +723,8 @@ function BoxWalls({ mat, starMat }) {
   const geos = useMemo(
     () =>
       [0, 1, 2, 3].map((q) => {
-        const g = new THREE.PlaneGeometry(WALL_DIST * 2, WALL_H)
+        // 长度两侧各外扩 5（拐角互相交叠，杜绝角缝漏景）
+        const g = new THREE.PlaneGeometry(WALL_DIST * 2 + 10, WALL_H)
         const uv = g.attributes.uv
         for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 0.25 + q * 0.25)
         return g

@@ -525,33 +525,35 @@ export function lampGlowTexture() {
   return t
 }
 
-// 盒子世界围墙（8192×768 全景画布，分 4 段供四面墙各取一段）
-// 关键：可见视角带只覆盖墙的下部 0-12/34 高（约画布 y 497-768），因此全部风景压缩绘制在该带内；
+// 盒子世界围墙（12288×1024 全景画布，分 4 段供四面墙各取一段，每段画作差异化）
+// 关键：可见视角带只覆盖墙下部（仰角 0-7° ≈ 画布 y 541-813 附近的条带），风景全部压缩绘制在该带内；
 // 风景以上为天底渐变（与穹顶地平线色调衔接）。白天原色显示（fog=false），夜晚由材质 color 压暗。
 export function wallTexture() {
   const c = document.createElement('canvas')
-  c.width = 8192
-  c.height = 768
+  c.width = 12288
+  c.height = 1024
   const ctx = c.getContext('2d')
   const rnd = (n) => Math.floor(Math.random() * n)
-  const H = 768
+  const H = 1024
+  const QW = 3072
+  const B = 4 // 像素块
 
-  // 天底（上高下亮的像素分带渐变，与穹顶地平线色 #cfe3f4 衔接）
+  // 天底（像素分带渐变，与穹顶地平线色 #cfe3f4 衔接）
   const skyBands = ['#9fc2de', '#a8c8e2', '#b2cfe6', '#bcd6ea', '#c6ddee', '#cfe3f4']
   skyBands.forEach((col, i) => {
     ctx.fillStyle = col
-    ctx.fillRect(0, Math.floor((i * 520) / skyBands.length), 8192, Math.ceil(520 / skyBands.length) + 1)
+    ctx.fillRect(0, Math.floor((i * 700) / skyBands.length), 12288, Math.ceil(700 / skyBands.length) + 1)
   })
   ctx.fillStyle = '#cfe3f4'
-  ctx.fillRect(0, 520, 8192, H - 520)
+  ctx.fillRect(0, 700, 12288, H - 700)
 
-  // 像素山脊（可见带 500-768 内：远/中/近三层，带雪顶与雾带）
-  const ridge = (x0, w, baseY, amp, color, snow) => {
-    const step = 28
+  // 像素山脊（块状填充 + 可选雪顶，峰线随参数变化）
+  const ridge = (x0, w, baseY, amp, color, snowAmt) => {
+    const step = 36
     const pts = []
     let h = baseY - amp * 0.5
     for (let x = 0; x <= w + step; x += step) {
-      h += (rnd(3) - 1) * (amp * 0.24)
+      h += (rnd(3) - 1) * (amp * 0.26)
       h = Math.max(baseY - amp, Math.min(baseY - amp * 0.06, h))
       pts.push(h)
     }
@@ -561,17 +563,18 @@ export function wallTexture() {
       const t = (x - i * step) / step
       return pts[i] + (pts[j] - pts[i]) * t
     }
-    for (let x = 0; x < w; x += 6) {
-      const y = Math.round(hAt(x) / 6) * 6
+    for (let x = 0; x < w; x += B) {
+      const y = Math.round(hAt(x) / B) * B
       ctx.fillStyle = color
-      ctx.fillRect(x0 + x, y, 6, H - y)
+      ctx.fillRect(x0 + x, y, B, H - y)
     }
-    if (snow) {
-      for (let x = 0; x < w; x += 6) {
-        const y = Math.round(hAt(x) / 6) * 6
-        if (y < baseY - amp * 0.55) {
+    if (snowAmt > 0) {
+      for (let x = 0; x < w; x += B) {
+        const y = Math.round(hAt(x) / B) * B
+        const th = baseY - amp * (1.45 - snowAmt * 0.5)
+        if (y < th) {
           ctx.fillStyle = ['#eef3f6', '#dde8ee'][rnd(2)]
-          ctx.fillRect(x0 + x, y, 6, 14 + rnd(18))
+          ctx.fillRect(x0 + x, y, B, 16 + rnd(26))
         }
       }
     }
@@ -579,29 +582,82 @@ export function wallTexture() {
   const mist = (x0, w, y, ht, alpha) => {
     ctx.fillStyle = `rgba(222,236,244,${alpha})`
     ctx.fillRect(x0, y, w, ht)
-    for (let x = 0; x < w; x += 12) {
-      if (rnd(2)) ctx.fillRect(x0 + x, y - 6, 12, 6)
+    for (let x = 0; x < w; x += 16) {
+      if (rnd(2)) ctx.fillRect(x0 + x, y - 8, 16, 8)
     }
   }
+  // 针叶林带（尖顶锯齿）
   const pineBand = (x0, w, topY, color) => {
-    for (let x = 0; x < w; x += 16) {
-      const th = 34 + rnd(38)
+    for (let x = 0; x < w; x += 22) {
+      const th = 44 + rnd(52)
       ctx.fillStyle = color
-      ctx.fillRect(x0 + x, topY - th + rnd(14), 16, H - (topY - th))
+      ctx.fillRect(x0 + x, topY - th + rnd(18), 22, H - (topY - th))
+    }
+  }
+  // 阔叶林带（圆冠丛，混在松林间增加层次）
+  const broadleafBand = (x0, w, topY, color) => {
+    for (let x = 0; x < w; x += 40) {
+      const th = 56 + rnd(46)
+      ctx.fillStyle = color
+      ctx.fillRect(x0 + x, topY - th, 40, H - (topY - th))
+      ctx.fillStyle = color
+      ctx.fillRect(x0 + x - 10, topY - th + 16, 60, 22)
+    }
+  }
+  // 特色点缀：古塔（三重檐剪影）/ 远城剪影 / 飞鸟
+  const pagoda = (cx, baseY, s) => {
+    ctx.fillStyle = '#4d4a56'
+    ctx.fillRect(cx - 5 * s, baseY - 9 * s, 10 * s, 9 * s)
+    for (let t = 0; t < 3; t++) {
+      const w = (16 - t * 3) * s
+      ctx.fillStyle = ['#5a5866', '#514f5c', '#484652'][t]
+      ctx.fillRect(cx - w / 2, baseY - (12 + t * 11) * s, w, 4 * s)
+      ctx.fillStyle = '#666472'
+      ctx.fillRect(cx - (w / 2 + 2 * s), baseY - (12 + t * 11) * s, w + 4 * s, 2 * s)
+    }
+    ctx.fillStyle = '#6d6b78'
+    ctx.fillRect(cx - s, baseY - 46 * s, 2 * s, 6 * s)
+  }
+  const citySil = (cx, baseY) => {
+    for (let i = 0; i < 6; i++) {
+      const w = 22 + rnd(26)
+      const h = 36 + rnd(70)
+      ctx.fillStyle = ['#7c8a99', '#73808f', '#8593a2'][rnd(3)]
+      ctx.fillRect(cx + i * 46, baseY - h, w, h)
+    }
+  }
+  const birds = (cx, cy, n) => {
+    for (let i = 0; i < n; i++) {
+      const x = cx + rnd(240)
+      const y = cy + rnd(60)
+      ctx.fillStyle = '#5a6a78'
+      ctx.fillRect(x, y, 5, 3)
+      ctx.fillRect(x - 6, y - 3, 7, 3)
+      ctx.fillRect(x + 5, y - 3, 7, 3)
     }
   }
 
-  for (let q = 0; q < 4; q++) {
-    const x0 = q * 2048
-    // 风景压缩绘制在"可见带"（仰角 0-7° ≈ 画布 y 406-610）：远山（约6.5°）/中山/近山/松林
-    ridge(x0, 2048, 468, 62, '#8ea8b6', true) // 远山（青灰+雪，峰约 406）
-    mist(x0, 2048, 462, 12, 0.35)
-    ridge(x0, 2048, 552, 56, '#647f74', true) // 中山（青绿，峰约 496）
-    mist(x0, 2048, 546, 11, 0.3)
-    ridge(x0, 2048, 636, 52, '#46604d', false) // 近山（深绿，峰约 584）
-    pineBand(x0, 2048, 668, '#354b3c') // 山脚松林（两层）
-    pineBand(x0, 2048, 714, '#2c4033')
-  }
+  // 每面墙的差异化参数（山高/雪量/特色元素，避免"单一"）
+  const QP = [
+    { far: [624, 84], mid: [738, 76], near: [850, 70], snow: 1.15, extra: 'pagoda' },
+    { far: [606, 104], mid: [726, 68], near: [858, 62], snow: 1.45, extra: 'birds' },
+    { far: [640, 66], mid: [752, 82], near: [862, 74], snow: 0.75, extra: 'city' },
+    { far: [614, 92], mid: [742, 64], near: [838, 80], snow: 1.0, extra: 'broadleaf' },
+  ]
+  QP.forEach((p, q) => {
+    const x0 = q * QW
+    ridge(x0, QW, p.far[0], p.far[1], '#8ea8b6', p.snow) // 远山（青灰+雪）
+    mist(x0, QW, p.far[0] - 8, 14, 0.35)
+    ridge(x0, QW, p.mid[0], p.mid[1], '#647f74', p.snow * 0.5) // 中山（青绿）
+    mist(x0, QW, p.mid[0] - 8, 13, 0.3)
+    ridge(x0, QW, p.near[0], p.near[1], '#46604d', 0) // 近山（深绿）
+    pineBand(x0, QW, 850, '#354b3c') // 山脚针叶林（两层）
+    pineBand(x0, QW, 908, '#2c4033')
+    if (p.extra === 'pagoda') pagoda(x0 + 1240, 856, 2)
+    if (p.extra === 'city') citySil(x0 + 1900, 700)
+    if (p.extra === 'birds') birds(x0 + 700, 560, 6)
+    if (p.extra === 'broadleaf') broadleafBand(x0, QW, 862, '#3d5a41')
+  })
 
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter
@@ -616,40 +672,40 @@ export function wallTexture() {
 // 围墙夜空叠加层（透明底；星星 + 月亮绘制在天底区，夜晚由材质 opacity 淡入，加色混合）
 export function starOverlayTexture() {
   const c = document.createElement('canvas')
-  c.width = 8192
-  c.height = 768
+  c.width = 12288
+  c.height = 1024
   const ctx = c.getContext('2d')
   const rnd = (n) => Math.floor(Math.random() * n)
-  // 星星（分布在天底区 y 100-560：覆盖各俯角可见的夜空带）
-  for (let i = 0; i < 900; i++) {
+  // 星星（天底区 y 140-760：覆盖各俯角可见的夜空带）
+  for (let i = 0; i < 1200; i++) {
     ctx.fillStyle = ['#ffffff', '#dfe8ff', '#cfe0ff', '#ffeecf'][rnd(4)]
     const big = Math.random() < 0.1
-    ctx.fillRect(rnd(8192), 100 + rnd(460), big ? 3 : 1, big ? 3 : 1)
+    ctx.fillRect(rnd(12288), 140 + rnd(620), big ? 3 : 1, big ? 3 : 1)
   }
   // 亮星（十字星光）
-  for (let i = 0; i < 22; i++) {
-    const x = 60 + rnd(8060)
-    const y = 120 + rnd(400)
+  for (let i = 0; i < 26; i++) {
+    const x = 80 + rnd(12120)
+    const y = 170 + rnd(540)
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(x - 2, y, 5, 1)
     ctx.fillRect(x, y - 2, 1, 5)
     ctx.fillStyle = '#eef4ff'
     ctx.fillRect(x, y, 1, 1)
   }
-  // 块状像素月亮（2px 方块拼圆，位于夜空带中部）+ 陨石坑
-  const mx = 5900
-  const my = 330
-  const R = 22
-  const B = 3
+  // 块状像素月亮
+  const mx = 8850
+  const my = 430
+  const R = 30
+  const BL = 4
   ctx.fillStyle = '#f2f6e6'
-  for (let yy = -R; yy < R; yy += B) {
-    for (let xx = -R; xx < R; xx += B) {
-      if (Math.hypot(xx + B / 2, yy + B / 2) <= R) ctx.fillRect(mx + xx, my + yy, B, B)
+  for (let yy = -R; yy < R; yy += BL) {
+    for (let xx = -R; xx < R; xx += BL) {
+      if (Math.hypot(xx + BL / 2, yy + BL / 2) <= R) ctx.fillRect(mx + xx, my + yy, BL, BL)
     }
   }
   ctx.fillStyle = '#cdd8bc'
-  ctx.fillRect(mx - 13, my - 9, 9, 9)
-  ctx.fillRect(mx + 5, my + 3, 10, 8)
+  ctx.fillRect(mx - 17, my - 12, 12, 12)
+  ctx.fillRect(mx + 7, my + 4, 13, 10)
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter
   t.minFilter = THREE.NearestFilter
