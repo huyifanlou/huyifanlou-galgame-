@@ -173,19 +173,24 @@ export const BORDER_TREES = (() => {
   return out
 })()
 
-// 大山环：62-90 半径的连绵山脊（低模锥形 + 次峰 + 雪顶；比建筑高 1.5-3 倍，配合雾气围住远景）
+// 大山环：78-98 半径的群山（每座=山麓林坡+主峰+两个侧峰的组合体，非单个三角；高度远高于建筑）
 const rndMount = lcgRand(20261017)
 export const MOUNTAINS = (() => {
   const out = []
-  const N = 20
+  const N = 16
   for (let i = 0; i < N; i++) {
-    const a = (i / N) * Math.PI * 2 + (rndMount(100) / 100 - 0.5) * 0.22
-    const r = 56 + rndMount(2600) / 100
-    const x = Math.round(Math.sin(a) * r * 10) / 10
-    const z = Math.round(Math.cos(a) * r * 10) / 10
-    const rad = 14 + rndMount(1600) / 100
-    const h = 14 + rndMount(1200) / 100
-    out.push([x, z, rad, h, rndMount(3), h >= 19 ? 1 : 0, (rndMount(100) / 100) * Math.PI])
+    const a = (i / N) * Math.PI * 2 + (rndMount(120) / 100 - 0.5) * 0.26
+    const r = 62 + rndMount(2600) / 100
+    out.push([
+      Math.round(Math.sin(a) * r * 10) / 10,
+      Math.round(Math.cos(a) * r * 10) / 10,
+      16 + rndMount(1800) / 100, // 主峰底半径 16-34
+      18 + rndMount(1100) / 100, // 主峰高 18-29
+      rndMount(3), // 色号
+      rndMount(100) < 35 ? 1 : 0, // 雪顶
+      (rndMount(100) / 100) * Math.PI, // 方位旋转
+      (rndMount(60) / 100 - 0.3) * 0.22, // 主峰轻倾角
+    ])
   }
   return out
 })()

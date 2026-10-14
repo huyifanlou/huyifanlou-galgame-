@@ -15,7 +15,7 @@ const BOUND = 30
 const FX_DAY = {
   amb: 0.82, hemi: 0.46, dir: 1.42,
   hemiSky: new THREE.Color('#d8ecff'), hemiGnd: new THREE.Color('#3f5a36'), dirCol: new THREE.Color('#fff4da'),
-  fog: new THREE.Color('#cfe3f4'), fogNear: 46, fogFar: 98,
+  fog: new THREE.Color('#cfe3f4'), fogNear: 50, fogFar: 110,
 }
 const FX_NIGHT = {
   amb: 0.4, hemi: 0.42, dir: 0.55,
@@ -707,24 +707,37 @@ function Tree({ x, z, variant }) {
   )
 }
 
-// 大山（环绕校区：低模锥形山体 + 错位次峰 + 雪顶，配合雾气成为远景山脊）
-const MOUNTAIN_COLORS = ['#5f7368', '#54685e', '#6a7e72']
+// 大山（环绕校区：山麓林坡 + 倾角主峰 + 两个错落侧峰 + 雪顶；深青绿三色，雾后仍可读）
+const MOUNTAIN_COLORS = ['#44614f', '#3c5949', '#4d6b59']
+const MOUNTAIN_FOOT = '#37543b'
 function Mountain({ m }) {
-  const [x, z, r, h, ci, snow, ry] = m
+  const [x, z, r, h, ci, snow, ry, tilt] = m
   return (
     <group position={[x, 0, z]} rotation={[0, ry, 0]}>
-      <mesh position={[0, h / 2, 0]}>
-        <coneGeometry args={[r, h, 5]} />
+      {/* 山麓林坡（宽矮暗绿，与树带衔接） */}
+      <mesh position={[0, (h * 0.22) / 2, 0]}>
+        <coneGeometry args={[r * 1.35, h * 0.22, 7]} />
+        <meshLambertMaterial color={MOUNTAIN_FOOT} flatShading />
+      </mesh>
+      {/* 主峰（轻倾角，非正三角） */}
+      <mesh position={[0, h / 2, 0]} rotation={[tilt, 0, tilt * 0.7]}>
+        <coneGeometry args={[r, h, 6]} />
         <meshLambertMaterial color={MOUNTAIN_COLORS[ci]} flatShading />
       </mesh>
-      <mesh position={[r * 0.55, h * 0.31, r * 0.3]}>
-        <coneGeometry args={[r * 0.55, h * 0.62, 5]} />
+      {/* 侧峰 ×2（错落，构成山脊） */}
+      <mesh position={[r * 0.72, (h * 0.6) / 2, r * 0.34]}>
+        <coneGeometry args={[r * 0.52, h * 0.6, 5]} />
         <meshLambertMaterial color={MOUNTAIN_COLORS[(ci + 1) % 3]} flatShading />
       </mesh>
+      <mesh position={[-r * 0.6, (h * 0.45) / 2, -r * 0.3]}>
+        <coneGeometry args={[r * 0.46, h * 0.45, 7]} />
+        <meshLambertMaterial color={MOUNTAIN_COLORS[(ci + 2) % 3]} flatShading />
+      </mesh>
+      {/* 雪顶（主峰顶部） */}
       {snow ? (
-        <mesh position={[0, h * 0.82, 0]}>
-          <coneGeometry args={[r * 0.34, h * 0.36, 5]} />
-          <meshLambertMaterial color="#e8eef2" flatShading />
+        <mesh position={[0, h * 0.84, 0]} rotation={[tilt, 0, tilt * 0.7]}>
+          <coneGeometry args={[r * 0.3, h * 0.32, 6]} />
+          <meshLambertMaterial color="#e6ecf0" flatShading />
         </mesh>
       ) : null}
     </group>
