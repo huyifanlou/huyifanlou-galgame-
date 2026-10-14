@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
   flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
@@ -506,6 +506,17 @@ export default function CampusScene() {
         <Tree key={i} x={tx} z={tz} variant={v} />
       ))}
 
+      {/* 边界环境：远景建筑环 + 假山群 + 边界林带（遮挡空旷校界） */}
+      {DISTANT_BUILDINGS.map((b, i) => (
+        <DistantBuilding key={'db' + i} b={b} />
+      ))}
+      {ROCKERIES.map(([x, z, s], i) => (
+        <Rockery key={'rk' + i} x={x} z={z} s={s} />
+      ))}
+      {BORDER_TREES.map(([x, z, v], i) => (
+        <Tree key={'bt' + i} x={x} z={z} variant={v} />
+      ))}
+
       {/* 灌木 */}
       {BUSHES.map(([x, z], i) => (
         <group key={i} position={[x, 0, z]}>
@@ -538,6 +549,60 @@ export default function CampusScene() {
 }
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
+
+// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 大建筑加屋顶设备；夜里零星亮窗）
+function DistantBuilding({ b }) {
+  const tex = useMemo(
+    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.28 }),
+    [b]
+  )
+  return (
+    <group position={[b.x, b.h / 2, b.z]}>
+      <mesh>
+        <boxGeometry args={[b.w, b.h, b.d]} />
+        <meshLambertMaterial map={tex} />
+      </mesh>
+      <mesh position={[0, b.h / 2 + 0.2, 0]}>
+        <boxGeometry args={[b.w + 0.8, 0.4, b.d + 0.8]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>
+      {b.h > 6.5 && (
+        <mesh position={[b.w / 4, b.h / 2 + 0.95, 0]}>
+          <boxGeometry args={[1.5, 0.9, 1.2]} />
+          <meshLambertMaterial color="#9aa2ac" />
+        </mesh>
+      )}
+    </group>
+  )
+}
+
+// 假山：灰岩堆叠（大小错落 + 轻转角度）+ 顶部/侧边灌木
+function Rockery({ x, z, s }) {
+  return (
+    <group position={[x, 0, z]}>
+      {[
+        [0, 0.5, 0, 2.6, 1.0, 2.2, 0],
+        [1.6, 0.4, 0.6, 1.6, 0.8, 1.4, 0.4],
+        [-1.5, 0.35, -0.5, 1.4, 0.7, 1.2, -0.5],
+        [0.4, 1.15, -0.3, 1.2, 0.6, 1.0, 0.9],
+        [-0.6, 0.9, 0.5, 0.9, 0.5, 0.8, -0.8],
+      ].map(([bx, by, bz, bw, bh, bd, ry], i) => (
+        <mesh key={i} position={[bx * s, by * s, bz * s]} rotation={[0, ry, 0]}>
+          <boxGeometry args={[bw * s, bh * s, bd * s]} />
+          <meshLambertMaterial color={['#8d8d94', '#7b7b82', '#9aa0a6', '#6f6f76', '#84848b'][i % 5]} />
+        </mesh>
+      ))}
+      <mesh position={[0.8 * s, 1.0 * s, 0.2 * s]}>
+        <boxGeometry args={[0.9 * s, 0.7 * s, 0.9 * s]} />
+        <meshLambertMaterial color="#3f7a3f" />
+      </mesh>
+      <mesh position={[-1.0 * s, 0.75 * s, -0.1 * s]}>
+        <boxGeometry args={[0.7 * s, 0.55 * s, 0.7 * s]} />
+        <meshLambertMaterial color="#356e37" />
+      </mesh>
+    </group>
+  )
+}
 
 function Tree({ x, z, variant }) {
   const tall = variant === 1

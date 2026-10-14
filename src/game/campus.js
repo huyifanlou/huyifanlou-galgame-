@@ -102,6 +102,59 @@ export const LAMPS = [
   ...[-32, -8, 8, 20].map((x) => [x, 3.7, Math.PI / 2]), // 横路南侧，灯臂朝北
 ]
 
+// ── 边界环境（遮挡空旷校界：远景建筑环 + 假山群 + 边界林带）──
+// 远景建筑环：校区外 45-70 一圈低细节剪影建筑（配雾气形成远景城镇，夜里零星亮窗）
+const DISTANT_PALETTE = [
+  { wall: '#c4b494', roof: '#7a4a3a', trim: '#e8e0d0', plinth: '#8f7f65' },
+  { wall: '#b8a98e', roof: '#46536b', trim: '#ddd5c8', plinth: '#7d6f58' },
+  { wall: '#a89a82', roof: '#3f5a4a', trim: '#d5cfc2', plinth: '#75684f' },
+  { wall: '#c9b897', roof: '#a03c30', trim: '#eee6d6', plinth: '#8a7a5c' },
+]
+export const DISTANT_BUILDINGS = [
+  [-30, -48, 12, 6, 8],
+  [0, -55, 14, 8, 9],
+  [24, -50, 10, 5, 7],
+  [48, -44, 12, 7, 8],
+  [55, -18, 10, 6, 8],
+  [58, 8, 12, 5, 8],
+  [50, 30, 11, 8, 8],
+  [28, 52, 12, 6, 8],
+  [0, 58, 14, 7, 9],
+  [-30, 50, 10, 5, 7],
+  [-52, 28, 11, 6, 8],
+  [-58, 0, 12, 8, 8],
+  [-50, -30, 10, 6, 8],
+].map(([x, z, w, h, d], i) => ({ x, z, w, h, d, ...DISTANT_PALETTE[i % 4] }))
+
+// 假山群：校区外角落的岩石堆（尺寸按 scale 缩放）
+export const ROCKERIES = [
+  [-38, 30, 1.4],
+  [36, 36, 1.2],
+  [42, -33, 1.5],
+  [-45, -10, 1.1],
+  [-34, 42, 1.3],
+  [44, 12, 1.0],
+  [-20, 46, 1.2],
+  [22, -44, 1.3],
+]
+
+// 边界林带：校界外 35-46 半径的密植树圈（避开两条主路的走廊方向）
+const rndBorder = lcgRand(20261015)
+export const BORDER_TREES = (() => {
+  const out = []
+  let guard = 0
+  while (out.length < 40 && guard++ < 600) {
+    const a = (rndBorder(3600) / 3600) * Math.PI * 2
+    const r = 35 + rndBorder(1200) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    if (Math.abs(x) < 4.5 && Math.abs(z) < 42) continue // 竖路走廊
+    if (Math.abs(z) < 4.5 && Math.abs(x) < 42) continue // 横路走廊
+    out.push([x, z, rndBorder(6)])
+  }
+  return out
+})()
+
 // 可交互点位（建筑正门 + 操场 + 池塘）
 export const SPOTS = [
   ...BUILDINGS.map((b) => ({
