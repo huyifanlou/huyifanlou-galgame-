@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture, wallTexture, starOverlayTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -15,12 +15,12 @@ const BOUND = 30
 const FX_DAY = {
   amb: 0.82, hemi: 0.46, dir: 1.42,
   hemiSky: new THREE.Color('#d8ecff'), hemiGnd: new THREE.Color('#3f5a36'), dirCol: new THREE.Color('#fff4da'),
-  fog: new THREE.Color('#cfe3f4'), fogNear: 50, fogFar: 110,
+  fog: new THREE.Color('#cfe3f4'), fogNear: 46, fogFar: 98,
 }
 const FX_NIGHT = {
   amb: 0.4, hemi: 0.42, dir: 0.55,
   hemiSky: new THREE.Color('#31426b'), hemiGnd: new THREE.Color('#141f19'), dirCol: new THREE.Color('#9fb8e8'),
-  fog: new THREE.Color('#111a2c'), fogNear: 38, fogFar: 96,
+  fog: new THREE.Color('#0e1626'), fogNear: 34, fogFar: 88,
 }
 // 清晨/黄昏暖色（时间驱动的金色时刻）
 const WARM_DIR = new THREE.Color('#ff9a4a')
@@ -272,18 +272,6 @@ export default function CampusScene() {
     () => new THREE.MeshBasicMaterial({ map: lampGlowTexture(), transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }),
     []
   )
-  // 盒子世界围墙材质（手绘像素风景；无雾、不受灯光，颜色随昼夜染色）+ 夜空叠加层
-  const wallMat = useMemo(() => new THREE.MeshBasicMaterial({ map: wallTexture(), fog: false }), [])
-  const starMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: starOverlayTexture(), transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }),
-    []
-  )
-  // 墙根草坡材质（真 3D 受光+雾；与地面草地同纹理节奏，接缝自然）
-  const skirtMat = useMemo(() => {
-    const t = grassTexture()
-    t.repeat.set(52, 3)
-    return new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })
-  }, [])
 
   useFrame((state, delta) => {
     const p = player.current
@@ -409,9 +397,6 @@ export default function CampusScene() {
     // 路灯：黄昏起渐亮（灯头玻璃变暖 + 地面光池淡入）
     lampGlass.color.lerpColors(LAMP_GLASS_OFF, LAMP_GLASS_ON, m)
     lampPool.opacity = m * 0.68
-    // 围墙：昼夜染色（白天原色，夜晚压暗偏蓝，晨昏微暖）+ 夜空叠加层淡入
-    wallMat.color.lerpColors(WHITE, WALL_NIGHT, m).lerp(WARM_FOG, warm * 0.25)
-    starMat.opacity = m * 0.9
   })
 
   return (
@@ -532,42 +517,18 @@ export default function CampusScene() {
         <Tree key={'bt' + i} x={x} z={z} variant={v} />
       ))}
 
-      {/* 盒子世界围墙（四周高墙贴手绘像素风景：层叠山脉/森林/雾带 + 夜空叠加层 + 墙根草坡） */}
-      <BoxWalls mat={wallMat} starMat={starMat} />
-      <WallSkirts mat={skirtMat} />
-
-      {/* 小石头（草地与环带点缀） */}
-      {[...SMALL_ROCKS, ...BORDER_ROCKS].map(([x, z], i) => (
-        <group key={'sr' + i} position={[x, 0, z]}>
-          <mesh position={[0, 0.18 + (i % 2) * 0.1, 0]} rotation={[0, (i * 1.3) % 6.28, 0]}>
-            <boxGeometry args={[0.5 + (i % 3) * 0.2, 0.36 + (i % 2) * 0.18, 0.45 + (i % 2) * 0.22]} />
-            <meshLambertMaterial color={['#8d8d94', '#7b7b82', '#9aa0a6'][i % 3]} />
-          </mesh>
-        </group>
-      ))}
-
-      {/* 池塘芦苇（池沿细杆丛） */}
-      {REEDS.map(([x, z, h, t], i) => (
-        <group key={'rd' + i} position={[x, 0, z]}>
-          <mesh position={[0, h / 2, 0]}>
-            <boxGeometry args={[0.12, h, 0.12]} />
-            <meshLambertMaterial color={['#7a8a4a', '#6a7a42', '#85925a'][t]} />
-          </mesh>
-          <mesh position={[0.16, (h * 0.8) / 2, 0.1]} rotation={[0, 0.6, 0.12]}>
-            <boxGeometry args={[0.1, h * 0.8, 0.1]} />
-            <meshLambertMaterial color={['#85925a', '#7a8a4a', '#6a7a42'][t]} />
-          </mesh>
-        </group>
-      ))}
-
       {/* 灌木 */}
       {BUSHES.map(([x, z], i) => (
-        <Bush key={i} x={x} z={z} i={i} />
-      ))}
-
-      {/* 边界灌木（校界外环带填充） */}
-      {BORDER_BUSHES.map(([x, z], i) => (
-        <Bush key={'bb' + i} x={x} z={z} i={i} />
+        <group key={i} position={[x, 0, z]}>
+          <mesh position={[0, 0.24, 0]}>
+            <boxGeometry args={[0.95, 0.5, 0.95]} />
+            <meshLambertMaterial color={i % 2 ? '#3d7a3f' : '#356e37'} />
+          </mesh>
+          <mesh position={[0.12, 0.52, -0.08]}>
+            <boxGeometry args={[0.55, 0.36, 0.55]} />
+            <meshLambertMaterial color={i % 2 ? '#356e37' : '#2f6231'} />
+          </mesh>
+        </group>
       ))}
 
       {/* 角色影子 */}
@@ -589,10 +550,10 @@ export default function CampusScene() {
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
 
-// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 基座压地线 + 高楼屋顶设备；夜里零星亮窗）
+// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 大建筑加屋顶设备；夜里零星亮窗）
 function DistantBuilding({ b }) {
   const tex = useMemo(
-    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.16 }),
+    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.28 }),
     [b]
   )
   return (
@@ -600,11 +561,6 @@ function DistantBuilding({ b }) {
       <mesh>
         <boxGeometry args={[b.w, b.h, b.d]} />
         <meshLambertMaterial map={tex} />
-      </mesh>
-      {/* 基座压地线（避免夜里"浮空"感） */}
-      <mesh position={[0, -b.h / 2 + 0.25, 0]}>
-        <boxGeometry args={[b.w + 0.5, 0.5, b.d + 0.5]} />
-        <meshLambertMaterial color={b.plinth} />
       </mesh>
       <mesh position={[0, b.h / 2 + 0.2, 0]}>
         <boxGeometry args={[b.w + 0.8, 0.4, b.d + 0.8]} />
@@ -616,22 +572,6 @@ function DistantBuilding({ b }) {
           <meshLambertMaterial color="#9aa2ac" />
         </mesh>
       )}
-    </group>
-  )
-}
-
-// 灌木（校区内 + 边界环带共用）
-function Bush({ x, z, i }) {
-  return (
-    <group position={[x, 0, z]}>
-      <mesh position={[0, 0.24, 0]}>
-        <boxGeometry args={[0.95, 0.5, 0.95]} />
-        <meshLambertMaterial color={i % 2 ? '#3d7a3f' : '#356e37'} />
-      </mesh>
-      <mesh position={[0.12, 0.52, -0.08]}>
-        <boxGeometry args={[0.55, 0.36, 0.55]} />
-        <meshLambertMaterial color={i % 2 ? '#356e37' : '#2f6231'} />
-      </mesh>
     </group>
   )
 }
@@ -665,44 +605,6 @@ function Rockery({ x, z, s }) {
 }
 
 function Tree({ x, z, variant }) {
-  if (variant === 6) {
-    // 松树：三层锥形（植被多样性）
-    return (
-      <group position={[x, 0, z]}>
-        <mesh position={[0, 0.4, 0]}>
-          <boxGeometry args={[0.36, 0.8, 0.36]} />
-          <meshLambertMaterial color="#6b4a2f" />
-        </mesh>
-        <mesh position={[0, 1.15, 0]}>
-          <coneGeometry args={[1.05, 1.2, 6]} />
-          <meshLambertMaterial color="#2f6231" flatShading />
-        </mesh>
-        <mesh position={[0, 1.85, 0]}>
-          <coneGeometry args={[0.85, 1.1, 6]} />
-          <meshLambertMaterial color="#356e37" flatShading />
-        </mesh>
-        <mesh position={[0, 2.5, 0]}>
-          <coneGeometry args={[0.62, 1.0, 6]} />
-          <meshLambertMaterial color="#3d7a3f" flatShading />
-        </mesh>
-      </group>
-    )
-  }
-  if (variant === 7) {
-    // 柏树：高瘦深绿
-    return (
-      <group position={[x, 0, z]}>
-        <mesh position={[0, 0.3, 0]}>
-          <boxGeometry args={[0.3, 0.6, 0.3]} />
-          <meshLambertMaterial color="#5c4630" />
-        </mesh>
-        <mesh position={[0, 1.9, 0]}>
-          <coneGeometry args={[0.55, 3.0, 6]} />
-          <meshLambertMaterial color="#284f2b" flatShading />
-        </mesh>
-      </group>
-    )
-  }
   const tall = variant === 1
   const wide = variant === 2
   const trunkH = tall ? 1.5 : 1
@@ -718,58 +620,6 @@ function Tree({ x, z, variant }) {
         <meshLambertMaterial color={TREE_CROWNS[variant % TREE_CROWNS.length]} />
       </mesh>
     </group>
-  )
-}
-
-// 盒子世界围墙（4 面，各取 8192 全景的 1/4 段；材质无雾不受灯光，颜色按昼夜染色）
-// 高 34（顶约 20°仰角）；风景绘制在可见带（墙下部），夜空叠加层（starMat）夜晚淡入
-const WALL_DIST = 82
-const WALL_H = 34
-const WALL_NIGHT = new THREE.Color('#3d4a66')
-function BoxWalls({ mat, starMat }) {
-  const geos = useMemo(
-    () =>
-      [0, 1, 2, 3].map((q) => {
-        // 长度两侧各外扩 5（拐角互相交叠，杜绝角缝漏景）
-        const g = new THREE.PlaneGeometry(WALL_DIST * 2 + 10, WALL_H)
-        const uv = g.attributes.uv
-        for (let i = 0; i < uv.count; i++) uv.setX(i, uv.getX(i) * 0.25 + q * 0.25)
-        return g
-      }),
-    []
-  )
-  return (
-    <>
-      <mesh geometry={geos[0]} position={[0, WALL_H / 2 - 2, -WALL_DIST]} material={mat} />
-      <mesh geometry={geos[1]} position={[0, WALL_H / 2 - 2, WALL_DIST]} rotation={[0, Math.PI, 0]} material={mat} />
-      <mesh geometry={geos[2]} position={[-WALL_DIST, WALL_H / 2 - 2, 0]} rotation={[0, Math.PI / 2, 0]} material={mat} />
-      <mesh geometry={geos[3]} position={[WALL_DIST, WALL_H / 2 - 2, 0]} rotation={[0, -Math.PI / 2, 0]} material={mat} />
-      {/* 夜空叠加层（星星+月亮；夜晚淡入） */}
-      <mesh geometry={geos[0]} position={[0, WALL_H / 2 - 2, -WALL_DIST + 0.6]} material={starMat} />
-      <mesh geometry={geos[1]} position={[0, WALL_H / 2 - 2, WALL_DIST - 0.6]} rotation={[0, Math.PI, 0]} material={starMat} />
-      <mesh geometry={geos[2]} position={[-WALL_DIST + 0.6, WALL_H / 2 - 2, 0]} rotation={[0, Math.PI / 2, 0]} material={starMat} />
-      <mesh geometry={geos[3]} position={[WALL_DIST - 0.6, WALL_H / 2 - 2, 0]} rotation={[0, -Math.PI / 2, 0]} material={starMat} />
-    </>
-  )
-}
-
-// 墙根草坡（真 3D：带光照与雾、与地面草地同纹理节奏；上缘接墙、下缘融入草地，消除"贴图与地面的接缝"）
-function WallSkirts({ mat }) {
-  const geo = useMemo(() => new THREE.PlaneGeometry(WALL_DIST * 2 + 10, 10.4), [])
-  const sides = [
-    [0, 0],
-    [0, Math.PI],
-    [Math.PI / 2, 0],
-    [-Math.PI / 2, 0],
-  ]
-  return (
-    <>
-      {sides.map(([ry], i) => (
-        <group key={i} rotation={[0, ry, 0]}>
-          <mesh geometry={geo} position={[0, 1.88, -77.05]} rotation={[-1.152, 0, 0]} material={mat} />
-        </group>
-      ))}
-    </>
   )
 }
 

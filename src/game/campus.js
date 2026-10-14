@@ -84,8 +84,8 @@ function scatter(count, rnd, { bound = 28, minGap = 0, others = [] } = {}) {
 }
 
 const rnd = lcgRand(20261013)
-// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶，6 = 松树，7 = 柏树（多样性）
-const TREE_TYPES = [0, 1, 2, 0, 5, 1, 6, 2, 1, 0, 2, 4, 0, 1, 5, 2, 7, 0, 2, 4, 1, 6, 2, 5, 0, 1, 0, 2, 4, 7, 2, 6, 1, 5]
+// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶
+const TREE_TYPES = [0, 1, 2, 0, 5, 1, 0, 2, 1, 0, 2, 4, 0, 1, 5, 2, 1, 0, 2, 4, 1, 0, 2, 5, 0, 1, 0, 2, 4, 1, 2, 0, 1, 5]
 export const TREES = scatter(34, rnd, { minGap: 2.2 }).map(([x, z], i) => [x, z, TREE_TYPES[i % TREE_TYPES.length]])
 export const BUSHES = scatter(26, rnd, { minGap: 1.2, others: TREES }).map(([x, z], i) => [x, z, i % 4])
 export const FLOWERS = scatter(22, rnd, { minGap: 1.0, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
@@ -111,7 +111,6 @@ const DISTANT_PALETTE = [
   { wall: '#c9b897', roof: '#a03c30', trim: '#eee6d6', plinth: '#8a7a5c' },
 ]
 export const DISTANT_BUILDINGS = [
-  // 外环（45-70）：主天际线
   [-30, -48, 12, 6, 8],
   [0, -55, 14, 8, 9],
   [24, -50, 10, 5, 7],
@@ -125,19 +124,9 @@ export const DISTANT_BUILDINGS = [
   [-52, 28, 11, 6, 8],
   [-58, 0, 12, 8, 8],
   [-50, -30, 10, 6, 8],
-  // 内环（38-47）：小型附属建筑（中学部/老居民楼/仓库感），填满中距离带
-  [-38, -40, 8, 5, 6],
-  [14, -44, 9, 4, 6],
-  [38, -38, 8, 6, 7],
-  [46, 0, 8, 5, 7],
-  [40, 20, 7, 4, 6],
-  [18, 44, 8, 5, 6],
-  [-16, 46, 9, 6, 7],
-  [-42, 12, 8, 5, 6],
-  [-44, -20, 7, 4, 6],
 ].map(([x, z, w, h, d], i) => ({ x, z, w, h, d, ...DISTANT_PALETTE[i % 4] }))
 
-// 假山群：校区外角落与边缘的岩石堆（14 组，尺寸按 scale 缩放）
+// 假山群：校区外角落的岩石堆（尺寸按 scale 缩放）
 export const ROCKERIES = [
   [-38, 30, 1.4],
   [36, 36, 1.2],
@@ -147,81 +136,21 @@ export const ROCKERIES = [
   [44, 12, 1.0],
   [-20, 46, 1.2],
   [22, -44, 1.3],
-  [10, 38, 1.1],
-  [-28, 40, 1.2],
-  [30, -40, 1.0],
-  [-40, 22, 1.15],
-  [44, -10, 1.25],
-  [-8, -42, 1.05],
 ]
 
-// 边界林带：校界外 33-75 半径的密植树圈（120 棵，延伸至围墙前形成纵深；避开主路走廊与远景建筑）
+// 边界林带：校界外 35-46 半径的密植树圈（避开两条主路的走廊方向）
 const rndBorder = lcgRand(20261015)
 export const BORDER_TREES = (() => {
   const out = []
   let guard = 0
-  while (out.length < 120 && guard++ < 2400) {
+  while (out.length < 40 && guard++ < 600) {
     const a = (rndBorder(3600) / 3600) * Math.PI * 2
-    const r = 33 + rndBorder(4200) / 100
+    const r = 35 + rndBorder(1200) / 100
     const x = Math.round(Math.sin(a) * r * 10) / 10
     const z = Math.round(Math.cos(a) * r * 10) / 10
-    if (Math.abs(x) < 4.5 && Math.abs(z) < 44) continue // 竖路走廊
-    if (Math.abs(z) < 4.5 && Math.abs(x) < 44) continue // 横路走廊
-    if (DISTANT_BUILDINGS.some((b) => Math.abs(x - b.x) < b.w / 2 + 3 && Math.abs(z - b.z) < b.d / 2 + 3)) continue // 避让远景建筑
-    const vv = rndBorder(10)
-    out.push([x, z, vv < 6 ? vv : vv < 8 ? 6 : 7]) // 60% 常规树 + 20% 松树 + 20% 柏树
-  }
-  return out
-})()
-
-// 小石头（草地与环带点缀）：校区内 12 块 + 校界外 22 块
-export const SMALL_ROCKS = scatter(12, rnd, { minGap: 2.5, others: [...TREES, ...BUSHES, ...FLOWERS] }).map(([x, z]) => [x, z])
-const rndRock = lcgRand(20261019)
-export const BORDER_ROCKS = (() => {
-  const out = []
-  let guard = 0
-  while (out.length < 22 && guard++ < 800) {
-    const a = (rndRock(3600) / 3600) * Math.PI * 2
-    const r = 33 + rndRock(1400) / 100
-    const x = Math.round(Math.sin(a) * r * 10) / 10
-    const z = Math.round(Math.cos(a) * r * 10) / 10
-    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
-    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
-    out.push([x, z])
-  }
-  return out
-})()
-
-// 池塘芦苇（沿池沿一圈，细杆丛，微黄绿）
-const rndReed = lcgRand(20261018)
-export const REEDS = (() => {
-  const out = []
-  for (let i = 0; i < 14; i++) {
-    const a = (i / 14) * Math.PI * 2 + (rndReed(100) / 100 - 0.5) * 0.35
-    const r = 3.75 + rndReed(50) / 100
-    out.push([
-      Math.round((POND.pos[0] + Math.cos(a) * r) * 100) / 100,
-      Math.round((POND.pos[1] + Math.sin(a) * r) * 100) / 100,
-      0.7 + rndReed(70) / 100,
-      rndReed(3),
-    ])
-  }
-  return out
-})()
-
-// 边界灌木：32-46 半径散布（100 丛，填充树线之间的空隙）
-const rndBush = lcgRand(20261016)
-export const BORDER_BUSHES = (() => {
-  const out = []
-  let guard = 0
-  while (out.length < 100 && guard++ < 1600) {
-    const a = (rndBush(3600) / 3600) * Math.PI * 2
-    const r = 32 + rndBush(1400) / 100
-    const x = Math.round(Math.sin(a) * r * 10) / 10
-    const z = Math.round(Math.cos(a) * r * 10) / 10
-    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
-    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
-    out.push([x, z])
+    if (Math.abs(x) < 4.5 && Math.abs(z) < 42) continue // 竖路走廊
+    if (Math.abs(z) < 4.5 && Math.abs(x) < 42) continue // 横路走廊
+    out.push([x, z, rndBorder(6)])
   }
   return out
 })()
