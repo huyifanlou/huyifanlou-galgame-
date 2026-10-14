@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
   flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
@@ -511,22 +511,42 @@ export default function CampusScene() {
         <DistantBuilding key={'db' + i} b={b} />
       ))}
       {ROCKERIES.map(([x, z, s], i) => (
-        <Rockery key={'rk' + i} x={x} z={z} s={s} />
+        <Rockery key={'rk' + i} x={x} z={z} s={s} v={i % 3} />
       ))}
       {BORDER_TREES.map(([x, z, v], i) => (
         <Tree key={'bt' + i} x={x} z={z} variant={v} />
       ))}
 
-      {/* 灌木 */}
+      {/* 灌木（四色 + 开花灌木变体） */}
       {BUSHES.map(([x, z], i) => (
-        <group key={i} position={[x, 0, z]}>
-          <mesh position={[0, 0.24, 0]}>
-            <boxGeometry args={[0.95, 0.5, 0.95]} />
-            <meshLambertMaterial color={i % 2 ? '#3d7a3f' : '#356e37'} />
+        <Bush key={i} x={x} z={z} i={i} />
+      ))}
+
+      {/* 边界灌木（校界外环带填充） */}
+      {BORDER_BUSHES.map(([x, z], i) => (
+        <Bush key={'bb' + i} x={x} z={z} i={i} />
+      ))}
+
+      {/* 小石头（草地与环带点缀） */}
+      {[...SMALL_ROCKS, ...BORDER_ROCKS].map(([x, z], i) => (
+        <group key={'sr' + i} position={[x, 0, z]}>
+          <mesh position={[0, 0.18 + (i % 2) * 0.1, 0]} rotation={[0, (i * 1.3) % 6.28, 0]}>
+            <boxGeometry args={[0.5 + (i % 3) * 0.2, 0.36 + (i % 2) * 0.18, 0.45 + (i % 2) * 0.22]} />
+            <meshLambertMaterial color={['#8d8d94', '#7b7b82', '#9aa0a6'][i % 3]} />
           </mesh>
-          <mesh position={[0.12, 0.52, -0.08]}>
-            <boxGeometry args={[0.55, 0.36, 0.55]} />
-            <meshLambertMaterial color={i % 2 ? '#356e37' : '#2f6231'} />
+        </group>
+      ))}
+
+      {/* 池塘芦苇（池沿细杆丛） */}
+      {REEDS.map(([x, z, h, t], i) => (
+        <group key={'rd' + i} position={[x, 0, z]}>
+          <mesh position={[0, h / 2, 0]}>
+            <boxGeometry args={[0.12, h, 0.12]} />
+            <meshLambertMaterial color={['#7a8a4a', '#6a7a42', '#85925a'][t]} />
+          </mesh>
+          <mesh position={[0.16, (h * 0.8) / 2, 0.1]} rotation={[0, 0.6, 0.12]}>
+            <boxGeometry args={[0.1, h * 0.8, 0.1]} />
+            <meshLambertMaterial color={['#85925a', '#7a8a4a', '#6a7a42'][t]} />
           </mesh>
         </group>
       ))}
@@ -550,34 +570,156 @@ export default function CampusScene() {
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
 
-// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 大建筑加屋顶设备；夜里零星亮窗）
+// 远景建筑（四种风格：flat 平顶办公楼 / gable 坡顶居民楼 / tower 高层塔楼 / grand 公共建筑；带基座压地线）
 function DistantBuilding({ b }) {
-  const tex = useMemo(
-    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.28 }),
-    [b]
-  )
+  const rows = Math.max(2, Math.round(b.h / 1.7))
+  const cols = Math.max(2, Math.round(b.w / 3))
+  const tex = useMemo(() => buildingTexture(b.wall, b.trim, b.plinth, cols, rows, { lit: 0.16 }), [b])
+  const extras = []
+  if (b.style === 'gable') {
+    const angle = 0.42
+    const slope = b.d / 2 / Math.cos(angle) + 0.3
+    extras.push(
+      <mesh key="g1" position={[0, b.h / 2 + 0.18, b.d / 4]} rotation={[angle, 0, 0]}>
+        <boxGeometry args={[b.w + 0.6, 0.22, slope]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>,
+      <mesh key="g2" position={[0, b.h / 2 + 0.18, -b.d / 4]} rotation={[-angle, 0, 0]}>
+        <boxGeometry args={[b.w + 0.6, 0.22, slope]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>
+    )
+  } else if (b.style === 'tower') {
+    extras.push(
+      <mesh key="r" position={[0, b.h / 2 + 0.2, 0]}>
+        <boxGeometry args={[b.w + 0.6, 0.4, b.d + 0.6]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>,
+      <mesh key="ant" position={[b.w / 4, b.h / 2 + 1.5, 0]}>
+        <boxGeometry args={[0.16, 2.2, 0.16]} />
+        <meshLambertMaterial color="#9aa2ac" />
+      </mesh>,
+      <mesh key="ac" position={[-b.w / 4, b.h / 2 + 0.85, 0]}>
+        <boxGeometry args={[1.4, 0.9, 1.1]} />
+        <meshLambertMaterial color="#8a9099" />
+      </mesh>
+    )
+  } else if (b.style === 'grand') {
+    extras.push(
+      <mesh key="r" position={[0, b.h / 2 + 0.18, 0]}>
+        <boxGeometry args={[b.w + 1, 0.36, b.d + 1]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>,
+      <mesh key="mid" position={[0, b.h / 2 + 0.95, 0]}>
+        <boxGeometry args={[b.w * 0.5, 1.1, b.d * 0.6]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>
+    )
+  } else {
+    extras.push(
+      <mesh key="r" position={[0, b.h / 2 + 0.2, 0]}>
+        <boxGeometry args={[b.w + 0.7, 0.4, b.d + 0.7]} />
+        <meshLambertMaterial color={b.roof} />
+      </mesh>,
+      <mesh key="pp" position={[0, b.h / 2 + 0.52, 0]}>
+        <boxGeometry args={[b.w + 0.85, 0.24, b.d + 0.85]} />
+        <meshLambertMaterial color={b.plinth} />
+      </mesh>
+    )
+  }
   return (
     <group position={[b.x, b.h / 2, b.z]}>
       <mesh>
         <boxGeometry args={[b.w, b.h, b.d]} />
         <meshLambertMaterial map={tex} />
       </mesh>
-      <mesh position={[0, b.h / 2 + 0.2, 0]}>
-        <boxGeometry args={[b.w + 0.8, 0.4, b.d + 0.8]} />
-        <meshLambertMaterial color={b.roof} />
+      {/* 基座压地线（防夜里浮空感） */}
+      <mesh position={[0, -b.h / 2 + 0.25, 0]}>
+        <boxGeometry args={[b.w + 0.5, 0.5, b.d + 0.5]} />
+        <meshLambertMaterial color={b.plinth} />
       </mesh>
-      {b.h > 6.5 && (
-        <mesh position={[b.w / 4, b.h / 2 + 0.95, 0]}>
-          <boxGeometry args={[1.5, 0.9, 1.2]} />
-          <meshLambertMaterial color="#9aa2ac" />
+      {extras}
+    </group>
+  )
+}
+
+// 灌木（四色 + 开花灌木变体）
+function Bush({ x, z, i }) {
+  const greens = ['#3d7a3f', '#356e37', '#4a8a48', '#2f6231']
+  const flower = i % 6 === 0
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.24, 0]}>
+        <boxGeometry args={[0.95, 0.5, 0.95]} />
+        <meshLambertMaterial color={greens[i % 4]} />
+      </mesh>
+      <mesh position={[0.12, 0.52, -0.08]}>
+        <boxGeometry args={[0.55, 0.36, 0.55]} />
+        <meshLambertMaterial color={greens[(i + 1) % 4]} />
+      </mesh>
+      {flower && (
+        <mesh position={[0.1, 0.72, 0.1]}>
+          <boxGeometry args={[0.4, 0.16, 0.4]} />
+          <meshLambertMaterial color="#c98099" />
         </mesh>
       )}
     </group>
   )
 }
 
-// 假山：灰岩堆叠（大小错落 + 轻转角度）+ 顶部/侧边灌木
-function Rockery({ x, z, s }) {
+// 假山：三种变体（0 双嵌石堆 / 1 石笋 / 2 平石台）+ 灌木点缀
+function Rockery({ x, z, s, v = 0 }) {
+  if (v === 1) {
+    // 石笋：逐层收缩的立柱
+    return (
+      <group position={[x, 0, z]}>
+        {[
+          [0, 0.5, 0, 2.0, 1.0, 1.8],
+          [0.2, 1.35, -0.1, 1.5, 0.8, 1.3],
+          [-0.15, 2.1, 0.1, 1.0, 0.8, 0.9],
+          [0.05, 2.75, -0.05, 0.6, 0.6, 0.55],
+        ].map(([bx, by, bz, bw, bh, bd], i) => (
+          <mesh key={i} position={[bx * s, by * s, bz * s]} rotation={[0, i * 0.7, 0]}>
+            <boxGeometry args={[bw * s, bh * s, bd * s]} />
+            <meshLambertMaterial color={['#8d8d94', '#7b7b82', '#9aa0a6', '#6f6f76'][i % 4]} />
+          </mesh>
+        ))}
+        <mesh position={[0.9 * s, 0.5 * s, 0.4 * s]}>
+          <boxGeometry args={[0.8 * s, 0.55 * s, 0.8 * s]} />
+          <meshLambertMaterial color="#3f7a3f" />
+        </mesh>
+      </group>
+    )
+  }
+  if (v === 2) {
+    // 平石台：宽扁石块 + 更多灌木
+    return (
+      <group position={[x, 0, z]}>
+        {[
+          [0, 0.3, 0, 3.2, 0.6, 2.6],
+          [1.5, 0.25, 0.8, 1.8, 0.5, 1.5],
+          [-1.6, 0.22, -0.6, 1.5, 0.45, 1.3],
+        ].map(([bx, by, bz, bw, bh, bd], i) => (
+          <mesh key={i} position={[bx * s, by * s, bz * s]} rotation={[0, i * 1.1, 0]}>
+            <boxGeometry args={[bw * s, bh * s, bd * s]} />
+            <meshLambertMaterial color={['#8d8d94', '#9aa0a6', '#84848b'][i % 3]} />
+          </mesh>
+        ))}
+        <mesh position={[0.6 * s, 0.75 * s, 0.3 * s]}>
+          <boxGeometry args={[0.85 * s, 0.6 * s, 0.85 * s]} />
+          <meshLambertMaterial color="#4a8a48" />
+        </mesh>
+        <mesh position={[-0.9 * s, 0.7 * s, 0.5 * s]}>
+          <boxGeometry args={[0.7 * s, 0.5 * s, 0.7 * s]} />
+          <meshLambertMaterial color="#3d7a3f" />
+        </mesh>
+        <mesh position={[0.2 * s, 0.68 * s, -0.7 * s]}>
+          <boxGeometry args={[0.6 * s, 0.45 * s, 0.6 * s]} />
+          <meshLambertMaterial color="#356e37" />
+        </mesh>
+      </group>
+    )
+  }
   return (
     <group position={[x, 0, z]}>
       {[
@@ -605,6 +747,63 @@ function Rockery({ x, z, s }) {
 }
 
 function Tree({ x, z, variant }) {
+  if (variant === 6) {
+    // 松树：三层锥形
+    return (
+      <group position={[x, 0, z]}>
+        <mesh position={[0, 0.4, 0]}>
+          <boxGeometry args={[0.36, 0.8, 0.36]} />
+          <meshLambertMaterial color="#6b4a2f" />
+        </mesh>
+        <mesh position={[0, 1.15, 0]}>
+          <coneGeometry args={[1.05, 1.2, 6]} />
+          <meshLambertMaterial color="#2f6231" flatShading />
+        </mesh>
+        <mesh position={[0, 1.85, 0]}>
+          <coneGeometry args={[0.85, 1.1, 6]} />
+          <meshLambertMaterial color="#356e37" flatShading />
+        </mesh>
+        <mesh position={[0, 2.5, 0]}>
+          <coneGeometry args={[0.62, 1.0, 6]} />
+          <meshLambertMaterial color="#3d7a3f" flatShading />
+        </mesh>
+      </group>
+    )
+  }
+  if (variant === 7) {
+    // 柏树：高瘦深绿
+    return (
+      <group position={[x, 0, z]}>
+        <mesh position={[0, 0.3, 0]}>
+          <boxGeometry args={[0.3, 0.6, 0.3]} />
+          <meshLambertMaterial color="#5c4630" />
+        </mesh>
+        <mesh position={[0, 1.9, 0]}>
+          <coneGeometry args={[0.55, 3.0, 6]} />
+          <meshLambertMaterial color="#284f2b" flatShading />
+        </mesh>
+      </group>
+    )
+  }
+  if (variant === 8) {
+    // 大树：双层圆冠（浓荫）
+    return (
+      <group position={[x, 0, z]}>
+        <mesh position={[0, 0.8, 0]}>
+          <boxGeometry args={[0.44, 1.6, 0.44]} />
+          <meshLambertMaterial color="#6d4a2f" />
+        </mesh>
+        <mesh position={[0, 2.1, 0]}>
+          <boxGeometry args={[2.4, 1.5, 2.4]} />
+          <meshLambertMaterial color="#4f9448" />
+        </mesh>
+        <mesh position={[0, 3.05, 0]}>
+          <boxGeometry args={[1.6, 0.9, 1.6]} />
+          <meshLambertMaterial color="#5da04f" />
+        </mesh>
+      </group>
+    )
+  }
   const tall = variant === 1
   const wide = variant === 2
   const trunkH = tall ? 1.5 : 1

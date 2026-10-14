@@ -84,11 +84,11 @@ function scatter(count, rnd, { bound = 28, minGap = 0, others = [] } = {}) {
 }
 
 const rnd = lcgRand(20261013)
-// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶
-const TREE_TYPES = [0, 1, 2, 0, 5, 1, 0, 2, 1, 0, 2, 4, 0, 1, 5, 2, 1, 0, 2, 4, 1, 0, 2, 5, 0, 1, 0, 2, 4, 1, 2, 0, 1, 5]
+// 树种分布：0-3 = 不同绿色（普通/高瘦/矮胖/黄绿），4 = 樱花，5 = 金叶，6 = 松树，7 = 柏树，8 = 大树
+const TREE_TYPES = [0, 6, 2, 0, 5, 1, 8, 2, 7, 0, 2, 4, 0, 1, 5, 2, 6, 0, 2, 4, 8, 6, 2, 5, 0, 7, 0, 2, 4, 7, 2, 6, 8, 5]
 export const TREES = scatter(34, rnd, { minGap: 2.2 }).map(([x, z], i) => [x, z, TREE_TYPES[i % TREE_TYPES.length]])
 export const BUSHES = scatter(26, rnd, { minGap: 1.2, others: TREES }).map(([x, z], i) => [x, z, i % 4])
-export const FLOWERS = scatter(22, rnd, { minGap: 1.0, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
+export const FLOWERS = scatter(30, rnd, { minGap: 1.0, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
 // 土斑（点缀在草地上，不与路面冲突：渲染层级低于路面）
 // 注：曾用"草地色块"圆盘（GROUND_PATCHES）做地面深浅变化，因贴地叠层与主草地纹理密度不一致、远处呈现圆形淡影，已移除；地面层次改由草地纹理内置的草丛色块承担
 export const DIRT_PATCHES = scatter(7, rnd, { minGap: 4 }).map(([x, z]) => [x, z])
@@ -103,28 +103,40 @@ export const LAMPS = [
 ]
 
 // ── 边界环境（遮挡空旷校界：远景建筑环 + 假山群 + 边界林带）──
-// 远景建筑环：校区外 45-70 一圈低细节剪影建筑（配雾气形成远景城镇，夜里零星亮窗）
+// 远景建筑环：26 栋两圈（内圈 44-58 / 外圈 58-72），四种风格（平顶/坡顶/塔楼/公共）+ 六套配色
 const DISTANT_PALETTE = [
-  { wall: '#c4b494', roof: '#7a4a3a', trim: '#e8e0d0', plinth: '#8f7f65' },
-  { wall: '#b8a98e', roof: '#46536b', trim: '#ddd5c8', plinth: '#7d6f58' },
-  { wall: '#a89a82', roof: '#3f5a4a', trim: '#d5cfc2', plinth: '#75684f' },
-  { wall: '#c9b897', roof: '#a03c30', trim: '#eee6d6', plinth: '#8a7a5c' },
+  { wall: '#c4b494', roof: '#7a4a3a', trim: '#e8e0d0', plinth: '#8f7f65' }, // 奶油+砖红
+  { wall: '#b8a98e', roof: '#46536b', trim: '#ddd5c8', plinth: '#7d6f58' }, // 灰褐+藏青
+  { wall: '#a89a82', roof: '#3f5a4a', trim: '#d5cfc2', plinth: '#75684f' }, // 灰绿
+  { wall: '#c9b897', roof: '#a03c30', trim: '#eee6d6', plinth: '#8a7a5c' }, // 暖黄+红顶
+  { wall: '#cfc4ae', roof: '#5a6273', trim: '#f0e9dc', plinth: '#95876d' }, // 米白+蓝灰
+  { wall: '#b0937a', roof: '#7a4a3a', trim: '#e3d6c4', plinth: '#84684f' }, // 砖棕
 ]
-export const DISTANT_BUILDINGS = [
-  [-30, -48, 12, 6, 8],
-  [0, -55, 14, 8, 9],
-  [24, -50, 10, 5, 7],
-  [48, -44, 12, 7, 8],
-  [55, -18, 10, 6, 8],
-  [58, 8, 12, 5, 8],
-  [50, 30, 11, 8, 8],
-  [28, 52, 12, 6, 8],
-  [0, 58, 14, 7, 9],
-  [-30, 50, 10, 5, 7],
-  [-52, 28, 11, 6, 8],
-  [-58, 0, 12, 8, 8],
-  [-50, -30, 10, 6, 8],
-].map(([x, z, w, h, d], i) => ({ x, z, w, h, d, ...DISTANT_PALETTE[i % 4] }))
+const rndD = lcgRand(20261020)
+export const DISTANT_BUILDINGS = (() => {
+  const styles = ['flat', 'gable', 'tower', 'grand']
+  const out = []
+  const N = 26
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + (rndD(100) / 100 - 0.5) * 0.14
+    const inner = i % 2 === 0
+    const r = inner ? 50 + rndD(1000) / 100 : 62 + rndD(1200) / 100
+    const style = inner ? styles[rndD(2)] : styles[rndD(4)] // 内圈只放低层（平顶/坡顶），塔楼与公共建筑在外圈
+    const w = style === 'tower' ? 7 + rndD(3) : style === 'grand' ? 14 + rndD(5) : 8 + rndD(7)
+    const h = style === 'tower' ? 12 + rndD(7) : style === 'grand' ? 6 + rndD(3) : 4.5 + rndD(3.5)
+    const d = 6 + rndD(4)
+    out.push({
+      x: Math.round(Math.sin(a) * r * 10) / 10,
+      z: Math.round(Math.cos(a) * r * 10) / 10,
+      w,
+      h,
+      d,
+      style,
+      ...DISTANT_PALETTE[(i * 2 + rndD(2)) % 6],
+    })
+  }
+  return out
+})()
 
 // 假山群：校区外角落的岩石堆（尺寸按 scale 缩放）
 export const ROCKERIES = [
@@ -136,21 +148,81 @@ export const ROCKERIES = [
   [44, 12, 1.0],
   [-20, 46, 1.2],
   [22, -44, 1.3],
+  [10, 38, 1.1],
+  [-28, 40, 1.2],
+  [30, -40, 1.0],
+  [-40, 22, 1.15],
+  [44, -10, 1.25],
+  [-8, -42, 1.05],
 ]
 
-// 边界林带：校界外 35-46 半径的密植树圈（避开两条主路的走廊方向）
+// 边界林带：校界外 33-48 半径的密植树圈（90 棵，避开主路走廊与远景建筑）
 const rndBorder = lcgRand(20261015)
 export const BORDER_TREES = (() => {
   const out = []
   let guard = 0
-  while (out.length < 40 && guard++ < 600) {
+  while (out.length < 90 && guard++ < 1800) {
     const a = (rndBorder(3600) / 3600) * Math.PI * 2
-    const r = 35 + rndBorder(1200) / 100
+    const r = 33 + rndBorder(1500) / 100
     const x = Math.round(Math.sin(a) * r * 10) / 10
     const z = Math.round(Math.cos(a) * r * 10) / 10
-    if (Math.abs(x) < 4.5 && Math.abs(z) < 42) continue // 竖路走廊
-    if (Math.abs(z) < 4.5 && Math.abs(x) < 42) continue // 横路走廊
-    out.push([x, z, rndBorder(6)])
+    if (Math.abs(x) < 4.5 && Math.abs(z) < 44) continue // 竖路走廊
+    if (Math.abs(z) < 4.5 && Math.abs(x) < 44) continue // 横路走廊
+    if (DISTANT_BUILDINGS.some((b) => Math.abs(x - b.x) < b.w / 2 + 3 && Math.abs(z - b.z) < b.d / 2 + 3)) continue // 避让远景建筑
+    const vv = rndBorder(12)
+    out.push([x, z, vv < 6 ? vv : vv < 8 ? 6 : vv < 10 ? 7 : 8]) // 常规树 + 松/柏/大树混植
+  }
+  return out
+})()
+
+// 边界灌木：校界外 32-46 半径散布（100 丛，填充树线间隙）
+const rndBush2 = lcgRand(20261016)
+export const BORDER_BUSHES = (() => {
+  const out = []
+  let guard = 0
+  while (out.length < 100 && guard++ < 1600) {
+    const a = (rndBush2(3600) / 3600) * Math.PI * 2
+    const r = 32 + rndBush2(1400) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
+    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
+    out.push([x, z])
+  }
+  return out
+})()
+
+// 小石头：校区内 12 块 + 环带 22 块
+export const SMALL_ROCKS = scatter(12, rnd, { minGap: 2.5, others: [...TREES, ...BUSHES, ...FLOWERS] }).map(([x, z]) => [x, z])
+const rndRock = lcgRand(20261019)
+export const BORDER_ROCKS = (() => {
+  const out = []
+  let guard = 0
+  while (out.length < 22 && guard++ < 800) {
+    const a = (rndRock(3600) / 3600) * Math.PI * 2
+    const r = 33 + rndRock(1400) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
+    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
+    out.push([x, z])
+  }
+  return out
+})()
+
+// 池塘芦苇：沿池沿一圈 14 丛（细杆丛，黄绿三色）
+const rndReed = lcgRand(20261018)
+export const REEDS = (() => {
+  const out = []
+  for (let i = 0; i < 14; i++) {
+    const a = (i / 14) * Math.PI * 2 + (rndReed(100) / 100 - 0.5) * 0.35
+    const r = 3.75 + rndReed(50) / 100
+    out.push([
+      Math.round((POND.pos[0] + Math.cos(a) * r) * 100) / 100,
+      Math.round((POND.pos[1] + Math.sin(a) * r) * 100) / 100,
+      0.7 + rndReed(70) / 100,
+      rndReed(3),
+    ])
   }
   return out
 })()
