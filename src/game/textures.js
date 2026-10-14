@@ -540,6 +540,24 @@ export function lampGlowTexture() {
   return t
 }
 
+// 屋面瓦片贴图（竖向瓦楞 + 横向瓦线，颜色随建筑屋顶色）
+export function roofTexture(base = '#3a434e') {
+  return canvasTexture(32, 16, (ctx) => {
+    ctx.fillStyle = base
+    ctx.fillRect(0, 0, 32, 16)
+    for (let x = 0; x < 32; x += 8) {
+      ctx.fillStyle = 'rgba(0,0,0,0.22)'
+      ctx.fillRect(x, 0, 2, 16)
+      ctx.fillStyle = 'rgba(255,255,255,0.07)'
+      ctx.fillRect(x + 2, 0, 1, 16)
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'
+    ctx.fillRect(0, 7, 32, 1)
+    ctx.fillStyle = 'rgba(255,255,255,0.06)'
+    ctx.fillRect(0, 8, 32, 1)
+  }, 4, 2)
+}
+
 // 主角家外墙（日式：上白灰泥+木格窗 / 下木板墙+和纸格子门；canvas 256×192）
 export function villaTexture() {
   return canvasTexture(256, 192, (ctx, w, h) => {

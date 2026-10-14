@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES, SMALL_ROCKS, BORDER_ROCKS, REEDS, VILLA } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture, villaTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture, villaTexture, roofTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -596,7 +596,7 @@ function GableEnd({ baseW, height, x, y, color }) {
 function Villa({ def }) {
   const [w, h, d] = [def.w, def.h, def.d]
   const tex = useMemo(() => villaTexture(), [])
-  const tile = '#3c434c'
+  const tileTex = useMemo(() => roofTexture('#3a434e'), [])
   const ridge = '#2b3038'
   const wood = '#8a6a48'
   const rotY = def.face === 1 ? 0 : Math.PI
@@ -614,12 +614,12 @@ function Villa({ def }) {
       </mesh>
       {/* 一层大屋檐（出挑深 + 白色封檐板） */}
       <mesh position={[0, y1, d / 4 + 0.15]} rotation={[a1, 0, 0]}>
-        <boxGeometry args={[w + 2.6, 0.2, slope1]} />
-        <meshLambertMaterial color={tile} />
+        <boxGeometry args={[w + 2.6, 0.26, slope1]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>
       <mesh position={[0, y1, -d / 4 - 0.15]} rotation={[-a1, 0, 0]}>
-        <boxGeometry args={[w + 2.6, 0.2, slope1]} />
-        <meshLambertMaterial color={tile} />
+        <boxGeometry args={[w + 2.6, 0.26, slope1]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>
       <mesh position={[0, y1 - 0.3, d / 2 + 1.2]}>
         <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
@@ -629,26 +629,26 @@ function Villa({ def }) {
         <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
         <meshLambertMaterial color="#ddd2c0" />
       </mesh>
-      {/* 二层体块（白灰泥小楼身，支撑屋顶不悬空） */}
-      <mesh position={[0, y1 + 0.55, 0]}>
-        <boxGeometry args={[w * 0.72, 1.1, d * 0.6]} />
+      {/* 二层体块（白灰泥小楼身，顶到屋面不悬空） */}
+      <mesh position={[0, y1 + 0.6, 0]}>
+        <boxGeometry args={[w * 0.72, 1.22, d * 0.6]} />
         <meshLambertMaterial map={tex} />
       </mesh>
-      {/* 山墙端封（三角形：一层大屋顶 + 二层小屋顶） */}
+      {/* 山墙端封（三角形：按屋面实际脊高计算，避免戳出屋面） */}
       {[-1, 1].map((s2) => (
-        <GableEnd key={'vg' + s2} baseW={d + 0.2} height={(d / 2) * Math.tan(a1)} x={s2 * (w / 2 - 0.05)} y={h / 2} color="#e2dccc" />
+        <GableEnd key={'vg' + s2} baseW={d + 0.2} height={(d / 4 + 0.15) * Math.tan(a1) + 0.26} x={s2 * (w / 2 - 0.05)} y={h / 2} color="#e2dccc" />
       ))}
       {[-1, 1].map((s2) => (
-        <GableEnd key={'vg2' + s2} baseW={d * 0.6} height={(d * 0.3) * Math.tan(a2)} x={s2 * (w * 0.36 - 0.05)} y={y1 + 1.1} color="#e2dccc" />
+        <GableEnd key={'vg2' + s2} baseW={d * 0.6} height={(d * 0.12 + 0.05) * Math.tan(a2) + 0.34} x={s2 * (w * 0.36 - 0.05)} y={y1 + 1.22} color="#e2dccc" />
       ))}
       {/* 二层小屋顶（双段式 + 屋脊） */}
       <mesh position={[0, y2, d * 0.12 + 0.05]} rotation={[a2, 0, 0]}>
-        <boxGeometry args={[w * 0.72 + 1.6, 0.18, slope2]} />
-        <meshLambertMaterial color={tile} />
+        <boxGeometry args={[w * 0.72 + 1.6, 0.22, slope2]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>
       <mesh position={[0, y2, -d * 0.12 - 0.05]} rotation={[-a2, 0, 0]}>
-        <boxGeometry args={[w * 0.72 + 1.6, 0.18, slope2]} />
-        <meshLambertMaterial color={tile} />
+        <boxGeometry args={[w * 0.72 + 1.6, 0.22, slope2]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>
       <mesh position={[0, y2 + 0.42, 0]}>
         <boxGeometry args={[w * 0.72 + 1.7, 0.16, 0.3]} />
@@ -657,7 +657,7 @@ function Villa({ def }) {
       {/* 玄关雨棚 + 木柱 + 石阶 */}
       <mesh position={[0, -h / 2 + 2.5, d / 2 + 0.85]} rotation={[0.5, 0, 0]}>
         <boxGeometry args={[3, 0.14, 1.7]} />
-        <meshLambertMaterial color={tile} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>
       <mesh position={[-1.35, -h / 2 + 1.2, d / 2 + 1.35]}>
         <boxGeometry args={[0.16, 2.4, 0.16]} />
@@ -1013,6 +1013,7 @@ function Building({ def, doorTex, awningTex }) {
     ],
     [def]
   )
+  const tileTex = useMemo(() => roofTexture(def.roof), [def])
   const wallMat = useRef()
   const wingMat = useRef()
   useFrame(() => {
@@ -1034,26 +1035,26 @@ function Building({ def, doorTex, awningTex }) {
   const extras = []
 
   if (def.style === 'gable') {
-    // 双坡屋顶：两块斜板
+    // 双坡屋顶：两块斜板（瓦楞贴图）
     const angle = 0.45
     const slope = d / 2 / Math.cos(angle) + 0.4
     const y = h / 2 + 0.3 + (d / 4) * Math.tan(angle) * 0.3
     extras.push(
       <mesh key="gs1" position={[0, y, d / 4 + 0.1]} rotation={[angle, 0, 0]}>
-        <boxGeometry args={[w + 1, 0.24, slope]} />
-        <meshLambertMaterial color={def.roof} />
+        <boxGeometry args={[w + 1, 0.26, slope]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>,
       <mesh key="gs2" position={[0, y, -d / 4 - 0.1]} rotation={[-angle, 0, 0]}>
-        <boxGeometry args={[w + 1, 0.24, slope]} />
-        <meshLambertMaterial color={def.roof} />
+        <boxGeometry args={[w + 1, 0.26, slope]} />
+        <meshLambertMaterial map={tileTex} />
       </mesh>,
       <mesh key="ridge" position={[0, y + (d / 4) * Math.tan(angle) * 0.65, 0]}>
         <boxGeometry args={[w + 1.1, 0.2, 0.4]} />
         <meshLambertMaterial color="#33363f" />
       </mesh>
     )
-    // 山墙端封（三角形，与屋面贴合）
-    const gH = ((d / 2) * Math.tan(angle)) // 山墙全高
+    // 山墙端封（三角形：按屋面实际脊高计算，避免戳出屋面）
+    const gH = (d / 4 + 0.1) * Math.tan(angle) + 0.42
     for (const s2 of [-1, 1]) {
       extras.push(<GableEnd key={`gw${s2}`} baseW={d + 0.2} height={gH} x={s2 * (w / 2 - 0.05)} y={h / 2} color={def.wall} />)
     }
