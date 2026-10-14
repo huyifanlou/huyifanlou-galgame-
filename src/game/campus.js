@@ -155,18 +155,19 @@ export const ROCKERIES = [
   [-8, -42, 1.05],
 ]
 
-// 边界林带：校界外 33-48 半径的密植树圈（90 棵，避开两条主路的走廊方向）
+// 边界林带：校界外 33-75 半径的密植树圈（120 棵，延伸至围墙前形成纵深；避开主路走廊与远景建筑）
 const rndBorder = lcgRand(20261015)
 export const BORDER_TREES = (() => {
   const out = []
   let guard = 0
-  while (out.length < 90 && guard++ < 1400) {
+  while (out.length < 120 && guard++ < 2400) {
     const a = (rndBorder(3600) / 3600) * Math.PI * 2
-    const r = 33 + rndBorder(1500) / 100
+    const r = 33 + rndBorder(4200) / 100
     const x = Math.round(Math.sin(a) * r * 10) / 10
     const z = Math.round(Math.cos(a) * r * 10) / 10
     if (Math.abs(x) < 4.5 && Math.abs(z) < 44) continue // 竖路走廊
     if (Math.abs(z) < 4.5 && Math.abs(x) < 44) continue // 横路走廊
+    if (DISTANT_BUILDINGS.some((b) => Math.abs(x - b.x) < b.w / 2 + 3 && Math.abs(z - b.z) < b.d / 2 + 3)) continue // 避让远景建筑
     const vv = rndBorder(10)
     out.push([x, z, vv < 6 ? vv : vv < 8 ? 6 : 7]) // 60% 常规树 + 20% 松树 + 20% 柏树
   }

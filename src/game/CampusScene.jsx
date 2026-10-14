@@ -278,6 +278,12 @@ export default function CampusScene() {
     () => new THREE.MeshBasicMaterial({ map: starOverlayTexture(), transparent: true, opacity: 0, fog: false, depthWrite: false, blending: THREE.AdditiveBlending }),
     []
   )
+  // 墙根草坡材质（真 3D 受光+雾；与地面草地同纹理节奏，接缝自然）
+  const skirtMat = useMemo(() => {
+    const t = grassTexture()
+    t.repeat.set(52, 3)
+    return new THREE.MeshLambertMaterial({ map: t, side: THREE.DoubleSide })
+  }, [])
 
   useFrame((state, delta) => {
     const p = player.current
@@ -526,8 +532,9 @@ export default function CampusScene() {
         <Tree key={'bt' + i} x={x} z={z} variant={v} />
       ))}
 
-      {/* 盒子世界围墙（四周高墙贴手绘像素风景：层叠山脉/森林/雾带 + 夜空叠加层） */}
+      {/* 盒子世界围墙（四周高墙贴手绘像素风景：层叠山脉/森林/雾带 + 夜空叠加层 + 墙根草坡） */}
       <BoxWalls mat={wallMat} starMat={starMat} />
+      <WallSkirts mat={skirtMat} />
 
       {/* 小石头（草地与环带点缀） */}
       {[...SMALL_ROCKS, ...BORDER_ROCKS].map(([x, z], i) => (
@@ -742,6 +749,26 @@ function BoxWalls({ mat, starMat }) {
       <mesh geometry={geos[1]} position={[0, WALL_H / 2 - 2, WALL_DIST - 0.6]} rotation={[0, Math.PI, 0]} material={starMat} />
       <mesh geometry={geos[2]} position={[-WALL_DIST + 0.6, WALL_H / 2 - 2, 0]} rotation={[0, Math.PI / 2, 0]} material={starMat} />
       <mesh geometry={geos[3]} position={[WALL_DIST - 0.6, WALL_H / 2 - 2, 0]} rotation={[0, -Math.PI / 2, 0]} material={starMat} />
+    </>
+  )
+}
+
+// 墙根草坡（真 3D：带光照与雾、与地面草地同纹理节奏；上缘接墙、下缘融入草地，消除"贴图与地面的接缝"）
+function WallSkirts({ mat }) {
+  const geo = useMemo(() => new THREE.PlaneGeometry(WALL_DIST * 2 + 10, 10.4), [])
+  const sides = [
+    [0, 0],
+    [0, Math.PI],
+    [Math.PI / 2, 0],
+    [-Math.PI / 2, 0],
+  ]
+  return (
+    <>
+      {sides.map(([ry], i) => (
+        <group key={i} rotation={[0, ry, 0]}>
+          <mesh geometry={geo} position={[0, 1.88, -77.05]} rotation={[-1.152, 0, 0]} material={mat} />
+        </group>
+      ))}
     </>
   )
 }

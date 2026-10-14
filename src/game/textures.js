@@ -547,8 +547,19 @@ export function wallTexture() {
   ctx.fillStyle = '#cfe3f4'
   ctx.fillRect(0, 700, 12288, H - 700)
 
-  // 像素山脊（块状填充 + 可选雪顶，峰线随参数变化）
+  // 明暗色（画中立体感：受光面/背光面/山脊亮线）
+  const shade = (hex, f) => {
+    const n = parseInt(hex.slice(1), 16)
+    const r = Math.min(255, Math.max(0, Math.round(((n >> 16) & 255) * f)))
+    const g = Math.min(255, Math.max(0, Math.round(((n >> 8) & 255) * f)))
+    const b = Math.min(255, Math.max(0, Math.round((n & 255) * f)))
+    return `rgb(${r},${g},${b})`
+  }
+  // 像素山脊（受光/背光两档 + 山脊亮线 + 可选雪顶，峰线随参数变化）
   const ridge = (x0, w, baseY, amp, color, snowAmt) => {
+    const light = shade(color, 1.2)
+    const dark = shade(color, 0.8)
+    const crest = shade(color, 1.42)
     const step = 36
     const pts = []
     let h = baseY - amp * 0.5
@@ -558,15 +569,22 @@ export function wallTexture() {
       pts.push(h)
     }
     const hAt = (x) => {
-      const i = Math.min(pts.length - 1, Math.floor(x / step))
+      const i = Math.min(pts.length - 1, Math.max(0, Math.floor(x / step)))
       const j = Math.min(pts.length - 1, i + 1)
       const t = (x - i * step) / step
       return pts[i] + (pts[j] - pts[i]) * t
     }
     for (let x = 0; x < w; x += B) {
       const y = Math.round(hAt(x) / B) * B
-      ctx.fillStyle = color
+      const rising = hAt(x + B * 3) < hAt(x - B * 3) // 右高 → 面朝左 → 受光
+      ctx.fillStyle = rising ? light : dark
       ctx.fillRect(x0 + x, y, B, H - y)
+    }
+    // 山脊亮线（高光轮廓）
+    for (let x = 0; x < w; x += B) {
+      const y = Math.round(hAt(x) / B) * B
+      ctx.fillStyle = crest
+      ctx.fillRect(x0 + x, y, B, 5)
     }
     if (snowAmt > 0) {
       for (let x = 0; x < w; x += B) {
