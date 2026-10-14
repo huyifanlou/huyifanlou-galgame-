@@ -621,14 +621,6 @@ function Villa({ def }) {
         <boxGeometry args={[w + 2.6, 0.26, slope1]} />
         <meshLambertMaterial map={tileTex} />
       </mesh>
-      <mesh position={[0, y1 - 0.3, d / 2 + 1.2]}>
-        <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
-        <meshLambertMaterial color="#ddd2c0" />
-      </mesh>
-      <mesh position={[0, y1 - 0.3, -d / 2 - 1.2]}>
-        <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
-        <meshLambertMaterial color="#ddd2c0" />
-      </mesh>
       {/* 二层体块（白灰泥小楼身，顶到屋面不悬空） */}
       <mesh position={[0, y1 + 0.6, 0]}>
         <boxGeometry args={[w * 0.72, 1.22, d * 0.6]} />
