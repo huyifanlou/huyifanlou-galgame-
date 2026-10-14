@@ -698,14 +698,18 @@ function Villa({ def }) {
           <meshLambertMaterial color="#a87e52" />
         </mesh>
       ))}
-      <mesh position={[0.2, -h / 2 + 0.72, d / 2 + 3.0]}>
-        <boxGeometry args={[5.8, 0.1, 0.08]} />
-        <meshLambertMaterial color="#b98d5e" />
-      </mesh>
-      <mesh position={[0.2, -h / 2 + 0.38, d / 2 + 3.0]}>
-        <boxGeometry args={[5.8, 0.1, 0.08]} />
-        <meshLambertMaterial color="#b98d5e" />
-      </mesh>
+      {[-1.75, 2.0].map((cx, i) => (
+        <group key={'rail' + i}>
+          <mesh position={[cx, -h / 2 + 0.72, d / 2 + 3.0]}>
+            <boxGeometry args={[i === 0 ? 2.1 : 2.4, 0.1, 0.08]} />
+            <meshLambertMaterial color="#b98d5e" />
+          </mesh>
+          <mesh position={[cx, -h / 2 + 0.38, d / 2 + 3.0]}>
+            <boxGeometry args={[i === 0 ? 2.1 : 2.4, 0.1, 0.08]} />
+            <meshLambertMaterial color="#b98d5e" />
+          </mesh>
+        </group>
+      ))}
     </group>
   )
 }
