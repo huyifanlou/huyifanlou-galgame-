@@ -575,6 +575,23 @@ export default function CampusScene() {
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
 
+// 山墙端封（真三角形几何：底宽 baseW、高 height，立在墙顶，与屋面完全贴合）
+function GableEnd({ baseW, height, x, y, color }) {
+  const geo = useMemo(() => {
+    const sh = new THREE.Shape()
+    sh.moveTo(-baseW / 2, 0)
+    sh.lineTo(baseW / 2, 0)
+    sh.lineTo(0, height)
+    sh.closePath()
+    return new THREE.ShapeGeometry(sh)
+  }, [baseW, height])
+  return (
+    <mesh geometry={geo} position={[x, y, 0]} rotation={[0, Math.PI / 2, 0]}>
+      <meshLambertMaterial color={color} side={THREE.DoubleSide} />
+    </mesh>
+  )
+}
+
 // 主角家：日式二层独栋小别墅（白灰泥+木格窗+双层大屋檐+白色封檐+玄关雨棚+石灯笼+竹丛+砂石小院+前院木篱）
 function Villa({ def }) {
   const [w, h, d] = [def.w, def.h, def.d]
@@ -612,6 +629,18 @@ function Villa({ def }) {
         <boxGeometry args={[w + 2.8, 0.12, 0.26]} />
         <meshLambertMaterial color="#ddd2c0" />
       </mesh>
+      {/* 二层体块（白灰泥小楼身，支撑屋顶不悬空） */}
+      <mesh position={[0, y1 + 0.55, 0]}>
+        <boxGeometry args={[w * 0.72, 1.1, d * 0.6]} />
+        <meshLambertMaterial map={tex} />
+      </mesh>
+      {/* 山墙端封（三角形：一层大屋顶 + 二层小屋顶） */}
+      {[-1, 1].map((s2) => (
+        <GableEnd key={'vg' + s2} baseW={d + 0.2} height={(d / 2) * Math.tan(a1)} x={s2 * (w / 2 - 0.05)} y={h / 2} color="#e2dccc" />
+      ))}
+      {[-1, 1].map((s2) => (
+        <GableEnd key={'vg2' + s2} baseW={d * 0.6} height={(d * 0.3) * Math.tan(a2)} x={s2 * (w * 0.36 - 0.05)} y={y1 + 1.1} color="#e2dccc" />
+      ))}
       {/* 二层小屋顶（双段式 + 屋脊） */}
       <mesh position={[0, y2, d * 0.12 + 0.05]} rotation={[a2, 0, 0]}>
         <boxGeometry args={[w * 0.72 + 1.6, 0.18, slope2]} />
@@ -1023,6 +1052,11 @@ function Building({ def, doorTex, awningTex }) {
         <meshLambertMaterial color="#33363f" />
       </mesh>
     )
+    // 山墙端封（三角形，与屋面贴合）
+    const gH = ((d / 2) * Math.tan(angle)) // 山墙全高
+    for (const s2 of [-1, 1]) {
+      extras.push(<GableEnd key={`gw${s2}`} baseW={d + 0.2} height={gH} x={s2 * (w / 2 - 0.05)} y={h / 2} color={def.wall} />)
+    }
   } else if (def.style === 'grand') {
     extras.push(
       <mesh key="plinth" position={[0, -h / 2 + 0.25, 0]}>
