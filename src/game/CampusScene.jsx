@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES } from './campus.js'
+import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS, DISTANT_BUILDINGS, ROCKERIES, BORDER_TREES, BORDER_BUSHES } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
   flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
@@ -20,7 +20,7 @@ const FX_DAY = {
 const FX_NIGHT = {
   amb: 0.4, hemi: 0.42, dir: 0.55,
   hemiSky: new THREE.Color('#31426b'), hemiGnd: new THREE.Color('#141f19'), dirCol: new THREE.Color('#9fb8e8'),
-  fog: new THREE.Color('#0e1626'), fogNear: 34, fogFar: 88,
+  fog: new THREE.Color('#111a2c'), fogNear: 38, fogFar: 96,
 }
 // 清晨/黄昏暖色（时间驱动的金色时刻）
 const WARM_DIR = new THREE.Color('#ff9a4a')
@@ -519,16 +519,12 @@ export default function CampusScene() {
 
       {/* 灌木 */}
       {BUSHES.map(([x, z], i) => (
-        <group key={i} position={[x, 0, z]}>
-          <mesh position={[0, 0.24, 0]}>
-            <boxGeometry args={[0.95, 0.5, 0.95]} />
-            <meshLambertMaterial color={i % 2 ? '#3d7a3f' : '#356e37'} />
-          </mesh>
-          <mesh position={[0.12, 0.52, -0.08]}>
-            <boxGeometry args={[0.55, 0.36, 0.55]} />
-            <meshLambertMaterial color={i % 2 ? '#356e37' : '#2f6231'} />
-          </mesh>
-        </group>
+        <Bush key={i} x={x} z={z} i={i} />
+      ))}
+
+      {/* 边界灌木（校界外环带填充） */}
+      {BORDER_BUSHES.map(([x, z], i) => (
+        <Bush key={'bb' + i} x={x} z={z} i={i} />
       ))}
 
       {/* 角色影子 */}
@@ -550,10 +546,10 @@ export default function CampusScene() {
 
 const TREE_CROWNS = ['#3f7a3f', '#4f9448', '#5da04f', '#6fae4b', '#d98fb0', '#c9a24a']
 
-// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 大建筑加屋顶设备；夜里零星亮窗）
+// 远景建筑（校区外天际线：低细节剪影建筑 + 屋顶檐 + 基座压地线 + 高楼屋顶设备；夜里零星亮窗）
 function DistantBuilding({ b }) {
   const tex = useMemo(
-    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.28 }),
+    () => buildingTexture(b.wall, b.trim, b.plinth, 3, Math.max(2, Math.round(b.h / 1.7)), { lit: 0.16 }),
     [b]
   )
   return (
@@ -561,6 +557,11 @@ function DistantBuilding({ b }) {
       <mesh>
         <boxGeometry args={[b.w, b.h, b.d]} />
         <meshLambertMaterial map={tex} />
+      </mesh>
+      {/* 基座压地线（避免夜里"浮空"感） */}
+      <mesh position={[0, -b.h / 2 + 0.25, 0]}>
+        <boxGeometry args={[b.w + 0.5, 0.5, b.d + 0.5]} />
+        <meshLambertMaterial color={b.plinth} />
       </mesh>
       <mesh position={[0, b.h / 2 + 0.2, 0]}>
         <boxGeometry args={[b.w + 0.8, 0.4, b.d + 0.8]} />
@@ -572,6 +573,22 @@ function DistantBuilding({ b }) {
           <meshLambertMaterial color="#9aa2ac" />
         </mesh>
       )}
+    </group>
+  )
+}
+
+// 灌木（校区内 + 边界环带共用）
+function Bush({ x, z, i }) {
+  return (
+    <group position={[x, 0, z]}>
+      <mesh position={[0, 0.24, 0]}>
+        <boxGeometry args={[0.95, 0.5, 0.95]} />
+        <meshLambertMaterial color={i % 2 ? '#3d7a3f' : '#356e37'} />
+      </mesh>
+      <mesh position={[0.12, 0.52, -0.08]}>
+        <boxGeometry args={[0.55, 0.36, 0.55]} />
+        <meshLambertMaterial color={i % 2 ? '#356e37' : '#2f6231'} />
+      </mesh>
     </group>
   )
 }

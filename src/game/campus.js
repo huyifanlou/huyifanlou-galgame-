@@ -111,6 +111,7 @@ const DISTANT_PALETTE = [
   { wall: '#c9b897', roof: '#a03c30', trim: '#eee6d6', plinth: '#8a7a5c' },
 ]
 export const DISTANT_BUILDINGS = [
+  // 外环（45-70）：主天际线
   [-30, -48, 12, 6, 8],
   [0, -55, 14, 8, 9],
   [24, -50, 10, 5, 7],
@@ -124,9 +125,19 @@ export const DISTANT_BUILDINGS = [
   [-52, 28, 11, 6, 8],
   [-58, 0, 12, 8, 8],
   [-50, -30, 10, 6, 8],
+  // 内环（38-47）：小型附属建筑（中学部/老居民楼/仓库感），填满中距离带
+  [-38, -40, 8, 5, 6],
+  [14, -44, 9, 4, 6],
+  [38, -38, 8, 6, 7],
+  [46, 0, 8, 5, 7],
+  [40, 20, 7, 4, 6],
+  [18, 44, 8, 5, 6],
+  [-16, 46, 9, 6, 7],
+  [-42, 12, 8, 5, 6],
+  [-44, -20, 7, 4, 6],
 ].map(([x, z, w, h, d], i) => ({ x, z, w, h, d, ...DISTANT_PALETTE[i % 4] }))
 
-// 假山群：校区外角落的岩石堆（尺寸按 scale 缩放）
+// 假山群：校区外角落与边缘的岩石堆（14 组，尺寸按 scale 缩放）
 export const ROCKERIES = [
   [-38, 30, 1.4],
   [36, 36, 1.2],
@@ -136,21 +147,44 @@ export const ROCKERIES = [
   [44, 12, 1.0],
   [-20, 46, 1.2],
   [22, -44, 1.3],
+  [10, 38, 1.1],
+  [-28, 40, 1.2],
+  [30, -40, 1.0],
+  [-40, 22, 1.15],
+  [44, -10, 1.25],
+  [-8, -42, 1.05],
 ]
 
-// 边界林带：校界外 35-46 半径的密植树圈（避开两条主路的走廊方向）
+// 边界林带：校界外 33-48 半径的密植树圈（90 棵，避开两条主路的走廊方向）
 const rndBorder = lcgRand(20261015)
 export const BORDER_TREES = (() => {
   const out = []
   let guard = 0
-  while (out.length < 40 && guard++ < 600) {
+  while (out.length < 90 && guard++ < 1400) {
     const a = (rndBorder(3600) / 3600) * Math.PI * 2
-    const r = 35 + rndBorder(1200) / 100
+    const r = 33 + rndBorder(1500) / 100
     const x = Math.round(Math.sin(a) * r * 10) / 10
     const z = Math.round(Math.cos(a) * r * 10) / 10
-    if (Math.abs(x) < 4.5 && Math.abs(z) < 42) continue // 竖路走廊
-    if (Math.abs(z) < 4.5 && Math.abs(x) < 42) continue // 横路走廊
+    if (Math.abs(x) < 4.5 && Math.abs(z) < 44) continue // 竖路走廊
+    if (Math.abs(z) < 4.5 && Math.abs(x) < 44) continue // 横路走廊
     out.push([x, z, rndBorder(6)])
+  }
+  return out
+})()
+
+// 边界灌木：32-46 半径散布（100 丛，填充树线之间的空隙）
+const rndBush = lcgRand(20261016)
+export const BORDER_BUSHES = (() => {
+  const out = []
+  let guard = 0
+  while (out.length < 100 && guard++ < 1600) {
+    const a = (rndBush(3600) / 3600) * Math.PI * 2
+    const r = 32 + rndBush(1400) / 100
+    const x = Math.round(Math.sin(a) * r * 10) / 10
+    const z = Math.round(Math.cos(a) * r * 10) / 10
+    if (Math.abs(x) < 3.5 && Math.abs(z) < 44) continue
+    if (Math.abs(z) < 3.5 && Math.abs(x) < 44) continue
+    out.push([x, z])
   }
   return out
 })()
