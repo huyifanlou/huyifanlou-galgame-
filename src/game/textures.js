@@ -254,39 +254,148 @@ export function dirtTexture() {
   })
 }
 
-// 操场：圆环跑道 + 内场 + 分道线 + 中线圆
+// 操场：512×320（32px/世界单位，与草地同密度）——红色跑道环 + 白线 + 像素噪点；内场草地与主草地同节奏（4px 格，世界≈10cm）
 export function trackTexture() {
-  return canvasTexture(256, 160, (ctx, w, h) => {
-    for (let y = 0; y < h; y += 4) {
-      for (let x = 0; x < w; x += 4) {
-        ctx.fillStyle = (x + y) % 8 === 0 ? '#4d8a45' : '#548f4b'
-        ctx.fillRect(x, y, 4, 4)
-      }
-    }
+  return canvasTexture(512, 320, (ctx, w, h) => {
     const rr = (x, y, ww, hh, r) => {
       ctx.beginPath()
       ctx.roundRect(x, y, ww, hh, r)
     }
-    rr(6, 6, w - 12, h - 12, 46)
+    const grassFill = (x0, y0, x1, y1) => {
+      for (let y = y0; y < y1; y += 4) {
+        for (let x = x0; x < x1; x += 4) {
+          ctx.fillStyle = (x + y) % 8 === 0 ? '#54904b' : '#4a8743'
+          ctx.fillRect(x, y, 4, 4)
+        }
+      }
+    }
+    // 底：整片草地（跑道环外四角与草地同节奏）
+    grassFill(0, 0, w, h)
+    // 跑道红环
+    rr(12, 12, w - 24, h - 24, 92)
     ctx.fillStyle = '#b26240'
     ctx.fill()
-    rr(24, 24, w - 48, h - 48, 32)
-    ctx.fillStyle = '#5b9c51'
+    // 红环像素噪点（裁剪到红环范围内，不洒到草地）
+    ctx.save()
+    rr(12, 12, w - 24, h - 24, 92)
+    ctx.clip()
+    for (let i = 0; i < 900; i++) {
+      ctx.fillStyle = ['#a8593a', '#bd6f4a', '#9e5335', '#c47a52'][rand(4)]
+      ctx.fillRect(rand(w), rand(h), 4, 4)
+    }
+    ctx.restore()
+    // 白色分道线（内外两圈）
+    ctx.strokeStyle = 'rgba(244,240,226,0.9)'
+    ctx.lineWidth = 4
+    rr(24, 24, w - 48, h - 48, 82)
+    ctx.stroke()
+    rr(40, 40, w - 80, h - 80, 70)
+    ctx.stroke()
+    // 内场草地（与主草地同节奏）
+    rr(48, 48, w - 96, h - 96, 64)
+    ctx.fillStyle = '#4a8743'
     ctx.fill()
-    ctx.strokeStyle = 'rgba(244,240,226,0.85)'
-    ctx.lineWidth = 2
-    rr(12, 12, w - 24, h - 24, 40)
-    ctx.stroke()
-    rr(18, 18, w - 36, h - 36, 36)
-    ctx.stroke()
+    ctx.save()
+    rr(48, 48, w - 96, h - 96, 64)
+    ctx.clip()
+    for (let y = 48; y < h - 48; y += 4) {
+      for (let x = 48; x < w - 48; x += 4) {
+        ctx.fillStyle = (x + y) % 8 === 0 ? '#54904b' : '#4a8743'
+        ctx.fillRect(x, y, 4, 4)
+      }
+    }
+    for (let i = 0; i < 130; i++) {
+      ctx.fillStyle = ['#3f7239', '#5da054', '#437c3c'][rand(3)]
+      ctx.fillRect(48 + rand(w - 96), 48 + rand(h - 96), rand(2) ? 6 : 4, rand(2) ? 6 : 4)
+    }
+    // 中线 + 中圈
+    ctx.fillStyle = 'rgba(244,240,226,0.9)'
+    ctx.fillRect(w / 2 - 2, 52, 4, h - 104)
+    ctx.strokeStyle = 'rgba(244,240,226,0.9)'
+    ctx.lineWidth = 4
     ctx.beginPath()
-    ctx.moveTo(w / 2, 28)
-    ctx.lineTo(w / 2, h - 28)
+    ctx.arc(w / 2, h / 2, 28, 0, Math.PI * 2)
     ctx.stroke()
-    ctx.beginPath()
-    ctx.arc(w / 2, h / 2, 14, 0, Math.PI * 2)
-    ctx.stroke()
+    ctx.restore()
   })
+}
+
+// 池塘（像素贴图）：石砌池沿（分块+噪声）+ 深水/浅水波纹 + 睡莲 + 高光点
+// 面片直径 7.2u / 256px = 35.5px/单位（与草地同密度）；环沿 r3.0-3.6u、水面 r3.0u，画布圆外透明
+export function pondTexture() {
+  const c = document.createElement('canvas')
+  c.width = 256
+  c.height = 256
+  const ctx = c.getContext('2d')
+  ctx.clearRect(0, 0, 256, 256)
+  // 石沿底环
+  ctx.fillStyle = '#8d8d94'
+  ctx.beginPath()
+  ctx.arc(128, 128, 128, 0, Math.PI * 2)
+  ctx.fill()
+  // 石沿分块 + 噪声
+  for (let i = 0; i < 16; i++) {
+    const a = (i / 16) * Math.PI * 2
+    ctx.fillStyle = ['#9aa0a6', '#83838a', '#a9adb2', '#7b7b82'][rand(4)]
+    ctx.fillRect(118 + Math.cos(a) * 118 - 10, 128 + Math.sin(a) * 118 - 10, 20, 20)
+  }
+  for (let i = 0; i < 420; i++) {
+    const a = Math.random() * Math.PI * 2
+    const rr = 108 + Math.random() * 18
+    ctx.fillStyle = ['rgba(0,0,0,0.12)', 'rgba(255,255,255,0.10)'][rand(2)]
+    ctx.fillRect(128 + Math.cos(a) * rr - 2, 128 + Math.sin(a) * rr - 2, 4, 4)
+  }
+  // 水面（深）
+  ctx.fillStyle = '#3e6ea6'
+  ctx.beginPath()
+  ctx.arc(128, 128, 106, 0, Math.PI * 2)
+  ctx.fill()
+  // 水波纹（横向浅色短线 + 波光点）
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2
+    const rr = Math.sqrt(Math.random()) * 98
+    const x = 128 + Math.cos(a) * rr
+    const y = 128 + Math.sin(a) * rr
+    ctx.fillStyle = ['#4d82bd', '#5a8fc8', '#4878b0'][rand(3)]
+    ctx.fillRect(x - 8, y, 12 + rand(10), 3)
+  }
+  for (let i = 0; i < 26; i++) {
+    const a = Math.random() * Math.PI * 2
+    const rr = Math.sqrt(Math.random()) * 96
+    ctx.fillStyle = 'rgba(190,215,240,0.75)'
+    ctx.fillRect(128 + Math.cos(a) * rr, 128 + Math.sin(a) * rr, 3, 3)
+  }
+  // 中心更亮区（浅水感）
+  ctx.fillStyle = '#4d82bd'
+  ctx.beginPath()
+  ctx.arc(136, 122, 34, 0, Math.PI * 2)
+  ctx.fill()
+  for (let i = 0; i < 16; i++) {
+    ctx.fillStyle = 'rgba(190,215,240,0.6)'
+    ctx.fillRect(110 + rand(52), 96 + rand(52), 3, 2)
+  }
+  // 睡莲（3 片）
+  for (const [lx, ly, lr] of [
+    [86, 156, 11],
+    [168, 92, 9],
+    [150, 172, 8],
+  ]) {
+    ctx.fillStyle = '#3f7a37'
+    ctx.beginPath()
+    ctx.arc(lx, ly, lr, 0.35, Math.PI * 2 + 0.1)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = '#2f5f2a'
+    ctx.fillRect(lx - 2, ly - lr + 2, 4, lr * 2 - 4)
+    ctx.fillStyle = '#5da04f'
+    ctx.fillRect(lx - lr + 3, ly - lr + 3, 6, 5)
+  }
+  const t = new THREE.CanvasTexture(c)
+  t.magFilter = THREE.NearestFilter
+  t.minFilter = THREE.NearestFilter
+  t.generateMipmaps = false
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
 }
 
 // 天空穹顶纹理（1024×512 等距圆柱投影，画布上沿=天顶、y≈256=地平线）

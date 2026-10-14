@@ -4,7 +4,7 @@ import * as THREE from 'three'
 import { BUILDINGS, TREES, BUSHES, FLOWERS, GROUNDS, POND, SPOTS, BRANCH_PATHS, FENCES, DIRT_PATCHES, LAMPS } from './campus.js'
 import {
   grassTexture, pathTexture, buildingTexture, signTexture,
-  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture,
+  flowerTexture, trackTexture, characterSheet, doorTexture, stripesTexture, dirtTexture, skyTexture, lampGlowTexture, pondTexture,
 } from './textures.js'
 import { useGameStore } from './store.js'
 
@@ -260,6 +260,7 @@ export default function CampusScene() {
   const pathH = useMemo(() => pathTexture(true), [])
   const flowers = useMemo(() => flowerTexture(), [])
   const track = useMemo(() => trackTexture(), [])
+  const pondTex = useMemo(() => pondTexture(), [])
   const spriteTex = useMemo(() => characterSheet(), [])
   const doorTex = useMemo(() => doorTexture(), [])
   const awningTex = useMemo(() => stripesTexture(), [])
@@ -477,20 +478,12 @@ export default function CampusScene() {
         </mesh>
       ))}
 
-      {/* 池塘 */}
+      {/* 池塘（像素贴图：石沿 + 波纹 + 睡莲） */}
       {[{ key: 'pnd', x: POND.pos[0], z: POND.pos[1] }].map((g) => (
         <group key={g.key} position={[g.x, 0, g.z]}>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.008, 0]}>
-            <circleGeometry args={[POND.r + 0.6, 26]} />
-            <meshLambertMaterial color="#7d7a5a" />
-          </mesh>
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]}>
-            <circleGeometry args={[POND.r, 24]} />
-            <meshLambertMaterial color="#3e6ea6" />
-          </mesh>
-          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0.6, 0.016, -0.4]}>
-            <circleGeometry args={[POND.r * 0.5, 18]} />
-            <meshLambertMaterial color="#4d82bd" />
+            <circleGeometry args={[POND.r + 0.6, 40]} />
+            <meshLambertMaterial map={pondTex} alphaTest={0.4} />
           </mesh>
           <mesh position={[POND.r - 0.5, 0.25, 0.9]}>
             <boxGeometry args={[0.9, 0.5, 0.7]} />
