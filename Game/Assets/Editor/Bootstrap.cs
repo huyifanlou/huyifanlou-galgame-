@@ -32,6 +32,30 @@ public static class Bootstrap
         }
         Debug.Log($"[Bootstrap] 贴图导入设置完成：{guids.Length} 张");
 
+        // ── 1.5) Shader 占位：运行时用 Shader.Find 建材质，构建时若无引用会被剥离（全黑）──
+        // 在 Resources 放一份材质占位 → 其 Shader 会被打进构建
+        var holderDir = "Assets/Resources/mat_holder";
+        Directory.CreateDirectory(holderDir);
+        string[] shaderNames =
+        {
+            "Standard",
+            "Unlit/Color",
+            "Unlit/Texture",
+            "Legacy Shaders/Particles/Alpha Blended",
+            "Legacy Shaders/Particles/Additive",
+            "Legacy Shaders/Transparent/Diffuse",
+        };
+        foreach (var sn in shaderNames)
+        {
+            var sh = Shader.Find(sn);
+            if (sh == null) { Debug.LogError("[Bootstrap] 找不到 Shader: " + sn); continue; }
+            var assetPath = holderDir + "/" + sn.Replace("/", "_").Replace(" ", "_") + ".mat";
+            if (AssetDatabase.LoadAssetAtPath<Material>(assetPath) == null)
+                AssetDatabase.CreateAsset(new Material(sh), assetPath);
+        }
+        AssetDatabase.SaveAssets();
+        Debug.Log("[Bootstrap] Shader 占位材质完成");
+
         // ── 2) 项目设置 ──
         PlayerSettings.productName = "校园叙事 RPG";
         PlayerSettings.companyName = "huyifanlou";
