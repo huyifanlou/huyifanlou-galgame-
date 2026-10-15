@@ -1,0 +1,40 @@
+# —— Unity 工程 ——
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+.utmp/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+
+# —— 依赖与缓存 ——
+node_modules/
+tools/package-lock.json
+
+# —— 系统 ——
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# —— 构建产物（本工作区） ——
+shots/
+Build/

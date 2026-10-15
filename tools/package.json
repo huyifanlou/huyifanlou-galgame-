@@ -1,0 +1,13 @@
+{
+  "name": "unity-galgame-asset-tools",
+  "private": true,
+  "type": "module",
+  "description": "从 web 版 v0.40 的程序化贴图生成 Unity 工程资产（PNG + world.json）",
+  "scripts": {
+    "export": "node export-assets.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^0.1.70",
+    "three": "^0.186.1"
+  }
+}
