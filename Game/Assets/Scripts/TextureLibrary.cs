@@ -508,6 +508,8 @@ public static class TextureLibrary
         var ops = new List<(int x, int y, int w, int h, string col)>();
         void r(int x, int y, int w, int h, string col) => ops.Add((x, y, w, h, col));
 
+        int bodyStart = 0, bob = 0;   // 躯干起点与行走起伏（并步上浮/迈步下沉）
+
         void Paint(bool side, bool up, int frame)
         {
             ops.Clear();
@@ -526,6 +528,8 @@ public static class TextureLibrary
                 r(10, 21, 1, 8, pantsD);
                 r(5, liftA ? 28 : 29, 6, 2, shoe); r(11, liftB ? 28 : 29, 6, 2, shoe);
             }
+            bodyStart = ops.Count;
+            bob = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 1 : 0;   // 身体随步伐起伏
             if (side)
             {
                 // 侧身手臂随步伐前后摆动（0 站立 / 1 前迈 / 2 并步 / 3 后摆）
@@ -585,17 +589,21 @@ public static class TextureLibrary
                 bool side = dir == "left" || dir == "right";
                 bool isUp = dir == "up";
                 Paint(side, isUp, f);
-                // 描边层（世界 = ox+x, oy+y；左向镜像）
-                foreach (var (x, y, w, h, _) in ops)
+                // 描边层（躯干/头按起伏偏移，腿不动）
+                for (int oi = 0; oi < ops.Count; oi++)
                 {
+                    var (x, y, w, h, _) = ops[oi];
+                    int dy = oi >= bodyStart ? bob : 0;
                     int px = dir == "left" ? ox + CW - 2 - x - w : ox + x;
-                    p.FillRect(px, oy + y, w + 2, h + 2, C(line));
+                    p.FillRect(px, oy + y + dy, w + 2, h + 2, C(line));
                 }
                 // 颜色层
-                foreach (var (x, y, w, h, col) in ops)
+                for (int oi = 0; oi < ops.Count; oi++)
                 {
+                    var (x, y, w, h, col) = ops[oi];
+                    int dy = oi >= bodyStart ? bob : 0;
                     int px = dir == "left" ? ox + CW - 1 - x - w : ox + x + 1;
-                    p.FillRect(px, oy + y + 1, w, h, C(col));
+                    p.FillRect(px, oy + y + 1 + dy, w, h, C(col));
                 }
             }
         }

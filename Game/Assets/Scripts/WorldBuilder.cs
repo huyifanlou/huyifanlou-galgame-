@@ -499,12 +499,13 @@ public class WorldBuilder : MonoBehaviour
             {
                 float ww = 4.6f, wh = h * 0.72f;
                 var wg = NewGo("wing", grp).transform;
-                wg.localPosition = new Vector3(w / 2f + ww / 2f, 0f, 0.6f);
+                // 侧翼贴着地面（原点放地面，避免盒子悬空——此前从楼体半高继承导致浮空 0.7m）
+                wg.localPosition = new Vector3(w / 2f + ww / 2f, -h / 2f, 0.6f);
                 var wingMat = LitTex("wing_" + b.id + "_day");
-                Box(wg, Vector3.zero, new Vector3(ww, wh, d * 0.8f), wingMat);
+                Box(wg, new Vector3(0, wh / 2f, 0), new Vector3(ww, wh, d * 0.8f), wingMat);
                 WindowMatRefs.Add(wingMat);
                 WindowMats.Add(new[] { "wing_" + b.id + "_day", "wing_" + b.id + "_night" });
-                Box(wg, new Vector3(0, wh / 2f + 0.14f, 0), new Vector3(ww + 0.5f, 0.28f, d * 0.8f + 0.5f), ColMat(b.roof));
+                Box(wg, new Vector3(0, wh + 0.14f, 0), new Vector3(ww + 0.5f, 0.28f, d * 0.8f + 0.5f), ColMat(b.roof));
             }
             if (b.antenna)
             {
