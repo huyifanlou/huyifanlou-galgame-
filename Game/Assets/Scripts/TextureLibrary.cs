@@ -194,76 +194,74 @@ public static class TextureLibrary
 
     static Px Building(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit)
     {
-        const int cell = 64;   // 2× 密度（原 32）：立面约 40px/世界单位，与草地同密度
-        int W = cols * cell, H = rows * cell + 80;
+        const int cell = 128;   // 4× 原版密度（≈80px/世界单位，随全局像素翻倍）
+        int W = cols * cell, H = rows * cell + 160;
         var p = new Px(W, H);
         p.FillRect(0, 0, W, H, C(wall));
-        int noise = (int)Math.Floor((W * (double)H) / 96);
+        int noise = (int)Math.Floor((W * (double)H) / 384);
         for (int i = 0; i < noise; i++)
         {
-            p.FillRect(R.Int(W), R.Int(H), 12, 6, C("rgba(0,0,0,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 6, 6, C("rgba(255,255,255,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 2, 2, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 24, 12, C("rgba(0,0,0,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 12, 12, C("rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 4, 4, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
         }
-        // 细砖缝（新细节层次）
-        for (int y = 16; y < H; y += 16) p.FillRect(0, y, W, 1, C("rgba(0,0,0,0.035)"));
-        p.FillRect(0, 0, W, 16, C(trim));
-        p.FillRect(0, 16, W, 6, C("rgba(0,0,0,0.12)"));
+        for (int y = 32; y < H; y += 32) p.FillRect(0, y, W, 2, C("rgba(0,0,0,0.035)"));
+        p.FillRect(0, 0, W, 32, C(trim));
+        p.FillRect(0, 32, W, 12, C("rgba(0,0,0,0.12)"));
         for (int r = 1; r < rows; r++)
         {
-            p.FillRect(0, r * cell + 24, W, 14, C(trim));
-            p.FillRect(0, r * cell + 38, W, 6, C("rgba(0,0,0,0.15)"));
+            p.FillRect(0, r * cell + 48, W, 28, C(trim));
+            p.FillRect(0, r * cell + 76, W, 12, C("rgba(0,0,0,0.15)"));
         }
-        p.FillRect(0, H - 48, W, 48, C(plinth));
-        p.FillRect(0, H - 18, W, 18, C("rgba(0,0,0,0.18)"));
-        p.FillRect(0, H - 12, W, 4, C("rgba(255,255,255,0.06)"));
+        p.FillRect(0, H - 96, W, 96, C(plinth));
+        p.FillRect(0, H - 36, W, 36, C("rgba(0,0,0,0.18)"));
+        p.FillRect(0, H - 24, W, 8, C("rgba(255,255,255,0.06)"));
         for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
         {
             bool isLit = R.Next() < lit;
             int kind = R.Int(10);
-            int wx = c2 * cell + 14, wy = r * cell + 20;
-            p.FillRect(wx - 6, wy - 6, 52, 52, C(trim));
-            p.FillRect(wx, wy, 40, 40, C(isLit ? "#ffd98a" : "#2c3548"));
-            if (isLit) p.FillRect(wx, wy, 40, 6, C("#ffe9b8"));
+            int wx = c2 * cell + 28, wy = r * cell + 40;
+            p.FillRect(wx - 12, wy - 12, 104, 104, C(trim));
+            p.FillRect(wx, wy, 80, 80, C(isLit ? "#ffd98a" : "#2c3548"));
+            if (isLit) p.FillRect(wx, wy, 80, 12, C("#ffe9b8"));
             else
             {
                 if (R.Next() < 0.35)
                 {
-                    p.FillRect(wx + 4, wy + 4, 14, 6, C("rgba(170,195,225,0.30)"));
-                    p.FillRect(wx + 8, wy + 10, 10, 6, C("rgba(170,195,225,0.30)"));
+                    p.FillRect(wx + 8, wy + 8, 28, 12, C("rgba(170,195,225,0.30)"));
+                    p.FillRect(wx + 16, wy + 20, 20, 12, C("rgba(170,195,225,0.30)"));
                 }
-                // 十字窗棂（新细节）
-                p.FillRect(wx + 19, wy, 2, 40, C(trim));
-                p.FillRect(wx, wy + 19, 40, 2, C(trim));
+                p.FillRect(wx + 38, wy, 4, 80, C(trim));
+                p.FillRect(wx, wy + 38, 80, 4, C(trim));
             }
-            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 40, 14, C("#a08b80"));
+            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 80, 28, C("#a08b80"));
             if (kind == 2 && !isLit)
             {
-                p.FillRect(wx, wy + 42, 40, 10, C("#3f6e35"));
-                for (int i = 0; i < 5; i++) p.FillRect(wx + 4 + i * 8, wy + 38, 4, 6, C("#4a8743"));
+                p.FillRect(wx, wy + 84, 80, 20, C("#3f6e35"));
+                for (int i = 0; i < 5; i++) p.FillRect(wx + 8 + i * 16, wy + 76, 8, 12, C("#4a8743"));
             }
-            p.FillRect(wx, wy + 34, 40, 6, C("rgba(0,0,0,0.3)"));
-            p.FillRect(wx, wy + 52, 40, 6, C("rgba(0,0,0,0.22)"));
-            p.FillRect(wx, wy + 46, 40, 4, C("rgba(255,255,255,0.05)"));
+            p.FillRect(wx, wy + 68, 80, 12, C("rgba(0,0,0,0.3)"));
+            p.FillRect(wx, wy + 104, 80, 12, C("rgba(0,0,0,0.22)"));
+            p.FillRect(wx, wy + 92, 80, 8, C("rgba(255,255,255,0.05)"));
             if (kind == 3)
             {
-                p.FillRect(wx + 6, wy + 52, 26, 20, C("#9aa2ac"));
-                for (int i = 0; i < 3; i++) p.FillRect(wx + 8, wy + 55 + i * 5, 22, 2, C("rgba(0,0,0,0.15)"));
-                p.FillRect(wx + 6, wy + 66, 26, 6, C("rgba(0,0,0,0.25)"));
+                p.FillRect(wx + 12, wy + 104, 52, 40, C("#9aa2ac"));
+                for (int i = 0; i < 3; i++) p.FillRect(wx + 16, wy + 110 + i * 10, 44, 4, C("rgba(0,0,0,0.15)"));
+                p.FillRect(wx + 12, wy + 132, 52, 12, C("rgba(0,0,0,0.25)"));
             }
             if (r > 0 && kind == 4 && !isLit)
             {
-                p.FillRect(wx - 6, wy + 54, 52, 4, C("#cfc9ba"));
-                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 4 + bxx * 4, wy + 42, 2, 12, C("#b8b0a2"));
+                p.FillRect(wx - 12, wy + 108, 104, 8, C("#cfc9ba"));
+                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 8 + bxx * 8, wy + 84, 4, 24, C("#b8b0a2"));
             }
         }
         if (banner)
         {
-            int by = cell + 88;
-            p.FillRect(24, by + 52, W - 48, 6, C("rgba(0,0,0,0.18)"));
-            p.FillRect(24, by, W - 48, 52, C("#c0392b"));
-            p.FillRect(24, by, W - 48, 3, C("rgba(255,255,255,0.12)"));
-            for (int x = 52; x < W - 76; x += 44) p.FillRect(x, by + 14, 26, 24, C("#f5d04e"));
+            int by = cell + 176;
+            p.FillRect(48, by + 104, W - 96, 12, C("rgba(0,0,0,0.18)"));
+            p.FillRect(48, by, W - 96, 104, C("#c0392b"));
+            p.FillRect(48, by, W - 96, 6, C("rgba(255,255,255,0.12)"));
+            for (int x = 104; x < W - 152; x += 88) p.FillRect(x, by + 28, 52, 48, C("#f5d04e"));
         }
         return p;
     }
@@ -522,7 +520,7 @@ public static class TextureLibrary
 
     static Px Character()
     {
-        const int CW = 52, CH = 76;   // 2× 精度（逻辑格 26×38 的 2 倍像素密度，可画更细细节）
+        const int CW = 104, CH = 152;   // 4× 精度（逻辑格 26×38 的 4 倍像素密度）
         var p = new Px(CW * 4, CH * 4);   // 4 列：站立 + 3 帧行走周期
         string hair = "#eccb5a", hairD = "#c9a234", hairL = "#f6dd82", skin = "#f6dcae", skinD = "#e0c193";
         string eyeW = "#f8f6ee", eye = "#2b3a58", coat = "#46567f", coatD = "#333f5e", coatL = "#55668f";
@@ -530,8 +528,8 @@ public static class TextureLibrary
         string pants = "#2e3550", pantsD = "#232838", shoe = "#23262e", shoeD = "#3a3f4a", line = "#262031";
 
         var ops = new List<(int x, int y, int w, int h, string col)>();
-        void r(int x, int y, int w, int h, string col) => ops.Add((x * 2, y * 2, w * 2, h * 2, col));   // 逻辑格坐标（自动 ×2）
-        void r2(int x, int y, int w, int h, string col) => ops.Add((x, y, w, h, col));                  // 2× 精度细节坐标
+        void r(int x, int y, int w, int h, string col) => ops.Add((x * 4, y * 4, w * 4, h * 4, col));   // 逻辑格坐标（自动 ×4）
+        void r2(int x, int y, int w, int h, string col) => ops.Add((x * 2, y * 2, w * 2, h * 2, col));  // 2× 细节坐标（现为 ×2 到 4× 空间）
 
         int bodyStart = 0, bobY = 0, bobX = 0;   // 躯干起点 + 行走起伏/前倾
 
@@ -540,8 +538,8 @@ public static class TextureLibrary
             ops.Clear();
             // 起伏先算：腿根随身体上下，脚掌始终贴地（逻辑格单位；施加到 op 时换算 2×）
             int bobL = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;
-            bobY = bobL * 2;
-            bobX = frame >= 1 && side ? 2 : 0;
+            bobY = bobL * 4;
+            bobX = frame >= 1 && side ? 4 : 0;
             int legTop = 21 + bobL;
             int baseH = 8 - bobL;
             if (side)

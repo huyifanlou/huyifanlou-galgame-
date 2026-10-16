@@ -211,7 +211,7 @@ public class PlayerRig : MonoBehaviour
         if (_spriteMesh != null)
         {
             float u0 = frame / 4f, v0 = (3 - row) / 4f;
-            const float ix = 0.25f / 208f, iy = 0.25f / 304f;   // 精灵表 208×304（2× 精度）
+            const float ix = 0.25f / 416f, iy = 0.25f / 608f;   // 精灵表 416×608（4× 精度）
             float ua = u0 + ix, ub = u0 + 0.25f - ix, va = v0 + iy, vb = v0 + 0.25f - iy;
             _spriteMesh.uv = new[]
             {
