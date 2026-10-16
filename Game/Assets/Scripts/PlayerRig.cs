@@ -202,7 +202,7 @@ public class PlayerRig : MonoBehaviour
         if (Mathf.Abs(d2) < Mathf.PI / 4f) row = 1;                 // 背面朝镜头
         else if (Mathf.Abs(d2) > 3f * Mathf.PI / 4f) row = 0;       // 正面
         else row = d2 < 0f ? 3 : 2;                                 // 右侧面 / 左侧面
-        int frame = moving ? 1 + (int)(Time.time * 8f) % 2 : 0;
+        int frame = moving ? 1 + (int)(Time.time * 8f) % 3 : 0;   // 0 站立 + 3 帧行走周期
         _spriteMat.mainTextureOffset = new Vector2(frame / 3f, (3 - row) / 4f);
 
         // 可交互地点检测（建筑正门 / 操场 / 池塘 / 家）

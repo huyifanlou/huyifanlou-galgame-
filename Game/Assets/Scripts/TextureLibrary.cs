@@ -499,7 +499,7 @@ public static class TextureLibrary
     static Px Character()
     {
         const int CW = 26, CH = 38;
-        var p = new Px(CW * 3, CH * 4);
+        var p = new Px(CW * 4, CH * 4);   // 4 列：站立 + 3 帧行走周期（美化②）
         string hair = "#eccb5a", hairD = "#c9a234", hairL = "#f6dd82", skin = "#f6dcae", skinD = "#e0c193";
         string eyeW = "#f8f6ee", eye = "#2b3a58", coat = "#46567f", coatD = "#333f5e", coatL = "#55668f";
         string shirt = "#f4f1e6", tie = "#b23a44", tieD = "#8c2c34", btn = "#d8d4c8", belt = "#2a2d3a", buckle = "#c9c2ae";
@@ -513,22 +513,26 @@ public static class TextureLibrary
             ops.Clear();
             if (side)
             {
-                int fwd = frame == 1 ? 2 : 0, bwd = frame == 2 ? 2 : 0;
+                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆
+                int fwd = frame == 1 ? 3 : frame == 2 ? 1 : 0;
+                int bwd = frame == 3 ? 3 : frame == 2 ? 1 : 0;
                 r(12 + fwd, 21, 4, 8, pants); r(8 - bwd, 21, 4, 8, pantsD);
                 r(11 + fwd, 29, 6, 2, shoe); r(6 - bwd, 29, 6, 2, shoeD);
             }
             else
             {
-                bool liftA = frame == 1, liftB = frame == 2;
+                bool liftA = frame == 1, liftB = frame == 3;
                 r(7, 21, 4, liftA ? 7 : 8, pants); r(12, 21, 4, liftB ? 7 : 8, pants);
                 r(10, 21, 1, 8, pantsD);
                 r(5, liftA ? 28 : 29, 6, 2, shoe); r(11, liftB ? 28 : 29, 6, 2, shoe);
             }
             if (side)
             {
+                // 侧身手臂随步伐前后摆动（0 站立 / 1 前迈 / 2 并步 / 3 后摆）
+                int sw = frame == 1 ? 2 : frame == 3 ? 0 : 1;
                 r(8, 9, 8, 4, coat); r(8, 13, 7, 5, coat); r(8, 18, 6, 3, coat);
-                r(8, 9, 1, 12, coatD); r(14, 10, 3, 8, coat); r(14, 18, 3, 2, coatD);
-                r(14, 20, 3, 2, skin); r(8, 19, 6, 2, belt);
+                r(8, 9, 1, 12, coatD); r(14, 10 + sw, 3, 8, coat); r(14, 18 + sw, 3, 2, coatD);
+                r(14, 20 + sw, 3, 2, skin); r(8, 19, 6, 2, belt);
             }
             else
             {
@@ -574,7 +578,7 @@ public static class TextureLibrary
         var rows = new[] { "down", "up", "left", "right" };
         for (int ri = 0; ri < 4; ri++)
         {
-            for (int f = 0; f < 3; f++)
+            for (int f = 0; f < 4; f++)
             {
                 int ox = f * CW, oy = ri * CH;
                 string dir = rows[ri];

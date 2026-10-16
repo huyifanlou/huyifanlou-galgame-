@@ -813,7 +813,7 @@ public class WorldBuilder : MonoBehaviour
         var sprite = NewGo("sprite", grp).transform;
         sprite.localPosition = new Vector3(0f, 0.58f, 0f);
         var sm = MatLib.Sprite("player");
-        sm.mainTextureScale = new Vector2(1f / 3f, 1f / 4f);
+        sm.mainTextureScale = new Vector2(1f / 4f, 1f / 4f);   // 4 列：站立 + 3 帧行走
         sm.mainTextureOffset = new Vector2(0f, 3f / 4f);
         MeshObj(sprite, MeshFactory.QuadZ(1.12f, 1.64f), Vector3.zero, sm, default, false, false);
         PlayerSprite = sprite.GetComponentInChildren<Renderer>();
