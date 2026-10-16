@@ -22,6 +22,7 @@ public class PlayerRig : MonoBehaviour
     bool _firstPerson;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
     float _fpPitch;             // 第一人称俯仰（上正下负）
     Renderer _spriteR;
+    Mesh _spriteMesh;
     Vector3 _dragLast;
     string _simKey;
     int _simFrames = -1;
@@ -36,6 +37,8 @@ public class PlayerRig : MonoBehaviour
         _sprite = w.PlayerSprite.transform;
         _spriteR = w.PlayerSprite;
         _spriteMat = w.PlayerSprite.material;   // 实例化，供帧动画改 UV
+        var mf = w.PlayerSprite.GetComponent<MeshFilter>();
+        _spriteMesh = mf != null ? mf.sharedMesh : null;
 
         _cam.clearFlags = CameraClearFlags.SolidColor;
         _cam.backgroundColor = MatLib.Hex("#10141c");
@@ -203,7 +206,17 @@ public class PlayerRig : MonoBehaviour
         else if (Mathf.Abs(d2) > 3f * Mathf.PI / 4f) row = 0;       // 正面
         else row = d2 < 0f ? 3 : 2;                                 // 右侧面 / 左侧面
         int frame = moving ? 1 + (int)(Time.time * 8f) % 3 : 0;   // 0 站立 + 3 帧行走周期
-        _spriteMat.mainTextureOffset = new Vector2(frame / 3f, (3 - row) / 4f);
+        // 帧 UV 直接写进四边形顶点：4×4 精灵表，逐帧取格（含 1/4 像素内缩防跨格采样）
+        if (_spriteMesh != null)
+        {
+            float u0 = frame / 4f, v0 = (3 - row) / 4f;
+            const float ix = 0.25f / 104f, iy = 0.25f / 152f;
+            float ua = u0 + ix, ub = u0 + 0.25f - ix, va = v0 + iy, vb = v0 + 0.25f - iy;
+            _spriteMesh.uv = new[]
+            {
+                new Vector2(ub, va), new Vector2(ua, va), new Vector2(ua, vb), new Vector2(ub, vb),
+            };
+        }
 
         // 可交互地点检测（建筑正门 / 操场 / 池塘 / 家）
         string near = null;
