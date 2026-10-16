@@ -204,7 +204,8 @@ public class PlayerRig : MonoBehaviour
         int row;
         if (Mathf.Abs(d2) < Mathf.PI / 4f) row = 1;                 // 背面朝镜头
         else if (Mathf.Abs(d2) > 3f * Mathf.PI / 4f) row = 0;       // 正面
-        else row = d2 < 0f ? 3 : 2;                                 // 右侧面 / 左侧面
+        // 行映射：精灵表 QuadZ 做过 U 轴镜像（修招牌文字），左右两行需交换才能朝向正确
+        else row = d2 < 0f ? 2 : 3;                                 // 左侧面 / 右侧面
         int frame = moving ? 1 + (int)(Time.time * 8f) % 3 : 0;   // 0 站立 + 3 帧行走周期
         // 帧 UV 直接写进四边形顶点：4×4 精灵表，逐帧取格（含 1/4 像素内缩防跨格采样）
         if (_spriteMesh != null)

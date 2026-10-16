@@ -5,8 +5,8 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class PostFX : MonoBehaviour
 {
-    public float BloomIntensity = 0.45f;
-    public float VigStrength = 0.70f;
+    public float BloomIntensity = 0.40f;
+    public float VigStrength = 0.60f;
     public float Threshold = 0.72f;
     public float DofMax = 0.7f;
 

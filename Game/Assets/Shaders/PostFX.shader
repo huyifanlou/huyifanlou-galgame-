@@ -15,8 +15,8 @@ Shader "Campus/PostFX"
         _FocusBand ("Focus Band", Range(0, 0.5)) = 0.16
         _FocusFalloff ("Focus Falloff", Range(0.01, 0.6)) = 0.3
         _DofMax ("DOF Strength", Range(0, 1)) = 0.85
-        _Saturation ("Saturation", Range(0, 2)) = 1.12
-        _Contrast ("Contrast", Range(0.5, 2)) = 1.06
+        _Saturation ("Saturation", Range(0, 2)) = 1.07
+        _Contrast ("Contrast", Range(0.5, 2)) = 1.0
         _Tint ("Warm Tint", Color) = (1.03, 1.0, 0.96, 1)
         _VigInner ("Vignette Inner", Range(0, 1)) = 0.55
         _VigOuter ("Vignette Outer", Range(0, 2)) = 1.25

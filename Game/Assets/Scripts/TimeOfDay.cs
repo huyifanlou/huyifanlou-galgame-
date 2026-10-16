@@ -33,8 +33,8 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color NIGHT_FOG = MatLib.Hex("#0e1626");
     static readonly Color GLASS_OFF = MatLib.Hex("#d5dbe4");
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
-    const float DAY_AMB = 0.34f, DAY_HEMI = 0.14f, DAY_DIR_I = 0.95f;
-    const float NIGHT_AMB = 0.22f, NIGHT_HEMI = 0.12f, NIGHT_DIR_I = 0.45f;
+    const float DAY_AMB = 0.28f, DAY_HEMI = 0.10f, DAY_DIR_I = 0.82f;
+    const float NIGHT_AMB = 0.34f, NIGHT_HEMI = 0.20f, NIGHT_DIR_I = 0.58f;
     const float DAY_FOG_NEAR = 62f, DAY_FOG_FAR = 158f;
     const float NIGHT_FOG_NEAR = 48f, NIGHT_FOG_FAR = 138f;
 
@@ -198,8 +198,8 @@ public class TimeOfDay : MonoBehaviour
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
-                _post.BloomIntensity = Mathf.Lerp(0.30f, 0.72f, m);
-                _post.VigStrength = Mathf.Lerp(0.62f, 0.78f, m);
+            _post.BloomIntensity = Mathf.Lerp(0.28f, 0.60f, m);
+            _post.VigStrength = Mathf.Lerp(0.56f, 0.68f, m);
             }
 
             // 建筑窗户：昼夜双贴图（阈值 0.45，跨阈值才切换）
