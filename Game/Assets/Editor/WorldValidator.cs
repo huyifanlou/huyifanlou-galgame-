@@ -230,7 +230,8 @@ public static class WorldValidator
         }
         // 12) 贴地/贴面纹理密度（密度铁律：基准 160px/米；周期单一来源在 TexScale）
         //     基准组超出 ±6% 即报错 —— 专门抓「贴图像素尺寸」与「平铺周期」脱钩这类静默退化
-        var baselineTex = new List<string> { "grass", "path", "road_mainstone", "road_cobble" };
+        //     基准组 = 能一次铺满达到 160px/米 的贴地纹理；球场/操场/池塘受 2048 上限限制，列为登记项
+        var baselineTex = new List<string> { "grass", "path", "road_mainstone", "road_cobble", "flower", "dirt", "roadband_v", "roadband_h" };
         var densityLog = new List<string>();
         foreach (var kv in TexScale.Cover)
         {

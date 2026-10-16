@@ -317,7 +317,7 @@ public static class TextureLibrary
 
     static Px Flower()
     {
-        var p = new Px(64, 64);
+        var p = new Px(64, 64, 4);   // 物理 256×256，覆盖 1.7m ≈ 150.6px/米（基准 ±6% 内；草格仍 10.6cm）
         for (int y = 0; y < 64; y += 4) for (int x = 0; x < 64; x += 4)
             p.FillRect(x, y, 4, 4, C((x + y) % 8 == 0 ? "#54904b" : "#4a8743"));
         var colors = new[] { "#e8748a", "#f2d857", "#f4f2ea", "#c58ae0" };
@@ -332,7 +332,7 @@ public static class TextureLibrary
 
     static Px Dirt()
     {
-        var p = new Px(96, 96);
+        var p = new Px(96, 96, 8);   // 物理 768×768，覆盖 4.8m = 160px/米（精确对齐基准）
         var cols = new[] { "#8a6f4f", "#7d6448", "#938060" };
         for (int y = 4; y < 92; y += 2) for (int x = 4; x < 92; x += 2)
         {
@@ -345,7 +345,7 @@ public static class TextureLibrary
 
     static Px Track()
     {
-        var p = new Px(512, 320, 2);   // 物理 1024×640，覆盖操场 16×10m ≈ 64px/米（密度 ×2）
+        var p = new Px(512, 320, 4);   // 物理 2048×1280（撞 2048 上限），覆盖操场 16×10m = 128px/米
         void GrassFill(int x0, int y0, int x1, int y1)
         {
             for (int y = y0; y < y1; y += 4) for (int x = x0; x < x1; x += 4)
@@ -378,7 +378,7 @@ public static class TextureLibrary
 
     static Px Pond()
     {
-        var p = new Px(256, 256, 2);   // 物理 512×512，覆盖 (r+0.6)×2 = 7.2m ≈ 71px/米（密度 ×2）
+        var p = new Px(256, 256, 4);   // 物理 1024×1024，覆盖 (r+0.6)×2 = 7.2m ≈ 142px/米
         p.FillCircle(128, 128, 128, C("#8d8d94"));
         var stone = new[] { "#9aa0a6", "#83838a", "#a9adb2", "#7b7b82" };
         for (int i = 0; i < 16; i++)
@@ -689,7 +689,7 @@ public static class TextureLibrary
 
     static Px Court(string kind)
     {
-        var p = new Px(512, 320);
+        var p = new Px(512, 320, 4);   // 物理 2048×1280（撞 2048 上限）：15m 宽 → 136.5px/米；再高需分块
         p.FillRect(0, 0, 512, 320, C(kind == "basket" ? "#2f6b52" : "#3b6b4a"));
         for (int i = 0; i < 900; i++)
         {
@@ -751,19 +751,23 @@ public static class TextureLibrary
 
     static Px RoadBand(bool vertical)
     {
-        var p = vertical ? new Px(8, 32) : new Px(32, 8);
+        // 逻辑画布按世界尺度画：0.6m（带宽）× 1m（每铺一次）@160px/米 = 96×160
+        // （旧版 8×32 是横纵不等密度的拉伸版：13.3×32px/米，边线世界宽度 7.5cm、接缝 3.1cm 保持不变）
+        var p = vertical ? new Px(96, 160) : new Px(160, 96);
         p.FillRect(0, 0, p.W, p.H, C("#cfc7b8"));
+        var edge = C("rgba(150,142,128,0.55)");
+        var joint = C("rgba(150,142,128,0.4)");
         if (vertical)
         {
-            p.FillRect(0, 0, 1, 32, C("rgba(150,142,128,0.55)"));
-            p.FillRect(7, 0, 1, 32, C("rgba(150,142,128,0.55)"));
-            p.FillRect(0, 15, 8, 1, C("rgba(150,142,128,0.4)"));
+            p.FillRect(0, 0, 12, 160, edge);      // 两侧边线（沿路纵向）
+            p.FillRect(84, 0, 12, 160, edge);
+            p.FillRect(0, 78, 96, 5, joint);      // 接缝（每 1m 一道）
         }
         else
         {
-            p.FillRect(0, 0, 32, 1, C("rgba(150,142,128,0.55)"));
-            p.FillRect(0, 7, 32, 1, C("rgba(150,142,128,0.55)"));
-            p.FillRect(15, 0, 1, 8, C("rgba(150,142,128,0.4)"));
+            p.FillRect(0, 0, 160, 12, edge);
+            p.FillRect(0, 84, 160, 12, edge);
+            p.FillRect(78, 0, 5, 96, joint);
         }
         return p;
     }

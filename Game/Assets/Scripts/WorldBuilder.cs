@@ -310,9 +310,8 @@ public class WorldBuilder : MonoBehaviour
             }
             if (r.kind == "mainstone")
             {
-                // 中线石带（浅色石条，接缝每 2m）
-                int lrep = Mathf.Max(1, Mathf.RoundToInt(len / 1f));
-                var bandMesh = r.axis == "z" ? MeshFactory.Quad(0.6f, len, 1f, lrep) : MeshFactory.Quad(len, 0.6f, lrep, 1f);
+                // 中线石带（浅色石条）：带宽 0.6m 一次铺满、纵向每 1m 一铺（贴图 96×160 = 160px/米，接缝每 1m）
+                var bandMesh = r.axis == "z" ? MeshFactory.Quad(0.6f, len, 1f, len) : MeshFactory.Quad(len, 0.6f, len, 1f);
                 MeshObj(go.transform, bandMesh, new Vector3(0, 0.006f, 0), LitTex(r.axis == "z" ? "roadband_v" : "roadband_h"), default, false, false);
             }
         }
