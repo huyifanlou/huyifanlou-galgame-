@@ -513,24 +513,28 @@ public static class TextureLibrary
         void Paint(bool side, bool up, int frame)
         {
             ops.Clear();
+            // 起伏先算：腿根随身体上下，脚掌始终贴地（避免身体与腿分离）
+            bobY = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;
+            bobX = frame >= 1 && side ? 1 : 0;   // 侧身行走稍向前倾
+            int legTop = 21 + bobY;
+            int baseH = 8 - bobY;
             if (side)
             {
-                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆（迈步幅度加大到 3-4px）
+                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆（迈步幅度 3-4px）
                 int fwd = frame == 1 ? 4 : frame == 2 ? 1 : 0;
                 int bwd = frame == 3 ? 4 : frame == 2 ? 1 : 0;
-                r(12 + fwd, 21, 4, 8, pants); r(8 - bwd, 21, 4, 8, pantsD);
+                r(12 + fwd, legTop, 4, baseH, pants); r(8 - bwd, legTop, 4, baseH, pantsD);
                 r(11 + fwd, 29, 6, 2, shoe); r(6 - bwd, 29, 6, 2, shoeD);
             }
             else
             {
                 bool liftA = frame == 1, liftB = frame == 3;
-                r(7, 21, 4, liftA ? 6 : 8, pants); r(12, 21, 4, liftB ? 6 : 8, pants);
-                r(10, 21, 1, 8, pantsD);
+                r(7, legTop, 4, liftA ? baseH - 2 : baseH, pants);
+                r(12, legTop, 4, liftB ? baseH - 2 : baseH, pants);
+                r(10, legTop, 1, baseH, pantsD);
                 r(5, liftA ? 27 : 29, 6, 2, shoe); r(11, liftB ? 27 : 29, 6, 2, shoe);
             }
             bodyStart = ops.Count;
-            bobY = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;   // 起伏加大：并步上浮 1px、迈步下沉 2px
-            bobX = frame >= 1 && side ? 1 : 0;                              // 侧身行走稍向前倾
             if (side)
             {
                 // 侧身手臂随步伐前后摆动（0 站立 / 1 前迈 / 2 并步 / 3 后摆）
