@@ -97,8 +97,11 @@ public class WorldBuilder : MonoBehaviour
             switch (p.type)
             {
                 case "plaza":
-                    MeshObj(grp, MeshFactory.Quad(p.w, p.d, Mathf.Max(1, Mathf.RoundToInt(p.w / 0.8f)), Mathf.Max(1, Mathf.RoundToInt(p.d / 0.8f))),
-                        new Vector3(0, 0.018f, 0), LitTex("path"));
+                    {
+                        var prep = TexScale.Repeat(p.w, p.d, TexScale.PathPeriod);
+                        MeshObj(grp, MeshFactory.Quad(p.w, p.d, prep.x, prep.y),
+                            new Vector3(0, 0.018f, 0), LitTex("path"));
+                    }
                     break;
                 case "flag":
                     Box(grp, new Vector3(0, 0.25f, 0), new Vector3(0.9f, 0.5f, 0.9f), ColMat("#b8b0a2"));
@@ -280,7 +283,8 @@ public class WorldBuilder : MonoBehaviour
     void GroundAndPaths()
     {
         float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
-        Flat(Root, gs, gs, 0f, LitTex("grass"), gs / 1.667f, gs / 1.667f);
+        var greps = TexScale.Repeat(gs, gs, TexScale.GrassPeriod);
+        Flat(Root, gs, gs, 0f, LitTex("grass"), greps.x, greps.y);
         // 路网：竖路 y=0.012、横路 y=0.016（交叉处横路在上，与 web 版一致）
         var g = NewGo("Roads", Root).transform;
         foreach (var r in W.ROADS)
@@ -289,9 +293,9 @@ public class WorldBuilder : MonoBehaviour
             float mid = (r.from + r.to) / 2f;
             var go = NewGo(r.id, g);
             go.transform.localPosition = r.axis == "z" ? new Vector3(r.at, 0.012f, mid) : new Vector3(mid, 0.016f, r.at);
-            // 贴图密度：64px 贴图 = 0.8m（≈80px/米，全局像素翻倍）
-            int repW = Mathf.Max(1, Mathf.RoundToInt(r.width / 0.8f));
-            int repL = Mathf.Max(1, Mathf.RoundToInt(len / 0.8f));
+            // 贴图密度：周期取自 TexScale（主路石板 1.6m / 次路 0.8m，均 160px/米），精确平铺不取整
+            var rep = TexScale.Repeat(r.width, len, TexScale.RoadPeriod(r.kind));
+            float repW = rep.x, repL = rep.y;
             var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, repW, repL) : MeshFactory.Quad(len, r.width, repL, repW);
             string tex = r.kind == "mainstone" ? "road_mainstone" : (r.kind == "cobble" ? "road_cobble" : "path");
             MeshObj(go.transform, mesh, Vector3.zero, LitTex(tex));
@@ -328,8 +332,8 @@ public class WorldBuilder : MonoBehaviour
                 if (rv.from > rh.at + 0.1f || rv.to < rh.at - 0.1f || rh.from > rv.at + 0.1f || rh.to < rv.at - 0.1f) continue;
                 var c = NewGo("cross", rn);
                 c.transform.localPosition = new Vector3(rv.at, 0.021f, rh.at);
-                MeshObj(c.transform, MeshFactory.Quad(rh.width, rv.width,
-                    Mathf.Max(1, Mathf.RoundToInt(rh.width / 0.8f)), Mathf.Max(1, Mathf.RoundToInt(rv.width / 0.8f))),
+                var creps = TexScale.Repeat(rh.width, rv.width, TexScale.PathPeriod);
+                MeshObj(c.transform, MeshFactory.Quad(rh.width, rv.width, creps.x, creps.y),
                     Vector3.zero, LitTex("path"));
             }
         }
@@ -383,8 +387,8 @@ public class WorldBuilder : MonoBehaviour
         {
             var go = NewGo("b", g);
             go.transform.localPosition = new Vector3(b.x, 0.014f, b.z);
-            int rep = Mathf.Max(1, Mathf.RoundToInt(b.len / 0.8f));
-            MeshObj(go.transform, MeshFactory.Quad(3f, b.len, 4f, rep), Vector3.zero, LitTex("path"));
+            var breps = TexScale.Repeat(3f, b.len, TexScale.PathPeriod);   // 此前 u 取整 4 次 → 170.7px/米，偏密
+            MeshObj(go.transform, MeshFactory.Quad(3f, b.len, breps.x, breps.y), Vector3.zero, LitTex("path"));
         }
     }
 

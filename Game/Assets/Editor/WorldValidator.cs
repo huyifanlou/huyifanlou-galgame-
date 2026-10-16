@@ -228,6 +228,31 @@ public static class WorldValidator
             }
             if (!ok) errors.Add($"可达性失败：{def.id}");
         }
+        // 12) 贴地/贴面纹理密度（密度铁律：基准 160px/米；周期单一来源在 TexScale）
+        //     基准组超出 ±6% 即报错 —— 专门抓「贴图像素尺寸」与「平铺周期」脱钩这类静默退化
+        var baselineTex = new List<string> { "grass", "path", "road_mainstone", "road_cobble" };
+        var densityLog = new List<string>();
+        foreach (var kv in TexScale.Cover)
+        {
+            var t = TextureLibrary.Get(kv.Key, true, true);
+            if (t == null) { errors.Add($"密度登记表有未实现的贴图：{kv.Key}"); continue; }
+            float dx = t.width / kv.Value.x, dy = t.height / kv.Value.y;
+            bool isBase = baselineTex.Contains(kv.Key);
+            densityLog.Add($"{kv.Key} {t.width}×{t.height}px / {kv.Value.x:0.###}×{kv.Value.y:0.###}m → {dx:F1}×{dy:F1}px/米" + (isBase ? "" : "（登记）"));
+            if (isBase && (Mathf.Max(dx, dy) > TexScale.Density * 1.06f || Mathf.Min(dx, dy) < TexScale.Density * 0.94f))
+                errors.Add($"贴地密度偏离基准：{kv.Key} {dx:F1}×{dy:F1}px/米（基准 {TexScale.Density} ±6%）");
+        }
+        Debug.Log("[WorldValidator] 贴地密度（px/米）：\n  " + string.Join("\n  ", densityLog));
+        // 13) 招牌 PNG 资产：程序化贴图之外只允许 sign_*.png（含中文文字，无法程序化重绘）
+        //     且必须可读——运行时 2× 最近邻放大要取像素，不可读会让玩家构建抛异常、世界只建一半
+        foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/tex" }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var png = Path.GetFileNameWithoutExtension(path);
+            if (!png.StartsWith("sign_")) { errors.Add($"非招牌 PNG 残留：{png}.png（应改程序化贴图）"); continue; }
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti != null && !ti.isReadable) errors.Add($"招牌 PNG 不可读：{png}.png（跑「Campus/1b. 重设贴图导入（可读）」）");
+        }
 
         // —— 输出 ——
         var counts = $"建筑{W.BUILDINGS.Length} 场地{W.GROUNDS.Length} 道具{W.PROPS.Length} 路灯{W.LAMPS.Length} 树{W.TREES.Length} 灌木{W.BUSHES.Length} " +

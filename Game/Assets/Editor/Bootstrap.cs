@@ -13,24 +13,7 @@ public static class Bootstrap
     [MenuItem("Campus/1. 初始化工程（贴图导入设置 + Main 场景）")]
     public static void SetupProject()
     {
-        // ── 1) 贴图导入：像素无损 + mipmap（是否采样 mip 由运行时 filterMode 决定）──
-        var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/tex" });
-        foreach (var guid in guids)
-        {
-            var path = AssetDatabase.GUIDToAssetPath(guid);
-            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
-            if (ti == null) continue;
-            ti.textureType = TextureImporterType.Default;
-            ti.textureCompression = TextureImporterCompression.Uncompressed;   // 像素画严禁有损压缩
-            ti.mipmapEnabled = true;
-            ti.filterMode = FilterMode.Point;
-            ti.anisoLevel = 9;
-            ti.wrapMode = TextureWrapMode.Repeat;
-            ti.npotScale = TextureImporterNPOTScale.None;
-            ti.maxTextureSize = 2048;
-            ti.SaveAndReimport();
-        }
-        Debug.Log($"[Bootstrap] 贴图导入设置完成：{guids.Length} 张");
+        SetupTextures();
 
         // ── 1.5) Shader 占位：运行时用 Shader.Find 建材质，构建时若无引用会被剥离（全黑）──
         // 在 Resources 放一份材质占位 → 其 Shader 会被打进构建
@@ -121,6 +104,33 @@ public static class Bootstrap
     }
 
     public static void SetupProjectBatch() => SetupProject();
+
+    // 贴图导入设置（像素无损 + mipmap + 可读）
+    //   isReadable 必须开：招牌 PNG 运行时靠 GetPixel 做 2× 最近邻放大（对齐全局密度），
+    //   不可读时玩家构建会在 WorldBuilder 里抛异常、世界只建一半（2026-10-16 实测踩到）
+    [MenuItem("Campus/1b. 重设贴图导入（可读）")]
+    public static void SetupTextures()
+    {
+        var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/tex" });
+        foreach (var guid in guids)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti == null) continue;
+            ti.textureType = TextureImporterType.Default;
+            ti.textureCompression = TextureImporterCompression.Uncompressed;   // 像素画严禁有损压缩
+            ti.mipmapEnabled = true;
+            ti.filterMode = FilterMode.Point;
+            ti.anisoLevel = 9;
+            ti.wrapMode = TextureWrapMode.Repeat;
+            ti.npotScale = TextureImporterNPOTScale.None;
+            ti.maxTextureSize = 2048;
+            ti.isReadable = true;
+            ti.SaveAndReimport();
+        }
+        Debug.Log($"[Bootstrap] 贴图导入设置完成：{guids.Length} 张（含 isReadable）");
+    }
+    public static void SetupTexturesBatch() => SetupTextures();
 
     // 构建 Windows 播放器（截图验收 / 本地演示；输出可双击运行）
     public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64, "Build/Win/Campus.exe");

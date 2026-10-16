@@ -28,16 +28,24 @@ public static class TextureLibrary
     }
 
     // ── 像素画布：以缓冲实现 Canvas2D 常用原语（source-over alpha 混合）──
+    // S：像素密度倍数（物理像素 = 逻辑 × S）。绘制代码一律写「逻辑坐标」（= 世界尺度配方），
+    //    提密度只改构造参数的 S，配方逐字不动 —— 与「改密度只动 tiling/贴图尺寸」同一原则。
     class Px
     {
-        public readonly int W, H;
+        public readonly int W, H, S;
+        public readonly int PW, PH;   // 物理像素尺寸（= W×S / H×S）
         public readonly Color[] Buf;
-        public Px(int w, int h) { W = w; H = h; Buf = new Color[w * h]; for (int i = 0; i < Buf.Length; i++) Buf[i] = new Color(0, 0, 0, 0); }
+        public Px(int w, int h, int s = 1)
+        {
+            W = w; H = h; S = s; PW = w * s; PH = h * s;
+            Buf = new Color[PW * PH];
+            for (int i = 0; i < Buf.Length; i++) Buf[i] = new Color(0, 0, 0, 0);
+        }
 
         public void Set(int x, int y, Color c)
         {
-            if (x < 0 || y < 0 || x >= W || y >= H) return;
-            int i = y * W + x;
+            if (x < 0 || y < 0 || x >= PW || y >= PH) return;
+            int i = y * PW + x;
             if (c.a >= 0.999f) { Buf[i] = c; return; }
             var d = Buf[i];
             float a = c.a + d.a * (1 - c.a);
@@ -51,12 +59,14 @@ public static class TextureLibrary
         // 支持浮点坐标（与 canvas fillRect 一致：按覆盖率做抗锯齿混合）
         public void FillRect(float x, float y, float w, float h, Color c)
         {
-            int x0 = Mathf.FloorToInt(x), x1 = Mathf.FloorToInt(x + w);
-            int y0 = Mathf.FloorToInt(y), y1 = Mathf.FloorToInt(y + h);
+            int x0 = Mathf.FloorToInt(x * S), x1 = Mathf.FloorToInt((x + w) * S);
+            int y0 = Mathf.FloorToInt(y * S), y1 = Mathf.FloorToInt((y + h) * S);
+            float inv = 1f / S;
             for (int yy = y0; yy < y1; yy++)
                 for (int xx = x0; xx < x1; xx++)
                 {
-                    float cov = (Mathf.Min(x + w, xx + 1) - Mathf.Max(x, xx)) * (Mathf.Min(y + h, yy + 1) - Mathf.Max(y, yy));
+                    // 覆盖率在逻辑尺度上算（物理像素 = 1/S 个逻辑像素），再乘 S² 归一化回单像素
+                    float cov = (Mathf.Min(x + w, (xx + 1) * inv) - Mathf.Max(x, xx * inv)) * (Mathf.Min(y + h, (yy + 1) * inv) - Mathf.Max(y, yy * inv)) * S * S;
                     if (cov <= 0.001f) continue;
                     if (cov >= 0.999f || c.a < 0.999f) { var cc = c; cc.a = c.a * Mathf.Min(1f, cov); Set(xx, yy, cc); }
                     else { var cc = c; cc.a = c.a * cov; Set(xx, yy, cc); }
@@ -65,11 +75,12 @@ public static class TextureLibrary
 
         public void FillCircle(float cx, float cy, float r, Color c)
         {
-            int x0 = Mathf.FloorToInt(cx - r), x1 = Mathf.CeilToInt(cx + r);
-            int y0 = Mathf.FloorToInt(cy - r), y1 = Mathf.CeilToInt(cy + r);
+            int x0 = Mathf.FloorToInt((cx - r) * S), x1 = Mathf.CeilToInt((cx + r) * S);
+            int y0 = Mathf.FloorToInt((cy - r) * S), y1 = Mathf.CeilToInt((cy + r) * S);
+            float inv = 1f / S;
             for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
             {
-                float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
+                float dx = (x + 0.5f) * inv - cx, dy = (y + 0.5f) * inv - cy;
                 if (dx * dx + dy * dy <= r * r) Set(x, y, c);
             }
         }
@@ -88,17 +99,19 @@ public static class TextureLibrary
 
         public void FillRound(float x, float y, float w, float h, float r, Color c)
         {
-            for (int yy = Mathf.FloorToInt(y); yy <= Mathf.CeilToInt(y + h); yy++)
-                for (int xx = Mathf.FloorToInt(x); xx <= Mathf.CeilToInt(x + w); xx++)
-                    if (InRound(xx + 0.5f, yy + 0.5f, x, y, w, h, r)) Set(xx, yy, c);
+            float inv = 1f / S;
+            for (int yy = Mathf.FloorToInt(y * S); yy <= Mathf.CeilToInt((y + h) * S); yy++)
+                for (int xx = Mathf.FloorToInt(x * S); xx <= Mathf.CeilToInt((x + w) * S); xx++)
+                    if (InRound((xx + 0.5f) * inv, (yy + 0.5f) * inv, x, y, w, h, r)) Set(xx, yy, c);
         }
 
         public void StrokeRound(float x, float y, float w, float h, float r, float lw, Color c)
         {
-            for (int yy = Mathf.FloorToInt(y - lw); yy <= Mathf.CeilToInt(y + h + lw); yy++)
-                for (int xx = Mathf.FloorToInt(x - lw); xx <= Mathf.CeilToInt(x + w + lw); xx++)
+            float inv = 1f / S;
+            for (int yy = Mathf.FloorToInt((y - lw) * S); yy <= Mathf.CeilToInt((y + h + lw) * S); yy++)
+                for (int xx = Mathf.FloorToInt((x - lw) * S); xx <= Mathf.CeilToInt((x + w + lw) * S); xx++)
                 {
-                    float px = xx + 0.5f, py = yy + 0.5f;
+                    float px = (xx + 0.5f) * inv, py = (yy + 0.5f) * inv;
                     if (!InRound(px, py, x - lw / 2, y - lw / 2, w + lw, h + lw, r + lw / 2)) continue;
                     if (InRound(px, py, x + lw / 2, y + lw / 2, w - lw, h - lw, Mathf.Max(1, r - lw / 2))) continue;
                     Set(xx, yy, c);
@@ -109,11 +122,13 @@ public static class TextureLibrary
 
         public void StrokeCircle(float cx, float cy, float r, float lw, Color c)
         {
-            int x0 = Mathf.FloorToInt(cx - r - lw), x1 = Mathf.CeilToInt(cx + r + lw);
-            int y0 = Mathf.FloorToInt(cy - r - lw), y1 = Mathf.CeilToInt(cy + r + lw);
+            int x0 = Mathf.FloorToInt((cx - r - lw) * S), x1 = Mathf.CeilToInt((cx + r + lw) * S);
+            int y0 = Mathf.FloorToInt((cy - r - lw) * S), y1 = Mathf.CeilToInt((cy + r + lw) * S);
+            float inv = 1f / S;
             for (int y = y0; y <= y1; y++) for (int x = x0; x <= x1; x++)
             {
-                float d = Mathf.Sqrt((x + 0.5f - cx) * (x + 0.5f - cx) + (y + 0.5f - cy) * (y + 0.5f - cy));
+                float dx = (x + 0.5f) * inv - cx, dy = (y + 0.5f) * inv - cy;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
                 if (Mathf.Abs(d - r) <= lw / 2f) Set(x, y, c);
             }
         }
@@ -138,11 +153,11 @@ public static class TextureLibrary
     // ── 贴图生成 ──
     static Texture2D From(Px p)
     {
-        var t = new Texture2D(p.W, p.H, TextureFormat.RGBA32, false);
+        var t = new Texture2D(p.PW, p.PH, TextureFormat.RGBA32, false);
         // 注意：Unity 的 SetPixels 行序自下而上，而画布缓冲行 0 是顶行（与 canvas 一致）→ 必须翻转
         var flipped = new Color[p.Buf.Length];
-        for (int y = 0; y < p.H; y++)
-            Array.Copy(p.Buf, y * p.W, flipped, (p.H - 1 - y) * p.W, p.W);
+        for (int y = 0; y < p.PH; y++)
+            Array.Copy(p.Buf, y * p.PW, flipped, (p.PH - 1 - y) * p.PW, p.PW);
         t.SetPixels(flipped);
         t.Apply(false, false);
         return t;
@@ -330,7 +345,7 @@ public static class TextureLibrary
 
     static Px Track()
     {
-        var p = new Px(512, 320);
+        var p = new Px(512, 320, 2);   // 物理 1024×640，覆盖操场 16×10m ≈ 64px/米（密度 ×2）
         void GrassFill(int x0, int y0, int x1, int y1)
         {
             for (int y = y0; y < y1; y += 4) for (int x = x0; x < x1; x += 4)
@@ -363,7 +378,7 @@ public static class TextureLibrary
 
     static Px Pond()
     {
-        var p = new Px(256, 256);
+        var p = new Px(256, 256, 2);   // 物理 512×512，覆盖 (r+0.6)×2 = 7.2m ≈ 71px/米（密度 ×2）
         p.FillCircle(128, 128, 128, C("#8d8d94"));
         var stone = new[] { "#9aa0a6", "#83838a", "#a9adb2", "#7b7b82" };
         for (int i = 0; i < 16; i++)
@@ -492,7 +507,7 @@ public static class TextureLibrary
 
     static Px Villa()
     {
-        var p = new Px(256, 192);
+        var p = new Px(256, 192, 2);   // 物理 512×384，铺在别墅立面 w×h = 8.4×5.4m 上 ≈ 61px/米（密度 ×2）
         p.FillRect(0, 0, 256, 100, C("#ece5d6"));
         p.FillRect(0, 0, 256, 4, C("#d9d2c2"));
         p.FillRect(0, 92, 256, 8, C("rgba(0,0,0,0.12)"));
@@ -704,18 +719,21 @@ public static class TextureLibrary
 
     static Px Road(string kind)
     {
-        var p = new Px(128, 128);   // 密度翻倍（128px 覆盖 0.8m ≈ 160px/米）
-        if (kind == "mainstone")
+        // mainstone：逻辑 128（4×4 石板，间距 32）→ 物理 256px，覆盖 1.6m ≈ 160px/米
+        // （石板仍是 0.4m、单块颗粒配方逐字不动，只是排列从 2×2 变 4×4、重复周期 0.8→1.6m）
+        bool main = kind == "mainstone";
+        var p = new Px(128, 128, main ? 2 : 1);
+        if (main)
         {
             p.FillRect(0, 0, 128, 128, C("#b3aca0"));
             var cols = new[] { "#c6bfb2", "#bdb6a9", "#c2bbae", "#b8b1a4" };
-            for (int by = 0; by < 2; by++) for (int bx = 0; bx < 2; bx++)
+            for (int by = 0; by < 4; by++) for (int bx = 0; bx < 4; bx++)
             {
-                p.FillRect(bx * 64 + 2, by * 64 + 2, 60, 60, C(cols[R.Int(4)]));
+                p.FillRect(bx * 32 + 1, by * 32 + 1, 30, 30, C(cols[R.Int(4)]));
                 for (int i = 0; i < 48; i++)
-                    p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 6, 4, C(R.Int(2) == 0 ? "rgba(140,132,120,0.25)" : "rgba(235,231,222,0.35)"));
+                    p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 3, 2, C(R.Int(2) == 0 ? "rgba(140,132,120,0.25)" : "rgba(235,231,222,0.35)"));
                 for (int i = 0; i < 14; i++)
-                    p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 2, 2, C(R.Int(2) == 0 ? "rgba(120,112,100,0.3)" : "rgba(245,242,235,0.4)"));
+                    p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 1, 1, C(R.Int(2) == 0 ? "rgba(120,112,100,0.3)" : "rgba(245,242,235,0.4)"));
             }
         }
         else
@@ -789,6 +807,12 @@ public static class TextureLibrary
         {
             var src = Resources.Load<Texture2D>("tex/" + name);
             if (src == null) return null;
+            if (!src.isReadable)
+            {
+                // 导入设置没开 Read/Write：放大要取像素会抛异常 → 宁可退回 1× 原图（糊一点）也不让世界建一半
+                Debug.LogError($"[TextureLibrary] 招牌贴图不可读（{name}）：请在编辑器跑「Campus/1b. 重设贴图导入（可读）」后重新构建");
+                return src;
+            }
             var up = new Texture2D(src.width * 2, src.height * 2, TextureFormat.RGBA32, false);
             for (int y = 0; y < src.height; y++)
                 for (int x = 0; x < src.width; x++)
