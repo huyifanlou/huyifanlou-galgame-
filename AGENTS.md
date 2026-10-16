@@ -10,6 +10,9 @@
 
 - **浏览器验收一律使用本机 Edge**：打开页面 `start msedge <url>`；无头截图 `msedge --headless=new --enable-unsafe-swiftshader ...`。不使用 ZCode 内置浏览器。
 - **一切改动留痕**：docs/ 下按编号写说明（做了什么/为什么/验证方式），git 提交用中文 conventional 风格（`feat(模块): ...`）。
+- **每轮优化做完就把游戏打开给作者看**：构建完立刻后台启动 `Game/Build/Win/Campus.exe`（不带 `-shot`，保持运行），
+  并在回复里指明建议查看的地点与键位；已有旧实例先 `taskkill //IM Campus.exe //F` 再开（旧进程持有的是旧构建）。
+  静态对比图只是附件，不能代替实机。
 - **需要操作本机软件时直接动手**（CLI 优先），需要提权时提前说明"将弹 UAC 请点是"。
 - 剧本双版本保留：`D:\AI\galgame-原版.docx` / `D:\AI\galgame-美化版.docx`（不合并、不改名）。
 - 游戏模式：**主线推进剧情 + 支线日常，玩家自选**。
