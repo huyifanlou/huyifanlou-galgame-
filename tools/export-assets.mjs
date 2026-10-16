@@ -60,7 +60,13 @@ const outDirs = [
 ]
 for (const d of outDirs) fs.mkdirSync(d, { recursive: true })
 
-const T = await import('./source/textures.js')   // 贴图生成器（下一阶段移植到 C# 后退役）
+const Traw = await import('./source/textures.js')   // 贴图生成器（下一阶段移植到 C# 后退役）
+// 每张贴图独立种子：与 C# TextureLibrary 的"逐张 NewR()"一致 → 可逐像素对拍
+const T = {}
+for (const k of Object.keys(Traw)) {
+  if (typeof Traw[k] !== 'function') continue
+  T[k] = (...args) => { Math.random = mulberry32(20261015); return Traw[k](...args) }
+}
 
 // 世界数据来源：Unity 侧 C# 权威数据（CampusData.cs）导出的 JSON
 // 流程：Unity 菜单「Campus/导出世界数据 JSON（对拍用）」→ Game/Build/world_csharp.json → 本导出器读取
