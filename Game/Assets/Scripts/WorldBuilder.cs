@@ -212,6 +212,10 @@ public class WorldBuilder : MonoBehaviour
     {
         var w = BuildWorld();
         if (w == null) return;
+        // 后处理栈（泛光/移轴景深/色彩分级/暗角）——挂到主相机
+        var cam = Camera.main;
+        if (cam != null && cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();
+
         var tod = GetComponent<TimeOfDay>();
         if (tod != null) tod.Init(this);
         var rig = GetComponent<PlayerRig>();

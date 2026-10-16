@@ -44,6 +44,7 @@ public static class Bootstrap
             "Legacy Shaders/Particles/Alpha Blended",
             "Legacy Shaders/Particles/Additive",
             "Legacy Shaders/Transparent/Diffuse",
+            "Campus/PostFX",
         };
         foreach (var sn in shaderNames)
         {

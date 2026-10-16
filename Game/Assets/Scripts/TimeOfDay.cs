@@ -13,6 +13,7 @@ public class TimeOfDay : MonoBehaviour
     WorldBuilder _w;
     Light _dir, _up;
     bool _winNight;
+    PostFX _post;
 
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
@@ -58,6 +59,7 @@ public class TimeOfDay : MonoBehaviour
     public void Init(WorldBuilder w)
     {
         _w = w;
+        _post = Camera.main != null ? Camera.main.GetComponent<PostFX>() : null;
 
         // 命令行：-time 18.5 定表并暂停；-speed N 指定速度
         var t = Args.F("-time");
@@ -193,9 +195,15 @@ public class TimeOfDay : MonoBehaviour
             if (_w.LampGlass != null) _w.LampGlass.color = Color.Lerp(GLASS_OFF, GLASS_ON, m);
             if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 1f, 1f, m * 0.68f));
 
+            // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
+            if (_post != null)
+            {
+                _post.BloomIntensity = Mathf.Lerp(0.30f, 0.72f, m);
+                _post.VigStrength = Mathf.Lerp(0.62f, 0.78f, m);
+            }
+
             // 建筑窗户：昼夜双贴图（阈值 0.45，跨阈值才切换）
-            bool night = m > 0.45f;
-            if (night != _winNight)
+            bool night = m > 0.45f;            if (night != _winNight)
             {
                 _winNight = night;
                 for (int i = 0; i < _w.WindowMatRefs.Count; i++)

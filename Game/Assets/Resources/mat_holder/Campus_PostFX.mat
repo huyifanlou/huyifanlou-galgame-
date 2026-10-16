@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Campus_PostFX
+  m_Shader: {fileID: 4800000, guid: 6e6711d36eb65214490144d533e20f7d, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _BloomTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BlurTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Ints: []
+    m_Floats:
+    - _BloomIntensity: 0.55
+    - _Contrast: 1.06
+    - _DofMax: 0.85
+    - _FocusBand: 0.16
+    - _FocusFalloff: 0.3
+    - _FocusY: 0.52
+    - _Saturation: 1.12
+    - _Threshold: 0.72
+    - _VigInner: 0.55
+    - _VigOuter: 1.25
+    - _VigStrength: 0.78
+    m_Colors:
+    - _Tint: {r: 1.03, g: 1, b: 0.96, a: 1}
+  m_BuildTextureStacks: []
