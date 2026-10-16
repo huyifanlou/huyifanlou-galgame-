@@ -224,7 +224,7 @@ public class WorldBuilder : MonoBehaviour
 
     public WorldData BuildWorld()
     {
-        W = WorldData.Load();
+        W = CampusData.Build();   // C# 权威数据（2026-10-16 起：全项目单语言，不再读 world.json）
         if (W == null) return null;
         Root = NewGo("World", transform).transform;
 

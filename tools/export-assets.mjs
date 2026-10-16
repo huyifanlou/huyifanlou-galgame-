@@ -60,8 +60,16 @@ const outDirs = [
 ]
 for (const d of outDirs) fs.mkdirSync(d, { recursive: true })
 
-const T = await import('./source/textures.js')
-const C = await import('./source/campus.js')
+const T = await import('./source/textures.js')   // 贴图生成器（下一阶段移植到 C# 后退役）
+
+// 世界数据来源：Unity 侧 C# 权威数据（CampusData.cs）导出的 JSON
+// 流程：Unity 菜单「Campus/导出世界数据 JSON（对拍用）」→ Game/Build/world_csharp.json → 本导出器读取
+const dumpPath = path.join(root, 'Game', 'Build', 'world_csharp.json')
+if (!fs.existsSync(dumpPath)) {
+  console.error('[export] 缺少 Game/Build/world_csharp.json —— 先在 Unity 运行 Campus/导出世界数据 JSON（对拍用）')
+  process.exit(1)
+}
+const C = JSON.parse(fs.readFileSync(dumpPath, 'utf8'))
 
 let count = 0
 function save(tex, name) {
@@ -118,39 +126,7 @@ C.DISTANT_BUILDINGS.forEach((b, i) => {
   save(T.buildingTexture(b.wall, b.trim, b.plinth, cols, rows, { lit: 0.16 }), `dist_${String(i).padStart(2, '0')}.png`)
 })
 
-console.log('[6/6] 世界数据 world.json')
-// 注：元组数组（[x,z] / [x,z,v]…）统一转为对象数组——Unity JsonUtility 不支持嵌套数组反序列化；
-// BUILDINGS/GROUNDS 等对象内的 pos/size 为 float[] 字段，JsonUtility 原生支持，保持原样。
-const world = {
-  meta: { from: 'chuanzhibei-game v0.40 (tag web-v1.0-frozen-20261015)', seed: 20261015, exportedAt: '2026-10-16', lcgFix: 'BUG-001 已修复（docs/01）', expansion: 'v2 扩容（docs/04）：BOUND 60 / 路网 3×3 / 建筑 12 / 道具 32' },
-  BOUND: C.BOUND,
-  GROUND_SIZE: C.GROUND_SIZE,
-  ROADS: C.ROADS,
-  PROPS: C.PROPS,
-  BLOCKERS: C.BLOCKERS,
-  BUILDINGS: C.BUILDINGS,
-  GROUNDS: C.GROUNDS,
-  POND: C.POND,
-  BRANCH_PATHS: C.BRANCH_PATHS,
-  FENCES: C.FENCES,
-  VILLA: C.VILLA,
-  TREES: C.TREES.map(([x, z, v]) => ({ x, z, v })),
-  BUSHES: C.BUSHES.map(([x, z]) => ({ x, z })),
-  FLOWERS: C.FLOWERS.map(([x, z]) => ({ x, z })),
-  DIRT_PATCHES: C.DIRT_PATCHES.map(([x, z]) => ({ x, z })),
-  LAMPS: C.LAMPS.map(([x, z, r]) => ({ x, z, r })),
-  DISTANT_BUILDINGS: C.DISTANT_BUILDINGS,
-  ROCKERIES: C.ROCKERIES.map(([x, z, s]) => ({ x, z, s })),
-  BORDER_TREES: C.BORDER_TREES.map(([x, z, v]) => ({ x, z, v })),
-  BORDER_BUSHES: C.BORDER_BUSHES.map(([x, z]) => ({ x, z })),
-  SMALL_ROCKS: C.SMALL_ROCKS.map(([x, z]) => ({ x, z })),
-  BORDER_ROCKS: C.BORDER_ROCKS.map(([x, z]) => ({ x, z })),
-  REEDS: C.REEDS.map(([x, z, h, t]) => ({ x, z, h, t })),
-  SPOTS: C.SPOTS,
-}
-const json = JSON.stringify(world, null, 1)
-fs.writeFileSync(path.join(root, 'assets', 'world.json'), json)
-fs.writeFileSync(path.join(root, 'Game', 'Assets', 'Resources', 'world.json'), json)
-console.log('    world.json 写入完成（assets/ 与 Game/Assets/Resources/ 双份）')
+// [6/6] world.json 已废弃（2026-10-16）：世界数据改由 C# CampusData.cs 权威维护，
+// 本导出器只负责程序化贴图；对拍/备份 JSON 由 Unity 菜单「Campus/导出世界数据 JSON（对拍用）」生成。
 
 console.log(`完成：共导出 ${count} 张贴图 → assets/tex/`)
