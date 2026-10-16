@@ -269,26 +269,34 @@ public static class TextureLibrary
 
     static Px Door()
     {
-        var p = new Px(32, 48);
-        p.FillRect(0, 0, 32, 48, C("#efe7d8"));
-        p.FillRect(3, 3, 26, 45, C("#6b4a34"));
-        p.FillRect(6, 7, 20, 12, C("#ffd98a"));
-        p.FillRect(15, 7, 2, 12, C("#5a3c2a"));
-        p.FillRect(6, 12, 20, 2, C("#5a3c2a"));
-        p.FillRect(6, 24, 8, 17, C("#54382a"));
-        p.FillRect(18, 24, 8, 17, C("#54382a"));
-        p.FillRect(15, 24, 2, 18, C("#3a2519"));
-        p.FillRect(11, 34, 2, 2, C("#d8b54a"));
-        p.FillRect(19, 34, 2, 2, C("#d8b54a"));
-        p.FillRect(3, 45, 26, 3, C("#8a6a4a"));
+        var p = new Px(128, 192);   // 密度 ×4（对齐立面 160px/米）
+        p.FillRect(0, 0, 128, 192, C("#efe7d8"));
+        p.FillRect(12, 12, 104, 180, C("#6b4a34"));
+        p.FillRect(24, 28, 80, 48, C("#ffd98a"));
+        p.FillRect(60, 28, 8, 48, C("#5a3c2a"));
+        p.FillRect(24, 48, 80, 8, C("#5a3c2a"));
+        p.FillRect(24, 96, 32, 68, C("#54382a"));
+        p.FillRect(72, 96, 32, 68, C("#54382a"));
+        p.FillRect(60, 96, 8, 72, C("#3a2519"));
+        p.FillRect(44, 136, 8, 8, C("#d8b54a"));
+        p.FillRect(76, 136, 8, 8, C("#d8b54a"));
+        p.FillRect(12, 180, 104, 12, C("#8a6a4a"));
+        // 新细节：门板凹槽 + 门牌 + 气窗竖棂
+        p.FillRect(28, 104, 24, 4, C("rgba(0,0,0,0.18)"));
+        p.FillRect(76, 104, 24, 4, C("rgba(0,0,0,0.18)"));
+        p.FillRect(28, 116, 24, 4, C("rgba(0,0,0,0.18)"));
+        p.FillRect(76, 116, 24, 4, C("rgba(0,0,0,0.18)"));
+        p.FillRect(52, 18, 24, 12, C("#c9c3b6"));
+        p.FillRect(40, 28, 4, 48, C("rgba(90,60,42,0.5)"));
+        p.FillRect(84, 28, 4, 48, C("rgba(90,60,42,0.5)"));
         return p;
     }
 
     static Px Stripes()
     {
-        var p = new Px(16, 16);
+        var p = new Px(64, 64);   // 密度 ×4（条纹世界宽度不变）
         var a = C("#efe9dd"); var b = C("#c9553f");
-        for (int x = 0; x < 16; x++) p.FillRect(x, 0, 1, 16, x % 4 < 2 ? a : b);
+        for (int x = 0; x < 64; x++) p.FillRect(x, 0, 1, 64, x % 16 < 8 ? a : b);
         return p;
     }
 
@@ -776,6 +784,22 @@ public static class TextureLibrary
 
     public static Texture2D ByName(string name, bool pixel, bool repeat)
     {
+        // 招牌（含中文，无法程序化重绘）：加载 PNG 后 2× 最近邻放大，与全局密度对齐
+        if (name.StartsWith("sign_"))
+        {
+            var src = Resources.Load<Texture2D>("tex/" + name);
+            if (src == null) return null;
+            var up = new Texture2D(src.width * 2, src.height * 2, TextureFormat.RGBA32, false);
+            for (int y = 0; y < src.height; y++)
+                for (int x = 0; x < src.width; x++)
+                {
+                    var c = src.GetPixel(x, y);
+                    up.SetPixel(x * 2, y * 2, c); up.SetPixel(x * 2 + 1, y * 2, c);
+                    up.SetPixel(x * 2, y * 2 + 1, c); up.SetPixel(x * 2 + 1, y * 2 + 1, c);
+                }
+            up.Apply(false, false);
+            return up;
+        }
         if (name.StartsWith("wall_") || name.StartsWith("wing_"))
         {
             var parts = name.Split('_');               // wall_teach_day / wing_teach_day

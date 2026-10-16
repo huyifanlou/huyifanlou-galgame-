@@ -314,9 +314,25 @@ public class WorldBuilder : MonoBehaviour
         }
     }
 
-    // 场地：操场（跑道贴图）/ 篮球场 / 网球场
+    // 场地：操场（跑道贴图）/ 篮球场 / 网球场 + 路口铺装
     void Grounds()
     {
+        // 交叉口铺装（统一衔接：十字处加一整块铺装，消除两条路交叠的贴图接缝）
+        var rn = NewGo("Crossings", Root).transform;
+        foreach (var rv in W.ROADS)
+        {
+            if (rv.axis != "z") continue;
+            foreach (var rh in W.ROADS)
+            {
+                if (rh.axis != "x") continue;
+                if (rv.from > rh.at + 0.1f || rv.to < rh.at - 0.1f || rh.from > rv.at + 0.1f || rh.to < rv.at - 0.1f) continue;
+                var c = NewGo("cross", rn);
+                c.transform.localPosition = new Vector3(rv.at, 0.021f, rh.at);
+                MeshObj(c.transform, MeshFactory.Quad(rh.width, rv.width,
+                    Mathf.Max(1, Mathf.RoundToInt(rh.width / 0.8f)), Mathf.Max(1, Mathf.RoundToInt(rv.width / 0.8f))),
+                    Vector3.zero, LitTex("path"));
+            }
+        }
         var g = NewGo("Grounds", Root).transform;
         foreach (var def in W.GROUNDS)
         {
