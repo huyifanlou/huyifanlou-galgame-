@@ -22,6 +22,13 @@ public class ShotMode : MonoBehaviour
     {
         // 等待渲染稳定（天空/贴图加载 + 相机吸附帧）
         for (int i = 0; i < _frames; i++) yield return new WaitForEndOfFrame();
+        // 记录玩家/相机世界坐标：让 -sim 之类的动态验收可以做数值断言（查 Player.log）
+        var wb = GetComponent<WorldBuilder>();
+        if (wb != null && wb.Player != null)
+        {
+            var cam = Camera.main;
+            Debug.Log($"[ShotMode] player=({wb.Player.position.x:F2},{wb.Player.position.y:F2},{wb.Player.position.z:F2}) cam={(cam != null ? cam.transform.position.ToString("F2") : "null")}");
+        }
         string abs = _path;
         if (!System.IO.Path.IsPathRooted(abs)) abs = System.IO.Path.GetFullPath(abs);
         var dir = System.IO.Path.GetDirectoryName(abs);

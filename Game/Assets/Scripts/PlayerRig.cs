@@ -20,6 +20,8 @@ public class PlayerRig : MonoBehaviour
     float _facing = Mathf.PI;   // 世界角：0=+z 南，π=北；默认背对镜头
     bool _alignPaused, _camInit, _dragging;
     Vector3 _dragLast;
+    string _simKey;
+    int _simFrames = -1;
 
     public void Init(WorldBuilder w)
     {
@@ -53,6 +55,14 @@ public class PlayerRig : MonoBehaviour
         var pitch = Args.F("-pitch"); if (pitch.HasValue) _pitch = Mathf.Clamp(pitch.Value, 0.3f, 1.35f);
         var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 6f, 40f);
         if (Args.Str("-freeze") == "1") _alignPaused = true;
+
+        // 验收：-sim d,40 → 前 40 帧模拟按住 D
+        var sim = Args.Str("-sim");
+        if (!string.IsNullOrEmpty(sim))
+        {
+            var sp = sim.Split(',');
+            if (sp.Length == 2 && int.TryParse(sp[1], out var n)) { _simKey = sp[0].ToLowerInvariant(); _simFrames = n; }
+        }
 
         _player.position = new Vector3(spawn.x, 0f, spawn.y);
         _facing = Mathf.PI;
@@ -113,14 +123,21 @@ public class PlayerRig : MonoBehaviour
         if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);
 
         // 移动（WASD/方向键，相对镜头方向；X/Z 轴分开判定 → 沿墙滑动）
-        float f = (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) ? 1f : 0f);
-        float r = (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) ? 1f : 0f) - (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) ? 1f : 0f);
+        // ⚠ Unity 是左手系：给定镜头朝向，屏幕右方 = 世界 -x（three.js 右手系为 +x），横移分量必须取反
+        // 验收参数 -sim <键>,<帧数>：前 N 帧模拟按住某键（如 -sim d,40），用于移动方向自动验证
+        bool simOn = _simFrames > 0 && Time.frameCount <= _simFrames;
+        bool holdW = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) || (simOn && _simKey == "w");
+        bool holdS = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || (simOn && _simKey == "s");
+        bool holdA = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) || (simOn && _simKey == "a");
+        bool holdD = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) || (simOn && _simKey == "d");
+        float f = (holdW ? 1f : 0f) - (holdS ? 1f : 0f);
+        float r = (holdD ? 1f : 0f) - (holdA ? 1f : 0f);
         bool moving = f != 0f || r != 0f;
         float dirX = 0f, dirZ = 0f;
         if (moving)
         {
-            dirX = -Mathf.Sin(_yaw) * f + Mathf.Cos(_yaw) * r;
-            dirZ = -Mathf.Cos(_yaw) * f - Mathf.Sin(_yaw) * r;
+            dirX = -Mathf.Sin(_yaw) * f - Mathf.Cos(_yaw) * r;
+            dirZ = -Mathf.Cos(_yaw) * f + Mathf.Sin(_yaw) * r;
             float len = Mathf.Sqrt(dirX * dirX + dirZ * dirZ);
             dirX /= len;
             dirZ /= len;
