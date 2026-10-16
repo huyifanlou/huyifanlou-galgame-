@@ -227,6 +227,12 @@ public static class TextureLibrary
                 p.FillRect(wx + 3, wy + 26, 13, 10, C("#9aa2ac"));
                 p.FillRect(wx + 3, wy + 33, 13, 3, C("rgba(0,0,0,0.25)"));
             }
+            // 阳台栏杆（约 1/4 上层窗：立面层次，美化②）
+            if (r > 0 && kind == 4 && !isLit)
+            {
+                p.FillRect(wx - 3, wy + 27, 26, 2, C("#cfc9ba"));
+                for (int bxx = 0; bxx < 6; bxx++) p.FillRect(wx - 2 + bxx * 5, wy + 21, 1, 6, C("#b8b0a2"));
+            }
         }
         if (banner)
         {

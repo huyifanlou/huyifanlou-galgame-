@@ -295,6 +295,15 @@ public class WorldBuilder : MonoBehaviour
             var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, repW, repL) : MeshFactory.Quad(len, r.width, repL, repW);
             string tex = r.kind == "mainstone" ? "road_mainstone" : (r.kind == "cobble" ? "road_cobble" : "path");
             MeshObj(go.transform, mesh, Vector3.zero, LitTex(tex));
+            // 路缘石（两侧压边条，场景更精致）
+            foreach (int sgn in new[] { -1, 1 })
+            {
+                float off = sgn * (r.width / 2f - 0.09f);
+                var kerb = NewGo("kerb", go.transform);
+                kerb.transform.localPosition = r.axis == "z" ? new Vector3(off, 0.004f, 0f) : new Vector3(0.004f * 0f, 0.004f, off);
+                var kmesh = r.axis == "z" ? MeshFactory.Quad(0.18f, len, 1f, repL) : MeshFactory.Quad(len, 0.18f, repL, 1f);
+                MeshObj(kerb.transform, kmesh, Vector3.zero, ColMat("#bfb9ab"));
+            }
             if (r.kind == "mainstone")
             {
                 // 中线石带（浅色石条，接缝每 2m）
@@ -656,7 +665,11 @@ public class WorldBuilder : MonoBehaviour
             float trunkH = tall ? 1.5f : 1f;
             Vector3 crown = wide ? new Vector3(2f, 1.4f, 2f) : tall ? new Vector3(1.4f, 1.8f, 1.4f) : new Vector3(1.5f, 1.3f, 1.5f);
             Box(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.36f, trunkH, 0.36f), ColMat("#6d4a2f"));
-            Box(grp, new Vector3(0, trunkH + crown.y / 2f - 0.1f, 0), crown, ColMat(TREE_CROWNS[v % TREE_CROWNS.Length]));
+            // 双色调树冠：暗底 + 主色 + 亮顶（立体受光感）
+            string baseHex = TREE_CROWNS[v % TREE_CROWNS.Length];
+            Box(grp, new Vector3(0, trunkH + crown.y * 0.3f - 0.1f, 0), new Vector3(crown.x * 0.98f, crown.y * 0.6f, crown.z * 0.98f), ColMat(MatLib.Shade(baseHex, 0.78f)));
+            Box(grp, new Vector3(0, trunkH + crown.y * 0.74f - 0.1f, 0), new Vector3(crown.x * 0.92f, crown.y * 0.5f, crown.z * 0.92f), ColMat(baseHex));
+            Box(grp, new Vector3(0, trunkH + crown.y - 0.18f, 0), new Vector3(crown.x * 0.6f, crown.y * 0.28f, crown.z * 0.6f), ColMat(MatLib.Shade(baseHex, 1.2f)));
         }
     }
 
@@ -769,8 +782,10 @@ public class WorldBuilder : MonoBehaviour
     {
         var grp = NewGo("bush", parent).transform;
         grp.localPosition = new Vector3(x, 0f, z);
-        Box(grp, new Vector3(0, 0.24f, 0), new Vector3(0.95f, 0.5f, 0.95f), ColMat(BUSH_GREENS[i % 4]));
+        string g0 = BUSH_GREENS[i % 4];
+        Box(grp, new Vector3(0, 0.24f, 0), new Vector3(0.95f, 0.5f, 0.95f), ColMat(MatLib.Shade(g0, 0.82f)));
         Box(grp, new Vector3(0.12f, 0.52f, -0.08f), new Vector3(0.55f, 0.36f, 0.55f), ColMat(BUSH_GREENS[(i + 1) % 4]));
+        Box(grp, new Vector3(0.06f, 0.66f, 0.04f), new Vector3(0.3f, 0.14f, 0.3f), ColMat(MatLib.Shade(BUSH_GREENS[(i + 1) % 4], 1.16f)));
         if (i % 6 == 0)
             Box(grp, new Vector3(0.1f, 0.72f, 0.1f), new Vector3(0.4f, 0.16f, 0.4f), ColMat("#c98099"));
     }

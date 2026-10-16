@@ -113,4 +113,11 @@ public static class MatLib
         ColorUtility.TryParseHtmlString(hex, out var c);
         return c;
     }
+
+    // 明暗调整：k<1 变暗（背光面）、k>1 提亮（受光面）——树冠双色调用
+    public static string Shade(string hex, float k)
+    {
+        var c = Hex(hex);
+        return "#" + ColorUtility.ToHtmlStringRGB(new Color(Mathf.Clamp01(c.r * k), Mathf.Clamp01(c.g * k), Mathf.Clamp01(c.b * k)));
+    }
 }
