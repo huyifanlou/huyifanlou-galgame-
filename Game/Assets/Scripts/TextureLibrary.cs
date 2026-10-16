@@ -508,32 +508,33 @@ public static class TextureLibrary
         var ops = new List<(int x, int y, int w, int h, string col)>();
         void r(int x, int y, int w, int h, string col) => ops.Add((x, y, w, h, col));
 
-        int bodyStart = 0, bob = 0;   // 躯干起点与行走起伏（并步上浮/迈步下沉）
+        int bodyStart = 0, bobY = 0, bobX = 0;   // 躯干起点 + 行走起伏/前倾
 
         void Paint(bool side, bool up, int frame)
         {
             ops.Clear();
             if (side)
             {
-                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆
-                int fwd = frame == 1 ? 3 : frame == 2 ? 1 : 0;
-                int bwd = frame == 3 ? 3 : frame == 2 ? 1 : 0;
+                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆（迈步幅度加大到 3-4px）
+                int fwd = frame == 1 ? 4 : frame == 2 ? 1 : 0;
+                int bwd = frame == 3 ? 4 : frame == 2 ? 1 : 0;
                 r(12 + fwd, 21, 4, 8, pants); r(8 - bwd, 21, 4, 8, pantsD);
                 r(11 + fwd, 29, 6, 2, shoe); r(6 - bwd, 29, 6, 2, shoeD);
             }
             else
             {
                 bool liftA = frame == 1, liftB = frame == 3;
-                r(7, 21, 4, liftA ? 7 : 8, pants); r(12, 21, 4, liftB ? 7 : 8, pants);
+                r(7, 21, 4, liftA ? 6 : 8, pants); r(12, 21, 4, liftB ? 6 : 8, pants);
                 r(10, 21, 1, 8, pantsD);
-                r(5, liftA ? 28 : 29, 6, 2, shoe); r(11, liftB ? 28 : 29, 6, 2, shoe);
+                r(5, liftA ? 27 : 29, 6, 2, shoe); r(11, liftB ? 27 : 29, 6, 2, shoe);
             }
             bodyStart = ops.Count;
-            bob = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 1 : 0;   // 身体随步伐起伏
+            bobY = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;   // 起伏加大：并步上浮 1px、迈步下沉 2px
+            bobX = frame >= 1 && side ? 1 : 0;                              // 侧身行走稍向前倾
             if (side)
             {
                 // 侧身手臂随步伐前后摆动（0 站立 / 1 前迈 / 2 并步 / 3 后摆）
-                int sw = frame == 1 ? 2 : frame == 3 ? 0 : 1;
+                int sw = frame == 1 ? 3 : frame == 3 ? 0 : 1;
                 r(8, 9, 8, 4, coat); r(8, 13, 7, 5, coat); r(8, 18, 6, 3, coat);
                 r(8, 9, 1, 12, coatD); r(14, 10 + sw, 3, 8, coat); r(14, 18 + sw, 3, 2, coatD);
                 r(14, 20 + sw, 3, 2, skin); r(8, 19, 6, 2, belt);
@@ -593,17 +594,19 @@ public static class TextureLibrary
                 for (int oi = 0; oi < ops.Count; oi++)
                 {
                     var (x, y, w, h, _) = ops[oi];
-                    int dy = oi >= bodyStart ? bob : 0;
+                    int dy = oi >= bodyStart ? bobY : 0;
+                    int dx = oi >= bodyStart ? bobX : 0;
                     int px = dir == "left" ? ox + CW - 2 - x - w : ox + x;
-                    p.FillRect(px, oy + y + dy, w + 2, h + 2, C(line));
+                    p.FillRect(px + dx, oy + y + dy, w + 2, h + 2, C(line));
                 }
                 // 颜色层
                 for (int oi = 0; oi < ops.Count; oi++)
                 {
                     var (x, y, w, h, col) = ops[oi];
-                    int dy = oi >= bodyStart ? bob : 0;
+                    int dy = oi >= bodyStart ? bobY : 0;
+                    int dx = oi >= bodyStart ? bobX : 0;
                     int px = dir == "left" ? ox + CW - 1 - x - w : ox + x + 1;
-                    p.FillRect(px, oy + y + 1 + dy, w, h, C(col));
+                    p.FillRect(px + dx, oy + y + 1 + dy, w, h, C(col));
                 }
             }
         }
