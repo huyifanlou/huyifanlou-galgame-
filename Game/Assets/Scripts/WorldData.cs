@@ -6,6 +6,11 @@ using UnityEngine;
 [Serializable]
 public class WorldData
 {
+    public float BOUND;
+    public float GROUND_SIZE;
+    public RoadDef[] ROADS;
+    public PropDef[] PROPS;
+    public BlockerDef[] BLOCKERS;
     public BuildingDef[] BUILDINGS;
     public GroundDef[] GROUNDS;
     public PondDef POND;
@@ -45,7 +50,15 @@ public class WorldData
     public bool wing, antenna, banner, roofProps, tank, awning, vent;
 }
 
-[Serializable] public class GroundDef { public string id, name; public float[] pos; public float[] size; }
+[Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }
+[Serializable] public class RoadDef { public string id, axis; public float at, from, to, width; public bool fence; }
+[Serializable] public class PropDef
+{
+    public string type, kind;
+    public float x, z, ry, w, d, r, len;
+    public int n;
+}
+[Serializable] public class BlockerDef { public float x, z, hw, hd; }
 [Serializable] public class PondDef { public float[] pos; public float r; }
 [Serializable] public class BranchPathDef { public float x, z, len; }
 [Serializable] public class FenceDef { public string axis; public float at, from, to; }

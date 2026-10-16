@@ -398,6 +398,36 @@ export function pondTexture() {
   return t
 }
 
+// 球场地面（篮球 / 网球）：512×320 与草地同密度；白线 + 场区
+export function courtTexture(kind) {
+  return canvasTexture(512, 320, (ctx, w, h) => {
+    ctx.fillStyle = kind === 'basket' ? '#2f6b52' : '#3b6b4a'
+    ctx.fillRect(0, 0, w, h)
+    for (let i = 0; i < 900; i++) {
+      ctx.fillStyle = ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.06)'][rand(2)]
+      ctx.fillRect(rand(w), rand(h), 4, 4)
+    }
+    ctx.fillStyle = 'rgba(0,0,0,0.18)'
+    ctx.fillRect(0, 0, w, 10); ctx.fillRect(0, h - 10, w, 10)
+    ctx.fillRect(0, 0, 10, h); ctx.fillRect(w - 10, 0, 10, h)
+    ctx.strokeStyle = 'rgba(246,244,236,0.92)'
+    ctx.lineWidth = 4
+    ctx.strokeRect(24, 24, w - 48, h - 48)
+    if (kind === 'basket') {
+      ctx.beginPath(); ctx.arc(w / 2, h / 2, 30, 0, Math.PI * 2); ctx.stroke()
+      ctx.fillStyle = 'rgba(246,244,236,0.92)'
+      ctx.fillRect(w / 2 - 2, 24, 4, h - 48)
+      ctx.strokeRect(24, h / 2 - 52, 46, 104)
+      ctx.strokeRect(w - 70, h / 2 - 52, 46, 104)
+    } else {
+      ctx.fillStyle = 'rgba(246,244,236,0.92)'
+      ctx.fillRect(w / 2 - 2, 24, 4, h - 48)
+      ctx.strokeRect(60, h / 2 - 40, 100, 80)
+      ctx.strokeRect(w - 160, h / 2 - 40, 100, 80)
+    }
+  })
+}
+
 // 天空穹顶纹理（1024×512 等距圆柱投影，画布上沿=天顶、y≈256=地平线）
 // 白天：蓝天分带渐变 + 像素云（水平方向可无缝平铺用于云飘动）
 // 夜晚：深蓝分带渐变 + 星空 + 块状像素月亮

@@ -5,7 +5,7 @@ using UnityEngine;
 public class PlayerRig : MonoBehaviour
 {
     const float MOVE_SPEED = 6f;
-    const float BOUND = 30f;
+    float _bound = 60f;
 
     WorldBuilder _w;
     TimeOfDay _time;
@@ -26,6 +26,7 @@ public class PlayerRig : MonoBehaviour
     public void Init(WorldBuilder w)
     {
         _w = w;
+        _bound = w.W.BOUND > 1f ? w.W.BOUND : 60f;
         _time = GetComponent<TimeOfDay>();
         _cam = Camera.main;
         _player = w.Player;
@@ -53,7 +54,8 @@ public class PlayerRig : MonoBehaviour
         }
         var yaw = Args.F("-yaw"); if (yaw.HasValue) _yaw = yaw.Value;
         var pitch = Args.F("-pitch"); if (pitch.HasValue) _pitch = Mathf.Clamp(pitch.Value, 0.3f, 1.35f);
-        var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 6f, 40f);
+        var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 6f, 140f);   // 验收俯视可放远（交互滚轮仍限 6-22）
+        if (dist.HasValue && dist.Value > 22f && !pitch.HasValue) _pitch = Mathf.Max(_pitch, 1.0f);  // 远机位默认俯视（显式 -pitch 时尊重调用方）
         if (Args.Str("-freeze") == "1") _alignPaused = true;
 
         // 验收：-sim d,40 → 前 40 帧模拟按住 D
@@ -141,9 +143,9 @@ public class PlayerRig : MonoBehaviour
             float len = Mathf.Sqrt(dirX * dirX + dirZ * dirZ);
             dirX /= len;
             dirZ /= len;
-            float nx = Mathf.Clamp(p.x + dirX * MOVE_SPEED * dt, -BOUND, BOUND);
+            float nx = Mathf.Clamp(p.x + dirX * MOVE_SPEED * dt, -_bound, _bound);
             if (!Collides(nx, p.z)) p.x = nx;
-            float nz = Mathf.Clamp(p.z + dirZ * MOVE_SPEED * dt, -BOUND, BOUND);
+            float nz = Mathf.Clamp(p.z + dirZ * MOVE_SPEED * dt, -_bound, _bound);
             if (!Collides(p.x, nz)) p.z = nz;
             p.y = Mathf.Abs(Mathf.Sin(Time.time * 10f)) * 0.05f;   // 走路小跳
         }
@@ -227,6 +229,9 @@ public class PlayerRig : MonoBehaviour
             if (Mathf.Abs(x - l.x) < 0.4f && Mathf.Abs(z - l.z) < 0.4f) return true;
         var v = _w.W.VILLA;
         if (Mathf.Abs(x - v.x) < v.w / 2f + 0.45f && Mathf.Abs(z - v.z) < v.d / 2f + 0.45f) return true;
+        // 道具实体（长椅/垃圾桶/公告栏/车架/旗杆/花坛/喷泉/球场附件/校门）
+        foreach (var b in _w.W.BLOCKERS)
+            if (Mathf.Abs(x - b.x) < b.hw + 0.35f && Mathf.Abs(z - b.z) < b.hd + 0.35f) return true;
         return false;
     }
 }

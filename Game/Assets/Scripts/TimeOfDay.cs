@@ -34,8 +34,8 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
     const float DAY_AMB = 0.34f, DAY_HEMI = 0.14f, DAY_DIR_I = 0.95f;
     const float NIGHT_AMB = 0.22f, NIGHT_HEMI = 0.12f, NIGHT_DIR_I = 0.45f;
-    const float DAY_FOG_NEAR = 46f, DAY_FOG_FAR = 98f;
-    const float NIGHT_FOG_NEAR = 34f, NIGHT_FOG_FAR = 88f;
+    const float DAY_FOG_NEAR = 62f, DAY_FOG_FAR = 158f;
+    const float NIGHT_FOG_NEAR = 48f, NIGHT_FOG_FAR = 138f;
 
     public static float Smooth(float x) => x * x * (3f - 2f * x);
 

@@ -72,25 +72,28 @@ function save(tex, name) {
   console.log('   ', name, (buf.length / 1024).toFixed(1) + 'KB')
 }
 
-console.log('[1/6] 地面 / 路面 / 花 / 土 / 操场 / 池塘')
+console.log('[1/6] 地面 / 路面 / 花 / 土 / 操场 / 池塘 / 球场')
 save(T.grassTexture(1), 'grass.png')
 save(T.pathTexture(false, 1), 'path.png')
 save(T.flowerTexture(), 'flower.png')
 save(T.dirtTexture(), 'dirt.png')
 save(T.trackTexture(), 'track.png')
 save(T.pondTexture(), 'pond.png')
+save(T.courtTexture('basket'), 'court_basket.png')
+save(T.courtTexture('tennis'), 'court_tennis.png')
 
 console.log('[2/6] 天空（昼 / 夜）')
 save(T.skyTexture('day'), 'sky_day.png')
 save(T.skyTexture('night'), 'sky_night.png')
 
-console.log('[3/6] 路灯 / 角色 / 门 / 雨棚 / 主角家 / 别墅瓦')
+console.log('[3/6] 路灯 / 角色 / 门 / 雨棚 / 主角家 / 别墅瓦 / 校名牌')
 save(T.lampGlowTexture(), 'lamp_glow.png')
 save(T.characterSheet(), 'player.png')
 save(T.doorTexture(), 'door.png')
 save(T.stripesTexture(), 'awning.png')
 save(T.villaTexture(), 'villa.png')
 save(T.roofTexture('#3a434e'), 'roof_villa.png')
+save(T.signTexture('华清大学'), 'sign_gate.png')
 
 console.log('[4/6] 四栋建筑（昼 / 夜外墙 + 招牌 + 瓦片）')
 for (const b of C.BUILDINGS) {
@@ -115,7 +118,12 @@ console.log('[6/6] 世界数据 world.json')
 // 注：元组数组（[x,z] / [x,z,v]…）统一转为对象数组——Unity JsonUtility 不支持嵌套数组反序列化；
 // BUILDINGS/GROUNDS 等对象内的 pos/size 为 float[] 字段，JsonUtility 原生支持，保持原样。
 const world = {
-  meta: { from: 'chuanzhibei-game v0.40 (tag web-v1.0-frozen-20261015)', seed: 20261015, exportedAt: '2026-10-15', lcgFix: 'BUG-001 已修复（docs/01）' },
+  meta: { from: 'chuanzhibei-game v0.40 (tag web-v1.0-frozen-20261015)', seed: 20261015, exportedAt: '2026-10-16', lcgFix: 'BUG-001 已修复（docs/01）', expansion: 'v2 扩容（docs/04）：BOUND 60 / 路网 3×3 / 建筑 12 / 道具 32' },
+  BOUND: C.BOUND,
+  GROUND_SIZE: C.GROUND_SIZE,
+  ROADS: C.ROADS,
+  PROPS: C.PROPS,
+  BLOCKERS: C.BLOCKERS,
   BUILDINGS: C.BUILDINGS,
   GROUNDS: C.GROUNDS,
   POND: C.POND,

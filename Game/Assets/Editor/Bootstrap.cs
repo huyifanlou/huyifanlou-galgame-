@@ -84,7 +84,7 @@ public static class Bootstrap
         PlayerSettings.runInBackground = true;
         PlayerSettings.colorSpace = ColorSpace.Gamma;   // 与 web 版 sRGB 直出观感一致（首屏后按截图校准）
         QualitySettings.antiAliasing = 4;
-        QualitySettings.shadowDistance = 70f;
+        QualitySettings.shadowDistance = 130f;
         QualitySettings.shadowResolution = ShadowResolution.High;
         QualitySettings.vSyncCount = 0;
 

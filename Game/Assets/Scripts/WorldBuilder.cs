@@ -85,6 +85,116 @@ public class WorldBuilder : MonoBehaviour
     GameObject Face(Transform p, float w, float h, Vector3 pos, Material m, float ry = 0f, bool shadow = true)
         => MeshObj(p, MeshFactory.QuadZ(w, h), pos, m, new Vector3(0, ry, 0), shadow, shadow);
 
+    // ── 设施道具（长椅 / 垃圾桶 / 公告栏 / 车架 / 旗杆 / 花坛 / 喷泉 / 球场附件 / 校门 / 广场）──
+    void Props()
+    {
+        var g = NewGo("Props", Root).transform;
+        foreach (var p in W.PROPS)
+        {
+            var grp = NewGo(p.type, g).transform;
+            grp.localPosition = new Vector3(p.x, 0f, p.z);
+            grp.localEulerAngles = new Vector3(0f, p.ry * Mathf.Rad2Deg, 0f);
+            switch (p.type)
+            {
+                case "plaza":
+                    MeshObj(grp, MeshFactory.Quad(p.w, p.d, Mathf.Max(1, Mathf.RoundToInt(p.w / 3.2f)), Mathf.Max(1, Mathf.RoundToInt(p.d / 3.2f))),
+                        new Vector3(0, 0.018f, 0), LitTex("path"));
+                    break;
+                case "flag":
+                    Box(grp, new Vector3(0, 0.25f, 0), new Vector3(0.9f, 0.5f, 0.9f), ColMat("#b8b0a2"));
+                    Box(grp, new Vector3(0, 4.2f, 0), new Vector3(0.14f, 8f, 0.14f), ColMat("#d8dce2"));
+                    Box(grp, new Vector3(0.78f, 7.3f, 0), new Vector3(1.45f, 0.9f, 0.06f), ColMat("#c0392b"));
+                    Box(grp, new Vector3(0.78f, 7.3f, 0.02f), new Vector3(0.6f, 0.5f, 0.03f), MatLib.UnlitColor(MatLib.Hex("#f5d04e")), default, false);
+                    break;
+                case "bench":
+                    Box(grp, new Vector3(0, 0.45f, 0), new Vector3(1.8f, 0.09f, 0.5f), ColMat("#a87e52"));
+                    Box(grp, new Vector3(0, 0.75f, -0.24f), new Vector3(1.8f, 0.55f, 0.08f), ColMat("#b98d5e"));
+                    Box(grp, new Vector3(-0.75f, 0.22f, 0), new Vector3(0.12f, 0.44f, 0.44f), ColMat("#6b6b70"));
+                    Box(grp, new Vector3(0.75f, 0.22f, 0), new Vector3(0.12f, 0.44f, 0.44f), ColMat("#6b6b70"));
+                    break;
+                case "bin":
+                    {
+                        var cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        var cc = cyl.GetComponent<Collider>();
+                        if (cc != null) Destroy(cc);
+                        cyl.transform.SetParent(grp, false);
+                        cyl.transform.localPosition = new Vector3(0f, 0.36f, 0f);
+                        cyl.transform.localScale = new Vector3(0.5f, 0.36f, 0.5f);
+                        cyl.GetComponent<MeshRenderer>().sharedMaterial = ColMat("#4a5a52");
+                        Box(grp, new Vector3(0, 0.75f, 0), new Vector3(0.56f, 0.06f, 0.56f), ColMat("#3a4a44"));
+                    }
+                    break;
+                case "board":
+                    Box(grp, new Vector3(-0.7f, 0.85f, 0), new Vector3(0.1f, 1.7f, 0.1f), ColMat("#6b5a42"));
+                    Box(grp, new Vector3(0.7f, 0.85f, 0), new Vector3(0.1f, 1.7f, 0.1f), ColMat("#6b5a42"));
+                    Box(grp, new Vector3(0, 1.4f, 0.03f), new Vector3(1.8f, 1.05f, 0.09f), ColMat("#3a3f4a"));
+                    Box(grp, new Vector3(0, 1.4f, 0.09f), new Vector3(1.6f, 0.85f, 0.02f), ColMat("#f2efe6"));
+                    break;
+                case "bikerack":
+                    {
+                        int n = p.n > 0 ? p.n : 5;
+                        for (int k = 0; k < n; k++)
+                        {
+                            float bx = (k - (n - 1) / 2f) * 0.7f;
+                            Box(grp, new Vector3(bx, 0.3f, 0), new Vector3(0.06f, 0.6f, 0.9f), ColMat("#9aa2ac"));
+                        }
+                        Box(grp, new Vector3(0, 0.58f, 0), new Vector3(n * 0.7f, 0.06f, 0.06f), ColMat("#8a9099"));
+                    }
+                    break;
+                case "planter":
+                    {
+                        float hw = p.w / 2f, hd = p.d / 2f;
+                        Box(grp, new Vector3(0, 0.16f, -hd + 0.1f), new Vector3(p.w, 0.32f, 0.2f), ColMat("#9c9484"));
+                        Box(grp, new Vector3(0, 0.16f, hd - 0.1f), new Vector3(p.w, 0.32f, 0.2f), ColMat("#9c9484"));
+                        Box(grp, new Vector3(-hw + 0.1f, 0.16f, 0), new Vector3(0.2f, 0.32f, p.d), ColMat("#9c9484"));
+                        Box(grp, new Vector3(hw - 0.1f, 0.16f, 0), new Vector3(0.2f, 0.32f, p.d), ColMat("#9c9484"));
+                        Box(grp, new Vector3(0, 0.3f, 0), new Vector3(p.w - 0.3f, 0.22f, p.d - 0.3f), ColMat("#4a8743"));
+                        Box(grp, new Vector3(0, 0.44f, 0), new Vector3(p.w - 0.6f, 0.14f, p.d - 0.6f), ColMat("#e8748a"));
+                    }
+                    break;
+                case "fountain":
+                    {
+                        var rim = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        var rc = rim.GetComponent<Collider>();
+                        if (rc != null) Destroy(rc);
+                        rim.transform.SetParent(grp, false);
+                        rim.transform.localPosition = new Vector3(0f, 0.25f, 0f);
+                        rim.transform.localScale = new Vector3(p.r * 2f, 0.25f, p.r * 2f);
+                        rim.GetComponent<MeshRenderer>().sharedMaterial = ColMat("#9c9484");
+                        var water = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                        var wc = water.GetComponent<Collider>();
+                        if (wc != null) Destroy(wc);
+                        water.transform.SetParent(grp, false);
+                        water.transform.localPosition = new Vector3(0f, 0.42f, 0f);
+                        water.transform.localScale = new Vector3(p.r * 1.7f, 0.04f, p.r * 1.7f);
+                        water.GetComponent<MeshRenderer>().sharedMaterial = ColMat("#4d82bd");
+                        Box(grp, new Vector3(0, 0.75f, 0), new Vector3(0.4f, 0.7f, 0.4f), ColMat("#8d8d94"));
+                        Box(grp, new Vector3(0, 1.15f, 0), new Vector3(0.9f, 0.16f, 0.9f), ColMat("#a9adb2"));
+                    }
+                    break;
+                case "hoop":
+                    Box(grp, new Vector3(0, 1.6f, 0), new Vector3(0.16f, 3.2f, 0.16f), ColMat("#5a6270"));
+                    Box(grp, new Vector3(0, 3.15f, 0.42f), new Vector3(1.3f, 0.85f, 0.08f), ColMat("#f2efe6"));
+                    Box(grp, new Vector3(0, 2.68f, 0.62f), new Vector3(0.5f, 0.06f, 0.5f), ColMat("#c0392b"));
+                    break;
+                case "netpost":
+                    Box(grp, new Vector3(-p.len / 2f, 0.6f, 0), new Vector3(0.1f, 1.2f, 0.1f), ColMat("#3a3f4a"));
+                    Box(grp, new Vector3(p.len / 2f, 0.6f, 0), new Vector3(0.1f, 1.2f, 0.1f), ColMat("#3a3f4a"));
+                    Box(grp, new Vector3(0, 0.95f, 0), new Vector3(p.len, 0.8f, 0.04f), ColMat("#e6e6e2"));
+                    break;
+                case "gate":
+                    if (p.kind == "main")
+                    {
+                        Box(grp, new Vector3(-3.6f, 2.6f, 0), new Vector3(0.9f, 5.2f, 0.9f), ColMat("#c9c3b6"));
+                        Box(grp, new Vector3(3.6f, 2.6f, 0), new Vector3(0.9f, 5.2f, 0.9f), ColMat("#c9c3b6"));
+                        Box(grp, new Vector3(0, 5.55f, 0), new Vector3(8.6f, 0.7f, 0.9f), ColMat("#8f8a80"));
+                        Face(grp, 4.8f, 1.1f, new Vector3(0, 4.6f, 0.5f), LitTex("sign_gate"));
+                    }
+                    break;
+            }
+        }
+    }
+
     // ── 入口 ──────────────────────────────────────────────────
     void Start()
     {
@@ -108,13 +218,14 @@ public class WorldBuilder : MonoBehaviour
 
         Sky();
         GroundAndPaths();
-        Playground();
+        Grounds();
         Pond();
         Flowers();
         DirtPatches();
         Branches();
         Fences();
         Lamps();
+        Props();
         Buildings();
         Villa();
         Trees();
@@ -152,23 +263,33 @@ public class WorldBuilder : MonoBehaviour
 
     void GroundAndPaths()
     {
-        Flat(Root, 200f, 200f, 0f, LitTex("grass"), 60f, 60f);
-        // 竖路：4.6 × 54.5 @ (0, 0.012, 8.75)，贴图沿长度 14 次
-        var v = NewGo("PathV", Root);
-        v.transform.localPosition = new Vector3(0f, 0.012f, 8.75f);
-        MeshObj(v.transform, MeshFactory.Quad(4.6f, 54.5f, 1f, 14f), Vector3.zero, LitTex("path"));
-        // 横路：72 × 4.6 @ (0, 0.016, 0)，贴图横向 14 次
-        var h = NewGo("PathH", Root);
-        h.transform.localPosition = new Vector3(0f, 0.016f, 0f);
-        MeshObj(h.transform, MeshFactory.Quad(72f, 4.6f, 14f, 1f), Vector3.zero, LitTex("path"));
+        float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
+        Flat(Root, gs, gs, 0f, LitTex("grass"), gs / 3.33f, gs / 3.33f);
+        // 路网：竖路 y=0.012、横路 y=0.016（交叉处横路在上，与 web 版一致）
+        var g = NewGo("Roads", Root).transform;
+        foreach (var r in W.ROADS)
+        {
+            float len = r.to - r.from;
+            float mid = (r.from + r.to) / 2f;
+            var go = NewGo(r.id, g);
+            go.transform.localPosition = r.axis == "z" ? new Vector3(r.at, 0.012f, mid) : new Vector3(mid, 0.016f, r.at);
+            int rep = Mathf.Max(1, Mathf.RoundToInt(len / 3.9f));
+            var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, 1f, rep) : MeshFactory.Quad(len, r.width, rep, 1f);
+            MeshObj(go.transform, mesh, Vector3.zero, LitTex("path"));
+        }
     }
 
-    void Playground()
+    // 场地：操场（跑道贴图）/ 篮球场 / 网球场
+    void Grounds()
     {
-        var g = W.GROUNDS[0];
-        var go = NewGo("Playground", Root);
-        go.transform.localPosition = new Vector3(g.pos[0], 0.02f, g.pos[1]);
-        MeshObj(go.transform, MeshFactory.Quad(g.size[0], g.size[1], 1f, 1f), Vector3.zero, LitTex("track"));
+        var g = NewGo("Grounds", Root).transform;
+        foreach (var def in W.GROUNDS)
+        {
+            var go = NewGo(def.id, g);
+            go.transform.localPosition = new Vector3(def.pos[0], 0.02f, def.pos[1]);
+            string tex = def.id == "playground" ? "track" : (def.kind == "tennis" ? "court_tennis" : "court_basket");
+            MeshObj(go.transform, MeshFactory.Quad(def.size[0], def.size[1], 1f, 1f), Vector3.zero, LitTex(tex));
+        }
     }
 
     void Pond()
@@ -295,6 +416,18 @@ public class WorldBuilder : MonoBehaviour
                     tri.localEulerAngles = new Vector3(0f, 90f, 0f);
                     MeshObj(tri, MeshFactory.Triangle(d + 0.2f, gH), Vector3.zero, ColMat(b.wall));
                 }
+            }
+            else if (b.style == "gym")
+            {
+                // 大跨度体育馆：主体 + 半圆筒拱顶（圆柱沿 x 轴，下半埋入主体）
+                var arch = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                var ac = arch.GetComponent<Collider>();
+                if (ac != null) Destroy(ac);
+                arch.transform.SetParent(grp, false);
+                arch.transform.localPosition = new Vector3(0f, h / 2f, 0f);
+                arch.transform.localEulerAngles = new Vector3(0f, 0f, 90f);
+                arch.transform.localScale = new Vector3(d, w / 2f, d);
+                arch.GetComponent<MeshRenderer>().sharedMaterial = ColMat(b.roof);
             }
             else if (b.style == "grand")
             {
@@ -473,6 +606,21 @@ public class WorldBuilder : MonoBehaviour
             Box(grp, new Vector3(0, 0.8f, 0), new Vector3(0.44f, 1.6f, 0.44f), ColMat("#6d4a2f"));
             Box(grp, new Vector3(0, 2.1f, 0), new Vector3(2.4f, 1.5f, 2.4f), ColMat("#4f9448"));
             Box(grp, new Vector3(0, 3.05f, 0), new Vector3(1.6f, 0.9f, 1.6f), ColMat("#5da04f"));
+        }
+        else if (v == 9)
+        {
+            // 柳树：高干 + 三层浅绿垂冠（池畔）
+            Box(grp, new Vector3(0, 1.5f, 0), new Vector3(0.4f, 3f, 0.4f), ColMat("#7a6a45"));
+            Box(grp, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 0.7f, 2.4f), ColMat("#7fa84f"));
+            Box(grp, new Vector3(0, 3.4f, 0), new Vector3(2.8f, 0.6f, 2.8f), ColMat("#8fb35a"));
+            Box(grp, new Vector3(0, 4.05f, 0), new Vector3(1.9f, 0.6f, 1.9f), ColMat("#9cc06a"));
+        }
+        else if (v == 10)
+        {
+            // 桃花：中干 + 粉色团冠（花园）
+            Box(grp, new Vector3(0, 0.9f, 0), new Vector3(0.36f, 1.8f, 0.36f), ColMat("#6d4a2f"));
+            Box(grp, new Vector3(0, 2.3f, 0), new Vector3(2f, 1.7f, 2f), ColMat("#e8a8bd"));
+            Box(grp, new Vector3(0, 3.25f, 0), new Vector3(1.3f, 0.8f, 1.3f), ColMat("#f0bccd"));
         }
         else
         {
