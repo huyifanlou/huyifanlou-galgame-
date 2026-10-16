@@ -150,118 +150,119 @@ public static class TextureLibrary
 
     static Px Grass()
     {
-        var p = new Px(128, 128);
-        for (int y = 0; y < 128; y += 4) for (int x = 0; x < 128; x += 4)
-            p.FillRect(x, y, 4, 4, C((x + y) % 8 == 0 ? "#54904b" : "#4a8743"));
+        var p = new Px(256, 256);   // 密度翻倍（256px 覆盖 1.67m ≈ 153px/米）
+        for (int y = 0; y < 256; y += 8) for (int x = 0; x < 256; x += 8)
+            p.FillRect(x, y, 8, 8, C((x + y) % 16 == 0 ? "#54904b" : "#4a8743"));
         var cols = new[] { "#3f7239", "#5da054", "#437c3c", "#61a85a" };
-        for (int i = 0; i < 100; i++)
+        for (int i = 0; i < 260; i++)
         {
             var c = C(cols[R.Int(4)]);
-            int rx = R.Int(122), ry = R.Int(122), w = R.Int(2) == 1 ? 4 : 6, h = R.Int(2) == 1 ? 6 : 4;
+            int rx = R.Int(244), ry = R.Int(244), w = R.Int(2) == 1 ? 8 : 12, h = R.Int(2) == 1 ? 12 : 8;
             p.FillRect(rx, ry, w, h, c);
         }
         var pcols = new[] { "#48853f", "#5c9c53", "#437c3c" };
-        for (int i = 0; i < 18; i++)
+        for (int i = 0; i < 36; i++)
         {
             float a = 0.35f + (float)R.Next() * 0.2f;
             var c = C(pcols[R.Int(3)]); c.a = a;
-            p.FillRect(R.Int(112), R.Int(112), 8 + R.Int(7), 8 + R.Int(7), c);
+            p.FillRect(R.Int(224), R.Int(224), 16 + R.Int(14), 16 + R.Int(14), c);
         }
-        // 细化：2px 细颗粒碎草与小石子（地面细节层次，与草地同密度）
+        // 细颗粒碎草与小石子（随密度翻倍，颗粒 1-2px ≈ 0.7-1.3cm）
         var fine = new[] { "#3f7239", "#5da054", "#61a85a", "#437c3c" };
-        for (int i = 0; i < 260; i++)
-            p.FillRect(R.Int(126), R.Int(126), 2, R.Int(2) == 0 ? 2 : 4, C(fine[R.Int(4)]));
-        for (int i = 0; i < 26; i++)
-            p.FillRect(R.Int(124), R.Int(124), 2, 2, C(R.Int(2) == 0 ? "#6fae4b" : "#356e37"));
-        for (int i = 0; i < 10; i++)
-            p.FillRect(R.Int(124), R.Int(124), 2, 2, C("rgba(210,205,190,0.35)"));
+        for (int i = 0; i < 900; i++)
+            p.FillRect(R.Int(250), R.Int(250), 2, R.Int(2) == 0 ? 4 : 2, C(fine[R.Int(4)]));
+        for (int i = 0; i < 90; i++)
+            p.FillRect(R.Int(248), R.Int(248), 2, 2, C(R.Int(2) == 0 ? "#6fae4b" : "#356e37"));
+        for (int i = 0; i < 40; i++)
+            p.FillRect(R.Int(248), R.Int(248), R.Int(2) + 1, 2, C("rgba(210,205,190,0.35)"));
         return p;
     }
 
     static Px PathTex()
     {
-        var p = new Px(64, 64);
-        p.FillRect(0, 0, 64, 64, C("#a49c8d"));
+        var p = new Px(128, 128);   // 密度翻倍（128px 覆盖 0.8m ≈ 160px/米）
+        p.FillRect(0, 0, 128, 128, C("#a49c8d"));
         var cols = new[] { "#c1b9ac", "#b8b0a3", "#bdb4a6", "#b3ab9d" };
         for (int by = 0; by < 2; by++) for (int bx = 0; bx < 2; bx++)
         {
-            p.FillRect(bx * 32 + 2, by * 32 + 2, 28, 28, C(cols[R.Int(4)]));
-            for (int i = 0; i < 10; i++) p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 4, 2, C("rgba(122,114,102,0.45)"));
-            for (int i = 0; i < 6; i++) p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 2, 2, C("rgba(230,226,216,0.5)"));
+            p.FillRect(bx * 64 + 4, by * 64 + 4, 56, 56, C(cols[R.Int(4)]));
+            for (int i = 0; i < 40; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 8, 4, C("rgba(122,114,102,0.45)"));
+            for (int i = 0; i < 24; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 4, 4, C("rgba(230,226,216,0.5)"));
+            for (int i = 0; i < 10; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 2, 2, C(R.Int(2) == 0 ? "rgba(100,92,80,0.35)" : "rgba(245,242,235,0.45)"));
         }
         return p;
     }
 
     static Px Building(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit)
     {
-        const int cell = 128;   // 4× 原版密度（≈80px/世界单位，随全局像素翻倍）
-        int W = cols * cell, H = rows * cell + 160;
+        const int cell = 256;   // 8× 原版密度（≈160px/世界单位，密度再翻倍）
+        int W = cols * cell, H = rows * cell + 320;
         var p = new Px(W, H);
         p.FillRect(0, 0, W, H, C(wall));
-        int noise = (int)Math.Floor((W * (double)H) / 384);
+        int noise = (int)Math.Floor((W * (double)H) / 1536);
         for (int i = 0; i < noise; i++)
         {
-            p.FillRect(R.Int(W), R.Int(H), 24, 12, C("rgba(0,0,0,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 12, 12, C("rgba(255,255,255,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 4, 4, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 48, 24, C("rgba(0,0,0,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 24, 24, C("rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 8, 8, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
         }
-        for (int y = 32; y < H; y += 32) p.FillRect(0, y, W, 2, C("rgba(0,0,0,0.035)"));
-        p.FillRect(0, 0, W, 32, C(trim));
-        p.FillRect(0, 32, W, 12, C("rgba(0,0,0,0.12)"));
+        for (int y = 64; y < H; y += 64) p.FillRect(0, y, W, 4, C("rgba(0,0,0,0.035)"));
+        p.FillRect(0, 0, W, 64, C(trim));
+        p.FillRect(0, 64, W, 24, C("rgba(0,0,0,0.12)"));
         for (int r = 1; r < rows; r++)
         {
-            p.FillRect(0, r * cell + 48, W, 28, C(trim));
-            p.FillRect(0, r * cell + 76, W, 12, C("rgba(0,0,0,0.15)"));
+            p.FillRect(0, r * cell + 96, W, 56, C(trim));
+            p.FillRect(0, r * cell + 152, W, 24, C("rgba(0,0,0,0.15)"));
         }
-        p.FillRect(0, H - 96, W, 96, C(plinth));
-        p.FillRect(0, H - 36, W, 36, C("rgba(0,0,0,0.18)"));
-        p.FillRect(0, H - 24, W, 8, C("rgba(255,255,255,0.06)"));
+        p.FillRect(0, H - 192, W, 192, C(plinth));
+        p.FillRect(0, H - 72, W, 72, C("rgba(0,0,0,0.18)"));
+        p.FillRect(0, H - 48, W, 16, C("rgba(255,255,255,0.06)"));
         for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
         {
             bool isLit = R.Next() < lit;
             int kind = R.Int(10);
-            int wx = c2 * cell + 28, wy = r * cell + 40;
-            p.FillRect(wx - 12, wy - 12, 104, 104, C(trim));
-            p.FillRect(wx, wy, 80, 80, C(isLit ? "#ffd98a" : "#2c3548"));
-            if (isLit) p.FillRect(wx, wy, 80, 12, C("#ffe9b8"));
+            int wx = c2 * cell + 56, wy = r * cell + 80;
+            p.FillRect(wx - 24, wy - 24, 208, 208, C(trim));
+            p.FillRect(wx, wy, 160, 160, C(isLit ? "#ffd98a" : "#2c3548"));
+            if (isLit) p.FillRect(wx, wy, 160, 24, C("#ffe9b8"));
             else
             {
                 if (R.Next() < 0.35)
                 {
-                    p.FillRect(wx + 8, wy + 8, 28, 12, C("rgba(170,195,225,0.30)"));
-                    p.FillRect(wx + 16, wy + 20, 20, 12, C("rgba(170,195,225,0.30)"));
+                    p.FillRect(wx + 16, wy + 16, 56, 24, C("rgba(170,195,225,0.30)"));
+                    p.FillRect(wx + 32, wy + 40, 40, 24, C("rgba(170,195,225,0.30)"));
                 }
-                p.FillRect(wx + 38, wy, 4, 80, C(trim));
-                p.FillRect(wx, wy + 38, 80, 4, C(trim));
+                p.FillRect(wx + 76, wy, 8, 160, C(trim));
+                p.FillRect(wx, wy + 76, 160, 8, C(trim));
             }
-            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 80, 28, C("#a08b80"));
+            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 160, 56, C("#a08b80"));
             if (kind == 2 && !isLit)
             {
-                p.FillRect(wx, wy + 84, 80, 20, C("#3f6e35"));
-                for (int i = 0; i < 5; i++) p.FillRect(wx + 8 + i * 16, wy + 76, 8, 12, C("#4a8743"));
+                p.FillRect(wx, wy + 168, 160, 40, C("#3f6e35"));
+                for (int i = 0; i < 5; i++) p.FillRect(wx + 16 + i * 32, wy + 152, 16, 24, C("#4a8743"));
             }
-            p.FillRect(wx, wy + 68, 80, 12, C("rgba(0,0,0,0.3)"));
-            p.FillRect(wx, wy + 104, 80, 12, C("rgba(0,0,0,0.22)"));
-            p.FillRect(wx, wy + 92, 80, 8, C("rgba(255,255,255,0.05)"));
+            p.FillRect(wx, wy + 136, 160, 24, C("rgba(0,0,0,0.3)"));
+            p.FillRect(wx, wy + 208, 160, 24, C("rgba(0,0,0,0.22)"));
+            p.FillRect(wx, wy + 184, 160, 16, C("rgba(255,255,255,0.05)"));
             if (kind == 3)
             {
-                p.FillRect(wx + 12, wy + 104, 52, 40, C("#9aa2ac"));
-                for (int i = 0; i < 3; i++) p.FillRect(wx + 16, wy + 110 + i * 10, 44, 4, C("rgba(0,0,0,0.15)"));
-                p.FillRect(wx + 12, wy + 132, 52, 12, C("rgba(0,0,0,0.25)"));
+                p.FillRect(wx + 24, wy + 208, 104, 80, C("#9aa2ac"));
+                for (int i = 0; i < 3; i++) p.FillRect(wx + 32, wy + 220 + i * 20, 88, 8, C("rgba(0,0,0,0.15)"));
+                p.FillRect(wx + 24, wy + 264, 104, 24, C("rgba(0,0,0,0.25)"));
             }
             if (r > 0 && kind == 4 && !isLit)
             {
-                p.FillRect(wx - 12, wy + 108, 104, 8, C("#cfc9ba"));
-                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 8 + bxx * 8, wy + 84, 4, 24, C("#b8b0a2"));
+                p.FillRect(wx - 24, wy + 216, 208, 16, C("#cfc9ba"));
+                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 16 + bxx * 16, wy + 168, 8, 48, C("#b8b0a2"));
             }
         }
         if (banner)
         {
-            int by = cell + 176;
-            p.FillRect(48, by + 104, W - 96, 12, C("rgba(0,0,0,0.18)"));
-            p.FillRect(48, by, W - 96, 104, C("#c0392b"));
-            p.FillRect(48, by, W - 96, 6, C("rgba(255,255,255,0.12)"));
-            for (int x = 104; x < W - 152; x += 88) p.FillRect(x, by + 28, 52, 48, C("#f5d04e"));
+            int by = cell + 352;
+            p.FillRect(96, by + 208, W - 192, 24, C("rgba(0,0,0,0.18)"));
+            p.FillRect(96, by, W - 192, 208, C("#c0392b"));
+            p.FillRect(96, by, W - 192, 12, C("rgba(255,255,255,0.12)"));
+            for (int x = 208; x < W - 304; x += 176) p.FillRect(x, by + 56, 104, 96, C("#f5d04e"));
         }
         return p;
     }
@@ -695,26 +696,28 @@ public static class TextureLibrary
 
     static Px Road(string kind)
     {
-        var p = new Px(64, 64);
+        var p = new Px(128, 128);   // 密度翻倍（128px 覆盖 0.8m ≈ 160px/米）
         if (kind == "mainstone")
         {
-            p.FillRect(0, 0, 64, 64, C("#b3aca0"));
+            p.FillRect(0, 0, 128, 128, C("#b3aca0"));
             var cols = new[] { "#c6bfb2", "#bdb6a9", "#c2bbae", "#b8b1a4" };
             for (int by = 0; by < 2; by++) for (int bx = 0; bx < 2; bx++)
             {
-                p.FillRect(bx * 32 + 1, by * 32 + 1, 30, 30, C(cols[R.Int(4)]));
-                for (int i = 0; i < 12; i++)
-                    p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 3, 2, C(R.Int(2) == 0 ? "rgba(140,132,120,0.25)" : "rgba(235,231,222,0.35)"));
+                p.FillRect(bx * 64 + 2, by * 64 + 2, 60, 60, C(cols[R.Int(4)]));
+                for (int i = 0; i < 48; i++)
+                    p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 6, 4, C(R.Int(2) == 0 ? "rgba(140,132,120,0.25)" : "rgba(235,231,222,0.35)"));
+                for (int i = 0; i < 14; i++)
+                    p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 2, 2, C(R.Int(2) == 0 ? "rgba(120,112,100,0.3)" : "rgba(245,242,235,0.4)"));
             }
         }
         else
         {
-            p.FillRect(0, 0, 64, 64, C("#a89c8a"));
+            p.FillRect(0, 0, 128, 128, C("#a89c8a"));
             var cols = new[] { "#b8ac97", "#b0a48f", "#c0b4a0", "#a89c88" };
-            for (int y = 0; y < 8; y++) for (int x = 0; x < 8; x++)
+            for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++)
             {
-                p.FillRect(x * 8 + 1, y * 8 + 1, 6, 6, C(cols[R.Int(4)]));
-                if (R.Int(3) == 0) p.FillRect(x * 8 + 2, y * 8 + 3, 3, 2, C("rgba(120,110,95,0.25)"));
+                p.FillRect(x * 8 + 2, y * 8 + 2, 12, 12, C(cols[R.Int(4)]));
+                if (R.Int(3) == 0) p.FillRect(x * 8 + 4, y * 8 + 6, 6, 4, C("rgba(120,110,95,0.25)"));
             }
         }
         return p;
