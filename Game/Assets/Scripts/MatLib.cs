@@ -94,6 +94,7 @@ public static class MatLib
         m.DisableKeyword("_ALPHABLEND_ON");
         m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
         m.SetFloat("_Cutoff", 0.4f);
+        m.SetFloat("_AlphaClip", 1f);   // 2021+ 的 Standard 还需要 AlphaClip 开关才真正裁剪
         m.renderQueue = 2450;
         return m;
     }

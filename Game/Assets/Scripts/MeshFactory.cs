@@ -40,7 +40,9 @@ public static class MeshFactory
         };
         m.uv = new[]
         {
-            new Vector2(0, 0), new Vector2(1, 0), new Vector2(1, 1), new Vector2(0, 1),
+            // U 轴镜像：Unity 左手系下面向 +Z 的观察者看到的世界 +X 在屏幕左侧，
+            // 因此 u 必须沿 -X 递增（否则招牌/精灵文字整体镜像）
+            new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, 1), new Vector2(1, 1),
         };
         m.triangles = new[] { 0, 1, 2, 0, 2, 3 };   // 法线朝 +Z
         m.RecalculateNormals();

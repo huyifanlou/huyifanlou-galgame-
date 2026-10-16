@@ -50,11 +50,31 @@ public static class Bootstrap
             var sh = Shader.Find(sn);
             if (sh == null) { Debug.LogError("[Bootstrap] 找不到 Shader: " + sn); continue; }
             var assetPath = holderDir + "/" + sn.Replace("/", "_").Replace(" ", "_") + ".mat";
-            if (AssetDatabase.LoadAssetAtPath<Material>(assetPath) == null)
-                AssetDatabase.CreateAsset(new Material(sh), assetPath);
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(assetPath);
+            if (mat == null)
+            {
+                mat = new Material(sh);
+                AssetDatabase.CreateAsset(mat, assetPath);
+            }
+            // Standard 占位材质配成 Cutout：让 _ALPHATEST_ON 变体被编进构建
+            // （运行时才 EnableKeyword 的材质，若构建里没有该变体，裁剪会静默失效 → 透明区渲染成黑块）
+            if (sn == "Standard")
+            {
+                mat.SetFloat("_Mode", 1f);
+                mat.SetFloat("_Cutoff", 0.4f);
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                mat.SetInt("_ZWrite", 1);
+                mat.EnableKeyword("_ALPHATEST_ON");
+                mat.DisableKeyword("_ALPHABLEND_ON");
+                mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                mat.renderQueue = 2450;
+                EditorUtility.SetDirty(mat);
+            }
         }
         AssetDatabase.SaveAssets();
-        Debug.Log("[Bootstrap] Shader 占位材质完成");
+        Debug.Log("[Bootstrap] Shader 占位材质完成（Standard 已按 Cutout 变体配置）");
 
         // ── 2) 项目设置 ──
         PlayerSettings.productName = "校园叙事 RPG";

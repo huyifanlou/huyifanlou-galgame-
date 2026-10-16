@@ -73,7 +73,7 @@ public class WorldBuilder : MonoBehaviour
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = m;
         r.shadowCastingMode = shadow ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
-        r.receiveShadow = receive;
+        r.receiveShadows = receive;
         return go;
     }
 
@@ -133,18 +133,20 @@ public class WorldBuilder : MonoBehaviour
         var day = NewGo("SkyDay", Root);
         day.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Dome(170f, 24, 16);
         var dr = day.AddComponent<MeshRenderer>();
-        SkyDayMat = MatLib.Fade("sky_day", new Color(1, 1, 1, 1));
+        SkyDayMat = MatLib.Fade("sky_day", new Color(0.5f, 0.5f, 0.5f, 1f));   // Legacy 粒子着色器自带 ×2 色彩倍增，0.5 抵消
+        SkyDayMat.renderQueue = 3000;   // 昼穹先画
         dr.sharedMaterial = SkyDayMat;
         dr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        dr.receiveShadow = false;
+        dr.receiveShadows = false;
 
         var night = NewGo("SkyNight", Root);
         night.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Dome(168f, 24, 16);
         var nr = night.AddComponent<MeshRenderer>();
-        SkyNightMat = MatLib.Fade("sky_night", new Color(1, 1, 1, 0));
+        SkyNightMat = MatLib.Fade("sky_night", new Color(0.5f, 0.5f, 0.5f, 0f));
+        SkyNightMat.renderQueue = 3001;   // 夜穹后画（双穹同距，透明排序不确定，必须显式定序）
         nr.sharedMaterial = SkyNightMat;
         nr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        nr.receiveShadow = false;
+        nr.receiveShadows = false;
         SkyNightTr = night.transform;
     }
 

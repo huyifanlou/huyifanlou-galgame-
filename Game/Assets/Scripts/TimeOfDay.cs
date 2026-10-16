@@ -8,7 +8,6 @@ public class TimeOfDay : MonoBehaviour
     public int DayNum = 1;
     public float TimeSpeed = 6f;   // 每真实秒推进的游戏分钟数（0=暂停）
     public string Toast = "";
-    public string NearSpot = "";
 
     float _toastUntil;
     WorldBuilder _w;
@@ -17,7 +16,7 @@ public class TimeOfDay : MonoBehaviour
 
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
-    public float Near { get; set; }          // 面前可交互地点名（由 PlayerRig 写入）
+    public string Near { get; set; }         // 面前可交互地点名（由 PlayerRig 写入，Hud 显示）
 
     // —— web 版配色常量 ——
     static readonly Color DAY_HEMI_SKY = MatLib.Hex("#d8ecff");
@@ -33,8 +32,8 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color NIGHT_FOG = MatLib.Hex("#0e1626");
     static readonly Color GLASS_OFF = MatLib.Hex("#d5dbe4");
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
-    const float DAY_AMB = 0.82f, DAY_HEMI = 0.46f, DAY_DIR_I = 1.42f;
-    const float NIGHT_AMB = 0.4f, NIGHT_HEMI = 0.42f, NIGHT_DIR_I = 0.55f;
+    const float DAY_AMB = 0.34f, DAY_HEMI = 0.14f, DAY_DIR_I = 0.95f;
+    const float NIGHT_AMB = 0.22f, NIGHT_HEMI = 0.12f, NIGHT_DIR_I = 0.45f;
     const float DAY_FOG_NEAR = 46f, DAY_FOG_FAR = 98f;
     const float NIGHT_FOG_NEAR = 34f, NIGHT_FOG_FAR = 88f;
 
@@ -180,11 +179,11 @@ public class TimeOfDay : MonoBehaviour
         if (_w != null)
         {
             float nightOp = Mathf.Clamp01((m - 0.35f) / 0.45f);
-            if (_w.SkyNightMat != null) _w.SkyNightMat.SetColor("_TintColor", new Color(1f, 1f, 1f, nightOp));
+            if (_w.SkyNightMat != null) _w.SkyNightMat.SetColor("_TintColor", new Color(0.5f, 0.5f, 0.5f, nightOp * 0.5f));
             if (_w.SkyDayMat != null)
             {
                 float w2 = warm * (1f - m * 0.65f) * 0.8f;
-                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2));
+                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.5f);
                 var off = _w.SkyDayMat.mainTextureOffset;
                 _w.SkyDayMat.mainTextureOffset = new Vector2(off.x - Time.deltaTime * 0.0045f, off.y);
             }
