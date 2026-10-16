@@ -498,26 +498,28 @@ public static class TextureLibrary
 
     static Px Character()
     {
-        const int CW = 26, CH = 38;
-        var p = new Px(CW * 4, CH * 4);   // 4 列：站立 + 3 帧行走周期（美化②）
+        const int CW = 52, CH = 76;   // 2× 精度（逻辑格 26×38 的 2 倍像素密度，可画更细细节）
+        var p = new Px(CW * 4, CH * 4);   // 4 列：站立 + 3 帧行走周期
         string hair = "#eccb5a", hairD = "#c9a234", hairL = "#f6dd82", skin = "#f6dcae", skinD = "#e0c193";
         string eyeW = "#f8f6ee", eye = "#2b3a58", coat = "#46567f", coatD = "#333f5e", coatL = "#55668f";
         string shirt = "#f4f1e6", tie = "#b23a44", tieD = "#8c2c34", btn = "#d8d4c8", belt = "#2a2d3a", buckle = "#c9c2ae";
         string pants = "#2e3550", pantsD = "#232838", shoe = "#23262e", shoeD = "#3a3f4a", line = "#262031";
 
         var ops = new List<(int x, int y, int w, int h, string col)>();
-        void r(int x, int y, int w, int h, string col) => ops.Add((x, y, w, h, col));
+        void r(int x, int y, int w, int h, string col) => ops.Add((x * 2, y * 2, w * 2, h * 2, col));   // 逻辑格坐标（自动 ×2）
+        void r2(int x, int y, int w, int h, string col) => ops.Add((x, y, w, h, col));                  // 2× 精度细节坐标
 
         int bodyStart = 0, bobY = 0, bobX = 0;   // 躯干起点 + 行走起伏/前倾
 
         void Paint(bool side, bool up, int frame)
         {
             ops.Clear();
-            // 起伏先算：腿根随身体上下，脚掌始终贴地（避免身体与腿分离）
-            bobY = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;
-            bobX = frame >= 1 && side ? 1 : 0;   // 侧身行走稍向前倾
-            int legTop = 21 + bobY;
-            int baseH = 8 - bobY;
+            // 起伏先算：腿根随身体上下，脚掌始终贴地（逻辑格单位；施加到 op 时换算 2×）
+            int bobL = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;
+            bobY = bobL * 2;
+            bobX = frame >= 1 && side ? 2 : 0;
+            int legTop = 21 + bobL;
+            int baseH = 8 - bobL;
             if (side)
             {
                 // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆（迈步幅度 3-4px）
@@ -581,6 +583,23 @@ public static class TextureLibrary
                 r(9, 6, 2, 2, eyeW); r(13, 6, 2, 2, eyeW);
                 r(10, 6, 1, 2, eye); r(13, 6, 1, 2, eye);
                 r(11, 7, 2, 1, skinD); r(11, 8, 2, 1, skinD);
+            }
+            // —— 2× 精度细节：眼神高光 / 发丝 / 衣缝纽扣 / 嘴 / 鞋底 ——
+            if (up) { }
+            else if (side)
+            {
+                r2(26, 12, 1, 1, "#ffffff");
+                r2(12, 4, 1, 6, hairD); r2(8, 2, 4, 1, hairL);
+                r2(30, 26, 1, 8, coatD);
+            }
+            else
+            {
+                r2(20, 12, 1, 1, "#ffffff"); r2(26, 12, 1, 1, "#ffffff");
+                r2(18, 4, 1, 6, hairD); r2(28, 3, 1, 7, hairD); r2(20, 2, 3, 1, hairL);
+                r2(23, 26, 1, 8, coatD); r2(23, 34, 1, 1, btn);
+                r2(22, 17, 3, 1, "#c0906f");
+                r2(10, frame == 1 ? 55 : 61, 12, 1, "#14161c");
+                r2(22, frame == 3 ? 55 : 61, 12, 1, "#14161c");
             }
         }
 
