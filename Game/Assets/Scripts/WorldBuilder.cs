@@ -97,7 +97,7 @@ public class WorldBuilder : MonoBehaviour
             switch (p.type)
             {
                 case "plaza":
-                    MeshObj(grp, MeshFactory.Quad(p.w, p.d, Mathf.Max(1, Mathf.RoundToInt(p.w / 3.2f)), Mathf.Max(1, Mathf.RoundToInt(p.d / 3.2f))),
+                    MeshObj(grp, MeshFactory.Quad(p.w, p.d, Mathf.Max(1, Mathf.RoundToInt(p.w / 1.6f)), Mathf.Max(1, Mathf.RoundToInt(p.d / 1.6f))),
                         new Vector3(0, 0.018f, 0), LitTex("path"));
                     break;
                 case "flag":
@@ -289,16 +289,18 @@ public class WorldBuilder : MonoBehaviour
             float mid = (r.from + r.to) / 2f;
             var go = NewGo(r.id, g);
             go.transform.localPosition = r.axis == "z" ? new Vector3(r.at, 0.012f, mid) : new Vector3(mid, 0.016f, r.at);
-            int rep = Mathf.Max(1, Mathf.RoundToInt(len / 3.9f));
-            var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, 1f, rep) : MeshFactory.Quad(len, r.width, rep, 1f);
-            string tex = r.kind == "asphalt" ? "road_asphalt" : (r.kind == "brick" ? "road_brick" : "path");
+            // 贴图密度对齐草地：64px 贴图 = 1.6m（≈40px/米；草地 38.4px/米）——避免"糊一层"的图层感
+            int repW = Mathf.Max(1, Mathf.RoundToInt(r.width / 1.6f));
+            int repL = Mathf.Max(1, Mathf.RoundToInt(len / 1.6f));
+            var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, repW, repL) : MeshFactory.Quad(len, r.width, repL, repW);
+            string tex = r.kind == "mainstone" ? "road_mainstone" : (r.kind == "cobble" ? "road_cobble" : "path");
             MeshObj(go.transform, mesh, Vector3.zero, LitTex(tex));
-            if (r.kind == "asphalt")
+            if (r.kind == "mainstone")
             {
-                // 主路中线虚线（沿路方向平铺）
-                int lrep = Mathf.Max(1, Mathf.RoundToInt(len / 4f));
-                var lineMesh = r.axis == "z" ? MeshFactory.Quad(0.24f, len, 1f, lrep) : MeshFactory.Quad(len, 0.24f, lrep, 1f);
-                MeshObj(go.transform, lineMesh, new Vector3(0, 0.008f, 0), MatLib.Sprite(r.axis == "z" ? "roadline_v" : "roadline_h"), default, false, false);
+                // 中线石带（浅色石条，接缝每 2m）
+                int lrep = Mathf.Max(1, Mathf.RoundToInt(len / 2f));
+                var bandMesh = r.axis == "z" ? MeshFactory.Quad(0.6f, len, 1f, lrep) : MeshFactory.Quad(len, 0.6f, lrep, 1f);
+                MeshObj(go.transform, bandMesh, new Vector3(0, 0.006f, 0), LitTex(r.axis == "z" ? "roadband_v" : "roadband_h"), default, false, false);
             }
         }
     }
@@ -356,8 +358,8 @@ public class WorldBuilder : MonoBehaviour
         {
             var go = NewGo("b", g);
             go.transform.localPosition = new Vector3(b.x, 0.014f, b.z);
-            int rep = Mathf.Max(1, Mathf.RoundToInt(b.len / 2.6f));
-            MeshObj(go.transform, MeshFactory.Quad(3f, b.len, 1f, rep), Vector3.zero, LitTex("path"));
+            int rep = Mathf.Max(1, Mathf.RoundToInt(b.len / 1.6f));
+            MeshObj(go.transform, MeshFactory.Quad(3f, b.len, 2f, rep), Vector3.zero, LitTex("path"));
         }
     }
 

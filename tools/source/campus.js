@@ -6,15 +6,15 @@
 export const BOUND = 60        // 可行走半径（PlayerRig 使用）
 export const GROUND_SIZE = 280 // 地面尺寸（±140，雾中收边）
 
-// ── 街道路网（v4）：全部道路两侧砌矮墙（交叉口/岔路/门前自动留缺口）；三种路面（沥青主路/石板次路/砖砌家属区路）──
+// ── 街道路网（v4）：全部道路两侧砌矮墙（交叉口/岔路/门前自动留缺口）；三种路面（暖青石大道/石板次路/家属区小石路）──
 export const ROADS = [
-  { id: 'vmain', axis: 'z', at: 0, from: -17.5, to: 38, width: 4.6, kind: 'asphalt', fence: true }, // 主纵路
-  { id: 'vwest', axis: 'z', at: -34, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },     // 西纵路（南延至家属区环）
-  { id: 'veast', axis: 'z', at: 30, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },      // 东纵路（南延至家属区环）
-  { id: 'hnorth', axis: 'x', at: -30, from: -34, to: 34, width: 4.6, kind: 'slab', fence: true },    // 北横路
-  { id: 'hmain', axis: 'x', at: 0, from: -58, to: 58, width: 4.6, kind: 'asphalt', fence: true },    // 中横路（东西校门）
-  { id: 'hsouth', axis: 'x', at: 18, from: -58, to: 58, width: 4.0, kind: 'slab', fence: true },     // 南横路（东西贯通）
-  { id: 'sring', axis: 'x', at: 44, from: -34, to: 34, width: 4.0, kind: 'brick', fence: true },     // 家属区环路（主角家后侧）
+  { id: 'vmain', axis: 'z', at: 0, from: -17.5, to: 38, width: 4.6, kind: 'mainstone', fence: true }, // 主纵路
+  { id: 'vwest', axis: 'z', at: -34, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },       // 西纵路（南延至家属区环）
+  { id: 'veast', axis: 'z', at: 30, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },        // 东纵路（南延至家属区环）
+  { id: 'hnorth', axis: 'x', at: -30, from: -34, to: 34, width: 4.6, kind: 'slab', fence: true },      // 北横路
+  { id: 'hmain', axis: 'x', at: 0, from: -58, to: 58, width: 4.6, kind: 'mainstone', fence: true },    // 中横路（东西校门）
+  { id: 'hsouth', axis: 'x', at: 18, from: -58, to: 58, width: 4.0, kind: 'slab', fence: true },       // 南横路（东西贯通）
+  { id: 'sring', axis: 'x', at: 44, from: -34, to: 34, width: 4.0, kind: 'cobble', fence: true },      // 家属区环路（主角家后侧）
 ]
 
 // ── 岔路（从主路通向建筑正门/场地入口；覆盖到每条路）──

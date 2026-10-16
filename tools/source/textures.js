@@ -428,34 +428,35 @@ export function courtTexture(kind) {
   })
 }
 
-// 道路贴图（kind：'asphalt' 沥青主路 / 'brick' 砖砌家属区路）；石板次路复用 pathTexture
+// 道路贴图（世界尺度对齐草地：64px = 1.6m ≈ 40px/米，杜绝“贴上去的一层”的糊感）
+// kind：'mainstone' 暖青石大道 / 'cobble' 家属区小石路；次路复用 pathTexture
 export function roadTexture(kind) {
   return canvasTexture(64, 64, (ctx) => {
-    if (kind === 'asphalt') {
-      ctx.fillStyle = '#4a4e55'
-      ctx.fillRect(0, 0, 64, 64)
-      for (let i = 0; i < 300; i++) {
-        ctx.fillStyle = ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.10)'][rand(2)]
-        ctx.fillRect(rand(64), rand(64), 2, 2)
-      }
-      // 路缘石（两侧浅色边条）
-      ctx.fillStyle = '#8d8d94'
-      ctx.fillRect(0, 0, 4, 64)
-      ctx.fillRect(60, 0, 4, 64)
-      ctx.fillStyle = 'rgba(255,255,255,0.08)'
-      ctx.fillRect(0, 0, 4, 2)
-      ctx.fillRect(60, 0, 4, 2)
-    } else {
-      // 砖路：2×2 红砖 + 勾缝 + 磨损
-      ctx.fillStyle = '#9a8b7a'
+    if (kind === 'mainstone') {
+      // 暖青石大道：2×2 大石板 + 细缝 + 低对比颗粒
+      ctx.fillStyle = '#b3aca0'
       ctx.fillRect(0, 0, 64, 64)
       for (let by = 0; by < 2; by++) {
         for (let bx = 0; bx < 2; bx++) {
-          ctx.fillStyle = ['#b5715a', '#a8664f', '#bf7a60', '#9e5f49'][rand(4)]
-          ctx.fillRect(bx * 32 + 2, by * 32 + 2, 28, 28)
-          for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = 'rgba(0,0,0,0.10)'
-            ctx.fillRect(bx * 32 + 2 + rand(28), by * 32 + 2 + rand(28), 4, 2)
+          ctx.fillStyle = ['#c6bfb2', '#bdb6a9', '#c2bbae', '#b8b1a4'][rand(4)]
+          ctx.fillRect(bx * 32 + 1, by * 32 + 1, 30, 30)
+          for (let i = 0; i < 12; i++) {
+            ctx.fillStyle = ['rgba(140,132,120,0.25)', 'rgba(235,231,222,0.35)'][rand(2)]
+            ctx.fillRect(bx * 32 + 2 + rand(28), by * 32 + 2 + rand(28), 3, 2)
+          }
+        }
+      }
+    } else {
+      // 家属区小石路：不规则暖色小石 + 细缝（低饱和，与草地/石板同调）
+      ctx.fillStyle = '#a89c8a'
+      ctx.fillRect(0, 0, 64, 64)
+      for (let y = 0; y < 8; y++) {
+        for (let x = 0; x < 8; x++) {
+          ctx.fillStyle = ['#b8ac97', '#b0a48f', '#c0b4a0', '#a89c88'][rand(4)]
+          ctx.fillRect(x * 8 + 1, y * 8 + 1, 6, 6)
+          if (rand(3) === 0) {
+            ctx.fillStyle = 'rgba(120,110,95,0.25)'
+            ctx.fillRect(x * 8 + 2, y * 8 + 3, 3, 2)
           }
         }
       }
@@ -463,19 +464,28 @@ export function roadTexture(kind) {
   })
 }
 
-// 主路中线虚线（沿道路方向平铺）：axis='z' 的纵向路用纵向虚线，横路用横向
-export function roadLineTexture(axis) {
+// 主路中线石带（浅色石条 + 每 2m 一道接缝；沿道路方向平铺）
+export function roadBandTexture(axis) {
   const c = document.createElement('canvas')
   c.width = axis === 'z' ? 8 : 32
   c.height = axis === 'z' ? 32 : 8
   const ctx = c.getContext('2d')
-  ctx.fillStyle = '#e8e4d8'
-  if (axis === 'z') ctx.fillRect(3, 4, 2, 20)
-  else ctx.fillRect(4, 3, 20, 2)
+  ctx.fillStyle = '#cfc7b8'
+  ctx.fillRect(0, 0, c.width, c.height)
+  ctx.fillStyle = 'rgba(150,142,128,0.55)'
+  if (axis === 'z') {
+    ctx.fillRect(0, 0, 1, 32); ctx.fillRect(7, 0, 1, 32)
+    ctx.fillStyle = 'rgba(150,142,128,0.4)'
+    ctx.fillRect(0, 15, 8, 1)
+  } else {
+    ctx.fillRect(0, 0, 32, 1); ctx.fillRect(0, 7, 32, 1)
+    ctx.fillStyle = 'rgba(150,142,128,0.4)'
+    ctx.fillRect(15, 0, 1, 8)
+  }
   const t = new THREE.CanvasTexture(c)
   t.magFilter = THREE.NearestFilter
-  t.minFilter = THREE.NearestFilter
-  t.generateMipmaps = false
+  t.minFilter = THREE.NearestMipmapLinearFilter
+  t.anisotropy = 16
   t.wrapS = t.wrapT = THREE.RepeatWrapping
   t.colorSpace = THREE.SRGBColorSpace
   return t
