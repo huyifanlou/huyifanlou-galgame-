@@ -291,7 +291,15 @@ public class WorldBuilder : MonoBehaviour
             go.transform.localPosition = r.axis == "z" ? new Vector3(r.at, 0.012f, mid) : new Vector3(mid, 0.016f, r.at);
             int rep = Mathf.Max(1, Mathf.RoundToInt(len / 3.9f));
             var mesh = r.axis == "z" ? MeshFactory.Quad(r.width, len, 1f, rep) : MeshFactory.Quad(len, r.width, rep, 1f);
-            MeshObj(go.transform, mesh, Vector3.zero, LitTex("path"));
+            string tex = r.kind == "asphalt" ? "road_asphalt" : (r.kind == "brick" ? "road_brick" : "path");
+            MeshObj(go.transform, mesh, Vector3.zero, LitTex(tex));
+            if (r.kind == "asphalt")
+            {
+                // 主路中线虚线（沿路方向平铺）
+                int lrep = Mathf.Max(1, Mathf.RoundToInt(len / 4f));
+                var lineMesh = r.axis == "z" ? MeshFactory.Quad(0.24f, len, 1f, lrep) : MeshFactory.Quad(len, 0.24f, lrep, 1f);
+                MeshObj(go.transform, lineMesh, new Vector3(0, 0.008f, 0), MatLib.Sprite(r.axis == "z" ? "roadline_v" : "roadline_h"), default, false, false);
+            }
         }
     }
 

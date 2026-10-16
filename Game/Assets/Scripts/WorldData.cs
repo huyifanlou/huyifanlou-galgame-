@@ -51,7 +51,7 @@ public class WorldData
 }
 
 [Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }
-[Serializable] public class RoadDef { public string id, axis; public float at, from, to, width; public bool fence; }
+[Serializable] public class RoadDef { public string id, axis, kind; public float at, from, to, width; public bool fence; }
 [Serializable] public class PropDef
 {
     public string type, kind;

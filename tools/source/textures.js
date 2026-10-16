@@ -428,6 +428,59 @@ export function courtTexture(kind) {
   })
 }
 
+// 道路贴图（kind：'asphalt' 沥青主路 / 'brick' 砖砌家属区路）；石板次路复用 pathTexture
+export function roadTexture(kind) {
+  return canvasTexture(64, 64, (ctx) => {
+    if (kind === 'asphalt') {
+      ctx.fillStyle = '#4a4e55'
+      ctx.fillRect(0, 0, 64, 64)
+      for (let i = 0; i < 300; i++) {
+        ctx.fillStyle = ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.10)'][rand(2)]
+        ctx.fillRect(rand(64), rand(64), 2, 2)
+      }
+      // 路缘石（两侧浅色边条）
+      ctx.fillStyle = '#8d8d94'
+      ctx.fillRect(0, 0, 4, 64)
+      ctx.fillRect(60, 0, 4, 64)
+      ctx.fillStyle = 'rgba(255,255,255,0.08)'
+      ctx.fillRect(0, 0, 4, 2)
+      ctx.fillRect(60, 0, 4, 2)
+    } else {
+      // 砖路：2×2 红砖 + 勾缝 + 磨损
+      ctx.fillStyle = '#9a8b7a'
+      ctx.fillRect(0, 0, 64, 64)
+      for (let by = 0; by < 2; by++) {
+        for (let bx = 0; bx < 2; bx++) {
+          ctx.fillStyle = ['#b5715a', '#a8664f', '#bf7a60', '#9e5f49'][rand(4)]
+          ctx.fillRect(bx * 32 + 2, by * 32 + 2, 28, 28)
+          for (let i = 0; i < 8; i++) {
+            ctx.fillStyle = 'rgba(0,0,0,0.10)'
+            ctx.fillRect(bx * 32 + 2 + rand(28), by * 32 + 2 + rand(28), 4, 2)
+          }
+        }
+      }
+    }
+  })
+}
+
+// 主路中线虚线（沿道路方向平铺）：axis='z' 的纵向路用纵向虚线，横路用横向
+export function roadLineTexture(axis) {
+  const c = document.createElement('canvas')
+  c.width = axis === 'z' ? 8 : 32
+  c.height = axis === 'z' ? 32 : 8
+  const ctx = c.getContext('2d')
+  ctx.fillStyle = '#e8e4d8'
+  if (axis === 'z') ctx.fillRect(3, 4, 2, 20)
+  else ctx.fillRect(4, 3, 20, 2)
+  const t = new THREE.CanvasTexture(c)
+  t.magFilter = THREE.NearestFilter
+  t.minFilter = THREE.NearestFilter
+  t.generateMipmaps = false
+  t.wrapS = t.wrapT = THREE.RepeatWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  return t
+}
+
 // 天空穹顶纹理（1024×512 等距圆柱投影，画布上沿=天顶、y≈256=地平线）
 // 白天：蓝天分带渐变 + 像素云（水平方向可无缝平铺用于云飘动）
 // 夜晚：深蓝分带渐变 + 星空 + 块状像素月亮

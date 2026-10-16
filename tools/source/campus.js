@@ -6,29 +6,34 @@
 export const BOUND = 60        // 可行走半径（PlayerRig 使用）
 export const GROUND_SIZE = 280 // 地面尺寸（±140，雾中收边）
 
-// ── 街道路网：横平竖直；fence=true 的路段自动生成白色围栏（交叉口/岔路处自动留缺口）──
+// ── 街道路网（v4）：全部道路两侧砌矮墙（交叉口/岔路/门前自动留缺口）；三种路面（沥青主路/石板次路/砖砌家属区路）──
 export const ROADS = [
-  { id: 'vmain', axis: 'z', at: 0, from: -17.5, to: 38, width: 4.6, fence: true },  // 主纵路（北端止于图书馆门前，南端主角家）
-  { id: 'vwest', axis: 'z', at: -34, from: -30, to: 18, width: 4.0, fence: false }, // 西纵路
-  { id: 'veast', axis: 'z', at: 30, from: -30, to: 18, width: 4.0, fence: false },   // 东纵路
-  { id: 'hnorth', axis: 'x', at: -30, from: -34, to: 34, width: 4.6, fence: false }, // 北横路
-  { id: 'hmain', axis: 'x', at: 0, from: -58, to: 58, width: 4.6, fence: true },     // 中横路（东西两端设校门）
-  { id: 'hsouth', axis: 'x', at: 18, from: -34, to: 34, width: 4.0, fence: false },  // 南横路
+  { id: 'vmain', axis: 'z', at: 0, from: -17.5, to: 38, width: 4.6, kind: 'asphalt', fence: true }, // 主纵路
+  { id: 'vwest', axis: 'z', at: -34, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },     // 西纵路（南延至家属区环）
+  { id: 'veast', axis: 'z', at: 30, from: -30, to: 44, width: 4.0, kind: 'slab', fence: true },      // 东纵路（南延至家属区环）
+  { id: 'hnorth', axis: 'x', at: -30, from: -34, to: 34, width: 4.6, kind: 'slab', fence: true },    // 北横路
+  { id: 'hmain', axis: 'x', at: 0, from: -58, to: 58, width: 4.6, kind: 'asphalt', fence: true },    // 中横路（东西校门）
+  { id: 'hsouth', axis: 'x', at: 18, from: -58, to: 58, width: 4.0, kind: 'slab', fence: true },     // 南横路（东西贯通）
+  { id: 'sring', axis: 'x', at: 44, from: -34, to: 34, width: 4.0, kind: 'brick', fence: true },     // 家属区环路（主角家后侧）
 ]
 
-// ── 岔路（从主路通向建筑正门）──
+// ── 岔路（从主路通向建筑正门/场地入口；覆盖到每条路）──
 export const BRANCH_PATHS = [
-  { x: -16, z: -5.4, len: 6.2 },  // 教学楼
-  { x: 14, z: -4.6, len: 4.6 },   // 宿舍楼
-  { x: 20, z: 4.6, len: 4.6 },    // 食堂（南侧）
-  { x: -46, z: -6.4, len: 8.2 },  // 实验楼
-  { x: 46, z: -6.4, len: 6.2 },   // 活动中心
+  { x: -16, z: -5.4, len: 6.2 },  // 教学楼（自中横路）
+  { x: 14, z: -4.6, len: 4.6 },   // 宿舍楼（自中横路）
+  { x: 20, z: 4.6, len: 4.6 },    // 食堂（自中横路）
+  { x: 46, z: -6.4, len: 8.6 },   // 活动中心（自中横路）
+  { x: -46, z: -6.4, len: 8.2 },  // 实验楼东侧（自中横路，实验楼现居北区）
   { x: 44, z: 14, len: 4 },       // 艺术楼（自南横路）
   { x: -46, z: 14, len: 4 },      // 生活服务楼（自南横路）
   { x: -15, z: 21.4, len: 3.2 },  // 小卖部（自南横路）
   { x: -20, z: -34.4, len: 4 },   // 体育馆（自北横路）
   { x: 16, z: -29.7, len: 4.6 },  // 二号宿舍（自北横路）
   { x: -24, z: -29.7, len: 4.6 }, // 实验楼（自北横路）
+  { x: -30.5, z: 8.5, len: 6 },   // 操场西入口（自西纵路）
+  { x: -30.5, z: -23, len: 6 },   // 实验楼西侧（自西纵路）
+  { x: 26, z: 10, len: 6 },       // 食堂东侧（自东纵路）
+  { x: 0, z: 42, len: 3 },        // 主角家后院口（自家属区环路）
 ]
 
 // ── 建筑 ──
@@ -200,12 +205,12 @@ export const LAMPS = [
   // 南横路
   ...[-28, -16, -6, 6, 16, 26].map((x) => [x, 14.3, -Math.PI / 2]),
   ...[-24, 24].map((x) => [x, 21.7, Math.PI / 2]),
-  // 西纵路（避开交叉口与中横路）
-  ...[-24, -12, 6, 14].map((z) => [-36.6, z, 0]),
-  ...[-18, -6, 8].map((z) => [-31.4, z, Math.PI]),
-  // 东纵路（避开交叉口与中横路）
-  ...[-24, -12, 6, 14].map((z) => [32.6, z, Math.PI]),
-  ...[-18, -6, 8].map((z) => [27.4, z, 0]),
+  // 西纵路（矮墙外侧 0.8m：±3.0 → ±3.3，避开墙线）
+  ...[-24, -12, 6, 14].map((z) => [-37.3, z, 0]),
+  ...[-18, -6, 8].map((z) => [-30.6, z, Math.PI]),
+  // 东纵路
+  ...[-24, -12, 6, 14].map((z) => [33.3, z, Math.PI]),
+  ...[-18, -6, 8].map((z) => [26.6, z, 0]),
 ]
 
 // ── 围栏（自动生成）：沿 fence=true 的路段两侧；交叉口 / 岔路 / 建筑门前通路处自动留缺口 ──
@@ -221,10 +226,13 @@ export const FENCES = (() => {
       const okAcross = axis === 'x' ? (r.from - 2 <= at && at <= r.to + 2) : (r.from - 2 <= at && at <= r.to + 2)
       if (okAcross && lo - 2 <= r.at && r.at <= hi + 2) gaps.push([r.at - r.width / 2 - GAP, r.at + r.width / 2 + GAP])
     }
-    // 岔路
+    // 岔路（按「岔路是否跨过本墙线」判定留缺口）
     for (const p of BRANCH_PATHS) {
-      if (axis === 'x' && lo - 2 <= p.x && p.x <= hi + 2 && at - p.len / 2 - 1 <= p.z && p.z <= at + p.len / 2 + 1) gaps.push([p.x - 2.2, p.x + 2.2])
-      if (axis === 'z' && lo - 2 <= p.z && p.z <= hi + 2 && at - p.len / 2 - 1 <= p.x && p.x <= at + p.len / 2 + 1) gaps.push([p.z - 2.2, p.z + 2.2])
+      if (axis === 'x') {
+        if (lo - 1 <= p.x && p.x <= hi + 1 && Math.abs(p.z - at) <= p.len / 2 + 0.2) gaps.push([p.x - 2.2, p.x + 2.2])
+      } else {
+        if (lo - 1 <= p.z && p.z <= hi + 1 && Math.abs(p.x - at) <= 1.65) gaps.push([p.z - 2.2, p.z + 2.2])
+      }
     }
     // 建筑门前通路（门朝向的主路方向穿过本围栏线时，留 4.4m 缺口）
     for (const b of BUILDINGS) {
@@ -298,9 +306,9 @@ export const DISTANT_BUILDINGS = (() => {
 })()
 
 export const ROCKERIES = [
-  [-38, 34, 1.4], [40, 38, 1.2], [46, -34, 1.5], [-48, -24, 1.1],
-  [-38, 46, 1.3], [56, 16, 1.0], [-22, 50, 1.2], [26, -52, 1.3],
-  [12, 42, 1.1], [-30, 44, 1.2], [34, -46, 1.0], [-56, 38, 1.15],
+  [-44, 34, 1.4], [40, 38, 1.2], [46, -34, 1.5], [-48, -24, 1.1],
+  [-44, 50, 1.3], [56, 24, 1.0], [-22, 50, 1.2], [26, -52, 1.3],
+  [12, 36, 1.1], [-30, 52, 1.2], [34, -46, 1.0], [-56, 38, 1.15],
   [56, -24, 1.25], [-12, -52, 1.05], [56, 34, 1.1], [-56, -40, 1.2],
 ]
 

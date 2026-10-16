@@ -152,20 +152,33 @@ for (const f of FENCES) {
   for (const p of propFoot) if (p.kind !== 'prop:gate' && p.kind !== 'prop:arch' && overlap(p, line, 0.1)) errors.push(`道具压围栏：${p.id} × 围栏${f.axis}@${f.at}`)
   for (const l of lampFoot) if (overlap(l, line, 0.0)) errors.push(`路灯压围栏：${l.id} × 围栏${f.axis}@${f.at}`)
 }
-// 14) 可达性：每栋建筑正门前 6m 内应有道路或岔路
-const reachTargets = [...bFoot]
-for (const b of reachTargets) {
-  const def = BUILDINGS.find((x) => x.id === b.id)
-  const fx = def.pos[0], fz = def.pos[1] + def.face * (def.size[2] / 2 + 5)
+// 14) 可达性：建筑门 → (直面道路 或 经岔路接上道路)，必须真正连通
+for (const def of BUILDINGS) {
+  const door = { x: def.pos[0], z: def.pos[1] + def.face * (def.size[2] / 2 + 0.9) }
   let ok = false
   for (const r of roadBands) {
-    const inside = Math.abs(fx - r.x) <= r.hw + 2 && Math.abs(fz - r.z) <= r.hd + 2
-    if (inside) { ok = true; break }
+    const d = r.hw < r.hd ? Math.abs(door.x - r.x) - r.hw : Math.abs(door.z - r.z) - r.hd
+    const inSpan = r.hw < r.hd
+      ? (door.z >= r.z - r.hd - 1 && door.z <= r.z + r.hd + 1)
+      : (door.x >= r.x - r.hw - 1 && door.x <= r.x + r.hw + 1)
+    if (inSpan && d <= 5) { ok = true; break }
   }
-  if (!ok) for (const p of BRANCH_PATHS) {
-    if (Math.hypot(fx - p.x, fz - p.z) <= p.len / 2 + 3) { ok = true; break }
+  if (!ok) {
+    const doorRect = rect(door.x, door.z, 1.6, 2.2)
+    for (const p of BRANCH_PATHS) {
+      const pRect = rect(p.x, p.z, 1.5, p.len / 2)
+      if (!overlap(doorRect, pRect, 2.0)) continue
+      let touchesRoad = false
+      for (const r of roadBands) {
+        const touch = r.hw < r.hd
+          ? (Math.abs(p.x - r.x) <= 1.5 + r.hw + 0.2 && p.z >= r.z - r.hd - 1 && p.z <= r.z + r.hd + 1)
+          : (Math.abs(p.z - r.z) <= p.len / 2 + r.hd + 0.2 && p.x >= r.x - r.hw - 1 && p.x <= r.x + r.hw + 1)
+        if (touch) { touchesRoad = true; break }
+      }
+      if (touchesRoad) { ok = true; break }
+    }
   }
-  if (!ok) warns.push(`可达性存疑：${b.id} 正门前 5m 未见道路/岔路`)
+  if (!ok) errors.push(`可达性失败：${def.id}（门 (${door.x},${door.z.toFixed(1)}) 与任何道路不连通）`)
 }
 
 // 15) 门前通路：从每栋建筑正门到最近道路的走廊不得被围栏阻断（按门中线的窄通道判定）
