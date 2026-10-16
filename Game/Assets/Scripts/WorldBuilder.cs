@@ -355,23 +355,25 @@ public class WorldBuilder : MonoBehaviour
 
     void Fences()
     {
-        var g = NewGo("Fences", Root).transform;
+        // 矮墙（替代白色栅栏）：连续墙体 + 压顶石 + 间隔立柱——分区明确且不遮挡视线
+        var g = NewGo("Walls", Root).transform;
         foreach (var f in W.FENCES)
         {
-            int count = Mathf.Max(1, Mathf.FloorToInt((f.to - f.from) / 2.8f));
-            var run = NewGo("run", g).transform;
+            float len = f.to - f.from;
+            float mid = (f.from + f.to) / 2f;
+            var run = NewGo("wall", g).transform;
+            var wallSize = f.axis == "z" ? new Vector3(0.26f, 0.6f, len) : new Vector3(len, 0.6f, 0.26f);
+            var wallPos = f.axis == "z" ? new Vector3(f.at, 0.3f, mid) : new Vector3(mid, 0.3f, f.at);
+            Box(run, wallPos, wallSize, ColMat("#cfc9ba"));
+            var capSize = f.axis == "z" ? new Vector3(0.36f, 0.08f, len) : new Vector3(len, 0.08f, 0.36f);
+            var capPos = f.axis == "z" ? new Vector3(f.at, 0.64f, mid) : new Vector3(mid, 0.64f, f.at);
+            Box(run, capPos, capSize, ColMat("#b8b0a2"));
+            int count = Mathf.Max(1, Mathf.FloorToInt(len / 5.6f));
             for (int i = 0; i <= count; i++)
             {
-                float t = f.from + (f.to - f.from) * i / count;
-                var pos = f.axis == "z" ? new Vector3(f.at, 0.48f, t) : new Vector3(t, 0.48f, f.at);
-                Box(run, pos, new Vector3(0.14f, 0.96f, 0.14f), ColMat("#cfc9ba"));
-            }
-            float mid = (f.from + f.to) / 2f;
-            foreach (float y in new[] { 0.52f, 0.86f })
-            {
-                var size = f.axis == "z" ? new Vector3(0.09f, 0.09f, f.to - f.from) : new Vector3(f.to - f.from, 0.09f, 0.09f);
-                var pos = f.axis == "z" ? new Vector3(f.at, y, mid) : new Vector3(mid, y, f.at);
-                Box(run, pos, size, ColMat("#d8d3c6"));
+                float t = f.from + len * i / count;
+                var pos = f.axis == "z" ? new Vector3(f.at, 0.44f, t) : new Vector3(t, 0.44f, f.at);
+                Box(run, pos, new Vector3(0.4f, 0.88f, 0.4f), ColMat("#c9c3b6"));
             }
         }
     }

@@ -23,7 +23,7 @@ export const BRANCH_PATHS = [
   { x: 20, z: 4.6, len: 4.6 },    // 食堂（南侧）
   { x: -46, z: -6.4, len: 8.2 },  // 实验楼
   { x: 46, z: -6.4, len: 6.2 },   // 活动中心
-  { x: 46, z: 14, len: 4 },       // 艺术楼（自南横路）
+  { x: 44, z: 14, len: 4 },       // 艺术楼（自南横路）
   { x: -46, z: 14, len: 4 },      // 生活服务楼（自南横路）
   { x: -15, z: 21.4, len: 3.2 },  // 小卖部（自南横路）
   { x: -20, z: -34.4, len: 4 },   // 体育馆（自北横路）
@@ -41,12 +41,12 @@ export const BUILDINGS = [
   // — 新建筑（外环街区）—
   { id: 'gym', name: '体育馆', pos: [-20, -42], size: [16, 5.2, 11], wall: '#cfc9bd', trim: '#eeeae0', plinth: '#8f8a80', roof: '#4a5a6e', cols: 8, rows: 3, face: 1, style: 'gym', banner: true },
   { id: 'dorm2', name: '二号宿舍', pos: [16, -24], size: [9, 5.4, 5], wall: '#bfa88c', trim: '#efe6d6', plinth: '#87755c', roof: '#5a4a42', cols: 5, rows: 4, face: -1, style: 'gable', tank: true, banner: true },
-  { id: 'labs', name: '实验楼', pos: [-24, -23], size: [12, 5, 7], wall: '#c3c8cf', trim: '#eef1f4', plinth: '#828a94', roof: '#3d4654', cols: 6, rows: 4, face: -1, style: 'flat', roofProps: true, banner: true },
+  { id: 'labs', name: '实验楼', pos: [-24, -23], size: [10, 5, 6], wall: '#c3c8cf', trim: '#eef1f4', plinth: '#828a94', roof: '#3d4654', cols: 5, rows: 4, face: -1, style: 'flat', roofProps: true, banner: true },
   { id: 'center', name: '活动中心', pos: [46, -14], size: [13, 6, 9], wall: '#d3c2a2', trim: '#f2ead8', plinth: '#94805e', roof: '#7c4a38', cols: 7, rows: 4, face: 1, style: 'grand' },
-  { id: 'arts', name: '艺术楼', pos: [46, 9], size: [10, 5, 6], wall: '#e0d5c3', trim: '#f6f0e4', plinth: '#9c8f78', roof: '#4e6a58', cols: 5, rows: 3, face: 1, style: 'gable', awning: true },
+  { id: 'arts', name: '艺术楼', pos: [44, 9], size: [10, 5, 6], wall: '#e0d5c3', trim: '#f6f0e4', plinth: '#9c8f78', roof: '#4e6a58', cols: 5, rows: 3, face: 1, style: 'gable', awning: true },
   { id: 'service', name: '生活服务楼', pos: [-46, 9], size: [11, 4.5, 6], wall: '#cbb894', trim: '#f0e8d6', plinth: '#8d7a58', roof: '#a05a3c', cols: 6, rows: 3, face: 1, style: 'flat', roofProps: true },
   { id: 'kiosk', name: '小卖部', pos: [-15, 25], size: [6, 3.2, 4], wall: '#e8c46a', trim: '#fff6e0', plinth: '#a8843c', roof: '#b8452f', cols: 3, rows: 2, face: -1, style: 'gable', awning: true },
-  { id: 'guardN', name: '值班室', pos: [55, 7], size: [4, 3, 4], wall: '#d8d2c4', trim: '#f2eee4', plinth: '#98917f', roof: '#4a5568', cols: 2, rows: 2, face: -1, style: 'flat' },
+  { id: 'guardN', name: '值班室', pos: [57, 7], size: [4, 3, 4], wall: '#d8d2c4', trim: '#f2eee4', plinth: '#98917f', roof: '#4a5568', cols: 2, rows: 2, face: -1, style: 'flat' },
 ]
 
 // 布局逻辑（v3，2026-10-16）：东=入口区（校门+值班室+活动中心+艺术楼）｜中=教学区（教学楼/图书馆/实验楼/二号宿舍）
@@ -208,14 +208,36 @@ export const LAMPS = [
   ...[-18, -6, 8].map((z) => [27.4, z, 0]),
 ]
 
-// ── 围栏（自动生成）：沿 fence=true 的路段两侧；交叉口/岔路处留缺口 ──
+// ── 围栏（自动生成）：沿 fence=true 的路段两侧；交叉口 / 岔路 / 建筑门前通路处自动留缺口 ──
 export const FENCES = (() => {
   const runs = []
-  const GAP = 1.6 // 缺口半宽
-  const verticalGaps = (at) => {
+  const GAP = 1.6
+  const collectGaps = (axis, at, from, to) => {
     const gaps = []
-    for (const r of ROADS) if (r.id !== 'vmain' && r.axis === 'x' && Math.abs(r.at) <= 60) {
-      if (r.from - 2.5 <= at && at <= r.to + 2.5) gaps.push([r.at - r.width / 2 - GAP, r.at + r.width / 2 + GAP])
+    const lo = Math.min(from, to), hi = Math.max(from, to)
+    // 正交道路交叉口（含端点 T 字口）
+    for (const r of ROADS) {
+      if (r.axis === axis) continue
+      const okAcross = axis === 'x' ? (r.from - 2 <= at && at <= r.to + 2) : (r.from - 2 <= at && at <= r.to + 2)
+      if (okAcross && lo - 2 <= r.at && r.at <= hi + 2) gaps.push([r.at - r.width / 2 - GAP, r.at + r.width / 2 + GAP])
+    }
+    // 岔路
+    for (const p of BRANCH_PATHS) {
+      if (axis === 'x' && lo - 2 <= p.x && p.x <= hi + 2 && at - p.len / 2 - 1 <= p.z && p.z <= at + p.len / 2 + 1) gaps.push([p.x - 2.2, p.x + 2.2])
+      if (axis === 'z' && lo - 2 <= p.z && p.z <= hi + 2 && at - p.len / 2 - 1 <= p.x && p.x <= at + p.len / 2 + 1) gaps.push([p.z - 2.2, p.z + 2.2])
+    }
+    // 建筑门前通路（门朝向的主路方向穿过本围栏线时，留 4.4m 缺口）
+    for (const b of BUILDINGS) {
+      const dz = b.face * (b.size[2] / 2 + 0.9)
+      if (axis === 'x') {
+        const d = { c: b.pos[0], p: b.pos[1] + dz }
+        const crossed = b.face === 1 ? (at > d.p && at < d.p + 12) : (at < d.p && at > d.p - 12)
+        if (crossed && lo - 1 <= d.c && d.c <= hi + 1) gaps.push([d.c - 2.2, d.c + 2.2])
+      } else {
+        const d = { c: b.pos[1] + dz, p: b.pos[0] }
+        const crossed = b.face === 1 ? (at > d.p && at < d.p + 12) : (at < d.p && at > d.p - 12)
+        if (crossed && lo - 1 <= d.c && d.c <= hi + 1) gaps.push([d.c - 2.2, d.c + 2.2])
+      }
     }
     return gaps
   }
@@ -231,20 +253,11 @@ export const FENCES = (() => {
   for (const r of ROADS.filter((r) => r.fence)) {
     const off = r.width / 2 + 0.5
     if (r.axis === 'z') {
-      const gaps = verticalGaps(r.at)
+      const gaps = collectGaps('z', r.at, r.from, r.to)
       addRun('z', r.at - off, r.from, r.to, gaps)
       addRun('z', r.at + off, r.from, r.to, gaps)
     } else {
-      const gaps = []
-      for (const rr of ROADS) if (rr.id !== r.id && rr.axis === 'z' && rr.from <= r.at && r.at <= rr.to) {
-        gaps.push([rr.at - rr.width / 2 - GAP, rr.at + rr.width / 2 + GAP])
-      }
-      // 岔路缺口（按建筑正门方向留）
-      for (const p of BRANCH_PATHS) {
-        if (Math.abs(p.z - r.at) <= p.len / 2 + 0.5 && r.from - 1 <= p.x && p.x <= r.to + 1) {
-          gaps.push([p.x - 2.2, p.x + 2.2])
-        }
-      }
+      const gaps = collectGaps('x', r.at, r.from, r.to)
       addRun('x', r.at - off, r.from, r.to, gaps)
       addRun('x', r.at + off, r.from, r.to, gaps)
     }

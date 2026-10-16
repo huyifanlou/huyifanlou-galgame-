@@ -25,10 +25,14 @@ const propFoot = PROPS.filter((p) => p.type !== 'plaza').map((p) => {
   return { id: p.type + '@' + p.x + ',' + p.z, kind: 'prop:' + p.type, ...rect(p.x, p.z, b[0], b[1]) }
 })
 
-// 1) 建筑相互 / 建筑 vs 场地 / 建筑 vs 道路
+// 1) 建筑相互（间距 ≥5m）/ 建筑 vs 场地 / 建筑 vs 道路
 for (let i = 0; i < bFoot.length; i++) {
   for (let j = i + 1; j < bFoot.length; j++) {
-    if (overlap(bFoot[i], bFoot[j], 2.0)) errors.push(`建筑重叠：${bFoot[i].id} × ${bFoot[j].id}`)
+    if (overlap(bFoot[i], bFoot[j], 5.0)) {
+      const dx = Math.max(0, Math.abs(bFoot[i].x - bFoot[j].x) - bFoot[i].hw - bFoot[j].hw)
+      const dz = Math.max(0, Math.abs(bFoot[i].z - bFoot[j].z) - bFoot[i].hd - bFoot[j].hd)
+      errors.push(`建筑过近：${bFoot[i].id} × ${bFoot[j].id}（最近间隙 ${Math.max(dx, dz).toFixed(1)}m，要求 ≥5）`)
+    }
   }
   for (const g of gFoot) if (overlap(bFoot[i], g, 1.5)) errors.push(`建筑压场地：${bFoot[i].id} × ${g.id}`)
   for (const r of roadBands) if (overlap(bFoot[i], r, 1.0)) errors.push(`建筑压路：${bFoot[i].id} × ${r.id}`)
@@ -162,6 +166,19 @@ for (const b of reachTargets) {
     if (Math.hypot(fx - p.x, fz - p.z) <= p.len / 2 + 3) { ok = true; break }
   }
   if (!ok) warns.push(`可达性存疑：${b.id} 正门前 5m 未见道路/岔路`)
+}
+
+// 15) 门前通路：从每栋建筑正门到最近道路的走廊不得被围栏阻断（按门中线的窄通道判定）
+for (const b of bFoot) {
+  const def = BUILDINGS.find((x) => x.id === b.id)
+  const doorX = def.pos[0], doorZ = def.pos[1] + def.face * (def.size[2] / 2 + 0.9)
+  const corr = def.face === 1
+    ? rect(doorX, doorZ + 6, 0.3, 6.5)
+    : rect(doorX, doorZ - 6, 0.3, 6.5)
+  for (const f of FENCES) {
+    const line = f.axis === 'z' ? rect(f.at, (f.from + f.to) / 2, 0.2, (f.to - f.from) / 2) : rect((f.from + f.to) / 2, f.at, (f.to - f.from) / 2, 0.2)
+    if (overlap(corr, line, 0.0)) errors.push(`门前被围栏阻断：${b.id}（正门 (${doorX},${doorZ.toFixed(1)}) 撞上围栏${f.axis}@${f.at}）`)
+  }
 }
 
 // —— 输出 ——
