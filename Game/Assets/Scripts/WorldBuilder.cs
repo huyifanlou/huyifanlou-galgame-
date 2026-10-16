@@ -190,6 +190,22 @@ public class WorldBuilder : MonoBehaviour
                         Box(grp, new Vector3(0, 5.55f, 0), new Vector3(8.6f, 0.7f, 0.9f), ColMat("#8f8a80"));
                         Face(grp, 4.8f, 1.1f, new Vector3(0, 4.6f, 0.5f), LitTex("sign_gate"));
                     }
+                    else
+                    {
+                        // 侧门：无匾额，双柱 + 横梁 + 红白挡杆
+                        Box(grp, new Vector3(-4.2f, 2f, 0), new Vector3(0.8f, 4f, 0.8f), ColMat("#c9c3b6"));
+                        Box(grp, new Vector3(4.2f, 2f, 0), new Vector3(0.8f, 4f, 0.8f), ColMat("#c9c3b6"));
+                        Box(grp, new Vector3(0, 4.15f, 0), new Vector3(9.2f, 0.5f, 0.7f), ColMat("#9aa2ac"));
+                        Box(grp, new Vector3(-2f, 1.15f, 0), new Vector3(4.4f, 0.16f, 0.16f), ColMat("#c9553f"));
+                        Box(grp, new Vector3(2f, 1.15f, 0), new Vector3(4.4f, 0.16f, 0.16f), ColMat("#efe9dd"));
+                    }
+                    break;
+                case "arch":
+                    // 家属区装饰拱门（跨主路，不阻挡通行）
+                    Box(grp, new Vector3(-3.4f, 2.2f, 0), new Vector3(0.7f, 4.4f, 0.7f), ColMat("#c9c3b6"));
+                    Box(grp, new Vector3(3.4f, 2.2f, 0), new Vector3(0.7f, 4.4f, 0.7f), ColMat("#c9c3b6"));
+                    Box(grp, new Vector3(0, 4.6f, 0), new Vector3(8.2f, 0.7f, 0.7f), ColMat("#8f8a80"));
+                    Face(grp, 3.2f, 0.9f, new Vector3(0, 3.9f, 0.4f), LitTex("sign_arch"));
                     break;
             }
         }

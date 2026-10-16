@@ -118,8 +118,10 @@ public class PlayerRig : MonoBehaviour
         {
             var d = Input.mousePosition - _dragLast;
             _dragLast = Input.mousePosition;
-            _yaw -= d.x * 0.005f;
-            _pitch = Mathf.Clamp(_pitch + d.y * 0.004f, 0.3f, 1.2f);
+            // 与 web 版拖拽手感一致：向右拖 → 视角右转；向下拖 → 相机升高俯视
+            // （Unity 鼠标 Y 轴向上为正，且左手系下相机方位角方向与 three.js 相反，故两轴都要反号）
+            _yaw += d.x * 0.005f;
+            _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
         }
         float wheel = Input.mouseScrollDelta.y;
         if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);

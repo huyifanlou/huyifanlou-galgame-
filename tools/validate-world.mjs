@@ -19,7 +19,8 @@ const villaFoot = { id: 'villa', kind: 'villa', ...rect(VILLA.x, VILLA.z, VILLA.
 const propFoot = PROPS.filter((p) => p.type !== 'plaza').map((p) => {
   const b = { bench: [1.0, 0.6], bin: [0.35, 0.35], board: [0.9, 0.35], flag: [0.3, 0.3], hoop: [0.4, 0.4],
     planter: [p.w / 2, p.d / 2], fountain: [p.r, p.r], netpost: [(p.len || 8) / 2, 0.3],
-    gate: p.kind === 'main' ? (p.ry === 0 || Math.abs(p.ry) === Math.PI ? [4.2, 0.9] : [0.9, 4.2]) : [3.4, 0.9],
+    gate: p.kind === 'main' ? (p.ry === 0 || Math.abs(p.ry) === Math.PI ? [4.2, 0.9] : [0.9, 4.2]) : [4.4, 0.9],
+    arch: [3.8, 0.5],
     bikerack: [(p.n || 5) * 0.35, 0.5] }[p.type] || [0.5, 0.5]
   return { id: p.type + '@' + p.x + ',' + p.z, kind: 'prop:' + p.type, ...rect(p.x, p.z, b[0], b[1]) }
 })
@@ -55,7 +56,7 @@ for (let i = 0; i < gFoot.length; i++) for (let j = i + 1; j < gFoot.length; j++
 for (let i = 0; i < propFoot.length; i++) {
   const p = propFoot[i]
   for (const b of bFoot) if (overlap(p, b, 0.6)) errors.push(`道具压建筑：${p.id} × ${b.id}`)
-  if (p.kind !== 'prop:gate') for (const r of roadBands) if (overlap(p, r, 0.4)) errors.push(`道具压路：${p.id} × ${r.id}`)
+  if (p.kind !== 'prop:gate' && p.kind !== 'prop:arch') for (const r of roadBands) if (overlap(p, r, 0.4)) errors.push(`道具压路：${p.id} × ${r.id}`)
   for (const g of gFoot) if (['fountain', 'flag', 'hoop', 'netpost'].includes(p.kind.split(':')[1]) && overlap(p, g, 0.3)) warns.push(`道具贴近场地（确认站位）：${p.id} × ${g.id}`)
   for (let j = i + 1; j < propFoot.length; j++) if (overlap(p, propFoot[j], 0.5)) errors.push(`道具重叠：${p.id} × ${propFoot[j].id}`)
 }
@@ -144,7 +145,7 @@ for (const [bx, bz] of BORDER_BUSHES) {
 // 13) 道具 / 路灯 不压围栏
 for (const f of FENCES) {
   const line = f.axis === 'z' ? rect(f.at, (f.from + f.to) / 2, 0.2, (f.to - f.from) / 2) : rect((f.from + f.to) / 2, f.at, (f.to - f.from) / 2, 0.2)
-  for (const p of propFoot) if (p.kind !== 'prop:gate' && overlap(p, line, 0.1)) errors.push(`道具压围栏：${p.id} × 围栏${f.axis}@${f.at}`)
+  for (const p of propFoot) if (p.kind !== 'prop:gate' && p.kind !== 'prop:arch' && overlap(p, line, 0.1)) errors.push(`道具压围栏：${p.id} × 围栏${f.axis}@${f.at}`)
   for (const l of lampFoot) if (overlap(l, line, 0.0)) errors.push(`路灯压围栏：${l.id} × 围栏${f.axis}@${f.at}`)
 }
 // 14) 可达性：每栋建筑正门前 6m 内应有道路或岔路

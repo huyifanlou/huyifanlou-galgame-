@@ -27,7 +27,8 @@ export const BRANCH_PATHS = [
   { x: -46, z: 14, len: 4 },      // 生活服务楼（自南横路）
   { x: -15, z: 21.4, len: 3.2 },  // 小卖部（自南横路）
   { x: -20, z: -34.4, len: 4 },   // 体育馆（自北横路）
-  { x: 20, z: -34.4, len: 4 },    // 二号宿舍（自北横路）
+  { x: 16, z: -29.7, len: 4.6 },  // 二号宿舍（自北横路）
+  { x: -24, z: -29.7, len: 4.6 }, // 实验楼（自北横路）
 ]
 
 // ── 建筑 ──
@@ -39,19 +40,21 @@ export const BUILDINGS = [
   { id: 'canteen', name: '食堂', pos: [20, 10], size: [9, 3.4, 5], wall: '#e0b34e', trim: '#fff3d6', plinth: '#a07838', roof: '#a03c30', cols: 5, rows: 2, face: -1, style: 'gable', awning: true, vent: true },
   // — 新建筑（外环街区）—
   { id: 'gym', name: '体育馆', pos: [-20, -42], size: [16, 5.2, 11], wall: '#cfc9bd', trim: '#eeeae0', plinth: '#8f8a80', roof: '#4a5a6e', cols: 8, rows: 3, face: 1, style: 'gym', banner: true },
-  { id: 'dorm2', name: '二号宿舍', pos: [20, -38], size: [9, 5.4, 5], wall: '#bfa88c', trim: '#efe6d6', plinth: '#87755c', roof: '#5a4a42', cols: 5, rows: 4, face: 1, style: 'gable', tank: true, banner: true },
-  { id: 'labs', name: '实验楼', pos: [-46, -14], size: [12, 5, 7], wall: '#c3c8cf', trim: '#eef1f4', plinth: '#828a94', roof: '#3d4654', cols: 6, rows: 4, face: 1, style: 'flat', roofProps: true, banner: true },
+  { id: 'dorm2', name: '二号宿舍', pos: [16, -24], size: [9, 5.4, 5], wall: '#bfa88c', trim: '#efe6d6', plinth: '#87755c', roof: '#5a4a42', cols: 5, rows: 4, face: -1, style: 'gable', tank: true, banner: true },
+  { id: 'labs', name: '实验楼', pos: [-24, -23], size: [12, 5, 7], wall: '#c3c8cf', trim: '#eef1f4', plinth: '#828a94', roof: '#3d4654', cols: 6, rows: 4, face: -1, style: 'flat', roofProps: true, banner: true },
   { id: 'center', name: '活动中心', pos: [46, -14], size: [13, 6, 9], wall: '#d3c2a2', trim: '#f2ead8', plinth: '#94805e', roof: '#7c4a38', cols: 7, rows: 4, face: 1, style: 'grand' },
   { id: 'arts', name: '艺术楼', pos: [46, 9], size: [10, 5, 6], wall: '#e0d5c3', trim: '#f6f0e4', plinth: '#9c8f78', roof: '#4e6a58', cols: 5, rows: 3, face: 1, style: 'gable', awning: true },
   { id: 'service', name: '生活服务楼', pos: [-46, 9], size: [11, 4.5, 6], wall: '#cbb894', trim: '#f0e8d6', plinth: '#8d7a58', roof: '#a05a3c', cols: 6, rows: 3, face: 1, style: 'flat', roofProps: true },
   { id: 'kiosk', name: '小卖部', pos: [-15, 25], size: [6, 3.2, 4], wall: '#e8c46a', trim: '#fff6e0', plinth: '#a8843c', roof: '#b8452f', cols: 3, rows: 2, face: -1, style: 'gable', awning: true },
-  { id: 'guardN', name: '值班室', pos: [7, -35.5], size: [4, 3, 4], wall: '#d8d2c4', trim: '#f2eee4', plinth: '#98917f', roof: '#4a5568', cols: 2, rows: 2, face: 1, style: 'flat' },
+  { id: 'guardN', name: '值班室', pos: [55, 7], size: [4, 3, 4], wall: '#d8d2c4', trim: '#f2eee4', plinth: '#98917f', roof: '#4a5568', cols: 2, rows: 2, face: -1, style: 'flat' },
 ]
 
+// 布局逻辑（v3，2026-10-16）：东=入口区（校门+值班室+活动中心+艺术楼）｜中=教学区（教学楼/图书馆/实验楼/二号宿舍）
+// ｜西=生活后勤（生活服务楼）｜北=体育区（体育馆+篮球场+网球场，三块相邻）｜南=家属区（主角家+小卖部+花园）
 export const GROUNDS = [
   { id: 'playground', name: '操场', pos: [-21, 8.5], size: [16, 10] },
-  { id: 'basket', name: '篮球场', pos: [44, 25.5], size: [15, 9], kind: 'basket' },
-  { id: 'tennis', name: '网球场', pos: [-46, 25.5], size: [15, 8], kind: 'tennis' },
+  { id: 'basket', name: '篮球场', pos: [-2, -44], size: [15, 9], kind: 'basket' },
+  { id: 'tennis', name: '网球场', pos: [-40, -42], size: [15, 8], kind: 'tennis' },
 ]
 
 export const POND = { pos: [-26.5, -14], r: 3 }
@@ -63,9 +66,10 @@ export const PROPS = [
   { type: 'plaza', x: -7, z: -6, w: 6.5, d: 5 },
   { type: 'flag', x: -7, z: -6 },
   { type: 'board', x: -7, z: -3.6, ry: Math.PI },
-  // 校门：东西两侧主校门（横路两端）
+  // 校门：东侧正门（带校名牌+值班室）／西侧侧门（无匾、带挡杆）；家属区拱门（南端主路上方，装饰）
   { type: 'gate', x: 58, z: 0, ry: -Math.PI / 2, kind: 'main' },
-  { type: 'gate', x: -58, z: 0, ry: Math.PI / 2, kind: 'main' },
+  { type: 'gate', x: -58, z: 0, ry: Math.PI / 2, kind: 'side' },
+  { type: 'arch', x: 0, z: 22, ry: 0 },
   // 长椅（主路旁 / 池塘 / 花园 / 球场边）
   { type: 'bench', x: -26.5, z: -7.4, ry: Math.PI },
   { type: 'bench', x: -22.8, z: -14, ry: -Math.PI / 2 },
@@ -75,8 +79,8 @@ export const PROPS = [
   { type: 'bench', x: 24, z: 4.6, ry: Math.PI },
   { type: 'bench', x: -26, z: 22.6, ry: 0 },
   { type: 'bench', x: -22, z: 31, ry: Math.PI },
-  { type: 'bench', x: 44, z: 32.5, ry: 0 },
-  { type: 'bench', x: -46, z: 31, ry: Math.PI },
+  { type: 'bench', x: -2, z: -50.5, ry: Math.PI },
+  { type: 'bench', x: -40, z: -48.5, ry: Math.PI },
   // 垃圾桶
   { type: 'bin', x: 11.5, z: -4.6 }, { type: 'bin', x: -9.5, z: -4.6 }, { type: 'bin', x: -22.5, z: -4.6 },
   { type: 'bin', x: -24.5, z: -6.2 }, { type: 'bin', x: 4.6, z: -4.6 }, { type: 'bin', x: -7.6, z: -8.6 },
@@ -92,11 +96,11 @@ export const PROPS = [
   { type: 'planter', x: -17.5, z: 21.6, w: 3.6, d: 1.4 },
   // 喷泉（花园中心）
   { type: 'fountain', x: -26, z: 26.5, r: 2.2 },
-  // 篮球架（球场两端，面向场地内侧）
-  { type: 'hoop', x: 37.6, z: 25.5, ry: Math.PI / 2 },
-  { type: 'hoop', x: 50.4, z: 25.5, ry: -Math.PI / 2 },
+  // 篮球架（篮球场两端，面向场地内侧）
+  { type: 'hoop', x: -8.5, z: -44, ry: Math.PI / 2 },
+  { type: 'hoop', x: 4.5, z: -44, ry: -Math.PI / 2 },
   // 网球网（横跨球场中线）
-  { type: 'netpost', x: -46, z: 25.5, ry: 0, len: 8 },
+  { type: 'netpost', x: -40, z: -42, ry: 0, len: 8 },
 ]
 
 // ── 车辆 / 围栏等附加（暂缺：自行车静态摆件留待后续迭代）──
@@ -105,8 +109,8 @@ export const PROPS = [
 const KEEPOUT = [
   ...BUILDINGS.map((b) => ({ x: b.pos[0], z: b.pos[1], hw: b.size[0] / 2 + 2.4, hd: b.size[2] / 2 + 2.4 })),
   ...ROADS.map((r) => r.axis === 'z'
-    ? { x: r.at, z: (r.from + r.to) / 2, hw: r.width / 2 + 1.4, hd: (r.to - r.from) / 2 + 1.4 }
-    : { x: (r.from + r.to) / 2, z: r.at, hw: (r.to - r.from) / 2 + 1.4, hd: r.width / 2 + 1.4 }),
+    ? { x: r.at, z: (r.from + r.to) / 2, hw: r.width / 2 + 3.0, hd: (r.to - r.from) / 2 + 3.0 }
+    : { x: (r.from + r.to) / 2, z: r.at, hw: (r.to - r.from) / 2 + 3.0, hd: r.width / 2 + 3.0 }),
   ...GROUNDS.map((g) => ({ x: g.pos[0], z: g.pos[1], hw: g.size[0] / 2 + 1.6, hd: g.size[1] / 2 + 1.6 })),
   ...BRANCH_PATHS.map((p) => ({ x: p.x, z: p.z, hw: 2.6, hd: p.len / 2 + 1.2 })),
   ...PROPS.map((p) => ({ x: p.x, z: p.z, hw: 2.2, hd: 2.2 })),   // 所有道具周围留 2.2m 植被缓冲
@@ -173,9 +177,10 @@ const AVENUE = [
 export const TREES = [
   ...scatter(48, rnd, { minGap: 2.4 }).map(([x, z], i) => [x, z, TREE_TYPES[i % TREE_TYPES.length]]),
   ...AVENUE.map(([x, z, v]) => [x, z, v]),
-  // 池塘边柳树 + 花园桃花（人工点景）
-  ...[[-26.5, -9.8, 9], [-30.8, -11, 9], [-22.3, -10.5, 9], [-30.8, -19, 9]].map(([x, z, v]) => [x, z, v]),
+  // 池塘边柳树 + 花园桃花 + 空场补树（原球场/实验楼腾出的位置）
+  ...[[-26.5, -9.8, 9], [-30.8, -11, 9], [-22.3, -10.5, 9]].map(([x, z, v]) => [x, z, v]),
   ...[[-30, 25.5, 10], [-21.5, 25.5, 10]].map(([x, z, v]) => [x, z, v]),
+  ...[[44, 26, 0], [48, 23, 5], [40, 29, 2], [-46, 26, 0], [-50, 23, 10], [-42, 29, 5], [-46, -12, 0], [-43, -18, 2], [-49, -9, 5]].map(([x, z, v]) => [x, z, v]),
 ]
 export const BUSHES = scatter(44, rnd, { minGap: 1.3, others: TREES }).map(([x, z], i) => [x, z, i % 4])
 export const FLOWERS = scatter(56, rnd, { minGap: 1.1, others: [...TREES, ...BUSHES] }).map(([x, z]) => [x, z])
@@ -191,7 +196,7 @@ export const LAMPS = [
   ...[-30.8, -8, 8, 20, 33.5, 44, 54].map((x) => [x, 3.7, Math.PI / 2]),
   // 北横路
   ...[-28, -18, -8, 13, 18, 28].map((x) => [x, -33.7, -Math.PI / 2]),
-  ...[-24, -12, 12, 24].map((x) => [x, -26.3, Math.PI / 2]),
+  ...[-12, 6, 24].map((x) => [x, -26.3, Math.PI / 2]),
   // 南横路
   ...[-28, -16, -6, 6, 16, 26].map((x) => [x, 14.3, -Math.PI / 2]),
   ...[-24, 24].map((x) => [x, 21.7, Math.PI / 2]),
@@ -366,7 +371,9 @@ export const SPOTS = [
 ]
 
 // 碰撞体（道具实体；建筑/围栏/路灯/树另有既有逻辑，不重复）
-export const BLOCKERS = PROPS.filter((p) => !['plaza'].includes(p.type)).map((p) => {
+export const BLOCKERS = PROPS
+  .filter((p) => !['plaza', 'arch'].includes(p.type))
+  .map((p) => {
   switch (p.type) {
     case 'bench': return { x: p.x, z: p.z, hw: 1.0, hd: 1.0 }
     case 'bin': return { x: p.x, z: p.z, hw: 0.35, hd: 0.35 }
@@ -379,7 +386,9 @@ export const BLOCKERS = PROPS.filter((p) => !['plaza'].includes(p.type)).map((p)
     case 'netpost': return { x: p.x, z: p.z, hw: (p.len || 8) / 2, hd: 0.3 }
     case 'gate': return p.kind === 'main'
       ? { x: p.x, z: p.z, hw: p.ry === 0 || Math.abs(p.ry) === Math.PI ? 4.2 : 0.9, hd: p.ry === 0 || Math.abs(p.ry) === Math.PI ? 0.9 : 4.2 }
-      : { x: p.x, z: p.z, hw: 3.4, hd: 0.9 }
+      : { x: p.x, z: p.z, hw: 4.4, hd: 0.9 }
+    case 'arch': return null   // 装饰拱门（跨路，不阻挡）
     default: return { x: p.x, z: p.z, hw: 0.5, hd: 0.5 }
   }
 })
+  .filter(Boolean)
