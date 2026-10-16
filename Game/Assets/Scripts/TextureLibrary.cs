@@ -522,11 +522,16 @@ public static class TextureLibrary
             int baseH = 8 - bobL;
             if (side)
             {
-                // 行走周期：0 站立 / 1 前迈 / 2 并步 / 3 后摆（迈步幅度 3-4px）
-                int fwd = frame == 1 ? 4 : frame == 2 ? 1 : 0;
-                int bwd = frame == 3 ? 4 : frame == 2 ? 1 : 0;
-                r(12 + fwd, legTop, 4, baseH, pants); r(8 - bwd, legTop, 4, baseH, pantsD);
-                r(11 + fwd, 29, 6, 2, shoe); r(6 - bwd, 29, 6, 2, shoeD);
+                // 侧身：腿以髋部为轴摆动——上段贴髋（始终在外套轮廓内）、下段前/后错位、鞋跟下段
+                // （此前整条腿平移导致迈步时脱离身体轮廓，看起来"腿和身体分离"）
+                int fwd = frame == 1 ? 4 : frame == 2 ? 2 : 0;
+                int bwd = frame == 3 ? 4 : frame == 2 ? 2 : 0;
+                r(12, legTop, 4, 4, pants);                          // 前腿上段（贴髋）
+                r(12 + fwd / 2, legTop + 4, 4, baseH - 4, pants);    // 前腿下段（错位）
+                r(14 + fwd - 2, 29, 6, 2, shoe);
+                r(8, legTop, 4, 4, pantsD);                          // 后腿上段（贴髋）
+                r(8 - bwd / 2, legTop + 4, 4, baseH - 4, pantsD);    // 后腿下段（错位）
+                r(6 - bwd, 29, 6, 2, shoeD);
             }
             else
             {
