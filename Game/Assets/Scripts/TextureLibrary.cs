@@ -167,6 +167,14 @@ public static class TextureLibrary
             var c = C(pcols[R.Int(3)]); c.a = a;
             p.FillRect(R.Int(112), R.Int(112), 8 + R.Int(7), 8 + R.Int(7), c);
         }
+        // 细化：2px 细颗粒碎草与小石子（地面细节层次，与草地同密度）
+        var fine = new[] { "#3f7239", "#5da054", "#61a85a", "#437c3c" };
+        for (int i = 0; i < 260; i++)
+            p.FillRect(R.Int(126), R.Int(126), 2, R.Int(2) == 0 ? 2 : 4, C(fine[R.Int(4)]));
+        for (int i = 0; i < 26; i++)
+            p.FillRect(R.Int(124), R.Int(124), 2, 2, C(R.Int(2) == 0 ? "#6fae4b" : "#356e37"));
+        for (int i = 0; i < 10; i++)
+            p.FillRect(R.Int(124), R.Int(124), 2, 2, C("rgba(210,205,190,0.35)"));
         return p;
     }
 
@@ -186,60 +194,76 @@ public static class TextureLibrary
 
     static Px Building(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit)
     {
-        const int cell = 32;
-        int W = cols * cell, H = rows * cell + 40;
+        const int cell = 64;   // 2× 密度（原 32）：立面约 40px/世界单位，与草地同密度
+        int W = cols * cell, H = rows * cell + 80;
         var p = new Px(W, H);
         p.FillRect(0, 0, W, H, C(wall));
-        int noise = (int)Math.Floor((W * (double)H) / 24);
+        int noise = (int)Math.Floor((W * (double)H) / 96);
         for (int i = 0; i < noise; i++)
         {
-            p.FillRect(R.Int(W), R.Int(H), 6, 3, C("rgba(0,0,0,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 3, 3, C("rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 12, 6, C("rgba(0,0,0,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 6, 6, C("rgba(255,255,255,0.05)"));
+            p.FillRect(R.Int(W), R.Int(H), 2, 2, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
         }
-        p.FillRect(0, 0, W, 8, C(trim));
-        p.FillRect(0, 8, W, 3, C("rgba(0,0,0,0.12)"));
+        // 细砖缝（新细节层次）
+        for (int y = 16; y < H; y += 16) p.FillRect(0, y, W, 1, C("rgba(0,0,0,0.035)"));
+        p.FillRect(0, 0, W, 16, C(trim));
+        p.FillRect(0, 16, W, 6, C("rgba(0,0,0,0.12)"));
         for (int r = 1; r < rows; r++)
         {
-            p.FillRect(0, r * cell + 12, W, 7, C(trim));
-            p.FillRect(0, r * cell + 19, W, 3, C("rgba(0,0,0,0.15)"));
+            p.FillRect(0, r * cell + 24, W, 14, C(trim));
+            p.FillRect(0, r * cell + 38, W, 6, C("rgba(0,0,0,0.15)"));
         }
-        p.FillRect(0, H - 24, W, 24, C(plinth));
-        p.FillRect(0, H - 9, W, 9, C("rgba(0,0,0,0.18)"));
+        p.FillRect(0, H - 48, W, 48, C(plinth));
+        p.FillRect(0, H - 18, W, 18, C("rgba(0,0,0,0.18)"));
+        p.FillRect(0, H - 12, W, 4, C("rgba(255,255,255,0.06)"));
         for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
         {
             bool isLit = R.Next() < lit;
             int kind = R.Int(10);
-            int wx = c2 * cell + 7, wy = r * cell + 10;
-            p.FillRect(wx - 3, wy - 3, 26, 26, C(trim));
-            p.FillRect(wx, wy, 20, 20, C(isLit ? "#ffd98a" : "#2c3548"));
-            if (isLit) p.FillRect(wx, wy, 20, 3, C("#ffe9b8"));
-            else if (R.Next() < 0.35)
+            int wx = c2 * cell + 14, wy = r * cell + 20;
+            p.FillRect(wx - 6, wy - 6, 52, 52, C(trim));
+            p.FillRect(wx, wy, 40, 40, C(isLit ? "#ffd98a" : "#2c3548"));
+            if (isLit) p.FillRect(wx, wy, 40, 6, C("#ffe9b8"));
+            else
             {
-                p.FillRect(wx + 2, wy + 2, 7, 3, C("rgba(170,195,225,0.30)"));
-                p.FillRect(wx + 4, wy + 5, 5, 3, C("rgba(170,195,225,0.30)"));
+                if (R.Next() < 0.35)
+                {
+                    p.FillRect(wx + 4, wy + 4, 14, 6, C("rgba(170,195,225,0.30)"));
+                    p.FillRect(wx + 8, wy + 10, 10, 6, C("rgba(170,195,225,0.30)"));
+                }
+                // 十字窗棂（新细节）
+                p.FillRect(wx + 19, wy, 2, 40, C(trim));
+                p.FillRect(wx, wy + 19, 40, 2, C(trim));
             }
-            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 20, 7, C("#a08b80"));
-            if (kind == 2 && !isLit) p.FillRect(wx, wy + 21, 20, 5, C("#3f6e35"));
-            p.FillRect(wx, wy + 17, 20, 3, C("rgba(0,0,0,0.3)"));
-            p.FillRect(wx, wy + 26, 20, 3, C("rgba(0,0,0,0.22)"));
+            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 40, 14, C("#a08b80"));
+            if (kind == 2 && !isLit)
+            {
+                p.FillRect(wx, wy + 42, 40, 10, C("#3f6e35"));
+                for (int i = 0; i < 5; i++) p.FillRect(wx + 4 + i * 8, wy + 38, 4, 6, C("#4a8743"));
+            }
+            p.FillRect(wx, wy + 34, 40, 6, C("rgba(0,0,0,0.3)"));
+            p.FillRect(wx, wy + 52, 40, 6, C("rgba(0,0,0,0.22)"));
+            p.FillRect(wx, wy + 46, 40, 4, C("rgba(255,255,255,0.05)"));
             if (kind == 3)
             {
-                p.FillRect(wx + 3, wy + 26, 13, 10, C("#9aa2ac"));
-                p.FillRect(wx + 3, wy + 33, 13, 3, C("rgba(0,0,0,0.25)"));
+                p.FillRect(wx + 6, wy + 52, 26, 20, C("#9aa2ac"));
+                for (int i = 0; i < 3; i++) p.FillRect(wx + 8, wy + 55 + i * 5, 22, 2, C("rgba(0,0,0,0.15)"));
+                p.FillRect(wx + 6, wy + 66, 26, 6, C("rgba(0,0,0,0.25)"));
             }
-            // 阳台栏杆（约 1/4 上层窗：立面层次，美化②）
             if (r > 0 && kind == 4 && !isLit)
             {
-                p.FillRect(wx - 3, wy + 27, 26, 2, C("#cfc9ba"));
-                for (int bxx = 0; bxx < 6; bxx++) p.FillRect(wx - 2 + bxx * 5, wy + 21, 1, 6, C("#b8b0a2"));
+                p.FillRect(wx - 6, wy + 54, 52, 4, C("#cfc9ba"));
+                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 4 + bxx * 4, wy + 42, 2, 12, C("#b8b0a2"));
             }
         }
         if (banner)
         {
-            int by = cell + 44;
-            p.FillRect(12, by + 26, W - 24, 3, C("rgba(0,0,0,0.18)"));
-            p.FillRect(12, by, W - 24, 26, C("#c0392b"));
-            for (int x = 26; x < W - 38; x += 22) p.FillRect(x, by + 7, 13, 12, C("#f5d04e"));
+            int by = cell + 88;
+            p.FillRect(24, by + 52, W - 48, 6, C("rgba(0,0,0,0.18)"));
+            p.FillRect(24, by, W - 48, 52, C("#c0392b"));
+            p.FillRect(24, by, W - 48, 3, C("rgba(255,255,255,0.12)"));
+            for (int x = 52; x < W - 76; x += 44) p.FillRect(x, by + 14, 26, 24, C("#f5d04e"));
         }
         return p;
     }
