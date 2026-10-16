@@ -20,8 +20,12 @@
 ## 工程速查
 
 ```bash
-# 资产重建（固定种子 20261015，可复现；同时写 assets/ 与 Game/Assets/Resources/）
-cd tools && node export-assets.mjs
+# 资产：全 C# 程序化生成（运行时创建 + 编辑器对拍导出）；JS 工具已退役到 tools/legacy-js/（见 docs/06）
+# 对拍导出贴图 / 世界数据 JSON：
+"$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod TextureDump.DumpBatch
+"$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod WorldValidator.DumpJsonBatch
+# 布点/密度校验（贴地密度基准 160px/米，见 docs/09、docs/10）：
+"$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod WorldValidator.RunBatch
 
 # 编辑器（Unity 2022.3.62f3c1 中国版；许可证需 id.unity.cn 账号登录 Hub 一次）
 EDITOR="D:/AI/Unity/Editor/2022.3.62f3c1/Editor/Unity.exe"
@@ -42,4 +46,5 @@ Game/Build/Win/Campus.exe -shot shots/x.png -time 18.5 -px 0 -pz 4 -at -21,7.5 -
 - `docs/00-立项与迁移说明.md` —— 引擎选择（含中国网络实测）、冻结策略、迁移策略
 - `docs/01-迁移中修复的问题.md` —— BUG-001（lcgRand 忽略参数）根因与修复
 - `docs/02-移植进度与运行手册.md` —— 进度表、批量命令、web→Unity 参数对照
-- 世界数值（建筑/植被/路灯/交互点）：`assets/world.json`（单一来源 `tools/source/campus.js`）
+- `docs/03`~`docs/10` —— 首屏上线 / 世界扩容 / 布局重整 / 单一语言（JS 退役） / 贴图生成器移植与对拍 / 美化后处理 / 像素密度收尾①②
+- 世界数值（建筑/植被/路灯/交互点）：`Game/Assets/Scripts/CampusData.cs`（C# 单一来源；web 期的 `assets/world.json` 只作对拍参考）
