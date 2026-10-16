@@ -53,8 +53,8 @@ public class Hud : MonoBehaviour
 
         // 左上：标题 + 操作说明
         GUI.Label(new Rect(16, 10, 900, 28), "（游戏名待定）· 校园叙事 RPG（Unity 版）", _title);
-        GUI.Label(new Rect(16, 36, 1000, 24),
-            "WASD / 方向键 移动 ｜ F 交互 ｜ Q / E 转视角 ｜ 拖拽 / 滚轮 视角 ｜ 0/1/2/3 时间速度 ｜ T +12h ｜ [ ] ±1h", _hint);
+        GUI.Label(new Rect(16, 36, 1100, 24),
+            "WASD / 方向键 移动 ｜ V 第一/第三人称 ｜ F 交互 ｜ Q / E 转视角 ｜ 拖拽 / 滚轮 视角 ｜ 0/1/2/3 时间速度 ｜ T +12h ｜ [ ] ±1h", _hint);
 
         // 右上：时间刻度（第 N 天 · ☀/🌙 HH:MM · 速度）
         float h = Time.Hour;

@@ -19,6 +19,9 @@ public class PlayerRig : MonoBehaviour
     float _yawTarget = float.NaN;
     float _facing = Mathf.PI;   // 世界角：0=+z 南，π=北；默认背对镜头
     bool _alignPaused, _camInit, _dragging;
+    bool _firstPerson;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
+    float _fpPitch;             // 第一人称俯仰（上正下负）
+    Renderer _spriteR;
     Vector3 _dragLast;
     string _simKey;
     int _simFrames = -1;
@@ -31,6 +34,7 @@ public class PlayerRig : MonoBehaviour
         _cam = Camera.main;
         _player = w.Player;
         _sprite = w.PlayerSprite.transform;
+        _spriteR = w.PlayerSprite;
         _spriteMat = w.PlayerSprite.material;   // 实例化，供帧动画改 UV
 
         _cam.clearFlags = CameraClearFlags.SolidColor;
@@ -57,6 +61,7 @@ public class PlayerRig : MonoBehaviour
         var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 6f, 140f);   // 验收俯视可放远（交互滚轮仍限 6-22）
         if (dist.HasValue && dist.Value > 22f && !pitch.HasValue) _pitch = Mathf.Max(_pitch, 1.0f);  // 远机位默认俯视（显式 -pitch 时尊重调用方）
         if (Args.Str("-freeze") == "1") _alignPaused = true;
+        if (Args.Str("-fp") == "1") _firstPerson = true;   // 验收：以第一人称启动
 
         // 验收：-sim d,40 → 前 40 帧模拟按住 D
         var sim = Args.Str("-sim");
@@ -68,7 +73,14 @@ public class PlayerRig : MonoBehaviour
 
         _player.position = new Vector3(spawn.x, 0f, spawn.y);
         _facing = Mathf.PI;
+        ApplyViewVisibility();
         SnapCamera();
+    }
+
+    // 第一人称隐藏角色精灵（影子保留，低头可见脚下）
+    void ApplyViewVisibility()
+    {
+        if (_spriteR != null) _spriteR.enabled = !_firstPerson;
     }
 
     void SnapCamera()
@@ -118,13 +130,23 @@ public class PlayerRig : MonoBehaviour
         {
             var d = Input.mousePosition - _dragLast;
             _dragLast = Input.mousePosition;
-            // 与 web 版拖拽手感一致：向右拖 → 视角右转；向下拖 → 相机升高俯视
-            // （Unity 鼠标 Y 轴向上为正，且左手系下相机方位角方向与 three.js 相反，故两轴都要反号）
+            // 与 web 版拖拽手感一致：向右拖 → 视角右转；向下拖 → 俯视（Unity 鼠标 Y 轴向上为正，故此处反号）
             _yaw += d.x * 0.005f;
-            _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
+            if (_firstPerson)
+                _fpPitch = Mathf.Clamp(_fpPitch + d.y * 0.004f, -1.1f, 1.1f);   // 第一人称：向下拖 = 低头
+            else
+                _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);          // 第三人称：向下拖 = 相机升高俯视
         }
         float wheel = Input.mouseScrollDelta.y;
-        if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);
+        if (!_firstPerson && Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);
+
+        // V：第一 / 第三人称切换
+        if (Input.GetKeyDown(KeyCode.V))
+        {
+            _firstPerson = !_firstPerson;
+            ApplyViewVisibility();
+            if (_time != null) _time.ShowToast(_firstPerson ? "第一人称视角（V 切回第三人称）" : "第三人称视角（V 切换）");
+        }
 
         // 移动（WASD/方向键，相对镜头方向；X/Z 轴分开判定 → 沿墙滑动）
         // ⚠ Unity 是左手系：给定镜头朝向，屏幕右方 = 世界 -x（three.js 右手系为 +x），横移分量必须取反
@@ -198,6 +220,16 @@ public class PlayerRig : MonoBehaviour
         }
 
         // 跟随相机（球坐标；首帧已在 Init 吸附）
+        // 相机：第一人称贴头 / 第三人称球坐标跟随
+        if (_firstPerson)
+        {
+            _cam.transform.position = new Vector3(p.x, p.y + 1.45f, p.z);
+            float cp = Mathf.Cos(_fpPitch);
+            var fwd = new Vector3(-Mathf.Sin(_yaw) * cp, Mathf.Sin(_fpPitch), -Mathf.Cos(_yaw) * cp);
+            _cam.transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
+            _camInit = false;   // 切回第三人称时重新吸附，避免从头部漫长插值
+            return;
+        }
         float cx = p.x + Mathf.Sin(_yaw) * Mathf.Cos(_pitch) * _dist;
         float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(_pitch) * _dist;
         float cy = p.y + Mathf.Sin(_pitch) * _dist;
