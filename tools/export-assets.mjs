@@ -98,7 +98,6 @@ save(T.stripesTexture(), 'awning.png')
 save(T.villaTexture(), 'villa.png')
 save(T.roofTexture('#3a434e'), 'roof_villa.png')
 save(T.signTexture('华清大学'), 'sign_gate.png')
-save(T.signTexture('家属区', '#3f4a3a'), 'sign_arch.png')
 
 console.log('[4/6] 四栋建筑（昼 / 夜外墙 + 招牌 + 瓦片）')
 for (const b of C.BUILDINGS) {

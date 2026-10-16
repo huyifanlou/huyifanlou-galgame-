@@ -194,6 +194,17 @@ for (const b of bFoot) {
   }
 }
 
+// 16) 路灯不得挡在建筑门前通路上
+for (const l of lampFoot) {
+  for (const def of BUILDINGS) {
+    const door = { x: def.pos[0], z: def.pos[1] + def.face * (def.size[2] / 2 + 0.9) }
+    const corr = def.face === 1 ? rect(door.x, door.z + 5, 1.3, 5.5) : rect(door.x, door.z - 5, 1.3, 5.5)
+    if (Math.abs(l.x - corr.x) < corr.hw + 0.3 && Math.abs(l.z - corr.z) < corr.hd + 0.3) {
+      errors.push(`路灯挡门：${l.id} (${l.x},${l.z}) 位于 ${def.id} 门前通路`)
+    }
+  }
+}
+
 // —— 输出 ——
 const counts = { 建筑: BUILDINGS.length, 场地: GROUNDS.length, 道具: PROPS.length, 路灯: LAMPS.length, 树: TREES.length, 灌木: BUSHES.length, 花: FLOWERS.length, 土斑: DIRT_PATCHES.length, 假山: ROCKERIES.length, 小石头: SMALL_ROCKS.length, 芦苇: REEDS.length, 边界树: BORDER_TREES.length, 边界灌木: BORDER_BUSHES.length, 边界石: BORDER_ROCKS.length, 远景楼: DISTANT_BUILDINGS.length, 围栏段: FENCES.length, 可交互点: SPOTS.length }
 console.log('== 数量 ==', JSON.stringify(counts, null, 0))

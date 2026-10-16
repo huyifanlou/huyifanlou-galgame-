@@ -201,11 +201,7 @@ public class WorldBuilder : MonoBehaviour
                     }
                     break;
                 case "arch":
-                    // 家属区装饰拱门（跨主路，不阻挡通行）
-                    Box(grp, new Vector3(-3.4f, 2.2f, 0), new Vector3(0.7f, 4.4f, 0.7f), ColMat("#c9c3b6"));
-                    Box(grp, new Vector3(3.4f, 2.2f, 0), new Vector3(0.7f, 4.4f, 0.7f), ColMat("#c9c3b6"));
-                    Box(grp, new Vector3(0, 4.6f, 0), new Vector3(8.2f, 0.7f, 0.7f), ColMat("#8f8a80"));
-                    Face(grp, 3.2f, 0.9f, new Vector3(0, 3.9f, 0.4f), LitTex("sign_arch"));
+                    // 已废弃（家属区拱门按作者要求删除）；保留空实现以防旧数据引用
                     break;
             }
         }
@@ -593,13 +589,13 @@ public class WorldBuilder : MonoBehaviour
             Box(bg, new Vector3(-0.28f, bh[i] - 0.9f, 0.1f), new Vector3(0.5f, 0.14f, 0.14f), ColMat("#5a8a4a"));
         }
 
-        // 前院木篱（两横杆 + 立柱）
-        foreach (float px in new[] { -2.6f, -1.2f, 0.2f, 1.6f, 3.0f })
+        // 前院木篱（两横杆 + 立柱；正中留出进出家门的口子，不与门前通路冲突）
+        foreach (float px in new[] { -3.0f, -2.0f, -1.0f, 1.0f, 2.0f, 3.0f })
             Box(grp, new Vector3(px, -h / 2f + 0.45f, d / 2f + 3f), new Vector3(0.14f, 0.9f, 0.14f), ColMat("#a87e52"));
         for (int i = 0; i < 2; i++)
         {
-            float cx = i == 0 ? -1.75f : 2f;
-            float len = i == 0 ? 2.1f : 2.4f;
+            float cx = i == 0 ? -2f : 2f;
+            float len = 2.2f;
             Box(grp, new Vector3(cx, -h / 2f + 0.72f, d / 2f + 3f), new Vector3(len, 0.1f, 0.08f), ColMat("#b98d5e"));
             Box(grp, new Vector3(cx, -h / 2f + 0.38f, d / 2f + 3f), new Vector3(len, 0.1f, 0.08f), ColMat("#b98d5e"));
         }
