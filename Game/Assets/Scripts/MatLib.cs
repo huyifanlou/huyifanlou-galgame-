@@ -13,9 +13,10 @@ public static class MatLib
     {
         string key = name + (pixel ? "|p" : "|s") + (repeat ? "|r" : "|c");
         if (Cache.TryGetValue(key, out var cached)) return cached;
-        var t = Resources.Load<Texture2D>("tex/" + name);
-        if (t == null) { Debug.LogError("[MatLib] 贴图缺失: tex/" + name); return Texture2D.whiteTexture; }
-        // 运行时覆写过滤（不依赖 .meta 导入设置；mipmap 是否存在由导入设置决定）
+        // 优先程序化生成（C# TextureLibrary）；招牌等含中文文字者回退 Resources PNG
+        var t = TextureLibrary.ByName(name, pixel, repeat);
+        if (t == null) t = Resources.Load<Texture2D>("tex/" + name);
+        if (t == null) { Debug.LogError("[MatLib] 贴图缺失: " + name); return Texture2D.whiteTexture; }
         t.filterMode = pixel ? FilterMode.Point : FilterMode.Trilinear;
         t.anisoLevel = pixel ? 0 : 9;
         t.wrapMode = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;

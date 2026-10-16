@@ -139,7 +139,11 @@ public static class TextureLibrary
     static Texture2D From(Px p)
     {
         var t = new Texture2D(p.W, p.H, TextureFormat.RGBA32, false);
-        t.SetPixels(p.Buf);
+        // 注意：Unity 的 SetPixels 行序自下而上，而画布缓冲行 0 是顶行（与 canvas 一致）→ 必须翻转
+        var flipped = new Color[p.Buf.Length];
+        for (int y = 0; y < p.H; y++)
+            Array.Copy(p.Buf, y * p.W, flipped, (p.H - 1 - y) * p.W, p.W);
+        t.SetPixels(flipped);
         t.Apply(false, false);
         return t;
     }
@@ -690,6 +694,41 @@ public static class TextureLibrary
         t.wrapMode = repeat ? TextureWrapMode.Repeat : TextureWrapMode.Clamp;
         Cache[key] = t;
         return t;
+    }
+
+    // 名称分发：固定名 + 参数化名（建筑/边翼/屋面/远景外墙）；找不到返回 null 由调用方回退 Resources（招牌 PNG）
+    static WorldData _world;
+    static WorldData Wd => _world ?? (_world = CampusData.Build());
+
+    public static Texture2D ByName(string name, bool pixel, bool repeat)
+    {
+        if (name.StartsWith("wall_") || name.StartsWith("wing_"))
+        {
+            var parts = name.Split('_');               // wall_teach_day / wing_teach_day
+            if (parts.Length >= 3)
+            {
+                string id = parts[1];
+                bool night = parts[2] == "night";
+                var b = Array.Find(Wd.BUILDINGS, x => x.id == id);
+                if (b != null)
+                {
+                    bool wing = parts[0] == "wing";
+                    return BuildingWall(b.wall, b.trim, b.plinth, wing ? 3 : b.cols, wing ? 2 : b.rows,
+                        !wing && b.banner, night ? 0.55f : 0.05f);
+                }
+            }
+        }
+        if (name.StartsWith("roof_"))
+        {
+            var b = Array.Find(Wd.BUILDINGS, x => "roof_" + x.id == name);
+            if (b != null) return RoofTex(b.roof);
+        }
+        if (name.StartsWith("dist_") && int.TryParse(name.Substring(5), out var idx) && idx >= 0 && idx < Wd.DISTANT_BUILDINGS.Length)
+        {
+            var d = Wd.DISTANT_BUILDINGS[idx];
+            return BuildingWall(d.wall, d.trim, d.plinth, Mathf.Max(2, Mathf.RoundToInt(d.w / 3f)), Mathf.Max(2, Mathf.RoundToInt(d.h / 1.7f)), false, 0.16f);
+        }
+        return Get(name, pixel, repeat);
     }
 
     // 建筑/远景外墙需先按参数生成（非固定名）
