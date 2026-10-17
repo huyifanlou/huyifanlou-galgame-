@@ -50,12 +50,54 @@ public static class MeshFactory
         return m;
     }
 
+    // 世界尺度 UV 的立方体（叶簇/树皮这类贴图要「每面密度恒定」的箱体）
+    // 做法：以已验证的 Quad（法线 +Y）/ QuadZ（法线 +Z）为模板，逐面旋转+平移 —— 旋转不改变绕序，
+    // 镜像面（-Y/-Z）单独反转三角顺序。UV = 面尺寸 / texMeters → 贴图密度恒为 texMeters。
+    public static Mesh BoxUV(Vector3 size, float texMeters)
+    {
+        float hx = size.x * 0.5f, hy = size.y * 0.5f, hz = size.z * 0.5f;
+        float ux = size.x / texMeters, uy = size.y / texMeters, uz = size.z / texMeters;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+
+        void Face(Vector3[] v, float uw, float uh, bool quadOrder)
+        {
+            int i = verts.Count;
+            verts.AddRange(v);
+            uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(uw, 0)); uvs.Add(new Vector2(uw, uh)); uvs.Add(new Vector2(0, uh));
+            if (quadOrder) { tris.Add(i); tris.Add(i + 2); tris.Add(i + 1); tris.Add(i); tris.Add(i + 3); tris.Add(i + 2); }
+            else { tris.Add(i); tris.Add(i + 1); tris.Add(i + 2); tris.Add(i); tris.Add(i + 2); tris.Add(i + 3); }
+        }
+
+        // 顶 / 底（Quad 模板：0,2,1 / 0,3,2；底面镜像后反转）
+        Face(new[] { new Vector3(-hx, hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uz, true);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, -hy, hz), new Vector3(-hx, -hy, hz) }, ux, uz, false);
+        // 前 / 后（QuadZ 模板：0,1,2 / 0,2,3；后面镜像后反转）
+        Face(new[] { new Vector3(-hx, -hy, hz), new Vector3(hx, -hy, hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uy, false);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(-hx, hy, -hz) }, ux, uy, true);
+        // 右 / 左（QuadZ 绕 Y 轴 ±90°，保绕序；宽度沿 z）
+        Face(new[] { new Vector3(hx, -hy, hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz) }, uz, uy, false);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(-hx, -hy, hz), new Vector3(-hx, hy, hz), new Vector3(-hx, hy, -hz) }, uz, uy, false);
+
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
     // 圆锥（松树/柏树用；flat shading = 每面独立顶点）
-    public static Mesh Cone(float radius, float height, int sides = 6, bool withBottom = true)
+    // texMeters > 0 时写 UV（u 沿周长展开、v 沿高度），用于叶片类材质
+    public static Mesh Cone(float radius, float height, int sides = 6, bool withBottom = true, float texMeters = 0f)
     {
         var verts = new List<Vector3>();
         var tris = new List<int>();
+        var uvs = new List<Vector2>();
         var apex = new Vector3(0, height, 0);
+        float circumference = 2f * Mathf.PI * radius;
         for (int i = 0; i < sides; i++)
         {
             float a0 = i * Mathf.PI * 2f / sides;
@@ -65,16 +107,27 @@ public static class MeshFactory
             int b = verts.Count;
             // 侧面（外法线）
             verts.Add(apex); verts.Add(p0); verts.Add(p1);
+            if (texMeters > 0f)
+            {
+                float v0 = a0 / (Mathf.PI * 2f) * circumference / texMeters;
+                float v1 = a1 / (Mathf.PI * 2f) * circumference / texMeters;
+                uvs.Add(new Vector2((v0 + v1) * 0.5f, height / texMeters));
+                uvs.Add(new Vector2(v0, 0f));
+                uvs.Add(new Vector2(v1, 0f));
+            }
+            else { uvs.Add(Vector2.zero); uvs.Add(Vector2.zero); uvs.Add(Vector2.zero); }
             tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
             if (withBottom)
             {
                 // 底面（法线朝下）
                 verts.Add(Vector3.zero); verts.Add(p1); verts.Add(p0);
+                uvs.Add(Vector2.zero); uvs.Add(Vector2.zero); uvs.Add(Vector2.zero);
                 tris.Add(b + 3); tris.Add(b + 4); tris.Add(b + 5);
             }
         }
         var m = new Mesh();
         m.SetVertices(verts);
+        m.SetUVs(0, uvs);
         m.SetTriangles(tris, 0);
         m.RecalculateNormals();
         m.RecalculateBounds();

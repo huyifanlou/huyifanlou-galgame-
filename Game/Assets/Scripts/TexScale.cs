@@ -12,6 +12,8 @@ public static class TexScale
     public const float PathPeriod = 0.8f;       // 次路/岔路/广场/路口铺装 128px → 160px/米
     public const float MainstonePeriod = 1.6f;  // 主路石板 256px → 160px/米（4×4 石板，单块 0.4m）
     public const float CobblePeriod = 0.8f;     // 家属区小石路 128px → 160px/米
+    public const float LeafMeters = 0.8f;       // 树冠叶簇 128px → 160px/米（BoxUV/Cone 按此平铺）
+    public const float BarkMeters = 0.6f;       // 树皮 96px → 160px/米
 
     public static float RoadPeriod(string kind) => kind == "mainstone" ? MainstonePeriod : CobblePeriod;
 
@@ -31,9 +33,12 @@ public static class TexScale
         ["court_tennis"] = new Vector2(15f, 8f),
         ["pond"] = new Vector2(7.2f, 7.2f),         // 池塘：(r + 0.6) × 2
         ["villa"] = new Vector2(8.4f, 5.4f),        // 别墅立面：箱体正面 w×h（贴图随面拉伸）
+        ["door"] = new Vector2(1.5f, 2.1f),         // 大门面片（门洞）
         ["flower"] = new Vector2(1.7f, 1.7f),       // 花坛 / 土斑：整张铺满
         ["dirt"] = new Vector2(4.8f, 4.8f),
         ["roadband_v"] = new Vector2(0.6f, 1f),     // 中线石带：横 0.6m 拉伸一次、纵向 1m 一铺
         ["roadband_h"] = new Vector2(1f, 0.6f),
+        ["leaves"] = new Vector2(LeafMeters, LeafMeters),   // 树冠（世界尺度 UV 箱体/锥体）
+        ["bark"] = new Vector2(BarkMeters, BarkMeters),     // 树干
     };
 }

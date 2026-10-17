@@ -33,7 +33,9 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color NIGHT_FOG = MatLib.Hex("#0e1626");
     static readonly Color GLASS_OFF = MatLib.Hex("#d5dbe4");
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
-    const float DAY_AMB = 0.28f, DAY_HEMI = 0.10f, DAY_DIR_I = 0.82f;
+    // 写实化（2026-10-17）：白天提高「直射 : 环境」比 → 影子更深、受光面更亮；阴影色偏天空蓝（降绿），
+    // 形成「暖阳 + 冷影」的色温分离。夜晚维持原值（此前按可读性校准过，不再压暗）。
+    const float DAY_AMB = 0.20f, DAY_HEMI = 0.14f, DAY_DIR_I = 1.00f;
     const float NIGHT_AMB = 0.34f, NIGHT_HEMI = 0.20f, NIGHT_DIR_I = 0.58f;
     const float DAY_FOG_NEAR = 62f, DAY_FOG_FAR = 158f;
     const float NIGHT_FOG_NEAR = 48f, NIGHT_FOG_FAR = 138f;
@@ -81,7 +83,7 @@ public class TimeOfDay : MonoBehaviour
         _dir.color = DAY_DIR;
         _dir.intensity = DAY_DIR_I;
         _dir.shadows = LightShadows.Soft;
-        _dir.shadowStrength = 0.9f;
+        _dir.shadowStrength = 0.95f;
         _dir.shadowBias = 0.02f;
         _dir.shadowNormalBias = 0.4f;
         _dir.shadowCustomResolution = 2048;
@@ -154,10 +156,10 @@ public class TimeOfDay : MonoBehaviour
         float warm = WarmAt(h) * (1f - m * 0.65f);
         Mix = m;
 
-        // 环境光（ambient + 半球地面色）
+        // 环境光（ambient + 半球地面色）：0.28 的天空权重 → 阴影偏冷蓝（写实：天光主导阴影）
         Color gnd = Color.Lerp(DAY_HEMI_GND, NIGHT_HEMI_GND, m);
         Color sky = Color.Lerp(DAY_HEMI_SKY, NIGHT_HEMI_SKY, m);
-        Color amb = Color.Lerp(sky, gnd, 0.45f);
+        Color amb = Color.Lerp(sky, gnd, 0.28f);
         float ambI = Mathf.Lerp(DAY_AMB, NIGHT_AMB, m);
         RenderSettings.ambientLight = new Color(amb.r * ambI, amb.g * ambI, amb.b * ambI, 1f);
 

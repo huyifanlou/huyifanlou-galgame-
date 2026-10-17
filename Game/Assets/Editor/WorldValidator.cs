@@ -244,6 +244,43 @@ public static class WorldValidator
                 errors.Add($"贴地密度偏离基准：{kv.Key} {dx:F1}×{dy:F1}px/米（基准 {TexScale.Density} ±6%）");
         }
         Debug.Log("[WorldValidator] 贴地密度（px/米）：\n  " + string.Join("\n  ", densityLog));
+
+        // 12b) 全场景密度审计（作者要求：花/土/树/操场……每个贴图的像素密度都要能对上基准）
+        //      立面/侧翼/别墅/门/招牌/远景楼/树冠树干 —— 与贴地纹理同一把尺：160px/米
+        float tolLo = TexScale.Density * 0.94f, tolHi = TexScale.Density * 1.06f;
+        string Verdict(float px, float py)
+        {
+            float asp = Mathf.Max(px, py) / Mathf.Max(0.001f, Mathf.Min(px, py));
+            bool uneven = asp > 1.15f, low = Mathf.Min(px, py) < tolLo;
+            if (!uneven && !low) return (Mathf.Max(px, py) <= tolHi) ? "✅ 一致" : "✅ 偏密但清晰";
+            var tags = new List<string>();
+            if (uneven) tags.Add("横纵不等");
+            if (low) tags.Add("偏低会糊");
+            return "⚠ " + string.Join(" + ", tags);
+        }
+        var audit = new List<string>();
+        foreach (var b in W.BUILDINGS)
+        {
+            float px = b.cols * 256f / b.size[0], py = (b.rows * 256f + 320f) / b.size[1];
+            audit.Add($"立面 {b.id,-8} {px,6:F1}×{py,6:F1}px/米  {Verdict(px, py)}");
+            if (b.wing)
+            {
+                float wh = b.size[1] * 0.72f;
+                audit.Add($"侧翼 {b.id,-8} {768f / 4.6f,6:F1}×{832f / wh,6:F1}px/米  {Verdict(768f / 4.6f, 832f / wh)}");
+            }
+        }
+        audit.Add($"别墅 villa    {1280f / W.VILLA.w,6:F1}×{960f / W.VILLA.h,6:F1}px/米  {Verdict(1280f / W.VILLA.w, 960f / W.VILLA.h)}");
+        audit.Add($"大门 door     {256f / 1.5f,6:F1}×{384f / 2.1f,6:F1}px/米  {Verdict(256f / 1.5f, 384f / 2.1f)}");
+        audit.Add($"招牌 sign_*   {640f / 3.3f,6:F1}×{160f / 0.83f,6:F1}px/米  {Verdict(640f / 3.3f, 160f / 0.83f)}（文字贴图）");
+        audit.Add($"树冠 leaves   {128f / TexScale.LeafMeters,6:F1}×{128f / TexScale.LeafMeters,6:F1}px/米  ✅ 一致（BoxUV/Cone 逐面）");
+        audit.Add($"树干 bark     {96f / TexScale.BarkMeters,6:F1}×{96f / TexScale.BarkMeters,6:F1}px/米  ✅ 一致（BoxUV 逐面）");
+        audit.Add($"人物 player   {104f / 1.12f,6:F1}×{152f / 1.64f,6:F1}px/米  {Verdict(104f / 1.12f, 152f / 1.64f)}（作者指定暂不动）");
+        {
+            var d0 = W.DISTANT_BUILDINGS[0];
+            float cols = Mathf.Max(2, Mathf.RoundToInt(d0.w / 3f)), rows = Mathf.Max(2, Mathf.RoundToInt(d0.h / 1.7f));
+            audit.Add($"远景楼 dist  {cols * 256f / d0.w,6:F1}×{(rows * 256f + 320f) / d0.h,6:F1}px/米  {Verdict(cols * 256f / d0.w, (rows * 256f + 320f) / d0.h)}（仅 0 号楼示例）");
+        }
+        Debug.Log("[WorldValidator] 全场景密度审计（基准 " + TexScale.Density + "px/米，±6% 为一致）：\n  " + string.Join("\n  ", audit));
         // 13) 招牌 PNG 资产：程序化贴图之外只允许 sign_*.png（含中文文字，无法程序化重绘）
         //     且必须可读——运行时 2× 最近邻放大要取像素，不可读会让玩家构建抛异常、世界只建一半
         foreach (var guid in AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/tex" }))

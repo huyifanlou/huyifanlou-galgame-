@@ -190,6 +190,18 @@ public static class TextureLibrary
             p.FillRect(R.Int(248), R.Int(248), 2, 2, C(R.Int(2) == 0 ? "#6fae4b" : "#356e37"));
         for (int i = 0; i < 40; i++)
             p.FillRect(R.Int(248), R.Int(248), R.Int(2) + 1, 2, C("rgba(210,205,190,0.35)"));
+        // 写实化：草叶丝（1px 竖向短线）+ 团簇阴影（暗团 + 亮顶）+ 少量枯黄点
+        var blades = new[] { "#5aa24f", "#3c6d36", "#67ae58", "#48853f" };
+        for (int i = 0; i < 420; i++)
+            p.FillRect(R.Int(252), R.Int(250), 1, 3 + R.Int(3), C(blades[R.Int(4)]));
+        for (int i = 0; i < 26; i++)
+        {
+            int bx = R.Int(226), by = R.Int(226), bw = 10 + R.Int(14), bh = 8 + R.Int(10);
+            p.FillRect(bx, by, bw, bh, C("rgba(18,38,16,0.16)"));
+            p.FillRect(bx, by, bw, 3, C("rgba(122,182,92,0.20)"));
+        }
+        for (int i = 0; i < 70; i++)
+            p.FillRect(R.Int(252), R.Int(252), 2, 2, C("rgba(196,176,96,0.30)"));
         return p;
     }
 
@@ -201,6 +213,11 @@ public static class TextureLibrary
         for (int by = 0; by < 2; by++) for (int bx = 0; bx < 2; bx++)
         {
             p.FillRect(bx * 64 + 4, by * 64 + 4, 56, 56, C(cols[R.Int(4)]));
+            // 写实化：石块倒角 —— 左上受光、右下背光（2px ≈ 1.2cm）
+            p.FillRect(bx * 64 + 4, by * 64 + 4, 56, 2, C("rgba(255,255,255,0.14)"));
+            p.FillRect(bx * 64 + 4, by * 64 + 4, 2, 56, C("rgba(255,255,255,0.09)"));
+            p.FillRect(bx * 64 + 6, by * 64 + 58, 54, 2, C("rgba(0,0,0,0.16)"));
+            p.FillRect(bx * 64 + 58, by * 64 + 6, 2, 54, C("rgba(0,0,0,0.12)"));
             for (int i = 0; i < 40; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 8, 4, C("rgba(122,114,102,0.45)"));
             for (int i = 0; i < 24; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 4, 4, C("rgba(230,226,216,0.5)"));
             for (int i = 0; i < 10; i++) p.FillRect(bx * 64 + 4 + R.Int(56), by * 64 + 4 + R.Int(56), 2, 2, C(R.Int(2) == 0 ? "rgba(100,92,80,0.35)" : "rgba(245,242,235,0.45)"));
@@ -279,12 +296,18 @@ public static class TextureLibrary
             p.FillRect(96, by, W - 192, 12, C("rgba(255,255,255,0.12)"));
             for (int x = 208; x < W - 304; x += 176) p.FillRect(x, by + 56, 104, 96, C("#f5d04e"));
         }
+        // 写实化：立面下段渐脏（雨水/泥沙沉积）+ 随机窗下雨痕（低对比，避免显脏）
+        for (int i = 0; i < 12; i++)
+            p.FillRect(0, H - 360 + i * 30, W, 30, new Color(0.16f, 0.13f, 0.10f, 0.010f + i * 0.0045f));
+        for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
+            if (R.Next() < 0.35)
+                p.FillRect(c2 * cell + 70 + R.Int(120), r * cell + 232, 8 + R.Int(12), 40 + R.Int(120), C("rgba(45,38,30,0.055)"));
         return p;
     }
 
     static Px Door()
     {
-        var p = new Px(128, 192);   // 密度 ×4（对齐立面 160px/米）
+        var p = new Px(128, 192, 2);   // 物理 256×384，铺在门洞 1.5×2.1m 上 ≈ 171×183px/米（略高于基准，更清晰）
         p.FillRect(0, 0, 128, 192, C("#efe7d8"));
         p.FillRect(12, 12, 104, 180, C("#6b4a34"));
         p.FillRect(24, 28, 80, 48, C("#ffd98a"));
@@ -340,6 +363,52 @@ public static class TextureLibrary
             double solid = d < 24 ? 1 : d < 29 ? (R.Next() < 0.5 ? 1 : 0) : d < 34 ? (R.Next() < 0.12 ? 1 : 0) : 0;
             if (solid > 0) p.FillRect(x, y, 2, 2, C(cols[R.Int(3)]));
         }
+        // 写实化：外缘干土亮边 + 小石子（浅）与深色土块（低对比，不脏）
+        for (int i = 0; i < 30; i++)
+        {
+            double a = R.Next() * Math.PI * 2, rr = 22 + R.Next() * 12;
+            p.FillRect((float)(48 + Math.Cos(a) * rr), (float)(48 + Math.Sin(a) * rr), 2 + R.Int(2), 2, C("rgba(214,196,160,0.45)"));
+        }
+        for (int i = 0; i < 26; i++)
+        {
+            double a = R.Next() * Math.PI * 2, rr = R.Next() * 26;
+            p.FillRect((float)(48 + Math.Cos(a) * rr), (float)(48 + Math.Sin(a) * rr), 2, 2,
+                C(R.Int(2) == 0 ? "rgba(232,226,214,0.75)" : "rgba(70,54,36,0.45)"));
+        }
+        return p;
+    }
+
+    // 叶簇（树冠用，可被材质 color 染色）：近白底 + 暗色叶隙团簇 —— 世界尺度 0.8m = 160px/米
+    static Px Leaves()
+    {
+        var p = new Px(128, 128);
+        p.FillRect(0, 0, 128, 128, C("#fafaf6"));
+        for (int i = 0; i < 340; i++)
+        {
+            int x = R.Int(124), y = R.Int(124);
+            p.FillRect(x, y, 3 + R.Int(6), 3 + R.Int(5), C(R.Int(2) == 0 ? "rgba(0,0,0,0.115)" : "rgba(0,0,0,0.065)"));
+        }
+        for (int i = 0; i < 150; i++)
+            p.FillRect(R.Int(126), R.Int(126), 1, 2, C("rgba(0,0,0,0.15)"));
+        for (int i = 0; i < 70; i++)
+            p.FillRect(R.Int(126), R.Int(126), 1, 1, C("rgba(255,255,255,0.40)"));
+        return p;
+    }
+
+    // 树皮（可染色）：近白底 + 竖向沟槽/裂纹/苔点 —— 世界尺度 0.6m = 160px/米
+    static Px Bark()
+    {
+        var p = new Px(96, 96);
+        p.FillRect(0, 0, 96, 96, C("#f2ece4"));
+        for (int i = 0; i < 26; i++)
+        {
+            int x = R.Int(90), w = 2 + R.Int(4), y = R.Int(60), h = 24 + R.Int(56);
+            p.FillRect(x, y, w, h, C(R.Int(3) == 0 ? "rgba(255,255,255,0.30)" : "rgba(0,0,0,0.20)"));
+        }
+        for (int i = 0; i < 30; i++)
+            p.FillRect(R.Int(92), R.Int(92), 1, 3 + R.Int(6), C("rgba(0,0,0,0.14)"));
+        for (int i = 0; i < 18; i++)
+            p.FillRect(R.Int(94), R.Int(94), 2, 2, C("rgba(60,90,45,0.22)"));
         return p;
     }
 
@@ -392,6 +461,10 @@ public static class TextureLibrary
             p.FillRect(Mathf.RoundToInt(128 + Mathf.Cos(a) * rr - 2), Mathf.RoundToInt(128 + Mathf.Sin(a) * rr - 2), 4, 4, C(R.Int(2) == 0 ? "rgba(0,0,0,0.12)" : "rgba(255,255,255,0.10)"));
         }
         p.FillCircle(128, 128, 106, C("#3e6ea6"));
+        // 写实化：浅水亮边 → 深水暗心的径向渐变 + 水线高光
+        for (int r = 102; r > 30; r -= 6)
+            p.FillCircle(128, 128, r, new Color(0.05f, 0.14f, 0.30f, 0.045f));
+        p.StrokeCircle(128, 128, 103, 3, new Color(0.78f, 0.88f, 0.97f, 0.20f));
         var wave = new[] { "#4d82bd", "#5a8fc8", "#4878b0" };
         for (int i = 0; i < 60; i++)
         {
@@ -507,7 +580,8 @@ public static class TextureLibrary
 
     static Px Villa()
     {
-        var p = new Px(256, 192, 2);   // 物理 512×384，铺在别墅立面 w×h = 8.4×5.4m 上 ≈ 61px/米（密度 ×2）
+        var p = new Px(256, 192, 5);   // 物理 1280×960，铺在别墅立面 8.4×5.4m 上 ≈ 152×178px/米
+                                       // （贴图 4:3 与立面 1.56:1 比例不符 → 横纵仍差 1.17 倍，待重画/分块）
         p.FillRect(0, 0, 256, 100, C("#ece5d6"));
         p.FillRect(0, 0, 256, 4, C("#d9d2c2"));
         p.FillRect(0, 92, 256, 8, C("rgba(0,0,0,0.12)"));
@@ -730,6 +804,11 @@ public static class TextureLibrary
             for (int by = 0; by < 4; by++) for (int bx = 0; bx < 4; bx++)
             {
                 p.FillRect(bx * 32 + 1, by * 32 + 1, 30, 30, C(cols[R.Int(4)]));
+                // 写实化：石板倒角（逻辑 1px = 物理 2px ≈ 1.2cm；左上亮、右下暗）
+                p.FillRect(bx * 32 + 1, by * 32 + 1, 30, 1, C("rgba(255,255,255,0.13)"));
+                p.FillRect(bx * 32 + 1, by * 32 + 1, 1, 30, C("rgba(255,255,255,0.08)"));
+                p.FillRect(bx * 32 + 2, by * 32 + 30, 29, 1, C("rgba(0,0,0,0.16)"));
+                p.FillRect(bx * 32 + 30, by * 32 + 2, 1, 29, C("rgba(0,0,0,0.12)"));
                 for (int i = 0; i < 48; i++)
                     p.FillRect(bx * 32 + 2 + R.Int(28), by * 32 + 2 + R.Int(28), 3, 2, C(R.Int(2) == 0 ? "rgba(140,132,120,0.25)" : "rgba(235,231,222,0.35)"));
                 for (int i = 0; i < 14; i++)
@@ -743,6 +822,7 @@ public static class TextureLibrary
             for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++)
             {
                 p.FillRect(x * 8 + 2, y * 8 + 2, 12, 12, C(cols[R.Int(4)]));
+                p.FillRect(x * 8 + 2, y * 8 + 2, 12, 1, C("rgba(255,255,255,0.12)"));   // 写实化：小石顶受光
                 if (R.Int(3) == 0) p.FillRect(x * 8 + 4, y * 8 + 6, 6, 4, C("rgba(120,110,95,0.25)"));
             }
         }
@@ -783,6 +863,7 @@ public static class TextureLibrary
         Px px = name switch
         {
             "grass" => Grass(), "path" => PathTex(), "flower" => Flower(), "dirt" => Dirt(),
+            "leaves" => Leaves(), "bark" => Bark(),
             "track" => Track(), "pond" => Pond(), "sky_day" => SkyDay(), "sky_night" => SkyNight(),
             "lamp_glow" => LampGlow(), "roof_villa" => Roof("#3a434e"), "villa" => Villa(),
             "player" => Character(), "door" => Door(), "awning" => Stripes(),
@@ -882,7 +963,7 @@ public static class TextureLibrary
     public static void DumpAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        foreach (var n in new[] { "grass", "path", "flower", "dirt", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
+        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
         {
             var t = Get(n, true, true);
             File.WriteAllBytes(Path.Combine(dir, n + ".png"), t.EncodeToPNG());

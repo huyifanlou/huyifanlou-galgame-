@@ -40,6 +40,25 @@ public class WorldBuilder : MonoBehaviour
         if (!_cache.TryGetValue(k, out var m)) { m = MatLib.LitColor(MatLib.Hex(hex)); _cache[k] = m; }
         return m;
     }
+    // 带色纹理（树冠/树皮这类「贴图 × 颜色」的材质）
+    Material LitTinted(string tex, string hex, float tu = 1f, float tv = 1f)
+    {
+        string k = "T|" + tex + "|" + hex + "|" + tu + "|" + tv;
+        if (!_cache.TryGetValue(k, out var m))
+        {
+            m = MatLib.Lit(tex, tu, tv);
+            m.color = MatLib.Hex(hex);
+            _cache[k] = m;
+        }
+        return m;
+    }
+    // 金属件（低金属度 + 光滑度，受光处出高光）
+    Material MatMetal(string hex)
+    {
+        string k = "M|" + hex;
+        if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Metal(hex); _cache[k] = m; }
+        return m;
+    }
 
     // ── 原语 ──────────────────────────────────────────────────
     GameObject NewGo(string name, Transform parent)
@@ -352,7 +371,7 @@ public class WorldBuilder : MonoBehaviour
         var g = NewGo("Pond", Root);
         g.transform.localPosition = new Vector3(p.pos[0], 0f, p.pos[1]);
         var t = g.transform;
-        Flat(t, (p.r + 0.6f) * 2f, (p.r + 0.6f) * 2f, 0.012f, MatLib.Sprite("pond"));
+        Flat(t, (p.r + 0.6f) * 2f, (p.r + 0.6f) * 2f, 0.012f, MatLib.Sprite("pond", 0.55f));
         Box(t, new Vector3(p.r - 0.5f, 0.25f, 0.9f), new Vector3(0.9f, 0.5f, 0.7f), ColMat("#8d8d94"));
         Box(t, new Vector3(-1.7f, 0.2f, p.r - 0.4f), new Vector3(0.7f, 0.4f, 0.6f), ColMat("#7a7a82"));
     }
@@ -426,10 +445,10 @@ public class WorldBuilder : MonoBehaviour
             var lamp = NewGo("lamp", g).transform;
             lamp.localPosition = new Vector3(l.x, 0f, l.z);
             lamp.localEulerAngles = new Vector3(0f, l.r * Mathf.Rad2Deg, 0f);
-            Box(lamp, new Vector3(0f, 0.16f, 0f), new Vector3(0.42f, 0.32f, 0.42f), ColMat("#4a4f58"));
-            Box(lamp, new Vector3(0f, 1.85f, 0f), new Vector3(0.16f, 3.4f, 0.16f), ColMat("#3a3f4a"));
-            Box(lamp, new Vector3(0.42f, 3.48f, 0f), new Vector3(0.9f, 0.12f, 0.12f), ColMat("#3a3f4a"));
-            Box(lamp, new Vector3(0.8f, 3.36f, 0f), new Vector3(0.46f, 0.16f, 0.36f), ColMat("#2f333c"));
+            Box(lamp, new Vector3(0f, 0.16f, 0f), new Vector3(0.42f, 0.32f, 0.42f), MatMetal("#4a4f58"));
+            Box(lamp, new Vector3(0f, 1.85f, 0f), new Vector3(0.16f, 3.4f, 0.16f), MatMetal("#3a3f4a"));
+            Box(lamp, new Vector3(0.42f, 3.48f, 0f), new Vector3(0.9f, 0.12f, 0.12f), MatMetal("#3a3f4a"));
+            Box(lamp, new Vector3(0.8f, 3.36f, 0f), new Vector3(0.46f, 0.16f, 0.36f), MatMetal("#2f333c"));
             var glass = Box(lamp, new Vector3(0.8f, 3.26f, 0f), new Vector3(0.38f, 0.1f, 0.3f), LampGlass, default, false);
             glass.GetComponent<MeshRenderer>().sharedMaterial = LampGlass;
             var pool = NewGo("pool", lamp);
@@ -648,53 +667,62 @@ public class WorldBuilder : MonoBehaviour
         grp.localPosition = new Vector3(x, 0f, z);
         if (v == 6)
         {
-            Box(grp, new Vector3(0, 0.4f, 0), new Vector3(0.36f, 0.8f, 0.36f), ColMat("#6b4a2f"));
-            Cone(grp, 1.05f, 1.2f, 1.15f - 0.6f, "#2f6231");
-            Cone(grp, 0.85f, 1.1f, 1.85f - 0.55f, "#356e37");
-            Cone(grp, 0.62f, 1.0f, 2.5f - 0.5f, "#3d7a3f");
+            BarkBox(grp, new Vector3(0, 0.4f, 0), new Vector3(0.36f, 0.8f, 0.36f), "#6b4a2f");
+            LeafCone(grp, 1.05f, 1.2f, 1.15f - 0.6f, "#2f6231");
+            LeafCone(grp, 0.85f, 1.1f, 1.85f - 0.55f, "#356e37");
+            LeafCone(grp, 0.62f, 1.0f, 2.5f - 0.5f, "#3d7a3f");
         }
         else if (v == 7)
         {
-            Box(grp, new Vector3(0, 0.3f, 0), new Vector3(0.3f, 0.6f, 0.3f), ColMat("#5c4630"));
-            Cone(grp, 0.55f, 3.0f, 1.9f - 1.5f, "#284f2b");
+            BarkBox(grp, new Vector3(0, 0.3f, 0), new Vector3(0.3f, 0.6f, 0.3f), "#5c4630");
+            LeafCone(grp, 0.55f, 3.0f, 1.9f - 1.5f, "#284f2b");
         }
         else if (v == 8)
         {
-            Box(grp, new Vector3(0, 0.8f, 0), new Vector3(0.44f, 1.6f, 0.44f), ColMat("#6d4a2f"));
-            Box(grp, new Vector3(0, 2.1f, 0), new Vector3(2.4f, 1.5f, 2.4f), ColMat("#4f9448"));
-            Box(grp, new Vector3(0, 3.05f, 0), new Vector3(1.6f, 0.9f, 1.6f), ColMat("#5da04f"));
+            BarkBox(grp, new Vector3(0, 0.8f, 0), new Vector3(0.44f, 1.6f, 0.44f), "#6d4a2f");
+            LeafBox(grp, new Vector3(0, 2.1f, 0), new Vector3(2.4f, 1.5f, 2.4f), "#4f9448");
+            LeafBox(grp, new Vector3(0, 3.05f, 0), new Vector3(1.6f, 0.9f, 1.6f), "#5da04f");
         }
         else if (v == 9)
         {
             // 柳树：高干 + 三层浅绿垂冠（池畔）
-            Box(grp, new Vector3(0, 1.5f, 0), new Vector3(0.4f, 3f, 0.4f), ColMat("#7a6a45"));
-            Box(grp, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 0.7f, 2.4f), ColMat("#7fa84f"));
-            Box(grp, new Vector3(0, 3.4f, 0), new Vector3(2.8f, 0.6f, 2.8f), ColMat("#8fb35a"));
-            Box(grp, new Vector3(0, 4.05f, 0), new Vector3(1.9f, 0.6f, 1.9f), ColMat("#9cc06a"));
+            BarkBox(grp, new Vector3(0, 1.5f, 0), new Vector3(0.4f, 3f, 0.4f), "#7a6a45");
+            LeafBox(grp, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 0.7f, 2.4f), "#7fa84f");
+            LeafBox(grp, new Vector3(0, 3.4f, 0), new Vector3(2.8f, 0.6f, 2.8f), "#8fb35a");
+            LeafBox(grp, new Vector3(0, 4.05f, 0), new Vector3(1.9f, 0.6f, 1.9f), "#9cc06a");
         }
         else if (v == 10)
         {
             // 桃花：中干 + 粉色团冠（花园）
-            Box(grp, new Vector3(0, 0.9f, 0), new Vector3(0.36f, 1.8f, 0.36f), ColMat("#6d4a2f"));
-            Box(grp, new Vector3(0, 2.3f, 0), new Vector3(2f, 1.7f, 2f), ColMat("#e8a8bd"));
-            Box(grp, new Vector3(0, 3.25f, 0), new Vector3(1.3f, 0.8f, 1.3f), ColMat("#f0bccd"));
+            BarkBox(grp, new Vector3(0, 0.9f, 0), new Vector3(0.36f, 1.8f, 0.36f), "#6d4a2f");
+            LeafBox(grp, new Vector3(0, 2.3f, 0), new Vector3(2f, 1.7f, 2f), "#e8a8bd");
+            LeafBox(grp, new Vector3(0, 3.25f, 0), new Vector3(1.3f, 0.8f, 1.3f), "#f0bccd");
         }
         else
         {
             bool tall = v == 1, wide = v == 2;
             float trunkH = tall ? 1.5f : 1f;
             Vector3 crown = wide ? new Vector3(2f, 1.4f, 2f) : tall ? new Vector3(1.4f, 1.8f, 1.4f) : new Vector3(1.5f, 1.3f, 1.5f);
-            Box(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.36f, trunkH, 0.36f), ColMat("#6d4a2f"));
-            // 双色调树冠：暗底 + 主色 + 亮顶（立体受光感）
+            BarkBox(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.36f, trunkH, 0.36f), "#6d4a2f");
+            // 双色调树冠：暗底 + 主色 + 亮顶（立体受光感）+ 叶簇纹理
             string baseHex = TREE_CROWNS[v % TREE_CROWNS.Length];
-            Box(grp, new Vector3(0, trunkH + crown.y * 0.3f - 0.1f, 0), new Vector3(crown.x * 0.98f, crown.y * 0.6f, crown.z * 0.98f), ColMat(MatLib.Shade(baseHex, 0.78f)));
-            Box(grp, new Vector3(0, trunkH + crown.y * 0.74f - 0.1f, 0), new Vector3(crown.x * 0.92f, crown.y * 0.5f, crown.z * 0.92f), ColMat(baseHex));
-            Box(grp, new Vector3(0, trunkH + crown.y - 0.18f, 0), new Vector3(crown.x * 0.6f, crown.y * 0.28f, crown.z * 0.6f), ColMat(MatLib.Shade(baseHex, 1.2f)));
+            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.3f - 0.1f, 0), new Vector3(crown.x * 0.98f, crown.y * 0.6f, crown.z * 0.98f), MatLib.Shade(baseHex, 0.78f));
+            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.74f - 0.1f, 0), new Vector3(crown.x * 0.92f, crown.y * 0.5f, crown.z * 0.92f), baseHex);
+            LeafBox(grp, new Vector3(0, trunkH + crown.y - 0.18f, 0), new Vector3(crown.x * 0.6f, crown.y * 0.28f, crown.z * 0.6f), MatLib.Shade(baseHex, 1.2f));
         }
     }
 
-    void Cone(Transform p, float radius, float height, float baseY, string hex)
-        => MeshObj(p, MeshFactory.Cone(radius, height, 6), new Vector3(0, baseY, 0), ColMat(hex));
+    // 树冠块：世界尺度 UV（每面密度恒定 160px/米）+ 叶簇贴图 × 颜色
+    GameObject LeafBox(Transform p, Vector3 pos, Vector3 size, string hex)
+        => MeshObj(p, MeshFactory.BoxUV(size, TexScale.LeafMeters), pos, LitTinted("leaves", hex));
+
+    // 树干块：树皮贴图 × 树色
+    GameObject BarkBox(Transform p, Vector3 pos, Vector3 size, string hex)
+        => MeshObj(p, MeshFactory.BoxUV(size, TexScale.BarkMeters), pos, LitTinted("bark", hex));
+
+    // 松/柏的锥形树冠：锥面 UV 按周长/高度展开（密度同为 160px/米）
+    void LeafCone(Transform p, float radius, float height, float baseY, string hex)
+        => MeshObj(p, MeshFactory.Cone(radius, height, 6, true, TexScale.LeafMeters), new Vector3(0, baseY, 0), LitTinted("leaves", hex));
 
     // ── 远景建筑（平顶/坡顶/塔楼/公共 四风格 + 基座压地线）──
     void Distant()

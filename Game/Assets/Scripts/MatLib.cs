@@ -24,23 +24,43 @@ public static class MatLib
         return t;
     }
 
-    // Lambert 风格的受光材质（Standard：金属 0 / 光滑 0 → 近似漫反射）
+    // Lambert 风格的受光材质（Standard：金属 0 / 光滑度按材质类型给 → 保留纯漫反射观感，只加一层自然的受光响应）
     public static Material Lit(string texName, float tilingU = 1f, float tilingV = 1f, bool pixel = false)
     {
         var m = new Material(Shader.Find("Standard"));
         m.mainTexture = Tex(texName, pixel, true);
         m.mainTextureScale = new Vector2(tilingU, tilingV);
         m.SetFloat("_Metallic", 0f);
-        m.SetFloat("_Glossiness", 0f);
+        m.SetFloat("_Glossiness", SmoothnessOf(texName));
         return m;
     }
 
-    public static Material LitColor(Color c)
+    // 材质受光响应（写实化）：0=纯漫反射；smoothness 越大高光越紧。
+    // 注意不用的金属度：本工程无环境反射源（无天空盒/反射探针），高金属度会发黑。
+    public static float SmoothnessOf(string tex)
+    {
+        if (tex == "pond") return 0.55f;                                   // 水面
+        if (tex.StartsWith("road_")) return 0.13f;                         // 石板路
+        if (tex == "path" || tex.StartsWith("roadband")) return 0.10f;     // 铺装/石带
+        if (tex == "door") return 0.16f;                                   // 漆面门
+        if (tex == "villa") return 0.10f;                                  // 木构/和纸
+        if (tex.StartsWith("roof_")) return 0.20f;                         // 瓦面
+        if (tex.StartsWith("wall_") || tex.StartsWith("wing_") || tex.StartsWith("dist_")) return 0.05f;
+        if (tex == "track" || tex.StartsWith("court_")) return 0.07f;      // 塑胶跑道/球场
+        if (tex == "bark") return 0.04f;
+        if (tex == "leaves") return 0.02f;
+        return 0.02f;                                                      // 草/土/花等
+    }
+
+    // 平滑着色的金属件（灯杆/栏杆）：低金属度 + 较高光滑度 —— 保留漫反射底色，只在受光处出高光
+    public static Material Metal(string hex) => LitColor(Hex(hex), 0.34f);
+
+    public static Material LitColor(Color c, float smoothness = 0f)
     {
         var m = new Material(Shader.Find("Standard"));
         m.color = c;
         m.SetFloat("_Metallic", 0f);
-        m.SetFloat("_Glossiness", 0f);
+        m.SetFloat("_Glossiness", smoothness);
         return m;
     }
 
@@ -80,12 +100,12 @@ public static class MatLib
     }
 
     // 像素小人精灵：Standard Cutout（alphaTest 0.4，与 web 一致）；UV 由 mainTextureScale/Offset 驱动帧动画
-    public static Material Sprite(string texName)
+    public static Material Sprite(string texName, float smoothness = 0f)
     {
         var m = new Material(Shader.Find("Standard"));
         m.mainTexture = Tex(texName, pixel: true, repeat: true);
         m.SetFloat("_Metallic", 0f);
-        m.SetFloat("_Glossiness", 0f);
+        m.SetFloat("_Glossiness", smoothness);
         // Cutout 模式
         m.SetFloat("_Mode", 1f);
         m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
