@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -104,6 +105,31 @@ public static class Bootstrap
     }
 
     public static void SetupProjectBatch() => SetupProject();
+
+    // 应用图标（窗口/任务栏/桌面快捷方式共用）：Assets/icon.png → PlayerSettings
+    [MenuItem("Campus/1c. 设置应用图标")]
+    public static void SetAppIcon()
+    {
+        const string path = "Assets/icon.png";
+        var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+        if (ti == null) { Debug.LogError("[Bootstrap] 缺少 Assets/icon.png"); return; }
+        ti.textureType = TextureImporterType.Default;
+        ti.mipmapEnabled = false;
+        ti.textureCompression = TextureImporterCompression.Uncompressed;
+        ti.npotScale = TextureImporterNPOTScale.None;
+        ti.maxTextureSize = 256;
+        ti.SaveAndReimport();
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (tex == null) { Debug.LogError("[Bootstrap] icon.png 导入失败"); return; }
+        // 2022 的新 API（旧 SetIconsForTargetGroup 在批量模式下不落盘）
+        // 平台图标槽位是 8 个（16~256），全部填同一张图，Windows 会按需要缩放
+        PlayerSettings.SetIcons(NamedBuildTarget.Standalone,
+            new[] { tex, tex, tex, tex, tex, tex, tex, tex }, IconKind.Application);
+        AssetDatabase.SaveAssets();     // 批量模式下必须显式落盘，否则 ProjectSettings 不会写进去
+        var back = PlayerSettings.GetIcons(NamedBuildTarget.Standalone, IconKind.Application);
+        Debug.Log($"[Bootstrap] 应用图标已设置：回读 {back?.Length ?? 0} 张，首张={(back != null && back.Length > 0 && back[0] != null ? back[0].name : "null")}");
+    }
+    public static void SetAppIconBatch() => SetAppIcon();
 
     // 贴图导入设置（像素无损 + mipmap + 可读）
     //   isReadable 必须开：招牌 PNG 运行时靠 GetPixel 做 2× 最近邻放大（对齐全局密度），
