@@ -130,6 +130,26 @@ public static class CampusData
         return false;
     }
 
+    // 把离建筑立面（主楼 + 东侧翼）不足 minDist 的树沿最短方向推开
+    static void NudgeTreesFromBuildings(List<float[]> trees, float minDist)
+    {
+        foreach (var t in trees)
+            foreach (var b in Buildings)
+                for (int part = 0; part < (b.wing ? 2 : 1); part++)
+                {
+                    float cx = part == 0 ? b.pos[0] : b.pos[0] + b.size[0] / 2f + 2.3f;
+                    float cz = part == 0 ? b.pos[1] : b.pos[1] + 0.6f;
+                    float hw = part == 0 ? b.size[0] / 2f : 2.3f;
+                    float hd = part == 0 ? b.size[2] / 2f : b.size[2] * 0.4f;
+                    float dx = t[0] - cx, dz = t[1] - cz;
+                    float px = hw + minDist - Mathf.Abs(dx);
+                    float pz = hd + minDist - Mathf.Abs(dz);
+                    if (px <= 0f || pz <= 0f) continue;          // 已在扩展矩形之外
+                    if (px < pz) t[0] = cx + Mathf.Sign(dx) * (hw + minDist);
+                    else t[1] = cz + Mathf.Sign(dz) * (hd + minDist);
+                }
+    }
+
     static List<float[]> Scatter(int count, Lcg rnd, float bound, float minGap, List<float[]> others, List<(float, float, float, float)> keep)
     {
         var outp = new List<float[]>();
@@ -175,11 +195,14 @@ public static class CampusData
             for (float x = -56f; x <= 56f; x += 8f)
                 if (!InKeep(x, zoff, keep)) trees.Add(new[] { R1(x), R1(zoff), (float)v });
         // 人工点景
-        foreach (var t in new[] { new[] { -26.5f, -9.8f, 9f }, new[] { -30.8f, -11f, 9f }, new[] { -22.3f, -10.5f, 9f },
+        foreach (var t in new[] { new[] { -26.5f, -9.8f, 9f }, new[] { -30.8f, -11f, 9f }, new[] { -23.5f, -9.5f, 9f },
             new[] { -30f, 25.5f, 10f }, new[] { -21.5f, 25.5f, 10f },
             new[] { 44f, 26f, 0f }, new[] { 48f, 23f, 5f }, new[] { 40f, 29f, 2f }, new[] { -46f, 26f, 0f }, new[] { -50f, 23f, 10f }, new[] { -42f, 29f, 5f },
             new[] { -46f, -12f, 0f }, new[] { -43f, -18f, 2f }, new[] { -49f, -9f, 5f } })
             trees.Add(t);
+        // 树冠与建筑净距：把离墙（含侧翼）不足 2.25m 的树沿最短方向推开
+        // （只做局部修正、不动 RNG 序列，其余树/灌木/花的位置不受影响）
+        NudgeTreesFromBuildings(trees, 2.25f);
         w.TREES = ToTreeItems(trees);
 
         var bushes = Scatter(44, rnd, 56f, 1.3f, trees, keep);

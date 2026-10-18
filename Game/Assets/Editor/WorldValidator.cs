@@ -165,6 +165,20 @@ public static class WorldValidator
             for (int j = i + 1; j < W.TREES.Length; j++)
                 if (Mathf.Sqrt(Mathf.Pow(W.TREES[i].x - W.TREES[j].x, 2) + Mathf.Pow(W.TREES[i].z - W.TREES[j].z, 2)) < 1.8f)
                     errors.Add($"树过近：({W.TREES[i].x},{W.TREES[i].z})");
+        // 7b) 树冠与建筑净距：树心到建筑轮廓（主楼 + 东侧翼）≥ 2.15m —— 避免树冠插进立面
+        foreach (var t in W.TREES)
+            foreach (var b in W.BUILDINGS)
+                for (int part = 0; part < (b.wing ? 2 : 1); part++)
+                {
+                    float cx = part == 0 ? b.pos[0] : b.pos[0] + b.size[0] / 2f + 2.3f;
+                    float cz = part == 0 ? b.pos[1] : b.pos[1] + 0.6f;
+                    float hw = part == 0 ? b.size[0] / 2f : 2.3f;
+                    float hd = part == 0 ? b.size[2] / 2f : b.size[2] * 0.4f;
+                    float dx = Mathf.Max(0f, Mathf.Abs(t.x - cx) - hw), dz = Mathf.Max(0f, Mathf.Abs(t.z - cz) - hd);
+                    float dist = Mathf.Sqrt(dx * dx + dz * dz);
+                    if (dist < 2.15f)
+                        errors.Add($"树离建筑过近：({t.x},{t.z}) × {b.id}{(part == 1 ? "侧翼" : "")} 仅 {dist:F2}m（需 ≥2.15m）");
+                }
         // 8) 假山
         foreach (var rk in W.ROCKERIES)
         {

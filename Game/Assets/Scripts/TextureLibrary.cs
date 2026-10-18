@@ -434,6 +434,30 @@ public static class TextureLibrary
         return p;
     }
 
+    // 混凝土/水刷石（矮墙、压顶、立柱用）：骨料颗粒 + 气孔 + 细裂纹 + 墙脚潮痕/苔点
+    // 世界尺度 0.8m = 160px/米
+    static Px Concrete()
+    {
+        var p = new Px(128, 128);
+        p.FillRect(0, 0, 128, 128, C("#c8c2b4"));
+        for (int i = 0; i < 900; i++)
+            p.FillRect(R.Int(126), R.Int(126), 1 + R.Int(2), 1 + R.Int(2),
+                C(R.Int(3) == 0 ? "rgba(255,255,255,0.16)" : (R.Int(2) == 0 ? "rgba(90,84,74,0.13)" : "rgba(150,144,132,0.15)")));
+        for (int i = 0; i < 120; i++)
+            p.FillRect(R.Int(126), R.Int(126), 1, 1, C("rgba(70,64,56,0.22)"));
+        for (int i = 0; i < 6; i++)
+        {
+            int x = R.Int(110), y = R.Int(90);
+            for (int k = 0; k < 10; k++) p.FillRect(x + k * 2 + R.Int(2), y + R.Int(3) + k * 2, 2, 1, C("rgba(80,74,66,0.16)"));
+        }
+        // 墙脚潮痕（贴图底部 = 墙体底部）+ 苔点
+        for (int i = 0; i < 16; i++)
+            p.FillRect(0, 108 + i, 128, 1, new Color(0.20f, 0.18f, 0.15f, 0.045f + i * 0.004f));
+        for (int i = 0; i < 28; i++)
+            p.FillRect(R.Int(124), 112 + R.Int(14), 2 + R.Int(2), 1, C("rgba(60,62,40,0.16)"));
+        return p;
+    }
+
     // 树皮（可染色）：近白底 + 竖向沟槽/裂纹/苔点 —— 世界尺度 0.6m = 160px/米
     static Px Bark()
     {
@@ -895,7 +919,7 @@ public static class TextureLibrary
         Px px = name switch
         {
             "grass" => Grass(), "path" => PathTex(), "flower" => Flower(), "dirt" => Dirt(),
-            "leaves" => Leaves(), "bark" => Bark(),
+            "leaves" => Leaves(), "bark" => Bark(), "concrete" => Concrete(),
             "track" => Track(), "pond" => Pond(), "sky_day" => SkyDay(), "sky_night" => SkyNight(),
             "lamp_glow" => LampGlow(), "roof_villa" => Roof("#3a434e"), "villa" => Villa(),
             "player" => Character(), "door" => Door(), "awning" => Stripes(),
@@ -1000,7 +1024,7 @@ public static class TextureLibrary
     public static void DumpAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
+        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
         {
             var t = Get(n, true, true);
             File.WriteAllBytes(Path.Combine(dir, n + ".png"), t.EncodeToPNG());

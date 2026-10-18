@@ -47,6 +47,8 @@ public static class MatLib
         if (tex.StartsWith("roof_")) return 0.20f;                         // 瓦面
         if (tex.StartsWith("wall_") || tex.StartsWith("wing_") || tex.StartsWith("dist_")) return 0.05f;
         if (tex == "track" || tex.StartsWith("court_")) return 0.07f;      // 塑胶跑道/球场
+        if (tex == "concrete") return 0.06f;
+        if (tex == "awning") return 0.10f;
         if (tex == "bark") return 0.04f;
         if (tex == "leaves") return 0.02f;
         return 0.02f;                                                      // 草/土/花等

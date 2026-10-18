@@ -52,6 +52,13 @@ public class WorldBuilder : MonoBehaviour
         }
         return m;
     }
+    // 带光滑度的纯色（雨落管/台阶等小件）
+    Material ColMatGloss(string hex, float smoothness)
+    {
+        string k = "G|" + hex + "|" + smoothness;
+        if (!_cache.TryGetValue(k, out var m)) { m = MatLib.LitColor(MatLib.Hex(hex), smoothness); _cache[k] = m; }
+        return m;
+    }
     // 金属件（低金属度 + 光滑度，受光处出高光）
     Material MatMetal(string hex)
     {
@@ -432,16 +439,17 @@ public class WorldBuilder : MonoBehaviour
             var run = NewGo("wall", g).transform;
             var wallSize = f.axis == "z" ? new Vector3(0.26f, 0.6f, len) : new Vector3(len, 0.6f, 0.26f);
             var wallPos = f.axis == "z" ? new Vector3(f.at, 0.3f, mid) : new Vector3(mid, 0.3f, f.at);
-            Box(run, wallPos, wallSize, ColMat("#cfc9ba"));
+            // 写实化：混凝土贴图 + 世界尺度 UV（0.8m 一铺；四面同密度，墙脚潮痕/气孔可见）
+            MeshObj(run, MeshFactory.BoxUV(wallSize, 0.8f), wallPos, LitTex("concrete"));
             var capSize = f.axis == "z" ? new Vector3(0.36f, 0.08f, len) : new Vector3(len, 0.08f, 0.36f);
             var capPos = f.axis == "z" ? new Vector3(f.at, 0.64f, mid) : new Vector3(mid, 0.64f, f.at);
-            Box(run, capPos, capSize, ColMat("#b8b0a2"));
+            MeshObj(run, MeshFactory.BoxUV(capSize, 0.8f), capPos, LitTinted("concrete", "#cfcabf"));
             int count = Mathf.Max(1, Mathf.FloorToInt(len / 5.6f));
             for (int i = 0; i <= count; i++)
             {
                 float t = f.from + len * i / count;
                 var pos = f.axis == "z" ? new Vector3(f.at, 0.44f, t) : new Vector3(t, 0.44f, f.at);
-                Box(run, pos, new Vector3(0.4f, 0.88f, 0.4f), ColMat("#c9c3b6"));
+                MeshObj(run, MeshFactory.BoxUV(new Vector3(0.4f, 0.88f, 0.4f), 0.8f), pos, LitTinted("concrete", "#d0cabd"));
             }
         }
     }
@@ -534,16 +542,16 @@ public class WorldBuilder : MonoBehaviour
             {
                 var rp = NewGo("roofProps", grp).transform;
                 rp.localPosition = new Vector3(0, h / 2f + 0.6f, 0);
-                Box(rp, new Vector3(-w * 0.22f, 0f, -d * 0.12f), new Vector3(1.7f, 0.75f, 1.2f), ColMat("#a8adb5"));
-                Box(rp, new Vector3(w * 0.24f, 0.03f, d * 0.1f), new Vector3(1f, 0.55f, 0.8f), ColMat("#9aa2ac"));
-                Box(rp, new Vector3(w * 0.24f, -0.28f, d * 0.1f), new Vector3(1.1f, 0.16f, 0.9f), ColMat("#7d838c"));
+                Box(rp, new Vector3(-w * 0.22f, 0f, -d * 0.12f), new Vector3(1.7f, 0.75f, 1.2f), MatMetal("#a8adb5"));
+                Box(rp, new Vector3(w * 0.24f, 0.03f, d * 0.1f), new Vector3(1f, 0.55f, 0.8f), MatMetal("#9aa2ac"));
+                Box(rp, new Vector3(w * 0.24f, -0.28f, d * 0.1f), new Vector3(1.1f, 0.16f, 0.9f), MatMetal("#7d838c"));
             }
             if (b.vent)
             {
                 var v = NewGo("vent", grp).transform;
                 v.localPosition = new Vector3(w * 0.28f, h / 2f + 1.05f, 0f);
-                Box(v, Vector3.zero, new Vector3(0.28f, 2f, 0.28f), ColMat("#8a9099"));
-                Box(v, new Vector3(0, 1.05f, 0), new Vector3(0.62f, 0.22f, 0.62f), ColMat("#6f757e"));
+                Box(v, Vector3.zero, new Vector3(0.28f, 2f, 0.28f), MatMetal("#8a9099"));
+                Box(v, new Vector3(0, 1.05f, 0), new Vector3(0.62f, 0.22f, 0.62f), MatMetal("#6f757e"));
             }
             if (b.wing)
             {
@@ -561,24 +569,25 @@ public class WorldBuilder : MonoBehaviour
             {
                 var a = NewGo("antenna", grp).transform;
                 a.localPosition = new Vector3(-w / 4f, h / 2f + 0.9f, 0f);
-                Box(a, Vector3.zero, new Vector3(0.14f, 1.7f, 0.14f), ColMat("#9aa2ac"));
+                Box(a, Vector3.zero, new Vector3(0.14f, 1.7f, 0.14f), MatMetal("#9aa2ac"));
                 Box(a, new Vector3(0, 0.95f, 0), new Vector3(0.3f, 0.24f, 0.3f), ColMat("#c9553f"));
             }
             if (b.tank)
-                Box(grp, new Vector3(w / 4f, h / 2f + 0.75f, 0f), new Vector3(1.7f, 0.95f, 1.3f), ColMat("#9aa2ac"));
+                Box(grp, new Vector3(w / 4f, h / 2f + 0.75f, 0f), new Vector3(1.7f, 0.95f, 1.3f), MatMetal("#9aa2ac"));
             if (b.awning)
                 Box(grp, new Vector3(0, -h / 2f + 2.3f, d / 2f + 0.55f), new Vector3(w * 0.62f, 0.24f, 1.3f), LitTex("awning"));
 
             // 招牌 + 大门 + 台阶 + 门灯 + 雨落管 + 门前绿篱
             Face(grp, 3.3f, 0.83f, new Vector3(0, h * 0.28f, d / 2f + 0.04f), LitTex("sign_" + b.id));
             Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f, d / 2f + 0.035f), LitTex("door"));
-            Box(grp, new Vector3(0, -h / 2f + 0.08f, d / 2f + 0.5f), new Vector3(1.9f, 0.16f, 0.9f), ColMat("#b8b0a2"));
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, d / 2f + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
             Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
             Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
-            Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMat(b.plinth));
-            Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMat(b.plinth));
-            Box(grp, new Vector3(-1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), new Vector3(1.3f, 0.62f, 0.55f), ColMat("#3d7a37"));
-            Box(grp, new Vector3(1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), new Vector3(1.3f, 0.62f, 0.55f), ColMat("#3d7a37"));
+            Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
+            Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
+            // 门前绿篱：叶簇贴图（与树冠同材质体系），世界尺度 UV
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(-1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
         }
     }
 
