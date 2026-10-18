@@ -261,15 +261,18 @@ public static class WorldValidator
         var audit = new List<string>();
         foreach (var b in W.BUILDINGS)
         {
-            float px = b.cols * 256f / b.size[0], py = (b.rows * 256f + 320f) / b.size[1];
-            audit.Add($"立面 {b.id,-8} {px,6:F1}×{py,6:F1}px/米  {Verdict(px, py)}");
+            float fd = TextureLibrary.FacadeDensity(b.size[0], b.size[1]);
+            audit.Add($"立面 {b.id,-8} {fd,6:F1}×{fd,6:F1}px/米  {Verdict(fd, fd)}（四面同密度·BoxUV）");
             if (b.wing)
             {
-                float wh = b.size[1] * 0.72f;
-                audit.Add($"侧翼 {b.id,-8} {768f / 4.6f,6:F1}×{832f / wh,6:F1}px/米  {Verdict(768f / 4.6f, 832f / wh)}");
+                float dw = TextureLibrary.FacadeDensity(4.6f, b.size[1] * 0.72f);
+                audit.Add($"侧翼 {b.id,-8} {dw,6:F1}×{dw,6:F1}px/米  {Verdict(dw, dw)}");
             }
         }
-        audit.Add($"别墅 villa    {1280f / W.VILLA.w,6:F1}×{960f / W.VILLA.h,6:F1}px/米  {Verdict(1280f / W.VILLA.w, 960f / W.VILLA.h)}");
+        {
+            float dv = TextureLibrary.FacadeDensity(W.VILLA.w, W.VILLA.h);
+            audit.Add($"别墅 villa    {dv,6:F1}×{dv,6:F1}px/米  {Verdict(dv, dv)}（四面同密度）");
+        }
         audit.Add($"大门 door     {256f / 1.5f,6:F1}×{384f / 2.1f,6:F1}px/米  {Verdict(256f / 1.5f, 384f / 2.1f)}");
         audit.Add($"招牌 sign_*   {640f / 3.3f,6:F1}×{160f / 0.83f,6:F1}px/米  {Verdict(640f / 3.3f, 160f / 0.83f)}（文字贴图）");
         audit.Add($"树冠 leaves   {128f / TexScale.LeafMeters,6:F1}×{128f / TexScale.LeafMeters,6:F1}px/米  ✅ 一致（BoxUV/Cone 逐面）");
@@ -277,8 +280,8 @@ public static class WorldValidator
         audit.Add($"人物 player   {104f / 1.12f,6:F1}×{152f / 1.64f,6:F1}px/米  {Verdict(104f / 1.12f, 152f / 1.64f)}（作者指定暂不动）");
         {
             var d0 = W.DISTANT_BUILDINGS[0];
-            float cols = Mathf.Max(2, Mathf.RoundToInt(d0.w / 3f)), rows = Mathf.Max(2, Mathf.RoundToInt(d0.h / 1.7f));
-            audit.Add($"远景楼 dist  {cols * 256f / d0.w,6:F1}×{(rows * 256f + 320f) / d0.h,6:F1}px/米  {Verdict(cols * 256f / d0.w, (rows * 256f + 320f) / d0.h)}（仅 0 号楼示例）");
+            float dd = TextureLibrary.FacadeDensity(d0.w, d0.h);
+            audit.Add($"远景楼 dist  {dd,6:F1}×{dd,6:F1}px/米  {Verdict(dd, dd)}（仅 0 号楼示例·四面同密度）");
         }
         Debug.Log("[WorldValidator] 全场景密度审计（基准 " + TexScale.Density + "px/米，±6% 为一致）：\n  " + string.Join("\n  ", audit));
         // 13) 招牌 PNG 资产：程序化贴图之外只允许 sign_*.png（含中文文字，无法程序化重绘）

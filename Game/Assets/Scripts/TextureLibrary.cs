@@ -225,83 +225,95 @@ public static class TextureLibrary
         return p;
     }
 
-    static Px Building(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit)
+    // 立面目标密度：≤166px/米（基准 160 ±6% 内），且单张不超过 2048 → D = min(166, 2048/宽, 2048/高)
+    public static float FacadeDensity(float wMeters, float hMeters)
+        => Mathf.Min(166f, Mathf.Min(2048f / Mathf.Max(0.5f, wMeters), 2048f / Mathf.Max(0.5f, hMeters)));
+
+    // 建筑立面：按「世界比例」绘制 —— 美术坐标沿用原 256 格布局，Draw() 按目标像素各自缩放，
+    // 于是世界观感与旧版一致，但像素密度恒定（宽/高同密度）。配合 MeshFactory.BoxUV 贴到盒子上，
+    // 正/背/侧四面都是一个密度（侧面显示立面的左侧裁切，不再被拉伸）。
+    static Px Building(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit,
+                       float wMeters, float hMeters)
     {
-        const int cell = 256;   // 8× 原版密度（≈160px/世界单位，密度再翻倍）
-        int W = cols * cell, H = rows * cell + 320;
-        var p = new Px(W, H);
-        p.FillRect(0, 0, W, H, C(wall));
-        int noise = (int)Math.Floor((W * (double)H) / 1536);
+        const int cell = 256;
+        float aw = cols * cell, ah = rows * cell + 320f;      // 原美术画布（逻辑）
+        float D = FacadeDensity(wMeters, hMeters);
+        var p = new Px(Mathf.Max(8, Mathf.RoundToInt(wMeters * D)), Mathf.Max(8, Mathf.RoundToInt(hMeters * D)));
+        float sx = p.W / aw, sy = p.H / ah;
+        void Draw(float x, float y, float w2, float h2, Color c) => p.FillRect(x * sx, y * sy, w2 * sx, h2 * sy, c);
+
+        Draw(0, 0, aw, ah, C(wall));
+        int noise = (int)Math.Floor((aw * (double)ah) / 1536);
         for (int i = 0; i < noise; i++)
         {
-            p.FillRect(R.Int(W), R.Int(H), 48, 24, C("rgba(0,0,0,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 24, 24, C("rgba(255,255,255,0.05)"));
-            p.FillRect(R.Int(W), R.Int(H), 8, 8, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
+            Draw(R.Int((int)aw), R.Int((int)ah), 48, 24, C("rgba(0,0,0,0.05)"));
+            Draw(R.Int((int)aw), R.Int((int)ah), 24, 24, C("rgba(255,255,255,0.05)"));
+            Draw(R.Int((int)aw), R.Int((int)ah), 8, 8, C(R.Int(2) == 0 ? "rgba(0,0,0,0.06)" : "rgba(255,255,255,0.05)"));
         }
-        for (int y = 64; y < H; y += 64) p.FillRect(0, y, W, 4, C("rgba(0,0,0,0.035)"));
-        p.FillRect(0, 0, W, 64, C(trim));
-        p.FillRect(0, 64, W, 24, C("rgba(0,0,0,0.12)"));
+        for (float y = 64; y < ah; y += 64) Draw(0, y, aw, 4, C("rgba(0,0,0,0.035)"));
+        Draw(0, 0, aw, 64, C(trim));
+        Draw(0, 64, aw, 24, C("rgba(0,0,0,0.12)"));
         for (int r = 1; r < rows; r++)
         {
-            p.FillRect(0, r * cell + 96, W, 56, C(trim));
-            p.FillRect(0, r * cell + 152, W, 24, C("rgba(0,0,0,0.15)"));
+            Draw(0, r * cell + 96, aw, 56, C(trim));
+            Draw(0, r * cell + 152, aw, 24, C("rgba(0,0,0,0.15)"));
         }
-        p.FillRect(0, H - 192, W, 192, C(plinth));
-        p.FillRect(0, H - 72, W, 72, C("rgba(0,0,0,0.18)"));
-        p.FillRect(0, H - 48, W, 16, C("rgba(255,255,255,0.06)"));
+        Draw(0, ah - 192, aw, 192, C(plinth));
+        Draw(0, ah - 72, aw, 72, C("rgba(0,0,0,0.18)"));
+        Draw(0, ah - 48, aw, 16, C("rgba(255,255,255,0.06)"));
         for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
         {
             bool isLit = R.Next() < lit;
             int kind = R.Int(10);
-            int wx = c2 * cell + 56, wy = r * cell + 80;
-            p.FillRect(wx - 24, wy - 24, 208, 208, C(trim));
-            p.FillRect(wx, wy, 160, 160, C(isLit ? "#ffd98a" : "#2c3548"));
-            if (isLit) p.FillRect(wx, wy, 160, 24, C("#ffe9b8"));
+            float wx = c2 * cell + 56, wy = r * cell + 80;
+            Draw(wx - 24, wy - 24, 208, 208, C(trim));
+            Draw(wx, wy, 160, 160, C(isLit ? "#ffd98a" : "#2c3548"));
+            if (isLit) Draw(wx, wy, 160, 24, C("#ffe9b8"));
             else
             {
                 if (R.Next() < 0.35)
                 {
-                    p.FillRect(wx + 16, wy + 16, 56, 24, C("rgba(170,195,225,0.30)"));
-                    p.FillRect(wx + 32, wy + 40, 40, 24, C("rgba(170,195,225,0.30)"));
+                    Draw(wx + 16, wy + 16, 56, 24, C("rgba(170,195,225,0.30)"));
+                    Draw(wx + 32, wy + 40, 40, 24, C("rgba(170,195,225,0.30)"));
                 }
-                p.FillRect(wx + 76, wy, 8, 160, C(trim));
-                p.FillRect(wx, wy + 76, 160, 8, C(trim));
+                Draw(wx + 76, wy, 8, 160, C(trim));
+                Draw(wx, wy + 76, 160, 8, C(trim));
             }
-            if (kind <= 1 && !isLit) p.FillRect(wx, wy, 160, 56, C("#a08b80"));
+            if (kind <= 1 && !isLit) Draw(wx, wy, 160, 56, C("#a08b80"));
             if (kind == 2 && !isLit)
             {
-                p.FillRect(wx, wy + 168, 160, 40, C("#3f6e35"));
-                for (int i = 0; i < 5; i++) p.FillRect(wx + 16 + i * 32, wy + 152, 16, 24, C("#4a8743"));
+                Draw(wx, wy + 168, 160, 40, C("#3f6e35"));
+                for (int i = 0; i < 5; i++) Draw(wx + 16 + i * 32, wy + 152, 16, 24, C("#4a8743"));
             }
-            p.FillRect(wx, wy + 136, 160, 24, C("rgba(0,0,0,0.3)"));
-            p.FillRect(wx, wy + 208, 160, 24, C("rgba(0,0,0,0.22)"));
-            p.FillRect(wx, wy + 184, 160, 16, C("rgba(255,255,255,0.05)"));
+            Draw(wx, wy + 136, 160, 24, C("rgba(0,0,0,0.3)"));
+            Draw(wx, wy + 208, 160, 24, C("rgba(0,0,0,0.22)"));
+            Draw(wx, wy + 184, 160, 16, C("rgba(255,255,255,0.05)"));
             if (kind == 3)
             {
-                p.FillRect(wx + 24, wy + 208, 104, 80, C("#9aa2ac"));
-                for (int i = 0; i < 3; i++) p.FillRect(wx + 32, wy + 220 + i * 20, 88, 8, C("rgba(0,0,0,0.15)"));
-                p.FillRect(wx + 24, wy + 264, 104, 24, C("rgba(0,0,0,0.25)"));
+                Draw(wx + 24, wy + 208, 104, 80, C("#9aa2ac"));
+                for (int i = 0; i < 3; i++) Draw(wx + 32, wy + 220 + i * 20, 88, 8, C("rgba(0,0,0,0.15)"));
+                Draw(wx + 24, wy + 264, 104, 24, C("rgba(0,0,0,0.25)"));
             }
             if (r > 0 && kind == 4 && !isLit)
             {
-                p.FillRect(wx - 24, wy + 216, 208, 16, C("#cfc9ba"));
-                for (int bxx = 0; bxx < 12; bxx++) p.FillRect(wx - 16 + bxx * 16, wy + 168, 8, 48, C("#b8b0a2"));
+                Draw(wx - 24, wy + 216, 208, 16, C("#cfc9ba"));
+                for (int bxx = 0; bxx < 12; bxx++) Draw(wx - 16 + bxx * 16, wy + 168, 8, 48, C("#b8b0a2"));
             }
         }
         if (banner)
         {
-            int by = cell + 352;
-            p.FillRect(96, by + 208, W - 192, 24, C("rgba(0,0,0,0.18)"));
-            p.FillRect(96, by, W - 192, 208, C("#c0392b"));
-            p.FillRect(96, by, W - 192, 12, C("rgba(255,255,255,0.12)"));
-            for (int x = 208; x < W - 304; x += 176) p.FillRect(x, by + 56, 104, 96, C("#f5d04e"));
+            float by = cell + 352;
+            Draw(96, by + 208, aw - 192, 24, C("rgba(0,0,0,0.18)"));
+            Draw(96, by, aw - 192, 208, C("#c0392b"));
+            Draw(96, by, aw - 192, 12, C("rgba(255,255,255,0.12)"));
+            for (float x = 208; x < aw - 304; x += 176) Draw(x, by + 56, 104, 96, C("#f5d04e"));
         }
         // 写实化：立面下段渐脏（雨水/泥沙沉积）+ 随机窗下雨痕（低对比，避免显脏）
         for (int i = 0; i < 12; i++)
-            p.FillRect(0, H - 360 + i * 30, W, 30, new Color(0.16f, 0.13f, 0.10f, 0.010f + i * 0.0045f));
+            Draw(0, ah - 360 + i * 30, aw, 30, new Color(0.16f, 0.13f, 0.10f, 0.010f + i * 0.0045f));
         for (int r = 0; r < rows; r++) for (int c2 = 0; c2 < cols; c2++)
             if (R.Next() < 0.35)
-                p.FillRect(c2 * cell + 70 + R.Int(120), r * cell + 232, 8 + R.Int(12), 40 + R.Int(120), C("rgba(45,38,30,0.055)"));
+                Draw(c2 * cell + 70 + R.Int(120), r * cell + 232, 8 + R.Int(12), 40 + R.Int(120), C("rgba(45,38,30,0.055)"));
         return p;
     }
 
@@ -580,39 +592,44 @@ public static class TextureLibrary
 
     static Px Villa()
     {
-        var p = new Px(256, 192, 5);   // 物理 1280×960，铺在别墅立面 8.4×5.4m 上 ≈ 152×178px/米
-                                       // （贴图 4:3 与立面 1.56:1 比例不符 → 横纵仍差 1.17 倍，待重画/分块）
-        p.FillRect(0, 0, 256, 100, C("#ece5d6"));
-        p.FillRect(0, 0, 256, 4, C("#d9d2c2"));
-        p.FillRect(0, 92, 256, 8, C("rgba(0,0,0,0.12)"));
+        // 按世界比例绘制（美术坐标沿用 256×192 布局）：世界 8.4×5.4m → D=166 → 1394×896px，密度恒定
+        const float aw = 256f, ah = 192f;
+        float D = FacadeDensity(Wd.VILLA.w, Wd.VILLA.h);
+        var p = new Px(Mathf.RoundToInt(Wd.VILLA.w * D), Mathf.RoundToInt(Wd.VILLA.h * D));
+        float sx = p.W / aw, sy = p.H / ah;
+        void Draw(float x, float y, float w2, float h2, Color c) => p.FillRect(x * sx, y * sy, w2 * sx, h2 * sy, c);
+
+        Draw(0, 0, 256, 100, C("#ece5d6"));
+        Draw(0, 0, 256, 4, C("#d9d2c2"));
+        Draw(0, 92, 256, 8, C("rgba(0,0,0,0.12)"));
         foreach (int wx in new[] { 36, 156 })
         {
-            p.FillRect(wx - 4, 26, 68, 60, C("#8a6a48"));
-            p.FillRect(wx, 30, 60, 52, C("#f0efe6"));
-            for (int i = 1; i < 4; i++) p.FillRect(wx + i * 15, 30, 2, 52, C("#8a6a48"));
-            for (int j = 1; j < 3; j++) p.FillRect(wx, 30 + j * 17, 60, 2, C("#8a6a48"));
-            p.FillRect(wx, 80, 60, 2, C("rgba(0,0,0,0.15)"));
+            Draw(wx - 4, 26, 68, 60, C("#8a6a48"));
+            Draw(wx, 30, 60, 52, C("#f0efe6"));
+            for (int i = 1; i < 4; i++) Draw(wx + i * 15, 30, 2, 52, C("#8a6a48"));
+            for (int j = 1; j < 3; j++) Draw(wx, 30 + j * 17, 60, 2, C("#8a6a48"));
+            Draw(wx, 80, 60, 2, C("rgba(0,0,0,0.15)"));
         }
         var wood = new[] { "#b98d5e", "#ad8153", "#c2955f", "#a87e52" };
         for (int x = 0; x < 256; x += 8)
         {
-            p.FillRect(x, 100, 8, 92, C(wood[(x / 8) % 4]));
-            p.FillRect(x, 100, 1, 92, C("rgba(0,0,0,0.14)"));
+            Draw(x, 100, 8, 92, C(wood[(x / 8) % 4]));
+            Draw(x, 100, 1, 92, C("rgba(0,0,0,0.14)"));
         }
-        void Shoji(int sx, int sw, int sy, int sh)
+        void Shoji(int sx0, int sw, int sy0, int sh)
         {
-            p.FillRect(sx - 3, sy - 3, sw + 6, sh + 6, C("#6b503a"));
-            p.FillRect(sx, sy, sw, sh, C("#f2efe2"));
-            for (int i = 1; i < (int)Math.Floor(sw / 14f); i++) p.FillRect(sx + i * 14, sy, 2, sh, C("#7a5a3e"));
-            for (int j = 1; j < (int)Math.Floor(sh / 14f); j++) p.FillRect(sx, sy + j * 14, sw, 2, C("#7a5a3e"));
+            Draw(sx0 - 3, sy0 - 3, sw + 6, sh + 6, C("#6b503a"));
+            Draw(sx0, sy0, sw, sh, C("#f2efe2"));
+            for (int i = 1; i < (int)Math.Floor(sw / 14f); i++) Draw(sx0 + i * 14, sy0, 2, sh, C("#7a5a3e"));
+            for (int j = 1; j < (int)Math.Floor(sh / 14f); j++) Draw(sx0, sy0 + j * 14, sw, 2, C("#7a5a3e"));
         }
         Shoji(104, 48, 108, 76);
         Shoji(16, 34, 116, 56);
         Shoji(196, 34, 116, 56);
         for (int i = 0; i < 90; i++)
-            p.FillRect(R.Int(256), 104 + R.Int(84), 2, 1, C(i % 2 == 0 ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"));
+            Draw(R.Int(256), 104 + R.Int(84), 2, 1, C(i % 2 == 0 ? "rgba(0,0,0,0.08)" : "rgba(255,255,255,0.06)"));
         for (int i = 0; i < 60; i++)
-            p.FillRect(R.Int(256), R.Int(88), 2, 2, C(i % 2 == 0 ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"));
+            Draw(R.Int(256), R.Int(88), 2, 2, C(i % 2 == 0 ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.06)"));
         return p;
     }
 
@@ -920,8 +937,11 @@ public static class TextureLibrary
                 if (b != null)
                 {
                     bool wing = parts[0] == "wing";
-                    return BuildingWall(b.wall, b.trim, b.plinth, wing ? 3 : b.cols, wing ? 2 : b.rows,
-                        !wing && b.banner, night ? 0.55f : 0.05f);
+                    if (wing)
+                        return BuildingWall(b.wall, b.trim, b.plinth, 3, 2, false, night ? 0.55f : 0.05f,
+                            4.6f, b.size[1] * 0.72f);
+                    return BuildingWall(b.wall, b.trim, b.plinth, b.cols, b.rows, b.banner, night ? 0.55f : 0.05f,
+                        b.size[0], b.size[1]);
                 }
             }
         }
@@ -933,16 +953,18 @@ public static class TextureLibrary
         if (name.StartsWith("dist_") && int.TryParse(name.Substring(5), out var idx) && idx >= 0 && idx < Wd.DISTANT_BUILDINGS.Length)
         {
             var d = Wd.DISTANT_BUILDINGS[idx];
-            return BuildingWall(d.wall, d.trim, d.plinth, Mathf.Max(2, Mathf.RoundToInt(d.w / 3f)), Mathf.Max(2, Mathf.RoundToInt(d.h / 1.7f)), false, 0.16f);
+            return BuildingWall(d.wall, d.trim, d.plinth, Mathf.Max(2, Mathf.RoundToInt(d.w / 3f)),
+                Mathf.Max(2, Mathf.RoundToInt(d.h / 1.7f)), false, 0.16f, d.w, d.h);
         }
         return Get(name, pixel, repeat);
     }
 
-    // 建筑/远景外墙需先按参数生成（非固定名）
-    public static Texture2D BuildingWall(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit)
+    // 建筑/远景外墙需先按参数生成（非固定名）。wMeters/hMeters = 被贴面的世界尺寸（决定像素密度与画布比例）
+    public static Texture2D BuildingWall(string wall, string trim, string plinth, int cols, int rows, bool banner, float lit,
+        float wMeters, float hMeters)
     {
         R = NewR();
-        var t = From(Building(wall, trim, plinth, cols, rows, banner, lit));
+        var t = From(Building(wall, trim, plinth, cols, rows, banner, lit, wMeters, hMeters));
         t.filterMode = FilterMode.Trilinear;
         t.anisoLevel = 9;
         t.wrapMode = TextureWrapMode.Repeat;
@@ -970,6 +992,14 @@ public static class TextureLibrary
         }
         var rv = RoofTex("#3a434e");
         File.WriteAllBytes(Path.Combine(dir, "roof_villa.png"), rv.EncodeToPNG());
+        // 立面（按世界比例生成的整张贴图）——核对密度与美术比例
+        foreach (var id in new[] { "teach", "gym", "kiosk" })
+        {
+            var b = Array.Find(Wd.BUILDINGS, x => x.id == id);
+            if (b != null)
+                File.WriteAllBytes(Path.Combine(dir, "wall_" + id + "_day.png"),
+                    BuildingWall(b.wall, b.trim, b.plinth, b.cols, b.rows, b.banner, 0.05f, b.size[0], b.size[1]).EncodeToPNG());
+        }
         Debug.Log("[TextureLibrary] 已导出对拍贴图 -> " + dir);
     }
 }

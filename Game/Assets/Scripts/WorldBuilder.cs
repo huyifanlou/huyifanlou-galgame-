@@ -469,7 +469,8 @@ public class WorldBuilder : MonoBehaviour
             grp.localEulerAngles = new Vector3(0f, b.face == 1 ? 0f : 180f, 0f);
 
             var wallMat = LitTex("wall_" + b.id + "_day");
-            Box(grp, Vector3.zero, new Vector3(w, h, d), wallMat);
+            // 世界尺度 UV：贴图覆盖 w×h 米 → 正/背/侧四面同密度（侧面显示立面左侧裁切，不再被拉伸）
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(w, h, d), w, h), Vector3.zero, wallMat);
             WindowMatRefs.Add(wallMat);
             WindowMats.Add(new[] { "wall_" + b.id + "_day", "wall_" + b.id + "_night" });
 
@@ -540,7 +541,7 @@ public class WorldBuilder : MonoBehaviour
                 // 侧翼贴着地面（原点放地面，避免盒子悬空——此前从楼体半高继承导致浮空 0.7m）
                 wg.localPosition = new Vector3(w / 2f + ww / 2f, -h / 2f, 0.6f);
                 var wingMat = LitTex("wing_" + b.id + "_day");
-                Box(wg, new Vector3(0, wh / 2f, 0), new Vector3(ww, wh, d * 0.8f), wingMat);
+                MeshObj(wg, MeshFactory.BoxUV(new Vector3(ww, wh, d * 0.8f), ww, wh), new Vector3(0, wh / 2f, 0), wingMat);
                 WindowMatRefs.Add(wingMat);
                 WindowMats.Add(new[] { "wing_" + b.id + "_day", "wing_" + b.id + "_night" });
                 Box(wg, new Vector3(0, wh + 0.14f, 0), new Vector3(ww + 0.5f, 0.28f, d * 0.8f + 0.5f), ColMat(b.roof));
@@ -587,10 +588,10 @@ public class WorldBuilder : MonoBehaviour
         float slope2 = (d * 0.3f) / Mathf.Cos(a2) + 0.6f;
         float y2 = h / 2f + 1.5f;
 
-        Box(grp, Vector3.zero, new Vector3(w, h, d), body);
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w, h, d), w, h), Vector3.zero, body);
         Box(grp, new Vector3(0, y1, d / 4f + 0.15f), new Vector3(w + 2.6f, 0.26f, slope1), tile, new Vector3(a1 * Mathf.Rad2Deg, 0, 0));
         Box(grp, new Vector3(0, y1, -d / 4f - 0.15f), new Vector3(w + 2.6f, 0.26f, slope1), tile, new Vector3(-a1 * Mathf.Rad2Deg, 0, 0));
-        Box(grp, new Vector3(0, y1 + 0.6f, 0), new Vector3(w * 0.72f, 1.22f, d * 0.6f), body);
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w * 0.72f, 1.22f, d * 0.6f), w, h), new Vector3(0, y1 + 0.6f, 0), body);
 
         foreach (int s in new[] { -1, 1 })
         {
@@ -734,7 +735,7 @@ public class WorldBuilder : MonoBehaviour
             var grp = NewGo("d" + i, g).transform;
             grp.localPosition = new Vector3(b.x, b.h / 2f, b.z);
             var texName = "dist_" + i.ToString("D2");
-            Box(grp, Vector3.zero, new Vector3(b.w, b.h, b.d), LitTex(texName));
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(b.w, b.h, b.d), b.w, b.h), Vector3.zero, LitTex(texName));
             Box(grp, new Vector3(0, -b.h / 2f + 0.25f, 0), new Vector3(b.w + 0.5f, 0.5f, b.d + 0.5f), ColMat(b.plinth));
             if (b.style == "gable")
             {

@@ -50,13 +50,14 @@ public static class MeshFactory
         return m;
     }
 
-    // 世界尺度 UV 的立方体（叶簇/树皮这类贴图要「每面密度恒定」的箱体）
+    // 世界尺度 UV 的立方体（叶簇/树皮/建筑立面这类贴图要「每面密度恒定」的箱体）
     // 做法：以已验证的 Quad（法线 +Y）/ QuadZ（法线 +Z）为模板，逐面旋转+平移 —— 旋转不改变绕序，
-    // 镜像面（-Y/-Z）单独反转三角顺序。UV = 面尺寸 / texMeters → 贴图密度恒为 texMeters。
-    public static Mesh BoxUV(Vector3 size, float texMeters)
+    // 镜像面（-Y/-Z）单独反转三角顺序。UV = 面尺寸 / 贴图覆盖米数 → 每面像素密度恒定。
+    // texU/texV：贴图在 U/V 方向上覆盖的世界米数（方形贴图传同一个值）
+    public static Mesh BoxUV(Vector3 size, float texU, float texV)
     {
         float hx = size.x * 0.5f, hy = size.y * 0.5f, hz = size.z * 0.5f;
-        float ux = size.x / texMeters, uy = size.y / texMeters, uz = size.z / texMeters;
+        float ux = size.x / texU, uy = size.y / texV, uz = size.z / texU;
         var verts = new List<Vector3>();
         var uvs = new List<Vector2>();
         var tris = new List<int>();
@@ -88,6 +89,9 @@ public static class MeshFactory
         m.RecalculateBounds();
         return m;
     }
+
+    // 方形贴图（树冠/树皮）的简写
+    public static Mesh BoxUV(Vector3 size, float texMeters) => BoxUV(size, texMeters, texMeters);
 
     // 圆锥（松树/柏树用；flat shading = 每面独立顶点）
     // texMeters > 0 时写 UV（u 沿周长展开、v 沿高度），用于叶片类材质
