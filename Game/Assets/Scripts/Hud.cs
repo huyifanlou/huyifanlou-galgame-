@@ -54,7 +54,7 @@ public class Hud : MonoBehaviour
         // 左上：标题 + 操作说明
         GUI.Label(new Rect(16, 10, 900, 28), "（游戏名待定）· 校园叙事 RPG（Unity 版）", _title);
         GUI.Label(new Rect(16, 36, 1100, 24),
-            "WASD / 方向键 移动 ｜ V 第一/第三人称 ｜ F 交互 ｜ Q / E 转视角 ｜ 拖拽 / 滚轮 视角 ｜ 0/1/2/3 时间速度 ｜ T +12h ｜ [ ] ±1h", _hint);
+            "WASD / 方向键 移动 ｜ V 视角 ｜ F 交互 ｜ Q / E 转视角 ｜ 0/1/2/3 时间速度 ｜ T +12h ｜ [ ] ±1h ｜ Y 天气", _hint);
 
         // 右上：时间刻度（第 N 天 · ☀/🌙 HH:MM · 速度）
         float h = Time.Hour;
@@ -62,7 +62,8 @@ public class Hud : MonoBehaviour
         int hh = Mathf.FloorToInt(h);
         int mm = Mathf.FloorToInt(Time.GameMinutes % 60f);
         string speed = Time.TimeSpeed <= 0f ? "暂停" : $"{Time.TimeSpeed}×";
-        GUI.Label(new Rect(W - 340, 12, 320, 24), $"第 {Time.DayNum} 天 · {icon} {hh:D2}:{mm:D2} · {speed}", _clock);
+        string wname = string.IsNullOrEmpty(Time.WeatherName) ? "" : " · " + Time.WeatherName;
+        GUI.Label(new Rect(W - 420, 12, 400, 24), $"第 {Time.DayNum} 天 · {icon} {hh:D2}:{mm:D2} · {speed}{wname}", _clock);
 
         // 底部中央：交互提示
         if (!string.IsNullOrEmpty(Time.Near))

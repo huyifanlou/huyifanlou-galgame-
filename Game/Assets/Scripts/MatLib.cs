@@ -112,7 +112,26 @@ public static class MatLib
         return m;
     }
 
-    // 大面片的不透明裁切（操场跑道这类「只画跑道面、其余透出地形草」的贴片）：
+    // 受光半透明（雪层这类叠在地形上的大面积薄层）：Standard Transparent，参与光照与雾
+    public static Material Transparent(string texName, float smoothness = 0f, float alpha = 1f)
+    {
+        var m = new Material(Shader.Find("Standard"));
+        m.mainTexture = Tex(texName, pixel: false, repeat: true);
+        m.SetFloat("_Metallic", 0f);
+        m.SetFloat("_Glossiness", smoothness);
+        m.color = new Color(1f, 1f, 1f, alpha);
+        m.SetFloat("_Mode", 3f);
+        m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.SetInt("_ZWrite", 0);
+        m.DisableKeyword("_ALPHATEST_ON");
+        m.EnableKeyword("_ALPHABLEND_ON");
+        m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        m.renderQueue = 3000;
+        return m;
+    }
+
+    // 大面片的不透明裁切    // 大面片的不透明裁切（操场跑道这类「只画跑道面、其余透出地形草」的贴片）：
     // 与 Sprite 同样的 Cutout 配置，但采样用 Trilinear（远处不闪）
     public static Material Cutout(string texName, float smoothness = 0f)
     {

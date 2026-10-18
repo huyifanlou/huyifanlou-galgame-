@@ -469,6 +469,53 @@ public static class TextureLibrary
         return p;
     }
 
+    // 雨丝（粒子用：极窄的柔边竖线，纵向渐隐）
+    static Px RainStreak()
+    {
+        var p = new Px(16, 64);
+        for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 16; x++)
+            {
+                float d = Mathf.Abs(x - 7.5f) / 8f;
+                float fade = y < 6 ? y / 6f : (y > 58 ? (64 - y) / 6f : 1f);
+                float a = Mathf.Clamp01(1f - d) * fade * 0.5f;
+                if (a > 0.02f) p.FillRect(x, y, 1, 1, new Color(0.80f, 0.87f, 0.95f, a));
+            }
+        return p;
+    }
+
+    // 雪花（柔边圆点）
+    static Px SnowFlake()
+    {
+        var p = new Px(32, 32);
+        for (int y = 0; y < 32; y++)
+            for (int x = 0; x < 32; x++)
+            {
+                float d = Mathf.Sqrt((x - 15.5f) * (x - 15.5f) + (y - 15.5f) * (y - 15.5f)) / 15.5f;
+                float a = Mathf.Clamp01(1f - d);
+                a = a * a * 0.95f;
+                if (a > 0.02f) p.FillRect(x, y, 1, 1, new Color(1f, 1f, 1f, a));
+            }
+        return p;
+    }
+
+    // 积雪地面（叠在地形上的雪层；轻微起伏的冷调阴影 + 雪粒高光）——覆盖 1.667m（与草地同周期）
+    static Px SnowGround()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#eef1f5"));
+        for (int i = 0; i < 240; i++)
+        {
+            int x = R.Int(246), y = R.Int(246);
+            p.FillRect(x, y, 8 + R.Int(16), 5 + R.Int(9), C(R.Int(2) == 0 ? "rgba(198,208,222,0.32)" : "rgba(255,255,255,0.55)"));
+        }
+        for (int i = 0; i < 260; i++)
+            p.FillRect(R.Int(254), R.Int(254), 2, 2, C(R.Int(3) == 0 ? "rgba(255,255,255,0.85)" : "rgba(206,215,227,0.5)"));
+        for (int i = 0; i < 40; i++)
+            p.FillRect(R.Int(252), R.Int(252), 1, 1, C("rgba(255,255,255,1)"));
+        return p;
+    }
+
     // 树皮（可染色）：近白底 + 竖向沟槽/裂纹/苔点 —— 世界尺度 0.6m = 160px/米
     static Px Bark()
     {
@@ -931,6 +978,7 @@ public static class TextureLibrary
         {
             "grass" => Grass(), "path" => PathTex(), "flower" => Flower(), "dirt" => Dirt(),
             "leaves" => Leaves(), "bark" => Bark(), "concrete" => Concrete(),
+            "rain_streak" => RainStreak(), "snow_flake" => SnowFlake(), "snow_ground" => SnowGround(),
             "track" => Track(), "pond" => Pond(), "sky_day" => SkyDay(), "sky_night" => SkyNight(),
             "lamp_glow" => LampGlow(), "roof_villa" => Roof("#3a434e"), "villa" => Villa(),
             "player" => Character(), "door" => Door(), "awning" => Stripes(),
@@ -1035,7 +1083,7 @@ public static class TextureLibrary
     public static void DumpAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
+        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "rain_streak", "snow_flake", "snow_ground", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
         {
             var t = Get(n, true, true);
             File.WriteAllBytes(Path.Combine(dir, n + ".png"), t.EncodeToPNG());

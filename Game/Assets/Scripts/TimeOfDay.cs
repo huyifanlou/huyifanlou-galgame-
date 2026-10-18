@@ -12,12 +12,14 @@ public class TimeOfDay : MonoBehaviour
     float _toastUntil;
     WorldBuilder _w;
     Light _dir, _up;
+    Weather _wth;
     bool _winNight;
     PostFX _post;
 
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
     public string Near { get; set; }         // 面前可交互地点名（由 PlayerRig 写入，Hud 显示）
+    public string WeatherName = "";          // 天气标签（由 Weather 写入，Hud 显示）
 
     // —— web 版配色常量 ——
     static readonly Color DAY_HEMI_SKY = MatLib.Hex("#d8ecff");
@@ -156,17 +158,26 @@ public class TimeOfDay : MonoBehaviour
         float warm = WarmAt(h) * (1f - m * 0.65f);
         Mix = m;
 
+        // 天气调制（雨/雪：压直射、抬/压环境、雾更近、日影变软）
+        if (_wth == null) _wth = GetComponent<Weather>();
+        float wFog = _wth != null ? _wth.FogAmt : 0f;
+        float wSun = _wth != null ? _wth.SunMul : 1f;
+        float wAmb = _wth != null ? _wth.AmbMul : 1f;
+        float wShadow = _wth != null ? _wth.ShadowMul : 1f;
+
         // 环境光（ambient + 半球地面色）：0.28 的天空权重 → 阴影偏冷蓝（写实：天光主导阴影）
         Color gnd = Color.Lerp(DAY_HEMI_GND, NIGHT_HEMI_GND, m);
         Color sky = Color.Lerp(DAY_HEMI_SKY, NIGHT_HEMI_SKY, m);
         Color amb = Color.Lerp(sky, gnd, 0.28f);
-        float ambI = Mathf.Lerp(DAY_AMB, NIGHT_AMB, m);
+        float ambI = Mathf.Lerp(DAY_AMB, NIGHT_AMB, m) * wAmb;
         RenderSettings.ambientLight = new Color(amb.r * ambI, amb.g * ambI, amb.b * ambI, 1f);
 
         if (_dir != null)
         {
-            _dir.intensity = Mathf.Lerp(DAY_DIR_I, NIGHT_DIR_I, m);
-            _dir.color = Color.Lerp(Color.Lerp(DAY_DIR, NIGHT_DIR, m), WARM_DIR, warm * 0.75f);
+            _dir.intensity = Mathf.Lerp(DAY_DIR_I, NIGHT_DIR_I, m) * wSun;
+            var baseDir = Color.Lerp(Color.Lerp(DAY_DIR, NIGHT_DIR, m), WARM_DIR, warm * 0.75f);
+            _dir.color = _wth != null && wFog > 0.001f ? Color.Lerp(baseDir, _wth.SunTint, wFog * 0.75f) : baseDir;
+            _dir.shadowStrength = Mathf.Lerp(0.95f, 0.22f, wFog) * Mathf.Lerp(1f, 0.85f, m);
         }
         if (_up != null)
         {
@@ -174,10 +185,13 @@ public class TimeOfDay : MonoBehaviour
             _up.color = sky;
         }
 
-        // 雾
-        RenderSettings.fogColor = Color.Lerp(Color.Lerp(DAY_FOG, NIGHT_FOG, m), WARM_FOG, warm * 0.45f);
-        RenderSettings.fogStartDistance = Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m);
-        RenderSettings.fogEndDistance = Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m);
+        // 雾（雨雪：更近、更灰/更白）
+        var fogBase = Color.Lerp(Color.Lerp(DAY_FOG, NIGHT_FOG, m), WARM_FOG, warm * 0.45f);
+        RenderSettings.fogColor = _wth != null && wFog > 0.001f ? Color.Lerp(fogBase, _wth.FogTint, wFog) : fogBase;
+        float fogNearMul = _wth != null ? _wth.FogNearMul : 1f;
+        float fogFarMul = _wth != null ? _wth.FogFarMul : 1f;
+        RenderSettings.fogStartDistance = Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m) * fogNearMul;
+        RenderSettings.fogEndDistance = Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m) * fogFarMul;
 
         // 天空双穹：夜穹淡入 + 白天穹晨昏染暖；星空缓转、云缓漂
         if (_w != null)
@@ -187,7 +201,7 @@ public class TimeOfDay : MonoBehaviour
             if (_w.SkyDayMat != null)
             {
                 float w2 = warm * (1f - m * 0.65f) * 0.8f;
-                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.42f);
+                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.42f * (_wth != null ? _wth.SkyMul : 1f));
                 var off = _w.SkyDayMat.mainTextureOffset;
                 _w.SkyDayMat.mainTextureOffset = new Vector2(off.x - Time.deltaTime * 0.0045f, off.y);
             }

@@ -18,6 +18,8 @@ public class WorldBuilder : MonoBehaviour
     // 昼夜双窗户：{material, 白天贴图名, 夜晚贴图名}——由 TimeOfDay 在夜里切换
     public readonly List<string[]> WindowMats = new List<string[]>();
     public readonly List<Material> WindowMatRefs = new List<Material>();
+    public readonly List<Material> LeafMats = new List<Material>();   // 叶簇材质（天气：雪天覆白）
+    public Material GrassMat;                                        // 草地材质（天气：雨天变暗）
     public Vector3 Spawn = new Vector3(0f, 0f, 4f);
 
     readonly Dictionary<string, Material> _cache = new Dictionary<string, Material>();
@@ -49,6 +51,7 @@ public class WorldBuilder : MonoBehaviour
             m = MatLib.Lit(tex, tu, tv);
             m.color = MatLib.Hex(hex);
             _cache[k] = m;
+            if (tex == "leaves" && !LeafMats.Contains(m)) LeafMats.Add(m);
         }
         return m;
     }
@@ -72,6 +75,20 @@ public class WorldBuilder : MonoBehaviour
         string k = "K|" + tex + "|" + smoothness;
         if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Cutout(tex, smoothness); _cache[k] = m; }
         return m;
+    }
+
+    // ── 积雪层（半透明薄层，Alpha 由天气驱动；雪停时禁用渲染器避免全屏 overdraw）──
+    Material _snowLayerMat;
+    Renderer _snowLayerR;
+    void SnowLayer()
+    {
+        float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
+        var go = NewGo("SnowLayer", Root);
+        _snowLayerMat = MatLib.Transparent("snow_ground", 0.18f, 0f);
+        float reps = gs / TexScale.GrassPeriod;
+        MeshObj(go.transform, MeshFactory.Quad(gs, gs, reps, reps), new Vector3(0, 0.028f, 0), _snowLayerMat, default, false, false);
+        _snowLayerR = go.GetComponentInChildren<Renderer>();
+        if (_snowLayerR != null) _snowLayerR.enabled = false;
     }
 
     // ── 原语 ──────────────────────────────────────────────────
@@ -260,6 +277,17 @@ public class WorldBuilder : MonoBehaviour
         if (hud != null) hud.Init(tod);
         var shot = GetComponent<ShotMode>();
         if (shot != null) shot.Init();
+
+        // 天气（雨/雪）：Y 键循环；-weather 直接指定
+        var wth = GetComponent<Weather>();
+        if (wth == null) wth = gameObject.AddComponent<Weather>();
+        var wet = new List<Material>
+        {
+            LitTex("path"), LitTex("road_mainstone"), LitTex("road_cobble"),
+            LitTex("track"), LitTex("court_basket"), LitTex("court_tennis"), LitTex("concrete"),
+            LitTex("roadband_v"), LitTex("roadband_h"), GrassMat,
+        };
+        wth.Init(Player, tod, wet, LeafMats, _snowLayerR, _snowLayerMat);
     }
 
     public WorldData BuildWorld()
@@ -282,6 +310,7 @@ public class WorldBuilder : MonoBehaviour
         Villa();
         Trees();
         Distant();
+        SnowLayer();
         Rockeries();
         Rocks();
         Bushes();
@@ -317,7 +346,8 @@ public class WorldBuilder : MonoBehaviour
     {
         float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
         var greps = TexScale.Repeat(gs, gs, TexScale.GrassPeriod);
-        Flat(Root, gs, gs, 0f, LitTex("grass"), greps.x, greps.y);
+        GrassMat = LitTex("grass", greps.x, greps.y);
+        Flat(Root, gs, gs, 0f, GrassMat, greps.x, greps.y);
         // 路网：竖路 y=0.012、横路 y=0.016（交叉处横路在上，与 web 版一致）
         var g = NewGo("Roads", Root).transform;
         foreach (var r in W.ROADS)
@@ -460,7 +490,8 @@ public class WorldBuilder : MonoBehaviour
 
     void Lamps()
     {
-        LampGlass = MatLib.UnlitColor(MatLib.Hex("#d5dbe4"));
+        // 灯罩玻璃：用受光材质（阴天/雨雪里不会凭空发白），夜里由 TimeOfDay 改成暖色 + 泛光
+        LampGlass = MatLib.LitColor(MatLib.Hex("#d5dbe4"), 0.35f);
         LampPool = MatLib.Additive("lamp_glow", new Color(1f, 1f, 1f, 0f));
         var g = NewGo("Lamps", Root).transform;
         foreach (var l in W.LAMPS)
@@ -585,8 +616,8 @@ public class WorldBuilder : MonoBehaviour
             Face(grp, 3.3f, 0.83f, new Vector3(0, h * 0.28f, d / 2f + 0.04f), LitTex("sign_" + b.id));
             Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f, d / 2f + 0.035f), LitTex("door"));
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, d / 2f + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
-            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
-            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
+            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
+            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
             Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             // 门前绿篱：叶簇贴图（与树冠同材质体系），世界尺度 UV
