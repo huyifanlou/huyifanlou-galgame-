@@ -22,23 +22,23 @@ public class TimeOfDay : MonoBehaviour
     // —— web 版配色常量 ——
     static readonly Color DAY_HEMI_SKY = MatLib.Hex("#d8ecff");
     static readonly Color DAY_HEMI_GND = MatLib.Hex("#3f5a36");
-    static readonly Color DAY_DIR = MatLib.Hex("#fff4da");
+    static readonly Color DAY_DIR = MatLib.Hex("#ffeecd");
     static readonly Color NIGHT_HEMI_SKY = MatLib.Hex("#31426b");
     static readonly Color NIGHT_HEMI_GND = MatLib.Hex("#141f19");
     static readonly Color NIGHT_DIR = MatLib.Hex("#9fb8e8");
     static readonly Color WARM_DIR = MatLib.Hex("#ff9a4a");
     static readonly Color WARM_FOG = MatLib.Hex("#e0b28e");
     static readonly Color WARM_SKY = MatLib.Hex("#ffcf9e");
-    static readonly Color DAY_FOG = MatLib.Hex("#cfe3f4");
+    static readonly Color DAY_FOG = MatLib.Hex("#bccad8");
     static readonly Color NIGHT_FOG = MatLib.Hex("#0e1626");
     static readonly Color GLASS_OFF = MatLib.Hex("#d5dbe4");
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
-    // 写实化（2026-10-17）：白天提高「直射 : 环境」比 → 影子更深、受光面更亮；阴影色偏天空蓝（降绿），
-    // 形成「暖阳 + 冷影」的色温分离。夜晚维持原值（此前按可读性校准过，不再压暗）。
-    const float DAY_AMB = 0.20f, DAY_HEMI = 0.14f, DAY_DIR_I = 1.00f;
-    const float NIGHT_AMB = 0.34f, NIGHT_HEMI = 0.20f, NIGHT_DIR_I = 0.58f;
-    const float DAY_FOG_NEAR = 62f, DAY_FOG_FAR = 158f;
-    const float NIGHT_FOG_NEAR = 48f, NIGHT_FOG_FAR = 138f;
+    // 写实向（2026-10-18 第二版）：压低整体曝光 + 保住「直射 : 环境」比 → 不再晃眼、层次更厚
+    // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
+    const float DAY_AMB = 0.155f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
+    const float NIGHT_AMB = 0.28f, NIGHT_HEMI = 0.18f, NIGHT_DIR_I = 0.52f;
+    const float DAY_FOG_NEAR = 52f, DAY_FOG_FAR = 142f;
+    const float NIGHT_FOG_NEAR = 44f, NIGHT_FOG_FAR = 132f;
 
     public static float Smooth(float x) => x * x * (3f - 2f * x);
 
@@ -187,7 +187,7 @@ public class TimeOfDay : MonoBehaviour
             if (_w.SkyDayMat != null)
             {
                 float w2 = warm * (1f - m * 0.65f) * 0.8f;
-                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.5f);
+                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.42f);
                 var off = _w.SkyDayMat.mainTextureOffset;
                 _w.SkyDayMat.mainTextureOffset = new Vector2(off.x - Time.deltaTime * 0.0045f, off.y);
             }
@@ -200,8 +200,9 @@ public class TimeOfDay : MonoBehaviour
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
-            _post.BloomIntensity = Mathf.Lerp(0.28f, 0.60f, m);
-            _post.VigStrength = Mathf.Lerp(0.56f, 0.68f, m);
+                _post.BloomIntensity = Mathf.Lerp(0.14f, 0.55f, m);
+                _post.VigStrength = Mathf.Lerp(0.60f, 0.70f, m);
+                _post.Threshold = Mathf.Lerp(0.86f, 0.72f, m);
             }
 
             // 建筑窗户：昼夜双贴图（阈值 0.45，跨阈值才切换）

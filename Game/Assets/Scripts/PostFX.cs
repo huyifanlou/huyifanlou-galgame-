@@ -5,10 +5,12 @@ using UnityEngine;
 [RequireComponent(typeof(Camera))]
 public class PostFX : MonoBehaviour
 {
-    public float BloomIntensity = 0.40f;
+    public float BloomIntensity = 0.14f;
     public float VigStrength = 0.60f;
-    public float Threshold = 0.72f;
+    public float Threshold = 0.86f;   // 只有真正的高光（灯/窗）才泛光，白天路面不再发白光
     public float DofMax = 0.7f;
+    public float Saturation = 1.04f;  // 写实向：轻微去糖
+    public float Contrast = 1.06f;    // 亮度压低后略提对比，保住层次
 
     Material _mat;
 
@@ -61,6 +63,8 @@ public class PostFX : MonoBehaviour
         _mat.SetFloat("_BloomIntensity", BloomIntensity);
         _mat.SetFloat("_VigStrength", 1f - VigStrength);
         _mat.SetFloat("_DofMax", DofMax);
+        _mat.SetFloat("_Saturation", Saturation);
+        _mat.SetFloat("_Contrast", Contrast);
         Graphics.Blit(src, dst, _mat, 2);
 
         RenderTexture.ReleaseTemporary(bloomA); RenderTexture.ReleaseTemporary(bloomB);
