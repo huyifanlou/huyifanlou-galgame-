@@ -434,27 +434,38 @@ public static class TextureLibrary
         return p;
     }
 
-    // 混凝土/水刷石（矮墙、压顶、立柱用）：骨料颗粒 + 气孔 + 细裂纹 + 墙脚潮痕/苔点
-    // 世界尺度 0.8m = 160px/米
+    // 混凝土矮墙（矮墙/立柱用）：384px 覆盖 2.4m = 160px/米 —— 关键特征做到「分米级」，
+    // 远处也读得出来：砌筑缝每 2.4m、墙脚深色勒脚带、细骨料颗粒、气孔、污渍/裂纹。
     static Px Concrete()
     {
-        var p = new Px(128, 128);
-        p.FillRect(0, 0, 128, 128, C("#c8c2b4"));
-        for (int i = 0; i < 900; i++)
-            p.FillRect(R.Int(126), R.Int(126), 1 + R.Int(2), 1 + R.Int(2),
-                C(R.Int(3) == 0 ? "rgba(255,255,255,0.16)" : (R.Int(2) == 0 ? "rgba(90,84,74,0.13)" : "rgba(150,144,132,0.15)")));
-        for (int i = 0; i < 120; i++)
-            p.FillRect(R.Int(126), R.Int(126), 1, 1, C("rgba(70,64,56,0.22)"));
-        for (int i = 0; i < 6; i++)
+        var p = new Px(384, 384);   // 2.4m 见方（160px/米）
+        p.FillRect(0, 0, 384, 384, C("#c6bfb0"));
+        // 骨料颗粒（1~5px ≈ 0.6~3cm）
+        for (int i = 0; i < 2400; i++)
+            p.FillRect(R.Int(380), R.Int(380), 1 + R.Int(4), 1 + R.Int(3),
+                C(R.Int(3) == 0 ? "rgba(255,255,255,0.14)" : (R.Int(2) == 0 ? "rgba(90,84,74,0.12)" : "rgba(150,144,132,0.14)")));
+        // 气孔
+        for (int i = 0; i < 320; i++)
+            p.FillRect(R.Int(380), R.Int(380), 1, 1, C("rgba(70,64,56,0.20)"));
+        // 砌筑缝（每 2.4m 一道，宽 6px ≈ 3.75cm；带一条亮边模拟倒角）
+        p.FillRect(0, 0, 6, 384, C("rgba(70,64,56,0.30)"));
+        p.FillRect(6, 0, 2, 384, C("rgba(255,255,255,0.12)"));
+        // 墙脚勒脚带（贴图底部 28px ≈ 0.18m：颜色更深 + 顶边一条分界线）
+        p.FillRect(0, 384 - 28, 384, 28, new Color(0.46f, 0.43f, 0.38f, 0.55f));
+        p.FillRect(0, 384 - 30, 384, 2, C("rgba(60,56,48,0.30)"));
+        for (int i = 0; i < 60; i++)
+            p.FillRect(R.Int(378), 384 - 26 + R.Int(24), 2 + R.Int(3), 2, C("rgba(52,54,36,0.22)"));   // 苔点
+        // 雨痕/污渍（竖向拖尾）+ 细裂纹
+        for (int i = 0; i < 10; i++)
         {
-            int x = R.Int(110), y = R.Int(90);
-            for (int k = 0; k < 10; k++) p.FillRect(x + k * 2 + R.Int(2), y + R.Int(3) + k * 2, 2, 1, C("rgba(80,74,66,0.16)"));
+            int x = R.Int(370), w = 6 + R.Int(18), h = 40 + R.Int(120);
+            p.FillRect(x, R.Int(60), w, h, C("rgba(70,64,54,0.07)"));
         }
-        // 墙脚潮痕（贴图底部 = 墙体底部）+ 苔点
-        for (int i = 0; i < 16; i++)
-            p.FillRect(0, 108 + i, 128, 1, new Color(0.20f, 0.18f, 0.15f, 0.045f + i * 0.004f));
-        for (int i = 0; i < 28; i++)
-            p.FillRect(R.Int(124), 112 + R.Int(14), 2 + R.Int(2), 1, C("rgba(60,62,40,0.16)"));
+        for (int i = 0; i < 5; i++)
+        {
+            int x = 20 + R.Int(330), y = 20 + R.Int(320);
+            for (int k = 0; k < 12; k++) p.FillRect(x + k * 2 + R.Int(2), y + R.Int(3) + k * 2, 2, 1, C("rgba(80,74,66,0.16)"));
+        }
         return p;
     }
 

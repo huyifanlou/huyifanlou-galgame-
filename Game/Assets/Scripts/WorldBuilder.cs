@@ -439,17 +439,21 @@ public class WorldBuilder : MonoBehaviour
             var run = NewGo("wall", g).transform;
             var wallSize = f.axis == "z" ? new Vector3(0.26f, 0.6f, len) : new Vector3(len, 0.6f, 0.26f);
             var wallPos = f.axis == "z" ? new Vector3(f.at, 0.3f, mid) : new Vector3(mid, 0.3f, f.at);
-            // 写实化：混凝土贴图 + 世界尺度 UV（0.8m 一铺；四面同密度，墙脚潮痕/气孔可见）
-            MeshObj(run, MeshFactory.BoxUV(wallSize, 0.8f), wallPos, LitTex("concrete"));
-            var capSize = f.axis == "z" ? new Vector3(0.36f, 0.08f, len) : new Vector3(len, 0.08f, 0.36f);
-            var capPos = f.axis == "z" ? new Vector3(f.at, 0.64f, mid) : new Vector3(mid, 0.64f, f.at);
-            MeshObj(run, MeshFactory.BoxUV(capSize, 0.8f), capPos, LitTinted("concrete", "#cfcabf"));
+            // 写实化：混凝土贴图 + 世界尺度 UV（2.4m 一铺 = 每 2.4m 一道砌筑缝；墙脚勒脚带）
+            MeshObj(run, MeshFactory.BoxUV(wallSize, 2.4f), wallPos, LitTex("concrete"));
+            // 压顶：浅色压顶石（高 12cm、外挑 6cm）——和墙身形成明显两段色，远处也读得出「墙」
+            var capSize = f.axis == "z" ? new Vector3(0.38f, 0.12f, len) : new Vector3(len, 0.12f, 0.38f);
+            var capPos = f.axis == "z" ? new Vector3(f.at, 0.66f, mid) : new Vector3(mid, 0.66f, f.at);
+            MeshObj(run, MeshFactory.BoxUV(capSize, 0.8f), capPos, ColMatGloss("#e9e3d6", 0.20f));
             int count = Mathf.Max(1, Mathf.FloorToInt(len / 5.6f));
             for (int i = 0; i <= count; i++)
             {
                 float t = f.from + len * i / count;
                 var pos = f.axis == "z" ? new Vector3(f.at, 0.44f, t) : new Vector3(t, 0.44f, f.at);
-                MeshObj(run, MeshFactory.BoxUV(new Vector3(0.4f, 0.88f, 0.4f), 0.8f), pos, LitTinted("concrete", "#d0cabd"));
+                MeshObj(run, MeshFactory.BoxUV(new Vector3(0.4f, 0.88f, 0.4f), 2.4f), pos, LitTinted("concrete", "#d4cec1"));
+                // 立柱压顶石（浅色小方帽 → 远处也能看出"墙柱"节奏）
+                MeshObj(run, MeshFactory.BoxUV(new Vector3(0.46f, 0.09f, 0.46f), 0.8f),
+                    pos + new Vector3(0f, 0.485f, 0f), ColMatGloss("#e9e3d6", 0.20f));
             }
         }
     }

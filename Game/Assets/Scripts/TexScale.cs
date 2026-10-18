@@ -40,6 +40,6 @@ public static class TexScale
         ["roadband_h"] = new Vector2(1f, 0.6f),
         ["leaves"] = new Vector2(LeafMeters, LeafMeters),   // 树冠（世界尺度 UV 箱体/锥体）
         ["bark"] = new Vector2(BarkMeters, BarkMeters),     // 树干
-        ["concrete"] = new Vector2(0.8f, 0.8f),             // 矮墙/压顶/立柱：128px → 160px/米
+        ["concrete"] = new Vector2(2.4f, 2.4f),             // 矮墙/立柱：384px → 160px/米（含每 2.4m 砌筑缝）
     };
 }
