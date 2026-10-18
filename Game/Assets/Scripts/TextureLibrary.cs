@@ -105,6 +105,22 @@ public static class TextureLibrary
                     if (InRound((xx + 0.5f) * inv, (yy + 0.5f) * inv, x, y, w, h, r)) Set(xx, yy, c);
         }
 
+        // 擦除成透明（挖空）：用于「透出下层地形」的贴片（操场跑道内场）
+        public void ClearRound(float x, float y, float w, float h, float r)
+        {
+            float inv = 1f / S;
+            for (int yy = Mathf.FloorToInt(y * S); yy <= Mathf.CeilToInt((y + h) * S); yy++)
+                for (int xx = Mathf.FloorToInt(x * S); xx <= Mathf.CeilToInt((x + w) * S); xx++)
+                    if (InRound((xx + 0.5f) * inv, (yy + 0.5f) * inv, x, y, w, h, r) && xx >= 0 && yy >= 0 && xx < PW && yy < PH)
+                        Buf[yy * PW + xx] = new Color(0, 0, 0, 0);
+        }
+
+        public void Clear(int x, int y)
+        {
+            if (x < 0 || y < 0 || x >= PW || y >= PH) return;
+            Buf[y * PW + x] = new Color(0, 0, 0, 0);
+        }
+
         public void StrokeRound(float x, float y, float w, float h, float r, float lw, Color c)
         {
             float inv = 1f / S;
@@ -352,15 +368,26 @@ public static class TextureLibrary
 
     static Px Flower()
     {
-        var p = new Px(64, 64, 4);   // 物理 256×256，覆盖 1.7m ≈ 150.6px/米（基准 ±6% 内；草格仍 10.6cm）
-        for (int y = 0; y < 64; y += 4) for (int x = 0; x < 64; x += 4)
-            p.FillRect(x, y, 4, 4, C((x + y) % 8 == 0 ? "#54904b" : "#4a8743"));
-        var colors = new[] { "#e8748a", "#f2d857", "#f4f2ea", "#c58ae0" };
-        for (int i = 0; i < 18; i++)
+        // 透明底：只画花与茎叶，草完全透出地形（同颗粒/同色调）——
+        // 之前自带一块草地，导致「浅色方块 + 硬边」；现在看起来就是草地上开的一片花。
+        var p = new Px(128, 128, 2);   // 覆盖 1.7m ≈ 150.6px/米；花头 6 逻辑 px ≈ 8cm
+        var colors = new[] { "#e8748a", "#f2d857", "#f4f2ea", "#c58ae0", "#f08a5a" };
+        var leaves = new[] { "#3f7239", "#4a8743", "#5da054", "#356e37" };
+        for (int i = 0; i < 34; i++)
         {
-            int x = 2 + R.Int(56), y = 2 + R.Int(54);
-            p.FillRect(x, y, 4, 4, C(colors[R.Int(colors.Length)]));
-            p.FillRect(x + 1, y + 4, 2, 2, C("#3f7239"));
+            // 中心略密、边缘略疏（不出现"方块边界"的手感）
+            float cx = 64 + (float)(R.Next() * 2 - 1) * 56, cy = 64 + (float)(R.Next() * 2 - 1) * 56;
+            float d = Mathf.Sqrt((cx - 64) * (cx - 64) + (cy - 64) * (cy - 64));
+            if (d > 56 || R.Next() < d / 95f) continue;
+            int x = Mathf.RoundToInt(cx), y = Mathf.RoundToInt(cy);
+            p.FillRect(x - 1, y + 4, 8, 5, C(leaves[R.Int(4)]));   // 叶丛
+            p.FillRect(x + 2, y + 7, 2, 3, C("#2f5f2a"));          // 茎影
+            var c = C(colors[R.Int(colors.Length)]);
+            p.FillRect(x, y, 6, 6, c);                              // 花头（8cm）
+            p.FillRect(x + 1, y + 1, 2, 2, C("rgba(255,255,255,0.65)"));
+            p.FillRect(x - 1, y + 2, 1, 2, c);                      // 花瓣外扩
+            p.FillRect(x + 6, y + 2, 1, 2, c);
+            p.FillRect(x + 2, y - 1, 2, 1, c);
         }
         return p;
     }
@@ -426,13 +453,9 @@ public static class TextureLibrary
 
     static Px Track()
     {
+        // 只画跑道面 + 场地线，底色透明、内场挖空 → 直接透出地形草地：
+        // 颗粒（地形草 5.2cm 格）、色调、接缝都与周围一致，不再像「贴上去的一块方片」
         var p = new Px(512, 320, 4);   // 物理 2048×1280（撞 2048 上限），覆盖操场 16×10m = 128px/米
-        void GrassFill(int x0, int y0, int x1, int y1)
-        {
-            for (int y = y0; y < y1; y += 4) for (int x = x0; x < x1; x += 4)
-                p.FillRect(x, y, 4, 4, C((x + y) % 8 == 0 ? "#54904b" : "#4a8743"));
-        }
-        GrassFill(0, 0, 512, 320);
         p.FillRound(12, 12, 488, 296, 92, C("#b26240"));
         var noise = new[] { "#a8593a", "#bd6f4a", "#9e5335", "#c47a52" };
         for (int i = 0; i < 900; i++)
@@ -441,19 +464,11 @@ public static class TextureLibrary
             if (!Px.InRound(x + 0.5f, y + 0.5f, 12, 12, 488, 296, 92)) continue;
             p.FillRect(x, y, 4, 4, C(noise[R.Int(4)]));
         }
-        p.StrokeRound(24, 24, 464, 272, 82, 4, C("rgba(244,240,226,0.9)"));
-        p.StrokeRound(40, 40, 432, 240, 70, 4, C("rgba(244,240,226,0.9)"));
-        p.FillRound(48, 48, 416, 224, 64, C("#4a8743"));
-        for (int y = 48; y < 272; y += 4) for (int x = 48; x < 464; x += 4)
-            p.FillRect(x, y, 4, 4, C((x + y) % 8 == 0 ? "#54904b" : "#4a8743"));
-        var blades = new[] { "#3f7239", "#5da054", "#437c3c" };
-        for (int i = 0; i < 130; i++)
-        {
-            int x = 48 + R.Int(416), y = 48 + R.Int(224);
-            p.FillRect(x, y, R.Int(2) == 1 ? 6 : 4, R.Int(2) == 1 ? 6 : 4, C(blades[R.Int(3)]));
-        }
-        p.FillRect(254, 52, 4, 216, C("rgba(244,240,226,0.9)"));
-        p.StrokeCircle(256, 160, 28, 4, C("rgba(244,240,226,0.9)"));
+        p.ClearRound(48, 48, 416, 224, 64);                            // 内场挖空（透出地形草）
+        p.StrokeRound(24, 24, 464, 272, 82, 4, C("rgba(244,240,226,0.9)"));   // 外道线
+        p.StrokeRound(40, 40, 432, 240, 70, 4, C("rgba(244,240,226,0.9)"));   // 内道线
+        p.FillRect(254, 52, 4, 216, C("rgba(244,240,226,0.9)"));              // 中线
+        p.StrokeCircle(256, 160, 28, 4, C("rgba(244,240,226,0.9)"));          // 中圈
         return p;
     }
 

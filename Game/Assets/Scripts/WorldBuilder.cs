@@ -59,6 +59,13 @@ public class WorldBuilder : MonoBehaviour
         if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Metal(hex); _cache[k] = m; }
         return m;
     }
+    // 不透明裁切贴片（操场跑道：只画跑道面，内场/边缘透出地形草）
+    Material MatCutout(string tex, float smoothness = 0f)
+    {
+        string k = "K|" + tex + "|" + smoothness;
+        if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Cutout(tex, smoothness); _cache[k] = m; }
+        return m;
+    }
 
     // ── 原语 ──────────────────────────────────────────────────
     GameObject NewGo(string name, Transform parent)
@@ -360,8 +367,11 @@ public class WorldBuilder : MonoBehaviour
         {
             var go = NewGo(def.id, g);
             go.transform.localPosition = new Vector3(def.pos[0], 0.02f, def.pos[1]);
-            string tex = def.id == "playground" ? "track" : (def.kind == "tennis" ? "court_tennis" : "court_basket");
-            MeshObj(go.transform, MeshFactory.Quad(def.size[0], def.size[1], 1f, 1f), Vector3.zero, LitTex(tex));
+            // 操场：透明裁切贴片（内场透出地形草，边缘没有「贴上去的方片」接缝）；球场仍是实心面
+            bool field = def.id == "playground";
+            string tex = field ? "track" : (def.kind == "tennis" ? "court_tennis" : "court_basket");
+            MeshObj(go.transform, MeshFactory.Quad(def.size[0], def.size[1], 1f, 1f), Vector3.zero,
+                field ? MatCutout(tex) : LitTex(tex));
         }
     }
 
@@ -383,7 +393,8 @@ public class WorldBuilder : MonoBehaviour
         {
             var go = NewGo("f", g);
             go.transform.localPosition = new Vector3(f.x, 0.012f, f.z);
-            MeshObj(go.transform, MeshFactory.Quad(1.7f, 1.7f), Vector3.zero, LitTex("flower"));
+            // 花坛：cutout 材质（边缘抖动透明，与地形草自然过渡）
+            MeshObj(go.transform, MeshFactory.Quad(1.7f, 1.7f), Vector3.zero, MatCutout("flower"));
         }
     }
 

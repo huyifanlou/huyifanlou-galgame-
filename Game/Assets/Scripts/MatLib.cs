@@ -106,7 +106,25 @@ public static class MatLib
         m.mainTexture = Tex(texName, pixel: true, repeat: true);
         m.SetFloat("_Metallic", 0f);
         m.SetFloat("_Glossiness", smoothness);
-        // Cutout 模式
+        ConfigureCutout(m);
+        return m;
+    }
+
+    // 大面片的不透明裁切（操场跑道这类「只画跑道面、其余透出地形草」的贴片）：
+    // 与 Sprite 同样的 Cutout 配置，但采样用 Trilinear（远处不闪）
+    public static Material Cutout(string texName, float smoothness = 0f)
+    {
+        var m = new Material(Shader.Find("Standard"));
+        m.mainTexture = Tex(texName, pixel: false, repeat: true);
+        m.SetFloat("_Metallic", 0f);
+        m.SetFloat("_Glossiness", smoothness);
+        ConfigureCutout(m);
+        return m;
+    }
+
+    // Standard Cutout 模式（alphaTest 0.4）：2021+ 的 Standard 还需要 _AlphaClip 开关才真正裁剪
+    static void ConfigureCutout(Material m)
+    {
         m.SetFloat("_Mode", 1f);
         m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
         m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
@@ -115,9 +133,8 @@ public static class MatLib
         m.DisableKeyword("_ALPHABLEND_ON");
         m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
         m.SetFloat("_Cutoff", 0.4f);
-        m.SetFloat("_AlphaClip", 1f);   // 2021+ 的 Standard 还需要 AlphaClip 开关才真正裁剪
+        m.SetFloat("_AlphaClip", 1f);
         m.renderQueue = 2450;
-        return m;
     }
 
     // 半透明黑色（角色脚下圆影）
