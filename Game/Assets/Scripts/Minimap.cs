@@ -187,7 +187,7 @@ public class Minimap : MonoBehaviour
         var title = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
         title.normal.textColor = new Color(1f, 0.95f, 0.85f);
         GUI.Label(new Rect(x, y, size, 18f),
-            _large ? "M 缩小 · 点击传送 · 按住 Alt 显示鼠标" : "小镇地图（M 放大 · 点击传送）", title);
+            _large ? "M 缩小 · 点击传送" : "小镇地图（M 放大 · 点击传送）", title);
 
         var small = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
         foreach (var m in _marks)

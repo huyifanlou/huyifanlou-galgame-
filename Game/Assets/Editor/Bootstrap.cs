@@ -177,6 +177,15 @@ public static class Bootstrap
     public static void BuildWindows() => Build(BuildTarget.StandaloneWindows64, "Build/Win/Campus.exe");
     public static void BuildWindowsBatch() => BuildWindows();
 
+    static void ApplyWindowSettings()
+    {
+        PlayerSettings.resizableWindow = true;
+        PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+        PlayerSettings.defaultScreenWidth = 1600;
+        PlayerSettings.defaultScreenHeight = 900;
+        AssetDatabase.SaveAssets();
+    }
+
     // 构建 WebGL（部署上线用）
     public static void BuildWebGL() => Build(BuildTarget.WebGL, "Build/WebGL");
     public static void BuildWebGLBatch() => BuildWebGL();
@@ -185,6 +194,7 @@ public static class Bootstrap
     {
         var dir = Path.GetDirectoryName(outPath);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+        ApplyWindowSettings();
         var opts = new BuildPlayerOptions
         {
             scenes = new[] { ScenePath },

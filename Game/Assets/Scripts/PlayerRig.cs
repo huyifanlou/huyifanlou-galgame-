@@ -151,22 +151,37 @@ public class PlayerRig : MonoBehaviour
             if (Mathf.Abs(_yawTarget - _yaw) < 0.01f) { _yaw = _yawTarget; _yawTarget = float.NaN; }
         }
 
-        // 鼠标转向（光标锁定）；按住 Alt 呼出鼠标操作 UI/小地图
-        bool alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
-        Cursor.lockState = alt ? CursorLockMode.None : CursorLockMode.Locked;
-        Cursor.visible = alt;
-        if (!alt)
+        // 鼠标拖拽旋转 + 滚轮缩放（恢复原来的操作手感）
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        if (Input.GetMouseButtonDown(0))
         {
-            float mx = Input.GetAxis("Mouse X");
-            float my = Input.GetAxis("Mouse Y");
-            _yaw += mx * 2.4f;
+            _dragging = true;
+            _alignPaused = true;
+            _dragLast = Input.mousePosition;
+        }
+        if (Input.GetMouseButtonUp(0)) _dragging = false;
+        if (_dragging)
+        {
+            var d = Input.mousePosition - _dragLast;
+            _dragLast = Input.mousePosition;
+            _yaw += d.x * 0.005f;
             if (_firstPerson)
-                _fpPitch = Mathf.Clamp(_fpPitch - my * 1.6f, -1.1f, 1.1f);
+                _fpPitch = Mathf.Clamp(_fpPitch + d.y * 0.004f, -1.1f, 1.1f);
             else
-                _pitch = Mathf.Clamp(_pitch - my * 1.4f, 0.3f, 1.2f);
+                _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
         }
         float wheel = Input.mouseScrollDelta.y;
         if (!_firstPerson && Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);
+
+        // F11：窗口 / 全屏切换（窗口可拖动边缘调整尺寸）
+        if (Input.GetKeyDown(KeyCode.F11))
+        {
+            if (Screen.fullScreenMode == FullScreenMode.FullScreenWindow)
+                Screen.SetResolution(1600, 900, FullScreenMode.Windowed);
+            else
+                Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, FullScreenMode.FullScreenWindow);
+        }
 
         // V：第一 / 第三人称切换
         if (Input.GetKeyDown(KeyCode.V))

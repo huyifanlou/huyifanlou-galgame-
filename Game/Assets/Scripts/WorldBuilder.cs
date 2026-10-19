@@ -731,7 +731,7 @@ public class WorldBuilder : MonoBehaviour
         Application.targetFrameRate = 60;
         QualitySettings.vSyncCount = 1;
         if (string.IsNullOrEmpty(Args.Str("-shot")))
-            Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, FullScreenMode.FullScreenWindow);
+            Screen.SetResolution(1600, 900, FullScreenMode.Windowed);   // 默认窗口，可拖动边缘调整；F11 切全屏
         QualitySettings.shadowDistance = 90f;
 
         var w = BuildWorld();
