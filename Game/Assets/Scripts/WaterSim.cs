@@ -9,9 +9,9 @@ public class WaterSim : MonoBehaviour
 
     public RiverDef River;
     public float Level = -1.95f;        // 静水面高度
-    public float Current = 0.32f;       // 顺流速度（m/s，河道中心；缓流）
-    public float WaveSpeed = 1.2f;      // 波速（m/s）
-    public float Damping = 0.995f;
+    public float Current = 0.10f;       // 顺流速度（m/s，河道中心；缓流）
+    public float WaveSpeed = 0.85f;     // 波速（m/s）
+    public float Damping = 0.994f;
     const float StepX = 1f;             // 顺河采样间距
     const float StepT = 0.5f;           // 横河采样间距
 
@@ -171,7 +171,7 @@ public class WaterSim : MonoBehaviour
                     next -= 0.004f * rain;
 
                 _hPrev[idx] = cur;
-                _h[idx] = Mathf.Clamp(next, -0.035f, 0.035f);
+                _h[idx] = Mathf.Clamp(next, -0.028f, 0.028f);
             }
         }
         _t += dt;

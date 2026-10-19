@@ -28,6 +28,9 @@ public class WorldBuilder : MonoBehaviour
     static readonly string[] ROCK_COLS = { "#8d8d94", "#7b7b82", "#9aa0a6", "#6f6f76", "#84848b" };
     static readonly string[] REED_COLS = { "#7a8a4a", "#6a7a42", "#85925a" };
     static readonly string[] REED_COLS2 = { "#85925a", "#7a8a4a", "#6a7a42" };
+    // 骑楼老街：这些店铺前加连续柱廊（数据仍是普通建筑，只在渲染时加构造）
+    static readonly HashSet<string> ArcadeIds = new HashSet<string>
+    { "o_silk", "o_tea", "o_grocery", "o_pharm", "o_post", "o_theater" };
 
     // ── 材质缓存 ──────────────────────────────────────────────
     Material LitTex(string tex, float tu = 1f, float tv = 1f)
@@ -318,15 +321,28 @@ public class WorldBuilder : MonoBehaviour
                     break;
                 case "clocktower":
                     {
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.6f, 5f, 4.6f), 2.4f), new Vector3(0, 2.5f, 0), LitTex("bridge_stone"));
-                        Box(grp, new Vector3(0, 5.15f, 0), new Vector3(5f, 0.3f, 5f), ColMat("#8f8471"));
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.2f, 6.6f, 3.2f), 2.4f), new Vector3(0, 8.6f, 0), LitTex("bridge_stone"));
-                        Box(grp, new Vector3(0, 12.0f, 0), new Vector3(3.8f, 0.28f, 3.8f), ColMat("#8f8471"));
+                        // 三段收分石塔：基座拱门 → 塔身（四棱台）→ 钟楼层 + 四棱锥顶
+                        var stone = LitTex("bridge_stone");
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.4f, 0.8f, 5.4f), 2.4f), new Vector3(0f, 0.4f, 0f), stone);
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.6f, 4.4f, 4.6f), 2.4f), new Vector3(0f, 3.0f, 0f), stone);
+                        Face(grp, 1.7f, 2.7f, new Vector3(0f, 2.15f, 2.31f), ColMat("#26221f"));
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.3f, 0.28f, 0.3f), 2.4f), new Vector3(0f, 3.6f, 2.4f), stone);
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.3f, 0.3f, 5.3f), 2.4f), new Vector3(0f, 5.35f, 0f), stone);
+                        MeshObj(grp, MeshFactory.TaperedBox(4.0f, 4.0f, 3.3f, 3.3f, 5.6f, 2.4f), new Vector3(0f, 5.5f, 0f), stone);
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.1f, 0.26f, 4.1f), 2.4f), new Vector3(0f, 11.2f, 0f), stone);
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.3f, 3.1f, 3.3f), 2.4f), new Vector3(0f, 12.85f, 0f), stone);
                         var clockMat = MatLib.LitTexture(MatLib.Tex("clock"), 1f, 1f, 0.12f);
                         foreach (var (px, pz, ry) in new[] { (0f, 1.66f, 0f), (0f, -1.66f, 180f), (1.66f, 0f, 90f), (-1.66f, 0f, -90f) })
-                            Face(grp, 1.72f, 1.72f, new Vector3(px, 9.3f, pz), clockMat, ry);
-                        MeshObj(grp, MeshFactory.Cone(2.5f, 2.4f, 4, true), new Vector3(0, 12.14f, 0), ColMat("#4a5568"));
-                        Box(grp, new Vector3(0, 15f, 0), new Vector3(0.1f, 1.5f, 0.1f), MatMetal("#9aa2ac"));
+                            Face(grp, 1.62f, 1.62f, new Vector3(px, 13.1f, pz), clockMat, ry);
+                        // 钟楼下小阳台
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.9f, 0.12f, 3.9f), 2.4f), new Vector3(0f, 11.45f, 0f), stone);
+                        for (float x = -1.7f; x <= 1.71f; x += 0.85f)
+                            foreach (int sz in new[] { -1, 1 })
+                                Box(grp, new Vector3(x, 11.85f, sz * 1.85f), new Vector3(0.08f, 0.75f, 0.08f), MatMetal("#4a4f58"));
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.1f, 0.24f, 4.1f), 2.4f), new Vector3(0f, 14.5f, 0f), stone);
+                        MeshObj(grp, MeshFactory.Cone(3.0f, 3.6f, 4, true), new Vector3(0f, 14.62f, 0f), ColMat("#3d444e"), new Vector3(0f, 45f, 0f));
+                        Box(grp, new Vector3(0f, 18.55f, 0f), new Vector3(0.12f, 1.3f, 0.12f), MatMetal("#9aa2ac"));
+                        Box(grp, new Vector3(0.28f, 18.9f, 0f), new Vector3(0.55f, 0.06f, 0.06f), MatMetal("#c9a24a"));
                     }
                     break;
                 case "railway":
@@ -1199,6 +1215,7 @@ public class WorldBuilder : MonoBehaviour
             var bodyCol = grp.gameObject.AddComponent<BoxCollider>();
             bodyCol.center = Vector3.zero;
             bodyCol.size = new Vector3(w, h, d);
+            if (b.style == "shrine") { ShrineHall(grp, b); continue; }
 
             bool plain = b.style == "plain";   // 摊亭/站台这类：无立面细节，纯色体块
             var wallMat = plain ? ColMat(b.wall) : LitTex("wall_" + b.id + "_day");
@@ -1317,6 +1334,116 @@ public class WorldBuilder : MonoBehaviour
             // 门前绿篱：叶簇贴图（与树冠同材质体系），世界尺度 UV
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(-1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
+            if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
+        }
+    }
+
+    // ── 神社本殿/拜殿：基坛 + 柱网 + 深出檐双坡屋顶 + 斗栱/椽头 + 注连绳 ──
+    void ShrineHall(Transform grp, BuildingDef b)
+    {
+        float w = b.size[0], h = b.size[1], d = b.size[2];
+        float baseY = -h / 2f;
+        var stone = LitTex("bridge_stone");
+        var wood = ColMat("#7a4a34");
+        var woodDark = ColMat("#5a3226");
+        var roof = LitTex("roof_" + b.id);
+        var shoji = LitTex("villa");
+
+        // 基坛 + 木地板 + 正面三级踏步
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 2.4f, 0.55f, d + 2.4f), 2.4f), new Vector3(0f, baseY + 0.275f, 0f), stone);
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 1.6f, 0.2f, d + 1.6f), 2f), new Vector3(0f, baseY + 0.65f, 0f), LitTex("wood"));
+        for (int i = 0; i < 3; i++)
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.4f, 0.16f, 0.5f), 2.4f),
+                new Vector3(0f, baseY + 0.08f + i * 0.16f, d / 2f + 1.4f - i * 0.42f), stone);
+
+        // 柱网
+        float py = baseY + 0.75f;
+        float ph = 2.9f;
+        for (int ix = -1; ix <= 1; ix++)
+            foreach (int iz in new[] { -1, 1 })
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.36f, ph, 0.36f), 2f),
+                    new Vector3(ix * (w / 2f - 0.7f), py + ph / 2f, iz * (d / 2f - 0.7f)), wood);
+
+        // 背墙 / 侧墙 / 正面障子与门
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w - 1.4f, ph * 0.94f, 0.2f), 2f),
+            new Vector3(0f, py + ph * 0.47f, -(d / 2f - 0.7f)), woodDark);
+        foreach (int sx in new[] { -1, 1 })
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.2f, ph * 0.94f, d - 1.4f), 2f),
+                new Vector3(sx * (w / 2f - 0.7f), py + ph * 0.47f, 0f), woodDark);
+        foreach (int sx in new[] { -1, 1 })
+            Face(grp, Mathf.Max(1.6f, w * 0.26f), ph * 0.78f, new Vector3(sx * (w * 0.24f), py + ph * 0.5f, d / 2f - 0.62f), shoji);
+        Face(grp, 1.3f, 2.0f, new Vector3(0f, py + 1.0f, d / 2f - 0.6f), LitTex("door"));
+
+        // 楣梁 + 斗栱
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 0.7f, 0.34f, d + 0.7f), 2f), new Vector3(0f, py + ph + 0.17f, 0f), wood);
+        for (float x = -w / 2f + 0.8f; x <= w / 2f - 0.6f; x += 1.6f)
+            foreach (int sz in new[] { -1, 1 })
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.32f, 0.34f, 0.62f), 1.6f),
+                    new Vector3(x, py + ph + 0.45f, sz * (d / 2f + 0.15f)), woodDark);
+
+        // 深出檐双坡屋顶 + 山墙端封 + 椽头 + 金饰
+        const float ang = 0.45f;
+        float over = 1.5f;
+        float halfD = d / 2f + over;
+        float slope = halfD / Mathf.Cos(ang);
+        float eaveY = py + ph + 0.9f;
+        float ridgeY = eaveY + halfD * Mathf.Tan(ang);
+        foreach (int sz in new[] { -1, 1 })
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 3.2f, 0.28f, slope), 4f, 2f),
+                new Vector3(0f, eaveY + halfD * Mathf.Tan(ang) * 0.5f, sz * halfD / 2f), roof,
+                new Vector3(-sz * ang * Mathf.Rad2Deg, 0f, 0f));
+        Box(grp, new Vector3(0f, ridgeY + 0.12f, 0f), new Vector3(w + 3.4f, 0.26f, 0.5f), ColMat("#2b2622"));
+        float gH = halfD * Mathf.Tan(ang) + 0.28f;
+        foreach (int sx in new[] { -1, 1 })
+        {
+            var tri = NewGo("sg", grp).transform;
+            tri.localPosition = new Vector3(sx * (w / 2f + 1.5f), eaveY, 0f);
+            tri.localEulerAngles = new Vector3(0f, 90f, 0f);
+            MeshObj(tri, MeshFactory.Triangle(d + 3f, gH), Vector3.zero, ColMat("#c8b48e"));
+        }
+        for (float x = -w / 2f; x <= w / 2f; x += 0.9f)
+            foreach (int sz in new[] { -1, 1 })
+                Box(grp, new Vector3(x, eaveY - 0.08f, sz * (d / 2f + over * 0.72f)), new Vector3(0.12f, 0.12f, 0.52f), ColMat("#8a6a48"));
+        foreach (int sx in new[] { -1, 1 })
+            Box(grp, new Vector3(sx * (w / 2f + 1.6f), ridgeY + 0.28f, 0f), new Vector3(0.4f, 0.5f, 0.6f), ColMat("#c9a24a"));
+
+        // 注连绳 + 纸垂
+        Cylinder(grp, new Vector3(0f, py + ph - 0.12f, d / 2f + 0.55f), 0.12f, w * 0.62f, ColMat("#d8c8a0"), new Vector3(0f, 0f, 90f));
+        for (int i = 0; i < 4; i++)
+            Box(grp, new Vector3(-w * 0.2f + i * w * 0.13f, py + ph - 0.45f, d / 2f + 0.58f),
+                new Vector3(0.18f, 0.55f, 0.03f), ColMat("#f2efe6"));
+    }
+
+    // ── 骑楼：店铺前的连续柱廊 + 二层挑廊 + 灯笼/招牌 ──
+    void Arcade(Transform grp, BuildingDef b)
+    {
+        float w = b.size[0], h = b.size[1], d = b.size[2];
+        float baseY = -h / 2f;
+        const float depth = 1.7f;
+        float zf = d / 2f + depth / 2f;
+        var stone = LitTex("concrete");
+
+        // 一层柱列
+        for (float x = -w / 2f + 0.5f; x <= w / 2f - 0.4f; x += 2.2f)
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.34f, 3.2f, 0.34f), 2f),
+                new Vector3(x, baseY + 1.6f, d / 2f + depth - 0.25f), stone);
+        // 二层挑廊板 + 檐口小瓦顶
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 0.3f, 0.26f, depth), 2.4f),
+            new Vector3(0f, baseY + 3.32f, zf), stone);
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 0.5f, 0.16f, 0.9f), 4f, 2f),
+            new Vector3(0f, baseY + 3.52f, d / 2f + depth - 0.2f), LitTex("roof_" + b.id), new Vector3(-12f, 0f, 0f));
+        // 栏杆
+        for (float x = -w / 2f + 0.4f; x <= w / 2f - 0.3f; x += 1.1f)
+            Box(grp, new Vector3(x, baseY + 3.85f, d / 2f + depth - 0.1f), new Vector3(0.08f, 0.8f, 0.08f), ColMat("#8a6a48"));
+        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 0.3f, 0.1f, 0.16f), 1.2f),
+            new Vector3(0f, baseY + 4.28f, d / 2f + depth - 0.1f), ColMat("#a87e52"));
+        // 灯笼 + 悬挂招牌
+        for (float x = -w / 2f + 1.2f; x <= w / 2f - 1.0f; x += 3.1f)
+        {
+            Cylinder(grp, new Vector3(x, baseY + 2.8f, d / 2f + depth - 0.55f), 0.16f, 0.42f, ColMat("#b8352f"));
+            Box(grp, new Vector3(x, baseY + 3.06f, d / 2f + depth - 0.55f), new Vector3(0.05f, 0.5f, 0.05f), ColMat("#3a2f28"));
+            Box(grp, new Vector3(x + 1.4f, baseY + 2.35f, d / 2f + depth - 0.18f), new Vector3(0.06f, 0.7f, 0.06f), ColMat("#3a2f28"));
+            Face(grp, 0.7f, 0.5f, new Vector3(x + 1.4f, baseY + 2.85f, d / 2f + depth - 0.14f), ColMat("#d8cbb4"), 90f);
         }
     }
 

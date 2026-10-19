@@ -58,8 +58,8 @@ public static class TownData
         B("p_pav", "音乐亭", 56, -32, 6, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 2, 1, 1, "gable"),
 
         // ── 神社（樱花林右侧）──
-        B("k_honden", "本殿", 79, -80, 14, 7, 9, W_SHRINE, TP, SPT, R_DARK, 4, 1, 1, "gable"),
-        B("k_haiden", "拜殿", 79, -70, 10, 5, 6, "#b06a4e", TP, SPT, R_DARK, 3, 1, 1, "gable"),
+        B("k_honden", "本殿", 79, -80, 14, 7, 9, W_SHRINE, TP, SPT, R_DARK, 4, 1, 1, "shrine"),
+        B("k_haiden", "拜殿", 79, -70, 10, 5, 6, "#b06a4e", TP, SPT, R_DARK, 3, 1, 1, "shrine"),
         B("k_chozu", "手水舍", 69, -66, 4, 3, 3, W_SHRINE, TP, SPT, R_DARK, 1, 1, 1, "gable"),
 
         // ── 骑楼老街 ──

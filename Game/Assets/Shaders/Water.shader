@@ -65,7 +65,7 @@ Shader "Campus/Water"
                 float fres = pow(1.0 - saturate(dot(N, V)), 4.0);
 
                 // 细节贴图扰动法线（顺流滚动）→ 细碎波光
-                float2 duv = i.uv + float2(_Time.y * 0.035, 0.0);
+                float2 duv = i.uv + float2(_Time.y * 0.01, 0.0);
                 float lumC = tex2D(_MainTex, duv).r;
                 float lumX = tex2D(_MainTex, duv + float2(0.012, 0.0)).r;
                 float lumY = tex2D(_MainTex, duv + float2(0.0, 0.012)).r;

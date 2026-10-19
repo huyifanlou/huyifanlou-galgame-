@@ -355,6 +355,39 @@ public static class MeshFactory
         return m;
     }
 
+    // 四棱台（上窄下宽）：钟楼塔身等；UV 按边长/高度世界比例
+    public static Mesh TaperedBox(float bw, float bd, float tw, float td, float height, float texMeters)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d, float u, float v)
+        {
+            int i = verts.Count;
+            verts.Add(a); verts.Add(b); verts.Add(c); verts.Add(d);
+            uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(u, 0)); uvs.Add(new Vector2(u, v)); uvs.Add(new Vector2(0, v));
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+            tris.Add(i); tris.Add(i + 2); tris.Add(i + 3);
+        }
+        float hbw = bw / 2f, hbd = bd / 2f, htw = tw / 2f, htd = td / 2f, h = height;
+        Quad(new Vector3(-hbw, 0, hbd), new Vector3(hbw, 0, hbd), new Vector3(htw, h, htd), new Vector3(-htw, h, htd), bw / texMeters, h / texMeters);
+        Quad(new Vector3(hbw, 0, -hbd), new Vector3(-hbw, 0, -hbd), new Vector3(-htw, h, -htd), new Vector3(htw, h, -htd), bw / texMeters, h / texMeters);
+        Quad(new Vector3(hbw, 0, hbd), new Vector3(hbw, 0, -hbd), new Vector3(htw, h, -htd), new Vector3(htw, h, htd), bd / texMeters, h / texMeters);
+        Quad(new Vector3(-hbw, 0, -hbd), new Vector3(-hbw, 0, hbd), new Vector3(-htw, h, htd), new Vector3(-htw, h, -htd), bd / texMeters, h / texMeters);
+        // 顶面（法线 +Y）
+        int top = verts.Count;
+        verts.Add(new Vector3(-htw, h, -htd)); verts.Add(new Vector3(htw, h, -htd));
+        verts.Add(new Vector3(htw, h, htd)); verts.Add(new Vector3(-htw, h, htd));
+        uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(tw / texMeters, 0));
+        uvs.Add(new Vector2(tw / texMeters, td / texMeters)); uvs.Add(new Vector2(0, td / texMeters));
+        tris.Add(top); tris.Add(top + 2); tris.Add(top + 1);
+        tris.Add(top); tris.Add(top + 3); tris.Add(top + 2);
+        var mesh = new Mesh();
+        mesh.SetVertices(verts); mesh.SetUVs(0, uvs); mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        return mesh;
+    }
+
     // 天空穹顶：球面、三角形朝内（供内看）——经纬网格；UV: u=phi/(2π)、v=1 在天顶（与贴图方向一致）
     public static Mesh Dome(float radius, int sectors = 24, int rings = 16)
     {
