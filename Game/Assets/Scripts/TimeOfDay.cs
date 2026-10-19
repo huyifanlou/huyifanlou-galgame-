@@ -38,7 +38,7 @@ public class TimeOfDay : MonoBehaviour
     // 写实向（2026-10-18 第二版）：压低整体曝光 + 保住「直射 : 环境」比 → 不再晃眼、层次更厚
     // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
     const float DAY_AMB = 0.175f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
-    const float NIGHT_AMB = 0.28f, NIGHT_HEMI = 0.18f, NIGHT_DIR_I = 0.52f;
+    const float NIGHT_AMB = 0.40f, NIGHT_HEMI = 0.26f, NIGHT_DIR_I = 0.72f;
     const float DAY_FOG_NEAR = 52f, DAY_FOG_FAR = 142f;
     const float NIGHT_FOG_NEAR = 44f, NIGHT_FOG_FAR = 132f;
 
@@ -233,7 +233,8 @@ public class TimeOfDay : MonoBehaviour
 
             // 路灯：灯头玻璃变暖 + 地面光池淡入（web: opacity = m*0.68）
             if (_w.LampGlass != null) _w.LampGlass.color = Color.Lerp(GLASS_OFF, GLASS_ON, m);
-            if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 1f, 1f, m * 0.68f));
+            if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 0.86f, 0.62f, m * 0.72f));
+            foreach (var ll in _w.LampLights) ll.intensity = m * 1.2f;
 
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)

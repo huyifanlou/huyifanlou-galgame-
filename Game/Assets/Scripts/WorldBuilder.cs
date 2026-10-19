@@ -19,6 +19,7 @@ public class WorldBuilder : MonoBehaviour
     public readonly List<string[]> WindowMats = new List<string[]>();
     public readonly List<Material> WindowMatRefs = new List<Material>();
     public readonly List<Material> LeafMats = new List<Material>();   // 叶簇材质（天气：雪天覆白）
+    public readonly List<Light> LampLights = new List<Light>();       // 路灯点光源（夜里由 TimeOfDay 点亮）
     public Material GrassMat;                                        // 草地材质（天气：雨天变暗）
     public Vector3 Spawn = new Vector3(0f, 0f, 4f);
 
@@ -378,14 +379,103 @@ public class WorldBuilder : MonoBehaviour
                     break;
                 case "stall":
                     {
-                        Box(grp, new Vector3(0, 0.45f, 0), new Vector3(2.2f, 0.9f, 0.9f), LitTex("wood"));
-                        Box(grp, new Vector3(0, 0.95f, 0), new Vector3(2.3f, 0.08f, 1f), ColMat("#d8cbb4"));
+                        // 夏日祭摊位：按 kind 变化棚布配色、货品、招牌（不再千篇一律）
+                        string kind = string.IsNullOrEmpty(p.kind) ? "food" : p.kind;
+                        string colA, colB;
+                        switch (kind)
+                        {
+                            case "goldfish": colA = "#3f6a9a"; colB = "#e8e2d2"; break;
+                            case "food": colA = "#c9553f"; colB = "#f2ead8"; break;
+                            case "goods": colA = "#4a8a4a"; colB = "#f0ead6"; break;
+                            case "candy": colA = "#c07aa8"; colB = "#f6eef2"; break;
+                            case "drinks": colA = "#3f8a8a"; colB = "#eef2ee"; break;
+                            case "grill": colA = "#8a4438"; colB = "#efe2cc"; break;
+                            case "masks": colA = "#7a4a8a"; colB = "#f2ead8"; break;
+                            case "games": colA = "#c9a24a"; colB = "#f4f0e2"; break;
+                            case "ice": colA = "#5a8fc8"; colB = "#f2f6fa"; break;
+                            case "lantern": colA = "#b8352f"; colB = "#f6ead6"; break;
+                            default: colA = "#c9553f"; colB = "#f2ead8"; break;
+                        }
+                        var cloth = MatLib.LitTexture(TextureLibrary.Stripes2(colA, colB), 1f, 1f, 0.1f);
+                        var woodMat = LitTex("wood");
+                        float cw = 2.2f, cd = 0.9f;
+
+                        // 柜台 + 台面 + 立柱 + 棚布
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(cw, 0.9f, cd), 2f), new Vector3(0f, 0.45f, 0f), woodMat);
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(cw + 0.1f, 0.08f, cd + 0.1f), 2f), new Vector3(0f, 0.94f, 0f), LitTex("wood"));
                         foreach (int sx in new[] { -1, 1 })
                             foreach (int sz in new[] { -1, 1 })
-                                Box(grp, new Vector3(sx * 1.05f, 1.35f, sz * 0.95f), new Vector3(0.08f, 2.7f, 0.08f), ColMat("#8a6a48"));
-                        Box(grp, new Vector3(0, 2.72f, 0.1f), new Vector3(2.5f, 0.08f, 2.2f), LitTex("awning"), new Vector3(8f, 0f, 0f));
-                        Box(grp, new Vector3(-0.5f, 1.05f, 0), new Vector3(0.5f, 0.2f, 0.4f), ColMat("#c9553f"));
-                        Box(grp, new Vector3(0.55f, 1.05f, 0), new Vector3(0.4f, 0.2f, 0.35f), ColMat("#4a6a8a"));
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.08f, 2.7f, 0.08f), 1.2f),
+                                    new Vector3(sx * 1.05f, 1.35f, sz * 0.95f), ColMat("#8a6a48"));
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.07f, 2.2f), 1f), new Vector3(0f, 2.72f, 0.1f), cloth, new Vector3(8f, 0f, 0f));
+                        // 前檐布幌
+                        Box(grp, new Vector3(0f, 2.3f, 1.02f), new Vector3(2.1f, 0.42f, 0.03f), ColMat(colA), default, false);
+                        Box(grp, new Vector3(0f, 2.3f, 1.04f), new Vector3(0.3f, 0.3f, 0.02f), ColMat(colB), default, false);
+                        // 小凳
+                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.4f, 0.42f, 0.4f), 2f), new Vector3(0.75f, 0.21f, 0.95f), woodMat);
+
+                        // 货品
+                        switch (kind)
+                        {
+                            case "goldfish":
+                                Cylinder(grp, new Vector3(-0.45f, 1.1f, 0.05f), 0.38f, 0.3f, ColMat("#3f6a8a"));
+                                for (int i = 0; i < 4; i++)
+                                    Box(grp, new Vector3(-0.6f + i * 0.12f, 1.12f, 0.05f + (i % 2) * 0.08f), new Vector3(0.08f, 0.04f, 0.08f), ColMat("#e8803f"), default, false);
+                                Box(grp, new Vector3(0.5f, 1.02f, 0.0f), new Vector3(0.3f, 0.05f, 0.2f), ColMat("#d8cbb4"));
+                                break;
+                            case "food":
+                            case "grill":
+                                Box(grp, new Vector3(-0.35f, 1.02f, 0.0f), new Vector3(0.9f, 0.16f, 0.55f), ColMat("#3a3a3e"));
+                                for (int i = 0; i < 5; i++)
+                                    Box(grp, new Vector3(-0.7f + i * 0.16f, 1.14f, 0.02f), new Vector3(0.05f, 0.04f, 0.42f), ColMat("#c9a24a"));
+                                Box(grp, new Vector3(0.55f, 1.1f, 0.0f), new Vector3(0.25f, 0.22f, 0.35f), ColMat("#d8cbb4"));
+                                break;
+                            case "goods":
+                            case "masks":
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    float gx = -0.55f + i * 0.55f;
+                                    Box(grp, new Vector3(gx, 1.75f, -0.28f), new Vector3(0.36f, 0.44f, 0.06f),
+                                        ColMat(i == 0 ? "#e8c46a" : (i == 1 ? "#c9553f" : "#5a8fc8")), default, false);
+                                }
+                                Box(grp, new Vector3(0.45f, 1.06f, 0.0f), new Vector3(0.5f, 0.2f, 0.4f), ColMat("#a87e52"));
+                                break;
+                            case "candy":
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    Cylinder(grp, new Vector3(-0.55f + i * 0.4f, 1.16f, 0.0f), 0.12f, 0.34f, ColMat("#e8e2d2"));
+                                    Box(grp, new Vector3(-0.55f + i * 0.4f, 1.32f, 0.0f), new Vector3(0.2f, 0.05f, 0.2f),
+                                        ColMat(i == 0 ? "#e8748a" : (i == 1 ? "#f2d857" : "#7ac0e0")));
+                                }
+                                Box(grp, new Vector3(0.62f, 1.45f, 0.0f), new Vector3(0.08f, 0.55f, 0.08f), ColMat("#f2efe6"));
+                                Box(grp, new Vector3(0.62f, 1.75f, 0.0f), new Vector3(0.3f, 0.26f, 0.3f), ColMat("#f0b6cc"));
+                                break;
+                            case "drinks":
+                                for (int i = 0; i < 4; i++)
+                                    Cylinder(grp, new Vector3(-0.6f + i * 0.32f, 1.18f, 0.0f), 0.07f, 0.42f,
+                                        ColMat(i == 0 ? "#7ac0e0" : (i == 1 ? "#c9553f" : (i == 2 ? "#e8c46a" : "#4a8a4a"))));
+                                break;
+                            case "ice":
+                                Box(grp, new Vector3(-0.35f, 1.15f, 0.0f), new Vector3(0.9f, 0.4f, 0.55f), ColMat("#f2f6fa"));
+                                Box(grp, new Vector3(-0.35f, 1.38f, 0.0f), new Vector3(0.95f, 0.08f, 0.6f), ColMat("#5a8fc8"));
+                                Box(grp, new Vector3(0.55f, 1.3f, 0.0f), new Vector3(0.12f, 0.6f, 0.12f), ColMat("#d8cbb4"));
+                                Box(grp, new Vector3(0.55f, 1.66f, 0.0f), new Vector3(0.28f, 0.34f, 0.06f), ColMat("#e8c46a"));
+                                break;
+                            case "lantern":
+                                for (int i = 0; i < 3; i++)
+                                {
+                                    float lx = -0.6f + i * 0.6f;
+                                    Cylinder(grp, new Vector3(lx, 2.1f, 0.55f), 0.14f, 0.34f, ColMat(i == 0 ? "#e8b24a" : (i == 1 ? "#c9553f" : "#e8e2d2")));
+                                    Box(grp, new Vector3(lx, 2.32f, 0.55f), new Vector3(0.04f, 0.25f, 0.04f), ColMat("#3a2f28"));
+                                }
+                                break;
+                            case "games":
+                                Box(grp, new Vector3(0.45f, 1.4f, -0.2f), new Vector3(0.6f, 0.6f, 0.08f), ColMat("#f2efe6"));
+                                Box(grp, new Vector3(0.45f, 1.4f, -0.15f), new Vector3(0.2f, 0.2f, 0.04f), ColMat("#c9553f"));
+                                for (int i = 0; i < 3; i++)
+                                    Box(grp, new Vector3(-0.7f + i * 0.25f, 1.06f, 0.0f), new Vector3(0.05f, 0.05f, 0.4f), ColMat("#8a6a48"));
+                                break;
+                        }
                     }
                     break;
                 case "ride_wheel":
@@ -575,6 +665,9 @@ public class WorldBuilder : MonoBehaviour
         if (tod != null) tod.Init(this);
         var rig = GetComponent<PlayerRig>();
         if (rig != null) rig.Init(this);
+        var mm = GetComponent<Minimap>();
+        if (mm == null) mm = gameObject.AddComponent<Minimap>();
+        mm.Init(this, rig);
         var hud = GetComponent<Hud>();
         if (hud != null) hud.Init(tod);
         var shot = GetComponent<ShotMode>();
@@ -1109,6 +1202,38 @@ public class WorldBuilder : MonoBehaviour
             float rx = p.r, rz = p.r * 0.7f;
             MeshObj(t, MeshFactory.Disc(rx, rz, 56, 4f), new Vector3(0f, 0.012f, 0f), LitTex("water"), default, false, true);
             MeshObj(t, MeshFactory.Ring(rx, rz, rx + 0.65f, rz + 0.65f, 56, 2.4f), new Vector3(0f, 0.024f, 0f), LitTex("bridge_stone"));
+            // 环塘步道（2.2m 宽）
+            MeshObj(t, MeshFactory.Ring(rx + 3.2f, rz + 3.2f, rx + 5.4f, rz + 5.4f, 64, 2.4f), new Vector3(0f, 0.012f, 0f), LitTex("path"));
+            // 睡莲
+            for (int i = 0; i < 7; i++)
+            {
+                float a = i * 1.7f;
+                float rr = 0.55f + (i % 3) * 0.12f;
+                MeshObj(t, MeshFactory.Disc(rr, rr, 10, 2f),
+                    new Vector3(Mathf.Cos(a) * (rx * 0.55f), 0.03f, Mathf.Sin(a) * (rz * 0.55f)),
+                    ColMat(i % 2 == 0 ? "#4a8a48" : "#3f7a3f"), default, false, false);
+            }
+            // 池畔石灯笼
+            foreach (int sgn in new[] { -1, 1 })
+            {
+                var lt = NewGo("pond_lantern", t).transform;
+                lt.localPosition = new Vector3(sgn * (rx + 7.2f), 0f, 0f);
+                Box(lt, new Vector3(0f, 0.14f, 0f), new Vector3(0.7f, 0.28f, 0.7f), ColMat("#8d8d94"));
+                Box(lt, new Vector3(0f, 0.66f, 0f), new Vector3(0.28f, 0.8f, 0.28f), ColMat("#84848b"));
+                Box(lt, new Vector3(0f, 1.14f, 0f), new Vector3(0.62f, 0.36f, 0.62f), ColMat("#8d8d94"));
+                Box(lt, new Vector3(0f, 1.14f, 0.32f), new Vector3(0.3f, 0.22f, 0.04f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
+                Box(lt, new Vector3(0f, 1.4f, 0f), new Vector3(0.76f, 0.16f, 0.76f), ColMat("#6f6f76"));
+            }
+            // 南岸木观景台
+            var deck = NewGo("pond_deck", t).transform;
+            deck.localPosition = new Vector3(-10f, 0f, rz + 9.5f);
+            MeshObj(deck, MeshFactory.BoxUV(new Vector3(6.4f, 0.24f, 3.2f), 2f), new Vector3(0f, 0.12f, 0f), LitTex("wood"));
+            foreach (int dx in new[] { -2.8f, 2.8f })
+                foreach (int dz in new[] { -1.3f, 1.3f })
+                    MeshObj(deck, MeshFactory.BoxUV(new Vector3(0.24f, 0.8f, 0.24f), 2f), new Vector3(dx, -0.3f, dz), LitTex("wood"));
+            MeshObj(deck, MeshFactory.BoxUV(new Vector3(6.4f, 0.1f, 0.14f), 1.2f), new Vector3(0f, 0.85f, 1.55f), ColMat("#a87e52"));
+            for (float dx = -3f; dx <= 3f; dx += 1f)
+                Box(deck, new Vector3(dx, 0.55f, 1.55f), new Vector3(0.08f, 0.7f, 0.08f), ColMat("#8a6a48"));
             for (int i = 0; i < 5; i++)
             {
                 float a = i / 5f * Mathf.PI * 2f + 0.4f;
@@ -1198,7 +1323,8 @@ public class WorldBuilder : MonoBehaviour
         foreach (var l in W.LAMPS)
         {
             var lamp = NewGo("lamp", g).transform;
-            lamp.localPosition = new Vector3(l.x, 0f, l.z);
+            float gy = W.RIVER != null ? GroundY(l.x, l.z) : 0f;   // 人行道上不埋进地面
+            lamp.localPosition = new Vector3(l.x, gy, l.z);
             lamp.localEulerAngles = new Vector3(0f, l.r * Mathf.Rad2Deg, 0f);
             Box(lamp, new Vector3(0f, 0.16f, 0f), new Vector3(0.42f, 0.32f, 0.42f), MatMetal("#4a4f58"));
             Box(lamp, new Vector3(0f, 1.85f, 0f), new Vector3(0.16f, 3.4f, 0.16f), MatMetal("#3a3f4a"));
@@ -1207,8 +1333,20 @@ public class WorldBuilder : MonoBehaviour
             var glass = Box(lamp, new Vector3(0.8f, 3.26f, 0f), new Vector3(0.38f, 0.1f, 0.3f), LampGlass, default, false);
             glass.GetComponent<MeshRenderer>().sharedMaterial = LampGlass;
             var pool = NewGo("pool", lamp);
-            pool.transform.localPosition = new Vector3(0.78f, 0.02f, 0f);
-            MeshObj(pool.transform, MeshFactory.Quad(4.2f, 4.2f), Vector3.zero, LampPool, default, false, false);
+            pool.transform.localPosition = new Vector3(0.78f, 0.015f, 0f);
+            MeshObj(pool.transform, MeshFactory.Quad(5.4f, 5.4f), Vector3.zero, LampPool, default, false, false);
+            // 真实点光源（无阴影，夜里由 TimeOfDay 调亮度）
+            var lg = new GameObject("light");
+            lg.transform.SetParent(lamp, false);
+            lg.transform.localPosition = new Vector3(0.8f, 3.15f, 0f);
+            var li = lg.AddComponent<Light>();
+            li.type = LightType.Point;
+            li.color = MatLib.Hex("#ffcf8a");
+            li.range = 7f;
+            li.intensity = 0f;
+            li.shadows = LightShadows.None;
+            li.renderMode = LightRenderMode.Auto;
+            LampLights.Add(li);
         }
     }
 

@@ -143,8 +143,8 @@ public static class TownData
         };
     }
     static PropDef P(string type, float x, float z, float ry = 0f, float w = 0f, float d = 0f, float r = 0f,
-        float len = 0f, int n = 0)
-        => new PropDef { type = type, x = x, z = z, ry = ry, w = w, d = d, r = r, len = len, n = n };
+        float len = 0f, int n = 0, string kind = null)
+        => new PropDef { type = type, x = x, z = z, ry = ry, w = w, d = d, r = r, len = len, n = n, kind = kind };
 
     static readonly PropDef[] Props =
     {
@@ -176,8 +176,10 @@ public static class TownData
         P("kart", 72, 28, w: 14, d: 10),
 
         // 夏日祭摊位（参道两侧）
-        P("stall", 67, -52.5f), P("stall", 73, -52.5f), P("stall", 79, -52.5f), P("stall", 85, -52.5f), P("stall", 91, -52.5f),
-        P("stall", 67, -39.5f), P("stall", 73, -39.5f), P("stall", 79, -39.5f), P("stall", 85, -39.5f), P("stall", 91, -39.5f),
+        P("stall", 67, -52.5f, kind: "goldfish"), P("stall", 73, -52.5f, kind: "food"), P("stall", 79, -52.5f, kind: "goods"),
+        P("stall", 85, -52.5f, kind: "candy"), P("stall", 91, -52.5f, kind: "drinks"),
+        P("stall", 67, -39.5f, kind: "grill"), P("stall", 73, -39.5f, kind: "masks"), P("stall", 79, -39.5f, kind: "games"),
+        P("stall", 85, -39.5f, kind: "ice"), P("stall", 91, -39.5f, kind: "lantern"),
 
         // 公园喷泉
         P("fountain", 34, -40, r: 4.2f),
@@ -185,6 +187,14 @@ public static class TownData
         // 河畔长椅
         P("bench", -30, -2.5f, ry: Mathf.PI), P("bench", 12, -2.5f, ry: Mathf.PI),
         P("bench", -62, 20.5f, ry: Mathf.PI), P("bench", 48, 20.5f, ry: Mathf.PI),
+        // 公园长椅（绕池塘，面朝水面）
+        P("bench", 34f, -59.5f, ry: 0f), P("bench", 56.5f, -40f, ry: -Mathf.PI / 2f),
+        P("bench", 34f, -20.5f, ry: Mathf.PI), P("bench", 11.5f, -40f, ry: Mathf.PI / 2f),
+        P("bench", 49.2f, -54.2f, ry: -0.7f), P("bench", 49.2f, -25.8f, ry: Mathf.PI + 0.7f),
+        P("bench", 18.8f, -54.2f, ry: 0.7f), P("bench", 18.8f, -25.8f, ry: Mathf.PI - 0.7f),
+        // 广场/车站/主街长椅
+        P("bench", -7f, -23.5f, ry: Mathf.PI), P("bench", 68f, 65.5f, ry: Mathf.PI / 2f),
+        P("bench", 84f, 65.5f, ry: -Mathf.PI / 2f), P("bench", -18f, 46.5f, ry: Mathf.PI),
     };
 
     // ── 保留区（植被不得进入）──
@@ -255,6 +265,10 @@ public static class TownData
         if (river && Mathf.Abs(z - RiverZ(x)) < 14.5f) return true;                  // 河道 + 护岸
         float pdx = (x - 34f) / 21f, pdz = (z + 40f) / 15f;
         if (pdx * pdx + pdz * pdz < 1.25f) return true;                              // 池塘
+        // 环塘步道（Pond() 里半径 rx+4.3 / rz+4.3、宽 2.2m）：植被留出通道
+        float rdx = (x - 34f) / 24.3f, rdz = (z + 40f) / 18.3f;
+        float rd = Mathf.Sqrt(rdx * rdx + rdz * rdz);
+        if (Mathf.Abs(rd - 1f) < 0.12f) return true;
         foreach (var k in keep)
             if (Mathf.Abs(x - k.x) < k.hw && Mathf.Abs(z - k.z) < k.hd) return true;
         return NearPath(x, z, 1.4f);
@@ -428,26 +442,60 @@ public static class TownData
         }
         w.REEDS = reeds.ToArray();
 
-        // 路灯（主街 / 老街 / 滨河 / 车站街）
+        // 路灯：主街/中央街/老街/住宅/参道/神社/车站/站前/公园/滨河两岸
         var lamps = new List<LampItem>();
-        for (float z = -80f; z <= 86f; z += 18f)
+        void L(float x, float z, float r) => lamps.Add(new LampItem { x = x, z = z, r = r });
+        // 主街两侧
+        for (float z = -84f; z <= 90f; z += 14f)
         {
             if (Mathf.Abs(z - RiverZ(0)) < 14f) continue;
-            lamps.Add(new LampItem { x = -6.4f, z = z, r = 0f });
-            lamps.Add(new LampItem { x = 6.4f, z = z, r = Mathf.PI });
+            L(-6.4f, z, 0f); L(6.4f, z, Mathf.PI);
         }
+        // 中央街两侧
+        for (float z = -88f; z <= 94f; z += 22f)
+        {
+            if (Mathf.Abs(z - RiverZ(-45f)) < 12f) continue;
+            L(-48.9f, z, 0f); L(-41.1f, z, Mathf.PI);
+        }
+        // 老街商街两侧
         foreach (float x in new[] { -70f, -50f, -30f, -12f })
         {
-            lamps.Add(new LampItem { x = x, z = 22.3f, r = -Mathf.PI / 2f });
-            lamps.Add(new LampItem { x = x, z = 31.7f, r = Mathf.PI / 2f });
+            L(x, 22.3f, -Mathf.PI / 2f);
+            L(x, 31.7f, Mathf.PI / 2f);
         }
-        for (float x = -90f; x <= 90f; x += 26f)
+        // 住宅北街/中街
+        for (float x = -70f; x <= -20f; x += 16f)
         {
-            if (Mathf.Abs(RiverZ(x)) > 60f) continue;
-            lamps.Add(new LampItem { x = x, z = RiverZ(x) + 15.6f, r = -Mathf.PI / 2f });
+            L(x, 46.2f, -Mathf.PI / 2f); L(x, 51.8f, Mathf.PI / 2f);
+            L(x, 69.2f, -Mathf.PI / 2f); L(x, 74.8f, Mathf.PI / 2f);
         }
-        for (float x = 14f; x <= 84f; x += 18f)
-            lamps.Add(new LampItem { x = x, z = 53.6f, r = Mathf.PI / 2f });
+        // 夏日祭参道两侧
+        for (float x = 64f; x <= 92f; x += 12f)
+        {
+            L(x, -52.8f, -Mathf.PI / 2f);
+            L(x, -39.2f, Mathf.PI / 2f);
+        }
+        // 神社石阶
+        L(73.2f, -56f, 0f); L(84.8f, -56f, Mathf.PI);
+        // 车站街两侧
+        for (float x = 14f; x <= 82f; x += 18f)
+        {
+            L(x, 53.5f, -Mathf.PI / 2f);
+            L(x, 62.5f, Mathf.PI / 2f);
+        }
+        // 站前广场
+        L(70f, 68f, Mathf.PI / 2f); L(82f, 68f, Mathf.PI / 2f);
+        // 公园（池塘四角）
+        L(34f, -57f, Mathf.PI / 2f); L(34f, -23f, -Mathf.PI / 2f);
+        L(14f, -40f, 0f); L(54f, -40f, Mathf.PI);
+        // 钟楼广场
+        L(-8f, -19f, -Mathf.PI / 2f); L(-21f, -19f, -Mathf.PI / 2f);
+        // 滨河两岸
+        for (float x = -90f; x <= 90f; x += 22f)
+        {
+            L(x, RiverZ(x) + 15.7f, -Mathf.PI / 2f);
+            L(x, RiverZ(x) - 15.7f, Mathf.PI / 2f);
+        }
         w.LAMPS = lamps.ToArray();
 
         // 边界林带

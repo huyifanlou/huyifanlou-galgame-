@@ -1067,6 +1067,23 @@ public static class TextureLibrary
         return p;
     }
 
+    // 参数化条纹棚布（夏日祭摊位配色）：颜色对 + 缓存
+    static readonly Dictionary<string, Texture2D> StripeCache = new Dictionary<string, Texture2D>();
+    public static Texture2D Stripes2(string colorA, string colorB)
+    {
+        string key = colorA + "|" + colorB;
+        if (StripeCache.TryGetValue(key, out var t)) return t;
+        var p = new Px(64, 64);
+        var a = C(colorA);
+        var b = C(colorB);
+        for (int x = 0; x < 64; x++) p.FillRect(x, 0, 1, 64, x % 16 < 8 ? a : b);
+        t = From(p);
+        t.filterMode = FilterMode.Point;
+        t.wrapMode = TextureWrapMode.Repeat;
+        StripeCache[key] = t;
+        return t;
+    }
+
     // ── 缓存与入口（名称与现有 PNG 文件名一致）──
     static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 

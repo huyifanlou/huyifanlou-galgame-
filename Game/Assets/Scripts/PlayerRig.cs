@@ -81,6 +81,35 @@ public class PlayerRig : MonoBehaviour
         SnapCamera();
     }
 
+    public Vector3 Position => _player != null ? _player.position : Vector3.zero;
+
+    // 传送（小地图点击）：落在阻挡里时向四周找最近的可站立点
+    public bool Teleport(float x, float z)
+    {
+        if (_player == null || _w == null) return false;
+        x = Mathf.Clamp(x, -_bound + 1.5f, _bound - 1.5f);
+        z = Mathf.Clamp(z, -_bound + 1.5f, _bound - 1.5f);
+        if (Collides(x, z))
+        {
+            bool ok = false;
+            for (float r = 1.5f; r <= 12f && !ok; r += 1.5f)
+                for (int k = 0; k < 16 && !ok; k++)
+                {
+                    float a = k / 16f * Mathf.PI * 2f;
+                    float nx = x + Mathf.Cos(a) * r, nz = z + Mathf.Sin(a) * r;
+                    if (Mathf.Abs(nx) > _bound - 1.5f || Mathf.Abs(nz) > _bound - 1.5f) continue;
+                    if (!Collides(nx, nz)) { x = nx; z = nz; ok = true; }
+                }
+            if (!ok) return false;
+        }
+        _groundY = _w.GroundY(x, z);
+        _player.position = new Vector3(x, _groundY, z);
+        _camInit = false;
+        SnapCamera();
+        if (_time != null) _time.ShowToast("已传送（M 隐藏地图）");
+        return true;
+    }
+
     // 第一人称隐藏角色精灵（影子保留，低头可见脚下）
     void ApplyViewVisibility()
     {
