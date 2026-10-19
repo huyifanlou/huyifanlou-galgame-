@@ -186,9 +186,13 @@ public static class TownData
         // 公园喷泉
         P("fountain", 34, -40, r: 4.2f),
 
-        // 河畔长椅
-        P("bench", -30, -2.5f, ry: Mathf.PI), P("bench", 12, -2.5f, ry: Mathf.PI),
-        P("bench", -62, 20.5f, ry: Mathf.PI), P("bench", 48, 20.5f, ry: Mathf.PI),
+        // 河畔长椅：贴着滨河步道外缘，面朝河（南岸 ry=π，北岸 ry=0）
+        P("bench", -30f, RiverZ(-30f) + 15.8f, ry: Mathf.PI),
+        P("bench", 12f, RiverZ(12f) - 15.8f, ry: 0f),
+        P("bench", -62f, RiverZ(-62f) + 15.8f, ry: Mathf.PI),
+        P("bench", 48f, RiverZ(48f) + 15.8f, ry: Mathf.PI),
+        P("bench", 28f, RiverZ(28f) - 15.8f, ry: 0f),
+        P("bench", -34f, RiverZ(-34f) + 15.8f, ry: Mathf.PI),
         // 公园长椅（绕池塘，面朝水面）
         P("bench", 34f, -59.5f, ry: 0f), P("bench", 56.5f, -40f, ry: -Mathf.PI / 2f),
         P("bench", 34f, -20.5f, ry: Mathf.PI), P("bench", 11.5f, -40f, ry: Mathf.PI / 2f),
@@ -367,7 +371,22 @@ public static class TownData
             float z = (float)(rnd.Next() * 2 - 1) * 92f;
             TryTree(x, z, rnd.NextInt(9), 4.5f);
         }
-        w.TREES = trees.ToArray();
+        // 最终过滤：神社前庭、建筑近旁、桥面一律不保留（不论树来自哪一批）
+        var keptTrees = new List<TreeItem>();
+        foreach (var t in trees)
+        {
+            if (Mathf.Abs(t.x - 79f) < 12f && Mathf.Abs(t.z + 57f) < 15f) continue;
+            bool bad = false;
+            foreach (var b in Buildings)
+                if (Mathf.Abs(t.x - b.pos[0]) < b.size[0] / 2f + 2.6f && Mathf.Abs(t.z - b.pos[1]) < b.size[2] / 2f + 2.6f) { bad = true; break; }
+            if (!bad && Mathf.Abs(t.x + 35.5f) < 8.6f && Mathf.Abs(t.z - 66f) < 5.6f) bad = true;
+            if (!bad)
+                foreach (var br in w.RIVER.bridges)
+                    if (Mathf.Abs(t.x - br.x) < br.width / 2f + 3f &&
+                        Mathf.Abs(t.z - RiverZ(br.x)) < (w.RIVER.width + 1.6f) / 2f + 3f) { bad = true; break; }
+            if (!bad) keptTrees.Add(t);
+        }
+        w.TREES = keptTrees.ToArray();
 
         // 灌木 / 花：成簇分布（避免沿建筑立面排成一条线），离建筑更远
         var bushes = new List<PosItem>();

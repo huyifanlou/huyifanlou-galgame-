@@ -14,6 +14,7 @@ public class TimeOfDay : MonoBehaviour
     Light _dir, _up, _fill;
     Weather _wth;
     bool _winNight;
+    float _cullTimer;
     PostFX _post;
 
     public float Hour => GameMinutes / 60f;
@@ -241,6 +242,20 @@ public class TimeOfDay : MonoBehaviour
             if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 0.82f, 0.55f, m * 0.55f));
             foreach (var ll in _w.LampLights) ll.intensity = m * 1.0f;
 
+            // 只点亮相机附近的路灯（远处灯对画面贡献很小，却会成倍增加光照 pass）
+            _cullTimer -= Time.deltaTime;
+            if (_cullTimer <= 0f && Camera.main != null)
+            {
+                _cullTimer = 0.25f;
+                var cp = Camera.main.transform.position;
+                for (int i = 0; i < _w.LampLights.Count; i++)
+                {
+                    var ll = _w.LampLights[i];
+                    bool near = (ll.transform.position - cp).sqrMagnitude < 38f * 38f;
+                    if (ll.enabled != near) ll.enabled = near;
+                }
+            }
+
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
@@ -249,33 +264,6 @@ public class TimeOfDay : MonoBehaviour
                 _post.Threshold = Mathf.Lerp(0.86f, 0.72f, m);
             }
 
-            // 建筑窗户：昼夜双贴图 + 夜晚自发光（亮窗提取成 EmissionMap）
-            bool night = m > 0.45f;
-            if (night != _winNight)
-            {
-                _winNight = night;
-                for (int i = 0; i < _w.WindowMatRefs.Count; i++)
-                {
-                    var def = _w.WindowMats[i];
-                    var mat = _w.WindowMatRefs[i];
-                    var tex = MatLib.Tex(night ? def[1] : def[0], pixel: false);
-                    mat.mainTexture = tex;
-                    if (night)
-                    {
-                        var em = TextureLibrary.EmissionFrom(tex);
-                        if (em != null)
-                        {
-                            mat.SetTexture("_EmissionMap", em);
-                            mat.EnableKeyword("_EMISSION");
-                            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-                        }
-                    }
-                }
-            }
-            // 窗光强度随夜晚混合；白天必须压成黑色（否则没有贴图的材质会整面发光）
-            var winGlow = _winNight ? new Color(1f, 0.78f, 0.45f) * (m * 0.95f) : Color.black;
-            for (int i = 0; i < _w.WindowMatRefs.Count; i++)
-                _w.WindowMatRefs[i].SetColor("_EmissionColor", winGlow);
             // 发光窗片：夜里点亮（简单可靠），白天关闭
             if (_w.WindowGlowMat != null)
                 _w.WindowGlowMat.color = new Color(0.95f, 0.72f, 0.42f) * Mathf.Clamp01(m * 0.95f);

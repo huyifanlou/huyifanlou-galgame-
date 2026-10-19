@@ -720,6 +720,11 @@ public class WorldBuilder : MonoBehaviour
     // ── 入口 ──────────────────────────────────────────────────
     void Start()
     {
+        // 叙事游戏不需要失控帧率：锁 60 并开垂直同步，避免 CPU/GPU 长期满载
+        Application.targetFrameRate = 60;
+        QualitySettings.vSyncCount = 1;
+        QualitySettings.shadowDistance = 90f;
+
         var w = BuildWorld();
         if (w == null) return;
         // 后处理栈（泛光/移轴景深/色彩分级/暗角）——挂到主相机

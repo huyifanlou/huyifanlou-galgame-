@@ -45,7 +45,7 @@ public class PlayerRig : MonoBehaviour
         _cam.backgroundColor = MatLib.Hex("#10141c");
         _cam.fieldOfView = 46f;
         _cam.nearClipPlane = 0.5f;
-        _cam.farClipPlane = 260f;
+        _cam.farClipPlane = 200f;
 
         var spawn = new Vector2(w.Spawn.x, w.Spawn.z);
         var px = Args.F("-px"); if (px.HasValue) spawn.x = px.Value;
