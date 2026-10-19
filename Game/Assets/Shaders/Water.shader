@@ -69,7 +69,7 @@ Shader "Campus/Water"
                 float lumC = tex2D(_MainTex, duv).r;
                 float lumX = tex2D(_MainTex, duv + float2(0.012, 0.0)).r;
                 float lumY = tex2D(_MainTex, duv + float2(0.0, 0.012)).r;
-                N = normalize(N + float3((lumC - lumX) * 3.6, 0.0, (lumC - lumY) * 3.6));
+                N = normalize(N + float3((lumC - lumX) * 2.2, 0.0, (lumC - lumY) * 2.2));
 
                 float3 baseCol = lerp(_ShallowColor.rgb, _DeepColor.rgb, 0.55);
                 float3 col = lerp(baseCol, _SkyColor.rgb, fres * 0.5);
