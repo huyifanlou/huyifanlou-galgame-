@@ -9,9 +9,9 @@ public class WaterSim : MonoBehaviour
 
     public RiverDef River;
     public float Level = -1.95f;        // 静水面高度
-    public float Current = 0.85f;       // 顺流速度（m/s，河道中心）
-    public float WaveSpeed = 2.2f;      // 波速（m/s）
-    public float Damping = 0.998f;
+    public float Current = 0.32f;       // 顺流速度（m/s，河道中心；缓流）
+    public float WaveSpeed = 1.7f;      // 波速（m/s）
+    public float Damping = 0.9965f;
     const float StepX = 1f;             // 顺河采样间距
     const float StepT = 0.5f;           // 横河采样间距
 
@@ -162,16 +162,16 @@ public class WaterSim : MonoBehaviour
 
                 // 上游来波：河源持续小扰动
                 if (i < 6 && (j & 3) == 0)
-                    next += Mathf.Sin(_t * 3.1f + j * 0.7f) * 0.0012f;
+                    next += Mathf.Sin(_t * 2.3f + j * 0.7f) * 0.0007f;
                 // 全域细浪（风的扰动）：稀疏随机脉冲，保证整条河都在动
                 int hsh = (i * 92821 + j * 68917 + (int)(_t * 60f) * 31337) & 1023;
-                if (hsh < 9) next += ((hsh & 1) == 0 ? 1f : -1f) * 0.006f;
+                if (hsh < 7) next += ((hsh & 1) == 0 ? 1f : -1f) * 0.0032f;
                 // 雨滴扰动
                 if (rain > 0.01f && ((i * 7 + j * 13 + (int)(_t * 37f)) % 97) == 0)
-                    next -= 0.01f * rain;
+                    next -= 0.007f * rain;
 
                 _hPrev[idx] = cur;
-                _h[idx] = Mathf.Clamp(next, -0.14f, 0.14f);
+                _h[idx] = Mathf.Clamp(next, -0.09f, 0.09f);
             }
         }
         _t += dt;
@@ -193,7 +193,7 @@ public class WaterSim : MonoBehaviour
                 float hU = _h[i * _nt + (j > 0 ? j - 1 : j + 1)];
                 float hD = _h[i * _nt + (j < _nt - 1 ? j + 1 : j - 1)];
                 _normals[idx] = new Vector3(-(hR - hL) * inv2x, 1f, -(hD - hU) * inv2t).normalized;
-                float dyn = Mathf.Clamp01(Mathf.Abs(h - _hPrev[idx]) * 6f);
+                float dyn = Mathf.Clamp01(Mathf.Abs(h - _hPrev[idx]) * 4.5f);
                 float foam = Mathf.Clamp01(_staticFoam[idx] + dyn + Mathf.Abs(h) * 0.35f);
                 _colors[idx] = new Color(foam, 0f, 0f, 1f);
             }
