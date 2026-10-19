@@ -1473,19 +1473,37 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (b.style == "gable")
             {
-                float angle = 0.45f;
-                float slope = d / 2f / Mathf.Cos(angle) + 0.4f;
-                float y = h / 2f + 0.3f + (d / 4f) * Mathf.Tan(angle) * 0.3f;
-                Box(grp, new Vector3(0, y, d / 4f + 0.1f), new Vector3(w + 1f, 0.26f, slope), tile, new Vector3(angle * Mathf.Rad2Deg, 0, 0));
-                Box(grp, new Vector3(0, y, -d / 4f - 0.1f), new Vector3(w + 1f, 0.26f, slope), tile, new Vector3(-angle * Mathf.Rad2Deg, 0, 0));
-                Box(grp, new Vector3(0, y + (d / 4f) * Mathf.Tan(angle) * 0.65f, 0), new Vector3(w + 1.1f, 0.2f, 0.4f), ColMat("#33363f"));
-                float gH = (d / 4f + 0.1f) * Mathf.Tan(angle) + 0.42f;
-                foreach (int s in new[] { -1, 1 })
+                // 双坡：檐低脊高；山墙三角从墙顶封到屋脊；檐口/博风板收边
+                const float ang = 0.45f;
+                const float overD = 0.7f;
+                float halfD = d / 2f + overD;
+                float slope = halfD / Mathf.Cos(ang);
+                float eaveY = h / 2f + 0.32f;
+                float ridgeY = eaveY + halfD * Mathf.Tan(ang);
+                float midY = (eaveY + ridgeY) / 2f;
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 1.2f, 0.24f, slope), 4f, 2f),
+                    new Vector3(0f, midY, halfD / 2f), tile, new Vector3(ang * Mathf.Rad2Deg, 0f, 0f));
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 1.2f, 0.24f, slope), 4f, 2f),
+                    new Vector3(0f, midY, -halfD / 2f), tile, new Vector3(-ang * Mathf.Rad2Deg, 0f, 0f));
+                Box(grp, new Vector3(0f, ridgeY + 0.1f, 0f), new Vector3(w + 1.4f, 0.22f, 0.4f), ColMat("#33363f"));
+                float gH = ridgeY - h / 2f;
+                foreach (int s2 in new[] { -1, 1 })
                 {
                     var tri = NewGo("gable", grp).transform;
-                    tri.localPosition = new Vector3(s * (w / 2f - 0.05f), h / 2f, 0f);
+                    tri.localPosition = new Vector3(s2 * (w / 2f - 0.02f), h / 2f, 0f);
                     tri.localEulerAngles = new Vector3(0f, 90f, 0f);
-                    MeshObj(tri, MeshFactory.Triangle(d + 0.2f, gH), Vector3.zero, ColMat(b.wall));
+                    MeshObj(tri, MeshFactory.Triangle(d + 2f * overD, gH), Vector3.zero, ColMat(b.wall));
+                    // 博风板（沿两端斜边）
+                    Box(grp, new Vector3(s2 * (w / 2f + 0.58f), midY, halfD / 2f), new Vector3(0.16f, 0.3f, slope),
+                        ColMat(b.trim), new Vector3(ang * Mathf.Rad2Deg, 0f, 0f));
+                    Box(grp, new Vector3(s2 * (w / 2f + 0.58f), midY, -halfD / 2f), new Vector3(0.16f, 0.3f, slope),
+                        ColMat(b.trim), new Vector3(-ang * Mathf.Rad2Deg, 0f, 0f));
+                }
+                // 檐口封板 + 檐下 soffit（前后各一条，封住屋顶与墙之间的空隙）
+                foreach (int sz in new[] { -1, 1 })
+                {
+                    Box(grp, new Vector3(0f, eaveY - 0.05f, sz * halfD), new Vector3(w + 1.2f, 0.2f, 0.2f), ColMat(b.trim));
+                    Box(grp, new Vector3(0f, eaveY - 0.02f, sz * (d / 2f + overD / 2f)), new Vector3(w + 0.9f, 0.07f, overD), ColMat(b.trim));
                 }
             }
             else if (b.style == "gym")
@@ -1720,25 +1738,36 @@ public class WorldBuilder : MonoBehaviour
                 MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.32f, 0.34f, 0.62f), 1.6f),
                     new Vector3(x, py + ph + 0.45f, sz * (d / 2f + 0.15f)), woodDark);
 
-        // 深出檐双坡屋顶 + 山墙端封 + 椽头 + 金饰
+        // 深出檐双坡屋顶：檐低脊高；山墙从墙顶封到脊；檐口/博风板收边
         const float ang = 0.45f;
-        float over = 1.5f;
+        float over = 1.2f;
         float halfD = d / 2f + over;
         float slope = halfD / Mathf.Cos(ang);
-        float eaveY = py + ph + 0.9f;
+        float eaveY = py + ph + 0.4f;
         float ridgeY = eaveY + halfD * Mathf.Tan(ang);
+        float midY = (eaveY + ridgeY) / 2f;
         foreach (int sz in new[] { -1, 1 })
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 3.2f, 0.28f, slope), 4f, 2f),
-                new Vector3(0f, eaveY + halfD * Mathf.Tan(ang) * 0.5f, sz * halfD / 2f), roof,
-                new Vector3(-sz * ang * Mathf.Rad2Deg, 0f, 0f));
-        Box(grp, new Vector3(0f, ridgeY + 0.12f, 0f), new Vector3(w + 3.4f, 0.26f, 0.5f), ColMat("#2b2622"));
-        float gH = halfD * Mathf.Tan(ang) + 0.28f;
+            MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 2.4f, 0.28f, slope), 4f, 2f),
+                new Vector3(0f, midY, sz * halfD / 2f), roof,
+                new Vector3(sz * ang * Mathf.Rad2Deg, 0f, 0f));
+        Box(grp, new Vector3(0f, ridgeY + 0.12f, 0f), new Vector3(w + 2.6f, 0.26f, 0.5f), ColMat("#2b2622"));
+        float gH = ridgeY - (py + ph);
         foreach (int sx in new[] { -1, 1 })
         {
             var tri = NewGo("sg", grp).transform;
-            tri.localPosition = new Vector3(sx * (w / 2f + 1.5f), eaveY, 0f);
+            tri.localPosition = new Vector3(sx * (w / 2f - 0.02f), py + ph, 0f);
             tri.localEulerAngles = new Vector3(0f, 90f, 0f);
-            MeshObj(tri, MeshFactory.Triangle(d + 3f, gH), Vector3.zero, ColMat("#c8b48e"));
+            MeshObj(tri, MeshFactory.Triangle(d + 2f * over, gH), Vector3.zero, ColMat("#c8b48e"));
+            // 博风板
+            Box(grp, new Vector3(sx * (w / 2f + 1.16f), midY, halfD / 2f), new Vector3(0.2f, 0.32f, slope),
+                ColMat("#8a6a48"), new Vector3(ang * Mathf.Rad2Deg, 0f, 0f));
+            Box(grp, new Vector3(sx * (w / 2f + 1.16f), midY, -halfD / 2f), new Vector3(0.2f, 0.32f, slope),
+                ColMat("#8a6a48"), new Vector3(-ang * Mathf.Rad2Deg, 0f, 0f));
+        }
+        foreach (int sz in new[] { -1, 1 })
+        {
+            Box(grp, new Vector3(0f, eaveY - 0.06f, sz * halfD), new Vector3(w + 2.4f, 0.22f, 0.22f), ColMat("#6a4a34"));
+            Box(grp, new Vector3(0f, eaveY - 0.02f, sz * (d / 2f + over / 2f)), new Vector3(w + 2.0f, 0.07f, over), ColMat("#6a4a34"));
         }
         for (float x = -w / 2f; x <= w / 2f; x += 0.9f)
             foreach (int sz in new[] { -1, 1 })
@@ -1882,6 +1911,9 @@ public class WorldBuilder : MonoBehaviour
 
     void Tree(Transform parent, float x, float z, int v)
     {
+        // 硬排除：神社前庭/参道口、河面与桥面，避免任何来源的树卡在建筑或水里
+        if (Mathf.Abs(x - 79f) < 13f && Mathf.Abs(z + 57f) < 16f) return;
+        if (W.RIVER != null && Mathf.Abs(z - RZ(x)) < 10f) return;
         var grp = NewGo("tree", parent).transform;
         grp.localPosition = new Vector3(x, 0f, z);
         grp.gameObject.AddComponent<ProximityHide>().Radius = 3.2f;

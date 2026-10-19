@@ -547,7 +547,14 @@ public static class TownData
             float r = 101f + (float)rnd.Next() * 6f;
             bt.Add(new TreeItem { x = R1(Mathf.Cos(a) * r), z = R1(Mathf.Sin(a) * r), v = 6 + rnd.NextInt(3) });
         }
-        w.BORDER_TREES = bt.ToArray();
+        var btKept = new List<TreeItem>();
+        foreach (var t in bt)
+        {
+            if (Mathf.Abs(t.z - RiverZ(t.x)) < 12f) continue;
+            if (Mathf.Abs(t.x - 79f) < 12f && Mathf.Abs(t.z + 57f) < 15f) continue;
+            btKept.Add(t);
+        }
+        w.BORDER_TREES = btKept.ToArray();
         w.BORDER_BUSHES = new PosItem[0];
         w.BORDER_ROCKS = new PosItem[0];
 
