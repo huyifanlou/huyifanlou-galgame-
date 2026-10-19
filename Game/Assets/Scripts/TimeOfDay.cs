@@ -232,28 +232,56 @@ public class TimeOfDay : MonoBehaviour
             if (_w.SkyNightTr != null) _w.SkyNightTr.Rotate(0f, Time.deltaTime * 0.004f * Mathf.Rad2Deg, 0f);
 
             // 路灯：灯头玻璃变暖 + 地面光池淡入（web: opacity = m*0.68）
-            if (_w.LampGlass != null) _w.LampGlass.color = Color.Lerp(GLASS_OFF, GLASS_ON, m);
-            if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 0.86f, 0.62f, m * 0.72f));
-            foreach (var ll in _w.LampLights) ll.intensity = m * 1.2f;
+            if (_w.LampGlass != null)
+            {
+                _w.LampGlass.color = Color.Lerp(GLASS_OFF, GLASS_ON, m);
+                _w.LampGlass.EnableKeyword("_EMISSION");
+                _w.LampGlass.SetColor("_EmissionColor", new Color(1f, 0.72f, 0.4f) * (m * 0.85f));
+            }
+            if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 0.82f, 0.55f, m * 0.55f));
+            foreach (var ll in _w.LampLights) ll.intensity = m * 1.0f;
 
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
-                _post.BloomIntensity = Mathf.Lerp(0.14f, 0.55f, m);
+                _post.BloomIntensity = Mathf.Lerp(0.14f, 0.42f, m);
                 _post.VigStrength = Mathf.Lerp(0.60f, 0.70f, m);
                 _post.Threshold = Mathf.Lerp(0.86f, 0.72f, m);
             }
 
-            // 建筑窗户：昼夜双贴图（阈值 0.45，跨阈值才切换）
-            bool night = m > 0.45f;            if (night != _winNight)
+            // 建筑窗户：昼夜双贴图 + 夜晚自发光（亮窗提取成 EmissionMap）
+            bool night = m > 0.45f;
+            if (night != _winNight)
             {
                 _winNight = night;
                 for (int i = 0; i < _w.WindowMatRefs.Count; i++)
                 {
                     var def = _w.WindowMats[i];
-                    _w.WindowMatRefs[i].mainTexture = MatLib.Tex(night ? def[1] : def[0], pixel: false);
+                    var mat = _w.WindowMatRefs[i];
+                    var tex = MatLib.Tex(night ? def[1] : def[0], pixel: false);
+                    mat.mainTexture = tex;
+                    if (night)
+                    {
+                        var em = TextureLibrary.EmissionFrom(tex);
+                        if (em != null)
+                        {
+                            mat.SetTexture("_EmissionMap", em);
+                            mat.EnableKeyword("_EMISSION");
+                            mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                        }
+                    }
                 }
             }
+            // 窗光强度随夜晚混合；白天必须压成黑色（否则没有贴图的材质会整面发光）
+            var winGlow = _winNight ? new Color(1f, 0.78f, 0.45f) * (m * 0.95f) : Color.black;
+            for (int i = 0; i < _w.WindowMatRefs.Count; i++)
+                _w.WindowMatRefs[i].SetColor("_EmissionColor", winGlow);
+            // 发光窗片：夜里点亮（简单可靠），白天关闭
+            if (_w.WindowGlowMat != null)
+                _w.WindowGlowMat.color = new Color(0.95f, 0.72f, 0.42f) * Mathf.Clamp01(m * 0.95f);
+            bool glowOn = m > 0.25f;
+            for (int i = 0; i < _w.WindowGlowRenders.Count; i++)
+                if (_w.WindowGlowRenders[i].enabled != glowOn) _w.WindowGlowRenders[i].enabled = glowOn;
         }
     }
 }

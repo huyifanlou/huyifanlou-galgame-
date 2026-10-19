@@ -20,6 +20,8 @@ public class WorldBuilder : MonoBehaviour
     public readonly List<Material> WindowMatRefs = new List<Material>();
     public readonly List<Material> LeafMats = new List<Material>();   // 叶簇材质（天气：雪天覆白）
     public readonly List<Light> LampLights = new List<Light>();       // 路灯点光源（夜里由 TimeOfDay 点亮）
+    public Material WindowGlowMat;                                    // 亮窗发光片的共享材质
+    public readonly List<Renderer> WindowGlowRenders = new List<Renderer>();
     public Material GrassMat;                                        // 草地材质（天气：雨天变暗）
     public Vector3 Spawn = new Vector3(0f, 0f, 4f);
 
@@ -32,6 +34,26 @@ public class WorldBuilder : MonoBehaviour
     // 骑楼老街：这些店铺前加连续柱廊（数据仍是普通建筑，只在渲染时加构造）
     static readonly HashSet<string> ArcadeIds = new HashSet<string>
     { "o_silk", "o_tea", "o_grocery", "o_pharm", "o_post", "o_theater" };
+    static readonly HashSet<string> ShopIds = new HashSet<string>
+    { "o_silk", "o_tea", "o_grocery", "o_pharm", "o_post", "r_milktea", "r_market", "r_rest", "r_photo", "r_book", "r_conv" };
+    static string ShopStripeA(string id)
+    {
+        switch (id)
+        {
+            case "o_silk": return "#8a4438";
+            case "o_tea": return "#4a6a4a";
+            case "o_grocery": return "#8a6a3c";
+            case "o_pharm": return "#3f6a52";
+            case "o_post": return "#3f5a6a";
+            case "r_milktea": return "#c07aa8";
+            case "r_market": return "#3f6a9a";
+            case "r_rest": return "#c9553f";
+            case "r_photo": return "#5a5a72";
+            case "r_book": return "#8a5a3c";
+            case "r_conv": return "#4a8a4a";
+            default: return "#c9553f";
+        }
+    }
 
     // ── 材质缓存 ──────────────────────────────────────────────
     Material LitTex(string tex, float tu = 1f, float tv = 1f)
@@ -407,12 +429,55 @@ public class WorldBuilder : MonoBehaviour
                             foreach (int sz in new[] { -1, 1 })
                                 MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.08f, 2.7f, 0.08f), 1.2f),
                                     new Vector3(sx * 1.05f, 1.35f, sz * 0.95f), ColMat("#8a6a48"));
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.07f, 2.2f), 1f), new Vector3(0f, 2.72f, 0.1f), cloth, new Vector3(8f, 0f, 0f));
+                        // 顶棚样式：0 单坡 / 1 人字 / 2 弧形三片 / 3 双层+前帘
+                        int cstyle;
+                        switch (kind)
+                        {
+                            case "food": case "grill": case "ice": cstyle = 0; break;
+                            case "goods": case "masks": case "games": cstyle = 1; break;
+                            case "drinks": case "goldfish": case "candy": cstyle = 2; break;
+                            default: cstyle = 3; break;
+                        }
+                        switch (cstyle)
+                        {
+                            case 0:
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.07f, 2.2f), 1f), new Vector3(0f, 2.72f, 0.1f), cloth, new Vector3(8f, 0f, 0f));
+                                break;
+                            case 1:
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.6f, 0.07f, 1.45f), 1f), new Vector3(0f, 2.9f, -0.45f), cloth, new Vector3(-18f, 0f, 0f));
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.6f, 0.07f, 1.45f), 1f), new Vector3(0f, 2.9f, 0.65f), cloth, new Vector3(18f, 0f, 0f));
+                                Box(grp, new Vector3(0f, 3.13f, 0.1f), new Vector3(2.7f, 0.1f, 0.25f), ColMat(colA));
+                                break;
+                            case 2:
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.06f, 0.95f), 1f), new Vector3(0f, 2.95f, 0.0f), cloth);
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.06f, 0.85f), 1f), new Vector3(0f, 2.78f, -0.78f), cloth, new Vector3(-22f, 0f, 0f));
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.06f, 0.85f), 1f), new Vector3(0f, 2.78f, 0.92f), cloth, new Vector3(22f, 0f, 0f));
+                                break;
+                            case 3:
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.5f, 0.07f, 2.2f), 1f), new Vector3(0f, 2.62f, 0.1f), cloth, new Vector3(6f, 0f, 0f));
+                                MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.05f, 0.06f, 1.45f), 1f), new Vector3(0f, 3.22f, -0.15f), cloth, new Vector3(-10f, 0f, 0f));
+                                for (int i = 0; i < 3; i++)
+                                    Box(grp, new Vector3(-0.72f + i * 0.72f, 2.26f, 1.02f), new Vector3(0.66f, 0.5f, 0.03f),
+                                        ColMat(i % 2 == 0 ? colA : colB), default, false);
+                                break;
+                        }
                         // 前檐布幌
-                        Box(grp, new Vector3(0f, 2.3f, 1.02f), new Vector3(2.1f, 0.42f, 0.03f), ColMat(colA), default, false);
-                        Box(grp, new Vector3(0f, 2.3f, 1.04f), new Vector3(0.3f, 0.3f, 0.02f), ColMat(colB), default, false);
+                        Box(grp, new Vector3(0f, 2.22f, 1.02f), new Vector3(2.1f, 0.38f, 0.03f), ColMat(colA), default, false);
+                        Box(grp, new Vector3(0f, 2.22f, 1.04f), new Vector3(0.3f, 0.28f, 0.02f), ColMat(colB), default, false);
+                        // 四角斜撑
+                        foreach (int sx in new[] { -1, 1 })
+                            foreach (int sz in new[] { -1, 1 })
+                                Box(grp, new Vector3(sx * 0.94f, 2.42f, sz * 0.86f), new Vector3(0.06f, 0.72f, 0.06f),
+                                    ColMat("#8a6a48"), new Vector3(0f, 0f, sx * 26f));
+                        // 檐下灯笼
+                        Cylinder(grp, new Vector3(0.98f, 2.32f, 0.98f), 0.13f, 0.32f, ColMat("#e8b24a"));
+                        Box(grp, new Vector3(0.98f, 2.52f, 0.98f), new Vector3(0.04f, 0.22f, 0.04f), ColMat("#3a2f28"));
                         // 小凳
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.4f, 0.42f, 0.4f), 2f), new Vector3(0.75f, 0.21f, 0.95f), woodMat);
+                        // 相机避障/物理用整体碰撞
+                        var stallCol = grp.gameObject.AddComponent<BoxCollider>();
+                        stallCol.center = new Vector3(0f, 1.5f, 0f);
+                        stallCol.size = new Vector3(2.7f, 3.1f, 2.5f);
 
                         // 货品
                         switch (kind)
@@ -695,6 +760,7 @@ public class WorldBuilder : MonoBehaviour
         if (W.RIVER != null) Spawn = new Vector3(-14f, 0f, -4f);   // 钟楼广场
         Root = NewGo("World", transform).transform;
 
+        WindowGlowMat = MatLib.UnlitColor(MatLib.Hex("#ffcf8a"));
         Sky();
         GroundAndPaths();
         River();
@@ -1367,6 +1433,7 @@ public class WorldBuilder : MonoBehaviour
 
             bool plain = b.style == "plain";   // 摊亭/站台这类：无立面细节，纯色体块
             var wallMat = plain ? ColMat(b.wall) : LitTex("wall_" + b.id + "_day");
+            if (!plain) wallMat.name = "wall_" + b.id + "_day";   // 便于定位材质
             // 世界尺度 UV：贴图覆盖 w×h 米 → 正/背/侧四面同密度（侧面显示立面左侧裁切，不再被拉伸）
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(w, h, d), plain ? 2.4f : w, plain ? 2.4f : h), Vector3.zero, wallMat);
             if (!plain)
@@ -1429,6 +1496,30 @@ public class WorldBuilder : MonoBehaviour
                 Box(grp, new Vector3(-w / 2f - 0.12f, py, 0), new Vector3(0.24f, 0.42f, d + 0.7f), ColMat(b.plinth));
             }
 
+            if (!plain)
+            {
+                // 四角壁柱（竖向划分）
+                foreach (int sx in new[] { -1, 1 })
+                    foreach (int sz in new[] { -1, 1 })
+                        Box(grp, new Vector3(sx * (w / 2f - 0.16f), 0f, sz * (d / 2f - 0.16f)),
+                            new Vector3(0.3f, h, 0.3f), ColMat(b.trim));
+                // 层间线脚（四面一圈，增加水平层次）
+                float floorH = h / Mathf.Max(1, b.rows);
+                for (int f = 1; f < b.rows; f++)
+                {
+                    float yy = -h / 2f + f * floorH;
+                    Box(grp, new Vector3(0f, yy, d / 2f + 0.05f), new Vector3(w + 0.12f, 0.12f, 0.1f), ColMat(b.trim));
+                    Box(grp, new Vector3(0f, yy, -d / 2f - 0.05f), new Vector3(w + 0.12f, 0.12f, 0.1f), ColMat(b.trim));
+                    Box(grp, new Vector3(w / 2f + 0.05f, yy, 0f), new Vector3(0.1f, 0.12f, d), ColMat(b.trim));
+                    Box(grp, new Vector3(-w / 2f - 0.05f, yy, 0f), new Vector3(0.1f, 0.12f, d), ColMat(b.trim));
+                }
+                // 坡顶烟囱
+                if (b.style == "gable")
+                {
+                    Box(grp, new Vector3(w * 0.3f, h / 2f + 1.15f, -d * 0.15f), new Vector3(0.66f, 1.5f, 0.66f), ColMat(b.plinth));
+                    Box(grp, new Vector3(w * 0.3f, h / 2f + 1.95f, -d * 0.15f), new Vector3(0.84f, 0.14f, 0.84f), ColMat("#3a3a3e"));
+                }
+            }
             if (b.roofProps)
             {
                 var rp = NewGo("roofProps", grp).transform;
@@ -1479,13 +1570,88 @@ public class WorldBuilder : MonoBehaviour
             Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
             Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
-            // 门前绿篱：沿立面连续的矮篱（中间留出门洞），不再是两块孤立的绿方块
-            float hedgeW = Mathf.Max(1.6f, w * 0.32f);
-            foreach (int sgn in new[] { -1, 1 })
-                MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
-                    new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#3d7a37"));
+            // 店铺：雨棚 + 悬挂小招牌；骑楼店铺用横匾
+            if (ShopIds.Contains(b.id))
+            {
+                if (ArcadeIds.Contains(b.id))
+                {
+                    Box(grp, new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.15f), new Vector3(w * 0.8f, 0.5f, 0.14f), ColMat(b.trim));
+                    Box(grp, new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.23f), new Vector3(w * 0.55f, 0.22f, 0.03f), ColMat("#c9a24a"), default, false);
+                }
+                else
+                {
+                    var awnMat = MatLib.LitTexture(TextureLibrary.Stripes2(ShopStripeA(b.id), "#f2ead8"), 1f, 1f, 0.1f);
+                    float aw = Mathf.Max(2f, w * 0.62f);
+                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(aw, 0.07f, 1.3f), 1f),
+                        new Vector3(0f, -h / 2f + 2.7f, d / 2f + 0.8f), awnMat, new Vector3(14f, 0f, 0f));
+                    foreach (int sx in new[] { -1, 1 })
+                        Box(grp, new Vector3(sx * (aw / 2f - 0.1f), -h / 2f + 2.32f, d / 2f + 1.32f),
+                            new Vector3(0.06f, 0.72f, 0.06f), MatMetal("#8a9099"));
+                }
+                Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.45f), new Vector3(0.08f, 0.85f, 0.5f), ColMat(b.trim));
+                Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.72f), new Vector3(0.05f, 0.5f, 0.3f), ColMat("#c9a24a"), default, false);
+            }
+            // 门前绿篱（神社不种）
+            if (!b.id.StartsWith("k_"))
+            {
+                float hedgeW = Mathf.Max(1.6f, w * 0.32f);
+                foreach (int sgn in new[] { -1, 1 })
+                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
+                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#3d7a37"));
+            }
             if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
+            if (b.style != "shrine") BuildWindowGlow(grp, b, w, h, d);
         }
+    }
+
+    // ── 夜间亮窗：按立面窗格生成一层发光片（不依赖贴图/变体，稳定可见）──
+    void BuildWindowGlow(Transform grp, BuildingDef b, float w, float h, float d)
+    {
+        float aw = b.cols * 256f, ah = b.rows * 256f + 320f;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        int hash = b.id.GetHashCode() & 0x7fffffff;
+        for (int r = 0; r < b.rows; r++)
+            for (int c = 0; c < b.cols; c++)
+            {
+                if (((hash + c * 37 + r * 91) % 100) >= 55) continue;
+                float u = (c * 256f + 136f) / aw;
+                float v = 1f - (r * 256f + 160f) / ah;
+                float px = (u - 0.5f) * w, py = (v - 0.5f) * h;
+                if (r == 0 && Mathf.Abs(px) < 1.3f) continue;          // 门洞位置不放
+                float ww = 160f / aw * w * 0.74f, hh = 160f / ah * h * 0.72f;
+                // 拆成 2×2 四格玻璃，保留窗框/中梃
+                for (int gx = 0; gx < 2; gx++)
+                    for (int gy = 0; gy < 2; gy++)
+                    {
+                        float cx = px + (gx == 0 ? -0.25f : 0.25f) * ww;
+                        float cy = py + (gy == 0 ? -0.25f : 0.25f) * hh;
+                        float gwc = ww * 0.44f, ghc = hh * 0.44f;
+                        int i0 = verts.Count;
+                        verts.Add(new Vector3(cx - gwc / 2f, cy - ghc / 2f, d / 2f + 0.022f));
+                        verts.Add(new Vector3(cx + gwc / 2f, cy - ghc / 2f, d / 2f + 0.022f));
+                        verts.Add(new Vector3(cx + gwc / 2f, cy + ghc / 2f, d / 2f + 0.022f));
+                        verts.Add(new Vector3(cx - gwc / 2f, cy + ghc / 2f, d / 2f + 0.022f));
+                        uvs.Add(new Vector2(0f, 0f)); uvs.Add(new Vector2(1f, 0f));
+                        uvs.Add(new Vector2(1f, 1f)); uvs.Add(new Vector2(0f, 1f));
+                        tris.Add(i0); tris.Add(i0 + 1); tris.Add(i0 + 2);
+                        tris.Add(i0); tris.Add(i0 + 2); tris.Add(i0 + 3);
+                    }
+            }
+        if (verts.Count == 0) return;
+        var mesh = new Mesh();
+        mesh.SetVertices(verts);
+        mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(tris, 0);
+        mesh.RecalculateNormals();
+        var go = NewGo("win_glow", grp);
+        go.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var mr = go.AddComponent<MeshRenderer>();
+        mr.sharedMaterial = WindowGlowMat;
+        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        mr.receiveShadows = false;
+        WindowGlowRenders.Add(mr);
     }
 
     // ── 神社本殿/拜殿：基坛 + 柱网 + 深出檐双坡屋顶 + 斗栱/椽头 + 注连绳 ──
@@ -1891,6 +2057,7 @@ public class WorldBuilder : MonoBehaviour
         var grp = NewGo("Player", Root).transform;
         grp.localPosition = Spawn;
         Player = grp;
+        grp.gameObject.layer = 2;   // Ignore Raycast：相机避障射线不撞玩家自己
         var prb = grp.gameObject.AddComponent<Rigidbody>();
         prb.isKinematic = true;
         prb.useGravity = false;

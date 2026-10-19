@@ -176,10 +176,12 @@ public static class TownData
         P("kart", 72, 28, w: 14, d: 10),
 
         // 夏日祭摊位（参道两侧）
-        P("stall", 67, -52.5f, kind: "goldfish"), P("stall", 73, -52.5f, kind: "food"), P("stall", 79, -52.5f, kind: "goods"),
-        P("stall", 85, -52.5f, kind: "candy"), P("stall", 91, -52.5f, kind: "drinks"),
-        P("stall", 67, -39.5f, kind: "grill"), P("stall", 73, -39.5f, kind: "masks"), P("stall", 79, -39.5f, kind: "games"),
-        P("stall", 85, -39.5f, kind: "ice"), P("stall", 91, -39.5f, kind: "lantern"),
+        // 神社参道两侧（中间 79 轴留空，视线直通鸟居/本殿）
+        P("stall", 63, -52.5f, kind: "goldfish"), P("stall", 69, -52.5f, kind: "food"),
+        P("stall", 89, -52.5f, kind: "goods"), P("stall", 95, -52.5f, kind: "candy"),
+        P("stall", 63, -39.5f, kind: "grill"), P("stall", 69, -39.5f, kind: "masks"),
+        P("stall", 89, -39.5f, kind: "games"), P("stall", 95, -39.5f, kind: "ice"),
+        P("stall", 66, -55.5f, kind: "drinks"), P("stall", 92, -36.5f, kind: "lantern"),
 
         // 公园喷泉
         P("fountain", 34, -40, r: 4.2f),
@@ -220,7 +222,7 @@ public static class TownData
         k.Add((-60f, 32.8f, 16f, 2.4f));
         k.Add((-25f, 32.8f, 15f, 2.4f));
         // 神社前庭 / 鸟居 / 石阶
-        k.Add((79f, -64.5f, 6.5f, 4.5f));
+        k.Add((79f, -57f, 12f, 15f));   // 神社前庭+参道口整体留空（含参道北侧）
         // 游乐场核心（游乐设施之间保持空地）
         k.Add((51f, 37f, 43f, 15f));
         // 铁路道床
@@ -470,10 +472,10 @@ public static class TownData
             L(x, 69.2f, -Mathf.PI / 2f); L(x, 74.8f, Mathf.PI / 2f);
         }
         // 夏日祭参道两侧
-        for (float x = 64f; x <= 92f; x += 12f)
+        foreach (float x in new[] { 66f, 78f, 90f })
         {
-            L(x, -52.8f, -Mathf.PI / 2f);
-            L(x, -39.2f, Mathf.PI / 2f);
+            L(x, -58.5f, -Mathf.PI / 2f);
+            L(x, -33.5f, Mathf.PI / 2f);
         }
         // 神社石阶
         L(73.2f, -56f, 0f); L(84.8f, -56f, Mathf.PI);
@@ -496,6 +498,26 @@ public static class TownData
             L(x, RiverZ(x) + 15.7f, -Mathf.PI / 2f);
             L(x, RiverZ(x) - 15.7f, Mathf.PI / 2f);
         }
+        // 路灯不得立在车行道上：两轮把压路的灯推到路缘外
+        for (int pass = 0; pass < 2; pass++)
+            foreach (var l in lamps)
+                foreach (var r in Roads)
+                {
+                    if (r.axis == "z")
+                    {
+                        if (l.z < r.from - 0.5f || l.z > r.to + 0.5f) continue;
+                        if (Mathf.Abs(l.x - r.at) >= r.width / 2f + 0.4f) continue;
+                        float side = l.x >= r.at ? 1f : -1f;
+                        l.x = r.at + side * (r.width / 2f + 0.55f);
+                    }
+                    else
+                    {
+                        if (l.x < r.from - 0.5f || l.x > r.to + 0.5f) continue;
+                        if (Mathf.Abs(l.z - r.at) >= r.width / 2f + 0.4f) continue;
+                        float side = l.z >= r.at ? 1f : -1f;
+                        l.z = r.at + side * (r.width / 2f + 0.55f);
+                    }
+                }
         w.LAMPS = lamps.ToArray();
 
         // 边界林带

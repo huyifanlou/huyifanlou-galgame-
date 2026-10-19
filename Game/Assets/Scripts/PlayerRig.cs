@@ -277,11 +277,23 @@ public class PlayerRig : MonoBehaviour
         float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(_pitch) * _dist;
         float cy = p.y + Mathf.Sin(_pitch) * _dist;
         var cam = _cam.transform;
-        if (!_camInit) cam.position = new Vector3(cx, cy, cz);
+        // 相机避障：从头部向目标机位射线，撞到建筑/摊位就把相机拉到障碍前
+        Vector3 desired = new Vector3(cx, cy, cz);
+        Vector3 head = new Vector3(p.x, p.y + 1.35f, p.z);
+        Vector3 ray = desired - head;
+        float rayLen = ray.magnitude;
+        if (rayLen > 0.05f &&
+            Physics.Raycast(head, ray / rayLen, out var hit, rayLen, ~(1 << 2), QueryTriggerInteraction.Ignore))
+        {
+            // 与障碍保持 2.5m：既不会钻进摊位棚下，也不会贴着墙
+            float safe = Mathf.Max(1.2f, hit.distance - 2.5f);
+            desired = head + ray / rayLen * Mathf.Min(safe, rayLen);
+        }
+        if (!_camInit) cam.position = desired;
         else
         {
             float t = Mathf.Min(1f, dt * 5f);
-            cam.position = Vector3.Lerp(cam.position, new Vector3(cx, cy, cz), t);
+            cam.position = Vector3.Lerp(cam.position, desired, t);
         }
         _camInit = true;
         cam.LookAt(new Vector3(p.x, 1.1f, p.z));

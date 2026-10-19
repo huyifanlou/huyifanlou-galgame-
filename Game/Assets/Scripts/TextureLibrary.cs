@@ -1067,6 +1067,31 @@ public static class TextureLibrary
         return p;
     }
 
+    // 从夜景立面提取“亮窗”做自发光贴图（降采样，避免黄昏时卡顿）
+    static readonly Dictionary<Texture2D, Texture2D> EmCache = new Dictionary<Texture2D, Texture2D>();
+    public static Texture2D EmissionFrom(Texture2D src, int step = 4)
+    {
+        if (src == null) return null;
+        if (EmCache.TryGetValue(src, out var cached)) return cached;
+        int w = Mathf.Max(1, src.width / step), h = Mathf.Max(1, src.height / step);
+        var px = src.GetPixels();
+        var outp = new Color[w * h];
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++)
+            {
+                var c = px[Mathf.Min(src.height - 1, y * step) * src.width + Mathf.Min(src.width - 1, x * step)];
+                bool lit = c.r > 0.92f && c.g > 0.70f && c.b < 0.68f && c.r > c.b * 1.35f;
+                outp[y * w + x] = lit ? c : Color.black;
+            }
+        var t = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        t.SetPixels(outp);
+        t.Apply(false, false);
+        t.filterMode = FilterMode.Bilinear;
+        t.wrapMode = TextureWrapMode.Clamp;
+        EmCache[src] = t;
+        return t;
+    }
+
     // 参数化条纹棚布（夏日祭摊位配色）：颜色对 + 缓存
     static readonly Dictionary<string, Texture2D> StripeCache = new Dictionary<string, Texture2D>();
     public static Texture2D Stripes2(string colorA, string colorB)

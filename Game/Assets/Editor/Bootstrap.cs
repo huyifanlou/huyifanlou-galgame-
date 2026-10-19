@@ -59,6 +59,20 @@ public static class Bootstrap
                 EditorUtility.SetDirty(mat);
             }
         }
+        // 额外占位：Standard 的 _EMISSION 变体（夜间窗户/灯头发光）
+        var emPath = holderDir + "/StandardEmission.mat";
+        var em = AssetDatabase.LoadAssetAtPath<Material>(emPath);
+        if (em == null)
+        {
+            em = new Material(Shader.Find("Standard"));
+            AssetDatabase.CreateAsset(em, emPath);
+        }
+        em.EnableKeyword("_EMISSION");
+        em.SetColor("_EmissionColor", Color.white);
+        em.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        EditorUtility.SetDirty(em);
+        AssetDatabase.SaveAssets();
+
         AssetDatabase.SaveAssets();
         Debug.Log("[Bootstrap] Shader 占位材质完成（Standard 已按 Cutout 变体配置）");
 
