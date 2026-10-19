@@ -983,7 +983,7 @@ public static class TextureLibrary
                 C(R.Int(2) == 0 ? "rgba(30,72,84,0.20)" : "rgba(104,148,158,0.13)"));
         for (int i = 0; i < 460; i++)
             Wrap(R.Int(560), R.Int(636), 18 + R.Int(64), 1 + R.Int(2),
-                C(R.Int(3) == 0 ? "rgba(190,216,220,0.18)" : "rgba(32,72,84,0.16)"));
+                C(R.Int(3) == 0 ? "rgba(214,232,234,0.34)" : "rgba(32,72,84,0.18)"));
         for (int i = 0; i < 80; i++)
             Wrap(R.Int(636), R.Int(600), 1, 16 + R.Int(46), C("rgba(130,170,178,0.16)"));
         for (int i = 0; i < 110; i++)

@@ -194,6 +194,15 @@ public class TimeOfDay : MonoBehaviour
             _up.intensity = Mathf.Lerp(DAY_HEMI, NIGHT_HEMI, m) * 0.55f;
             _up.color = sky;
         }
+
+        // 水面着色（Campus/Water 自定义着色器）
+        if (_dir != null)
+        {
+            Shader.SetGlobalColor("_SunColor", _dir.color * _dir.intensity);
+            Shader.SetGlobalVector("_SunDir", -_dir.transform.forward);
+        }
+        Shader.SetGlobalColor("_SkyColor", Color.Lerp(sky, WARM_SKY, warm * 0.5f) * Mathf.Lerp(0.75f, 0.2f, m) * (_wth != null ? _wth.SkyMul : 1f));
+        Shader.SetGlobalFloat("_WaterAmbient", Mathf.Lerp(1f, 0.3f, m));
         if (_fill != null)
         {
             _fill.intensity = Mathf.Lerp(0.18f, 0.07f, m) * wAmb;

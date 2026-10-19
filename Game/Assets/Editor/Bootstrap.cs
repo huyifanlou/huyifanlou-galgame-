@@ -29,6 +29,7 @@ public static class Bootstrap
             "Legacy Shaders/Particles/Additive",
             "Legacy Shaders/Transparent/Diffuse",
             "Campus/PostFX",
+            "Campus/Water",
         };
         foreach (var sn in shaderNames)
         {

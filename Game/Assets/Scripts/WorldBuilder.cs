@@ -301,9 +301,16 @@ public class WorldBuilder : MonoBehaviour
                         {
                             float bx = -4 + (float)rnd.NextDouble() * 8f, bz = -4 + (float)rnd.NextDouble() * 8f;
                             float s2 = 1.1f + (float)rnd.NextDouble() * 0.5f;
-                            MeshObj(grp, MeshFactory.BoxUV(new Vector3(s2, s2, s2), 2f),
+                            var cgo = MeshObj(grp, MeshFactory.BoxUV(new Vector3(s2, s2, s2), 2f),
                                 new Vector3(bx, 0.02f + s2 / 2f, bz), LitTex("wood"),
                                 new Vector3(0f, (float)rnd.NextDouble() * 40f, 0f));
+                            if (i < 3)
+                            {
+                                var cbc = cgo.AddComponent<BoxCollider>();
+                                cbc.size = new Vector3(s2, s2, s2);
+                                var crb = cgo.AddComponent<Rigidbody>();
+                                crb.mass = 26f;
+                            }
                         }
                         for (int i = 0; i < 3; i++)
                             Cylinder(grp, new Vector3(4.5f, 0.62f, -3f + i * 2.2f), 0.45f, 1.2f, MatMetal("#6f757e"));
@@ -623,7 +630,10 @@ public class WorldBuilder : MonoBehaviour
         {
             // 小镇：地形在河道处断开（下沉河床），UV 由网格按世界坐标给出
             GrassMat = LitTex("grass");
-            MeshObj(Root, TerrainHoleMesh(TexScale.GrassPeriod, 0f), Vector3.zero, GrassMat);
+            var groundMesh = TerrainHoleMesh(TexScale.GrassPeriod, 0f);
+            var groundGo = MeshObj(Root, groundMesh, Vector3.zero, GrassMat);
+            var groundCol = groundGo.AddComponent<MeshCollider>();
+            groundCol.sharedMesh = groundMesh;
         }
         else
         {
@@ -806,20 +816,18 @@ public class WorldBuilder : MonoBehaviour
         float half = r.width / 2f;
         const int steps = 240;
 
-        // 水面（低于岸 1.95m，真实下沉）+ 深色河床
-        var waterMat = LitTex("water");
-        var water = MeshObj(g, MeshFactory.Strip(x => RZ(x) - half, x => RZ(x) + half, r.from, r.to, steps, 4f, -1.95f),
-            Vector3.zero, waterMat, default, false, true);
-        if (water.GetComponent<WaterFlow>() == null) water.AddComponent<WaterFlow>();
+        // 河床（水面由 WaterSim 每帧生成）
         MeshObj(g, MeshFactory.Strip(x => RZ(x) - half, x => RZ(x) + half, r.from, r.to, steps, 4f, -2.45f),
             Vector3.zero, ColMat("#2c3f42"), default, false, false);
 
         foreach (int sgn in new[] { -1, 1 })
         {
             float edge = sgn * half;
-            // 石护岸（砌筑缝贴图；贴图底部勒脚正好在水线附近）
-            MeshObj(g, MeshFactory.RibbonWall(x => RZ(x) + edge, r.from, r.to, steps, 0f, -2.45f, 2.4f),
-                Vector3.zero, LitTex("concrete"));
+            // 石护岸（砌筑缝贴图；贴图底部勒脚正好在水线附近）——带碰撞体，浮木不会穿岸
+            var wallMesh = MeshFactory.RibbonWall(x => RZ(x) + edge, r.from, r.to, steps, 0f, -2.45f, 2.4f);
+            var wallGo = MeshObj(g, wallMesh, Vector3.zero, LitTex("concrete"));
+            var wc = wallGo.AddComponent<MeshCollider>();
+            wc.sharedMesh = wallMesh;
             // 岸顶压顶石（0.45m 宽，浅色条石）
             float a = sgn * half, b = sgn * (half + 0.45f);
             MeshObj(g, MeshFactory.Strip(x => RZ(x) + Mathf.Min(a, b), x => RZ(x) + Mathf.Max(a, b), r.from, r.to, steps, 2.4f, 0.022f),
@@ -835,6 +843,71 @@ public class WorldBuilder : MonoBehaviour
             if (b.covered) CoveredBridge(g, b, r);
             else StoneBridge(g, b, r);
         }
+
+        // 实时水面（高度场 + 顺流；桥墩/岸线反射与泡沫）
+        var waterGo = NewGo("WaterSurface", g);
+        var sim = waterGo.AddComponent<WaterSim>();
+        sim.Build(r);
+
+        // 物理浮物：系泊小船 + 顺流漂木
+        FloatingProps(g, r);
+    }
+
+    // 小船与漂木（Rigidbody + 浮力 + 顺流）
+    void FloatingProps(Transform parent, RiverDef r)
+    {
+        // 系泊小船：靠着南岸，随波起伏
+        var boat = NewGo("boat", parent).transform;
+        boat.localPosition = new Vector3(-26f, -1.55f, RZ(-26f) + 3.4f);
+        boat.localEulerAngles = new Vector3(0f, 90f, 0f);
+        MeshObj(boat, MeshFactory.BoxUV(new Vector3(1.5f, 0.42f, 4.4f), 2f), Vector3.zero, LitTex("wood"));
+        MeshObj(boat, MeshFactory.BoxUV(new Vector3(1.15f, 0.12f, 3.9f), 2f), new Vector3(0f, 0.18f, 0f), ColMat("#5a4430"));
+        foreach (int s2 in new[] { -1, 1 })
+        {
+            MeshObj(boat, MeshFactory.BoxUV(new Vector3(0.28f, 0.34f, 1.2f), 2f),
+                new Vector3(0f, 0.24f, s2 * 1.1f), LitTex("wood"));
+            MeshObj(boat, MeshFactory.BoxUV(new Vector3(2.1f, 0.12f, 0.24f), 2f),
+                new Vector3(0f, 0.28f, s2 * 1.95f), LitTex("wood"));
+        }
+        var brb = boat.gameObject.AddComponent<Rigidbody>();
+        brb.mass = 220f; brb.drag = 0.8f; brb.angularDrag = 1.4f;
+        var bcol = boat.gameObject.AddComponent<BoxCollider>();
+        bcol.size = new Vector3(1.5f, 0.42f, 4.4f);
+        var buoy = boat.gameObject.AddComponent<Buoyant>(); buoy.FloatHeight = 0.36f;
+
+        // 漂木（木箱）——顺流而下，到尽头回到上游
+        var rnd = new System.Random(20261022);
+        for (int i = 0; i < 4; i++)
+        {
+            float x = -92f + i * 42f;
+            var crate = NewGo("drift_crate", parent).transform;
+            float s2 = 0.55f + (float)rnd.NextDouble() * 0.25f;
+            crate.localPosition = new Vector3(x, -1.75f, RZ(x) + (float)(rnd.NextDouble() * 6.0 - 3.0));
+            crate.localEulerAngles = new Vector3(0f, (float)rnd.NextDouble() * 90f, 0f);
+            MeshObj(crate, MeshFactory.BoxUV(new Vector3(s2, s2, s2), 2f), Vector3.zero, LitTex("wood"));
+            var rb = crate.gameObject.AddComponent<Rigidbody>();
+            rb.mass = 18f; rb.drag = 0.5f; rb.angularDrag = 1f;
+            var bc = crate.gameObject.AddComponent<BoxCollider>();
+            bc.size = new Vector3(s2, s2, s2);
+            crate.gameObject.AddComponent<Buoyant>().FloatHeight = 0.3f;
+            crate.gameObject.AddComponent<Drifter>();
+        }
+
+        // 落叶（更轻、更多）
+        for (int i = 0; i < 5; i++)
+        {
+            float x = -70f + i * 34f;
+            var leaf = NewGo("drift_leaf", parent).transform;
+            leaf.localPosition = new Vector3(x, -1.9f, RZ(x) + (float)(rnd.NextDouble() * 7.0 - 3.5));
+            leaf.localEulerAngles = new Vector3(0f, (float)rnd.NextDouble() * 180f, 0f);
+            MeshObj(leaf, MeshFactory.Quad(0.5f, 0.32f), Vector3.zero, ColMat(i % 2 == 0 ? "#6f9a4a" : "#c9a24a"), default, false, false);
+            var rb = leaf.gameObject.AddComponent<Rigidbody>();
+            rb.mass = 1.2f; rb.drag = 0.6f; rb.angularDrag = 0.8f;
+            var bc = leaf.gameObject.AddComponent<BoxCollider>();
+            bc.size = new Vector3(0.5f, 0.08f, 0.32f);
+            leaf.gameObject.AddComponent<Buoyant>().FloatHeight = 0.22f;
+            leaf.gameObject.AddComponent<Drifter>();
+        }
     }
 
     // 石拱桥：桥面 + 两侧透空拱券面片 + 桥墩 + 栏杆望柱
@@ -847,8 +920,10 @@ public class WorldBuilder : MonoBehaviour
         float bay = span / b.arches;                 // 每跨面片（含半墩）
         const float faceH = 2.42f;
 
-        MeshObj(g, MeshFactory.BoxUV(new Vector3(w, 0.24f, span + 1.2f), 2.4f),
+        var deckGo = MeshObj(g, MeshFactory.BoxUV(new Vector3(w, 0.24f, span + 1.2f), 2.4f),
             new Vector3(0f, -0.07f, 0f), LitTex("bridge_stone"));
+        var deckCol = deckGo.AddComponent<BoxCollider>();
+        deckCol.size = new Vector3(w, 0.24f, span + 1.2f);
 
         // 真实拱券面：面片网格直接挖出半椭圆拱洞（无裁切贴图），内外两面都可见
         float holeW = bay * 0.62f, holeH = faceH * 0.86f;
@@ -886,8 +961,10 @@ public class WorldBuilder : MonoBehaviour
         for (int k = 1; k < b.arches; k++)
         {
             float z = -span / 2f + k * bay;
-            MeshObj(g, MeshFactory.BoxUV(new Vector3(w * 0.98f, 2.3f, 1.1f), 2.4f),
+            var pierGo = MeshObj(g, MeshFactory.BoxUV(new Vector3(w * 0.98f, 2.3f, 1.1f), 2.4f),
                 new Vector3(0f, -1.3f, z), LitTex("bridge_stone"));
+            var pierCol = pierGo.AddComponent<BoxCollider>();
+            pierCol.size = new Vector3(w * 0.98f, 2.3f, 1.1f);
         }
         // 两端桥台
         foreach (int sgn in new[] { -1, 1 })
@@ -925,7 +1002,9 @@ public class WorldBuilder : MonoBehaviour
         float w = b.width;
         float span = r.width + 1.6f;
 
-        MeshObj(g, MeshFactory.BoxUV(new Vector3(w, 0.2f, span), 2f), new Vector3(0f, -0.05f, 0f), LitTex("wood"));
+        var wdeck = MeshObj(g, MeshFactory.BoxUV(new Vector3(w, 0.2f, span), 2f), new Vector3(0f, -0.05f, 0f), LitTex("wood"));
+        var wdeckCol = wdeck.AddComponent<BoxCollider>();
+        wdeckCol.size = new Vector3(w, 0.2f, span);
         foreach (int sx in new[] { -1, 1 })
             foreach (int sz in new[] { -1, 1 })
                 MeshObj(g, MeshFactory.BoxUV(new Vector3(0.3f, 2.4f, 0.3f), 2f),
@@ -1117,6 +1196,9 @@ public class WorldBuilder : MonoBehaviour
             var grp = NewGo("b_" + b.id, g).transform;
             grp.localPosition = new Vector3(b.pos[0], h / 2f, b.pos[1]);
             grp.localEulerAngles = new Vector3(0f, b.face == 1 ? 0f : 180f, 0f);
+            var bodyCol = grp.gameObject.AddComponent<BoxCollider>();
+            bodyCol.center = Vector3.zero;
+            bodyCol.size = new Vector3(w, h, d);
 
             bool plain = b.style == "plain";   // 摊亭/站台这类：无立面细节，纯色体块
             var wallMat = plain ? ColMat(b.wall) : LitTex("wall_" + b.id + "_day");
@@ -1248,6 +1330,9 @@ public class WorldBuilder : MonoBehaviour
         var grp = NewGo("Villa", Root).transform;
         grp.localPosition = new Vector3(def.x, h / 2f, def.z);
         grp.localEulerAngles = new Vector3(0f, def.face == 1 ? 0f : 180f, 0f);
+        var villaCol = grp.gameObject.AddComponent<BoxCollider>();
+        villaCol.center = Vector3.zero;
+        villaCol.size = new Vector3(w, h, d);
 
         const float a1 = 0.46f, a2 = 0.52f;
         float slope1 = d / 2f / Mathf.Cos(a1) + 1.3f;
@@ -1333,6 +1418,10 @@ public class WorldBuilder : MonoBehaviour
     {
         var grp = NewGo("tree", parent).transform;
         grp.localPosition = new Vector3(x, 0f, z);
+        var trunkCol = grp.gameObject.AddComponent<CapsuleCollider>();
+        trunkCol.center = new Vector3(0f, 1.6f, 0f);
+        trunkCol.height = 3.2f;
+        trunkCol.radius = 0.34f;
         if (v == 6)
         {
             BarkBox(grp, new Vector3(0, 0.4f, 0), new Vector3(0.36f, 0.8f, 0.36f), "#6b4a2f");
@@ -1525,6 +1614,13 @@ public class WorldBuilder : MonoBehaviour
         var grp = NewGo("Player", Root).transform;
         grp.localPosition = Spawn;
         Player = grp;
+        var prb = grp.gameObject.AddComponent<Rigidbody>();
+        prb.isKinematic = true;
+        prb.useGravity = false;
+        var pcap = grp.gameObject.AddComponent<CapsuleCollider>();
+        pcap.center = new Vector3(0f, 0.9f, 0f);
+        pcap.height = 1.8f;
+        pcap.radius = 0.32f;
 
         var sprite = NewGo("sprite", grp).transform;
         sprite.localPosition = new Vector3(0f, 0.58f, 0f);
