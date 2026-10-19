@@ -191,13 +191,20 @@ public class WorldBuilder : MonoBehaviour
             var grp = NewGo(p.type, g).transform;
             grp.localPosition = new Vector3(p.x, 0f, p.z);
             grp.localEulerAngles = new Vector3(0f, p.ry * Mathf.Rad2Deg, 0f);
+            if (p.type == "ride_wheel") grp.gameObject.AddComponent<ProximityHide>().Radius = 10f;
+            else if (p.type == "ride_carousel") grp.gameObject.AddComponent<ProximityHide>().Radius = 6.5f;
+            else if (p.type == "ride_tent") grp.gameObject.AddComponent<ProximityHide>().Radius = 9f;
+            else if (p.type == "ride_train") grp.gameObject.AddComponent<ProximityHide>().Radius = 8f;
+            else if (p.type == "ride_swing") grp.gameObject.AddComponent<ProximityHide>().Radius = 5f;
+            else if (p.type == "ride_tower") grp.gameObject.AddComponent<ProximityHide>().Radius = 5f;
+            else if (p.type == "ride_pendulum") grp.gameObject.AddComponent<ProximityHide>().Radius = 5f;
             switch (p.type)
             {
                 case "plaza":
                     {
-                        var prep = TexScale.Repeat(p.w, p.d, TexScale.PathPeriod);
-                        MeshObj(grp, MeshFactory.Quad(p.w, p.d, prep.x, prep.y),
-                            new Vector3(0, 0.018f, 0), LitTex("path"));
+                        // 世界对齐 UV：多块铺装相接时石纹连续；高度压到路面/环塘路之下，避免盖住其他地面
+                        var mesh = MeshFactory.PlazaQuad(p.w, p.d, TexScale.PathPeriod, p.x, p.z, p.ry);
+                        MeshObj(grp, mesh, new Vector3(0, 0.010f, 0), LitTex("path"));
                     }
                     break;
                 case "flag":
@@ -723,6 +730,8 @@ public class WorldBuilder : MonoBehaviour
         // 叙事游戏不需要失控帧率：锁 60 并开垂直同步，避免 CPU/GPU 长期满载
         Application.targetFrameRate = 60;
         QualitySettings.vSyncCount = 1;
+        if (string.IsNullOrEmpty(Args.Str("-shot")))
+            Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, FullScreenMode.FullScreenWindow);
         QualitySettings.shadowDistance = 90f;
 
         var w = BuildWorld();
@@ -1212,16 +1221,25 @@ public class WorldBuilder : MonoBehaviour
             Box(g, new Vector3(sx * (w / 2f - 0.22f), 2.55f, 0f), new Vector3(0.26f, 0.26f, span), ColMat("#7a5a3e"));
             Box(g, new Vector3(sx * (w / 2f - 0.22f), 1.05f, 0f), new Vector3(0.16f, 0.14f, span), ColMat("#8a6a48"));
         }
-        // 双坡瓦顶（沿桥长方向起脊）
+        // 双坡瓦顶（沿桥长方向起脊）：檐口低、屋脊高；左右坡向相反
         const float ang = 0.42f;
         float half = (w + 1.8f) / 2f;
         float slope = half / Mathf.Cos(ang);
-        float roofY = 3.35f;
+        float eaveY = 2.95f;
+        float ridgeY = eaveY + half * Mathf.Tan(ang);
+        float midY = (eaveY + ridgeY) / 2f;
+        // 右坡：外端(+x)低 → 绕 Z 负角；左坡：外端(-x)低 → 绕 Z 正角
         MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.22f, span + 1.4f), 4f, 2f),
-            new Vector3(-half / 2f, roofY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, -ang * Mathf.Rad2Deg));
+            new Vector3(half / 2f, midY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, -ang * Mathf.Rad2Deg));
         MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.22f, span + 1.4f), 4f, 2f),
-            new Vector3(half / 2f, roofY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, ang * Mathf.Rad2Deg));
-        Box(g, new Vector3(0f, roofY + half / 2f * Mathf.Tan(ang), 0f), new Vector3(0.4f, 0.24f, span + 1.6f), ColMat("#2b3038"));
+            new Vector3(-half / 2f, midY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, ang * Mathf.Rad2Deg));
+        Box(g, new Vector3(0f, ridgeY + 0.12f, 0f), new Vector3(0.44f, 0.26f, span + 1.6f), ColMat("#2b3038"));
+        // 檐口封板 + 柱顶横梁，封住屋顶与木构之间的缝
+        foreach (int sgn in new[] { -1, 1 })
+        {
+            Box(g, new Vector3(sgn * half, eaveY, 0f), new Vector3(0.26f, 0.3f, span + 1.4f), ColMat("#6a4a34"));
+            Box(g, new Vector3(sgn * (w / 2f - 0.22f), 2.82f, 0f), new Vector3(0.22f, 0.22f, span + 0.6f), ColMat("#7a5a3e"));
+        }
         // 顶棚（从桥下看是木色天花，不是黑色屋顶底面）
         MeshObj(g, MeshFactory.BoxUV(new Vector3(w - 0.2f, 0.06f, span), 2f), new Vector3(0f, 2.62f, 0f), LitTex("wood"));
 
@@ -1866,6 +1884,7 @@ public class WorldBuilder : MonoBehaviour
     {
         var grp = NewGo("tree", parent).transform;
         grp.localPosition = new Vector3(x, 0f, z);
+        grp.gameObject.AddComponent<ProximityHide>().Radius = 3.2f;
         var trunkCol = grp.gameObject.AddComponent<CapsuleCollider>();
         trunkCol.center = new Vector3(0f, 1.6f, 0f);
         trunkCol.height = 3.2f;

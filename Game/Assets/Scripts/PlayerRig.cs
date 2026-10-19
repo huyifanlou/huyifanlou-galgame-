@@ -45,7 +45,7 @@ public class PlayerRig : MonoBehaviour
         _cam.backgroundColor = MatLib.Hex("#10141c");
         _cam.fieldOfView = 46f;
         _cam.nearClipPlane = 0.5f;
-        _cam.farClipPlane = 200f;
+        _cam.farClipPlane = 320f;   // 必须覆盖天空穹顶最远端（半径170+玩家95），否则走远后天空出现黑幕
 
         var spawn = new Vector2(w.Spawn.x, w.Spawn.z);
         var px = Args.F("-px"); if (px.HasValue) spawn.x = px.Value;
@@ -151,24 +151,19 @@ public class PlayerRig : MonoBehaviour
             if (Mathf.Abs(_yawTarget - _yaw) < 0.01f) { _yaw = _yawTarget; _yawTarget = float.NaN; }
         }
 
-        // 鼠标拖拽旋转 + 滚轮缩放
-        if (Input.GetMouseButtonDown(0))
+        // 鼠标转向（光标锁定）；按住 Alt 呼出鼠标操作 UI/小地图
+        bool alt = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        Cursor.lockState = alt ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = alt;
+        if (!alt)
         {
-            _dragging = true;
-            _alignPaused = true;
-            _dragLast = Input.mousePosition;
-        }
-        if (Input.GetMouseButtonUp(0)) _dragging = false;
-        if (_dragging)
-        {
-            var d = Input.mousePosition - _dragLast;
-            _dragLast = Input.mousePosition;
-            // 与 web 版拖拽手感一致：向右拖 → 视角右转；向下拖 → 俯视（Unity 鼠标 Y 轴向上为正，故此处反号）
-            _yaw += d.x * 0.005f;
+            float mx = Input.GetAxis("Mouse X");
+            float my = Input.GetAxis("Mouse Y");
+            _yaw += mx * 2.4f;
             if (_firstPerson)
-                _fpPitch = Mathf.Clamp(_fpPitch + d.y * 0.004f, -1.1f, 1.1f);   // 第一人称：向下拖 = 低头
+                _fpPitch = Mathf.Clamp(_fpPitch - my * 1.6f, -1.1f, 1.1f);
             else
-                _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);          // 第三人称：向下拖 = 相机升高俯视
+                _pitch = Mathf.Clamp(_pitch - my * 1.4f, 0.3f, 1.2f);
         }
         float wheel = Input.mouseScrollDelta.y;
         if (!_firstPerson && Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, 6f, 22f);

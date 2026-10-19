@@ -163,6 +163,37 @@ public static class MeshFactory
         return m;
     }
 
+    // 世界对齐 UV 的地面片（广场/步道）：多块拼在一起石纹连续
+    public static Mesh PlazaQuad(float w, float d, float period, float x, float z, float ry)
+    {
+        float c = Mathf.Cos(ry), sn = Mathf.Sin(ry);
+        void W(float lx, float lz, out float wx, out float wz)
+        {
+            wx = x + lx * c + lz * sn;
+            wz = z - lx * sn + lz * c;
+        }
+        float x0, z0, x1, z1, x2, z2, x3, z3;
+        W(-w / 2, -d / 2, out x0, out z0);
+        W(w / 2, -d / 2, out x1, out z1);
+        W(w / 2, d / 2, out x2, out z2);
+        W(-w / 2, d / 2, out x3, out z3);
+        var m = new Mesh();
+        m.vertices = new[]
+        {
+            new Vector3(-w / 2, 0, -d / 2), new Vector3(w / 2, 0, -d / 2),
+            new Vector3(w / 2, 0, d / 2), new Vector3(-w / 2, 0, d / 2),
+        };
+        m.uv = new[]
+        {
+            new Vector2(x0 / period, z0 / period), new Vector2(x1 / period, z1 / period),
+            new Vector2(x2 / period, z2 / period), new Vector2(x3 / period, z3 / period),
+        };
+        m.triangles = new[] { 0, 2, 1, 0, 3, 2 };
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
     // ── 沿 x 方向的地形条带 / 河岸墙 / 贴地条带（小镇河道地形用）──
     // 条带：zA(x) 为北边界、zB(x) 为南边界；UV = 世界坐标 / period（与整块地面同一平铺基准，接缝连续）
     public static Mesh Strip(Func<float, float> zA, Func<float, float> zB, float x0, float x1, int steps, float period,
