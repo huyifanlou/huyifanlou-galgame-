@@ -101,7 +101,7 @@ public class Weather : MonoBehaviour
             if (_rain != null) _rain.transform.position = _player.position + new Vector3(0f, 11f, 0f);
             if (_snow != null) _snow.transform.position = _player.position + new Vector3(0f, 9f, 0f);
         }
-        SetEmission(_rain, RainAmt * 4200f);
+        SetEmission(_rain, RainAmt * 1500f);   // 作者反馈雨点太多：4200 → 1500
         SetEmission(_snow, SnowAmt * 1600f);
 
         // 湿地面：变暗 + 起光（雨天最明显的写实线索）
@@ -117,7 +117,7 @@ public class Weather : MonoBehaviour
         if (_rainMat != null)
             _rainMat.SetColor("_TintColor", Color.Lerp(new Color(0.50f, 0.53f, 0.60f, 0.50f), new Color(0.22f, 0.26f, 0.34f, 0.45f), night));
         if (_snowMat != null)
-            _snowMat.SetColor("_TintColor", Color.Lerp(new Color(0.50f, 0.50f, 0.52f, 0.50f), new Color(0.26f, 0.29f, 0.34f, 0.50f), night));
+            _snowMat.SetColor("_TintColor", Color.Lerp(new Color(0.40f, 0.41f, 0.44f, 0.55f), new Color(0.22f, 0.24f, 0.28f, 0.50f), night));
         // 雪：树冠/绿篱略覆白
         for (int i = 0; i < _frost.Count; i++)
             _frost[i].color = Color.Lerp(_frostBase[i], new Color(0.86f, 0.89f, 0.93f, _frostBase[i].a), SnowAmt * 0.55f);
@@ -155,7 +155,7 @@ public class Weather : MonoBehaviour
         main.startSize = 0.05f;
         main.startColor = new Color(0.78f, 0.85f, 0.95f, 0.55f);
         main.simulationSpace = ParticleSystemSimulationSpace.World;
-        main.maxParticles = 4000;
+        main.maxParticles = 2200;
         var em = ps.emission; em.rateOverTime = 0f;
         var sh = ps.shape;
         sh.shapeType = ParticleSystemShapeType.Box;
@@ -191,7 +191,7 @@ public class Weather : MonoBehaviour
         main.startLifetime = 9f;
         main.startSpeed = 0f;
         main.startSize = new ParticleSystem.MinMaxCurve(0.14f, 0.34f);   // 5cm 的真实雪片在 13m 外不到 1px，放大到可读
-        main.startColor = new Color(1f, 1f, 1f, 0.92f);
+        main.startColor = new Color(1f, 1f, 1f, 0.85f);
         main.simulationSpace = ParticleSystemSimulationSpace.World;
         main.maxParticles = 4200;
         var em = ps.emission; em.rateOverTime = 0f;
@@ -214,7 +214,7 @@ public class Weather : MonoBehaviour
         rot.z = new ParticleSystem.MinMaxCurve(-0.6f, 0.6f);
         var r = go.GetComponent<ParticleSystemRenderer>();
         r.renderMode = ParticleSystemRenderMode.Billboard;
-        _snowMat = MatLib.Fade("snow_flake", new Color(0.50f, 0.50f, 0.52f, 0.50f));
+        _snowMat = MatLib.Fade("snow_flake", new Color(0.40f, 0.41f, 0.44f, 0.55f));   // 粒子着色器 ×2 → 有效约 0.8，低于泛光阈值
         r.material = _snowMat;
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         r.receiveShadows = false;
