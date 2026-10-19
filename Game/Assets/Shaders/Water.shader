@@ -65,7 +65,7 @@ Shader "Campus/Water"
                 float fres = pow(1.0 - saturate(dot(N, V)), 4.0);
 
                 // 细节贴图扰动法线（顺流滚动）→ 细碎波光
-                float2 duv = i.uv + float2(_Time.y * 0.01, 0.0);
+                float2 duv = i.uv;
                 float lumC = tex2D(_MainTex, duv).r;
                 float lumX = tex2D(_MainTex, duv + float2(0.012, 0.0)).r;
                 float lumY = tex2D(_MainTex, duv + float2(0.0, 0.012)).r;
@@ -79,7 +79,7 @@ Shader "Campus/Water"
                 col *= 0.86 + diff * 0.3;
                 // 顺流白沫线（细节贴图亮纹）
                 float streak = smoothstep(0.40, 0.52, lumC);
-                col = lerp(col, _FoamColor.rgb, streak * 0.3);
+                col = lerp(col, _FoamColor.rgb, streak * 0.2);
 
                 float3 L = normalize(_SunDir.xyz);
                 float3 H = normalize(L + V);

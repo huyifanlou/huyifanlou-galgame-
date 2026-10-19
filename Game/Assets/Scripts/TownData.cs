@@ -191,7 +191,7 @@ public static class TownData
     static List<(float x, float z, float hw, float hd)> KeepOut()
     {
         var k = new List<(float, float, float, float)>();
-        foreach (var b in Buildings) k.Add((b.pos[0], b.pos[1], b.size[0] / 2f + 2.2f, b.size[2] / 2f + 2.2f));
+        foreach (var b in Buildings) k.Add((b.pos[0], b.pos[1], b.size[0] / 2f + 2.8f, b.size[2] / 2f + 2.8f));
         foreach (var r in Roads) k.Add(r.axis == "z"
             ? (r.at, (r.from + r.to) / 2f, r.width / 2f + 2.4f, (r.to - r.from) / 2f + 2.4f)
             : ((r.from + r.to) / 2f, r.at, (r.to - r.from) / 2f + 2.4f, r.width / 2f + 2.4f));
@@ -205,6 +205,25 @@ public static class TownData
         k.Add((76f, 43f, 9f, 7f));                                     // 马戏棚
         k.Add((31f, 33f, 7f, 7f));                                     // 旋转木马
         k.Add((72f, 28f, 9f, 7f));                                     // 卡丁车
+        // 骑楼柱廊前（不放植被）
+        k.Add((-62f, 22f, 16f, 2.4f));
+        k.Add((-60f, 32.8f, 16f, 2.4f));
+        k.Add((-25f, 32.8f, 15f, 2.4f));
+        // 神社前庭 / 鸟居 / 石阶
+        k.Add((79f, -64.5f, 6.5f, 4.5f));
+        // 游乐场核心（游乐设施之间保持空地）
+        k.Add((51f, 37f, 43f, 15f));
+        // 铁路道床
+        k.Add((0f, 92f, 105f, 3.0f));
+        // 站前广场
+        k.Add((76f, 68f, 14f, 4f));
+        // 三座桥面（含引桥）
+        k.Add((0f, RiverZ(0f), 6.5f, 10f));
+        k.Add((-45f, RiverZ(-45f), 3.5f, 10f));
+        k.Add((28f, RiverZ(28f), 4.2f, 10f));
+        // 夏日祭摊位底部
+        foreach (var p in Props)
+            if (p.type == "stall") k.Add((p.x, p.z, 1.5f, 1.5f));
         return k;
     }
 
@@ -219,6 +238,15 @@ public static class TownData
             float lx = dx * c - dz * s, lz = dx * s + dz * c;   // 转到步道局部坐标
             if (Mathf.Abs(lx) < p.w / 2f + margin && Mathf.Abs(lz) < p.d / 2f + margin) return true;
         }
+        return false;
+    }
+
+    static bool NearBuilding(float x, float z, float margin)
+    {
+        foreach (var b in Buildings)
+            if (Mathf.Abs(x - b.pos[0]) < b.size[0] / 2f + margin && Mathf.Abs(z - b.pos[1]) < b.size[2] / 2f + margin)
+                return true;
+        if (Mathf.Abs(x + 35.5f) < 6f + margin && Mathf.Abs(z - 66f) < 3f + margin) return true;
         return false;
     }
 
@@ -283,9 +311,9 @@ public static class TownData
         // 樱花林（公园北侧 x 14~60 / z -84~-66）
         for (int i = 0; i < 26; i++)
             TryTree(16f + (float)rnd.Next() * 42f, -82f + (float)rnd.Next() * 14f, 10, 3.0f);
-        // 公园点景树（围绕池塘）
+        // 公园点景树（围绕池塘；同样走保留区检查，避免踩到池沿/步道）
         foreach (var (tx, tz) in new[] { (20f, -52f), (28f, -55f), (44f, -54f), (52f, -48f), (54f, -32f), (16f, -40f), (16f, -28f), (48f, -56f) })
-            trees.Add(new TreeItem { x = R1(tx), z = R1(tz), v = 0 });
+            TryTree(tx, tz, 0, 3.5f);
         for (int i = 0; i < 10; i++)
             TryTree(14f + (float)rnd.Next() * 46f, -56f + (float)rnd.Next() * 30f, 2 + rnd.NextInt(2), 4f);
         // 河畔柳树（两岸每 11m 一株，避开桥位；树冠退到步道外侧）
@@ -325,30 +353,55 @@ public static class TownData
         }
         w.TREES = trees.ToArray();
 
-        // 灌木 / 花
+        // 灌木 / 花：成簇分布（避免沿建筑立面排成一条线），离建筑更远
         var bushes = new List<PosItem>();
-        for (int i = 0; i < 700 && bushes.Count < 110; i++)
+        for (int c = 0; c < 200 && bushes.Count < 110; c++)
         {
-            float x = (float)(rnd.Next() * 2 - 1) * 92f, z = (float)(rnd.Next() * 2 - 1) * 92f;
-            if (InKeep(x, z, keep, false)) continue;
-            if (Mathf.Abs(z - RiverZ(x)) < 15.5f) continue;
+            float cx = (float)(rnd.Next() * 2 - 1) * 92f, cz = (float)(rnd.Next() * 2 - 1) * 92f;
+            if (InKeep(cx, cz, keep, false)) continue;
+            if (Mathf.Abs(cz - RiverZ(cx)) < 15.5f) continue;
+            if (NearBuilding(cx, cz, 5.5f)) continue;
             bool near = false;
-            foreach (var t in trees) if (Mathf.Sqrt((x - t.x) * (x - t.x) + (z - t.z) * (z - t.z)) < 2.2f) { near = true; break; }
+            foreach (var t in trees) if (Mathf.Sqrt((cx - t.x) * (cx - t.x) + (cz - t.z) * (cz - t.z)) < 2.4f) { near = true; break; }
             if (near) continue;
-            bushes.Add(new PosItem { x = R1(x), z = R1(z) });
+            int n = 2 + rnd.NextInt(2);
+            for (int k = 0; k < n && bushes.Count < 110; k++)
+            {
+                float x = cx + (float)(rnd.Next() * 2 - 1) * 1.7f;
+                float z = cz + (float)(rnd.Next() * 2 - 1) * 1.7f;
+                if (InKeep(x, z, keep, false)) continue;
+                if (Mathf.Abs(z - RiverZ(x)) < 15.5f) continue;
+                if (NearBuilding(x, z, 5.0f)) continue;
+                bool bad = false;
+                foreach (var p in bushes) if (Mathf.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) < 0.9f) { bad = true; break; }
+                if (bad) continue;
+                bushes.Add(new PosItem { x = R1(x), z = R1(z) });
+            }
         }
         w.BUSHES = bushes.ToArray();
 
         var flowers = new List<PosItem>();
-        for (int i = 0; i < 900 && flowers.Count < 150; i++)
+        for (int c = 0; c < 260 && flowers.Count < 150; c++)
         {
-            float x = (float)(rnd.Next() * 2 - 1) * 92f, z = (float)(rnd.Next() * 2 - 1) * 92f;
-            if (InKeep(x, z, keep, false)) continue;
-            if (Mathf.Abs(z - RiverZ(x)) < 15.5f) continue;
-            bool near = false;
-            foreach (var p in bushes) if (Mathf.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) < 1.5f) { near = true; break; }
-            if (near) continue;
-            flowers.Add(new PosItem { x = R1(x), z = R1(z) });
+            float cx = (float)(rnd.Next() * 2 - 1) * 92f, cz = (float)(rnd.Next() * 2 - 1) * 92f;
+            if (InKeep(cx, cz, keep, false)) continue;
+            if (Mathf.Abs(cz - RiverZ(cx)) < 15.5f) continue;
+            if (NearBuilding(cx, cz, 4.5f)) continue;
+            int n = 3 + rnd.NextInt(3);
+            for (int k = 0; k < n && flowers.Count < 150; k++)
+            {
+                float x = cx + (float)(rnd.Next() * 2 - 1) * 1.2f;
+                float z = cz + (float)(rnd.Next() * 2 - 1) * 1.2f;
+                if (InKeep(x, z, keep, false)) continue;
+                if (Mathf.Abs(z - RiverZ(x)) < 15.5f) continue;
+                if (NearBuilding(x, z, 4.0f)) continue;
+                bool bad = false;
+                foreach (var p in bushes) if (Mathf.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) < 1.2f) { bad = true; break; }
+                if (bad) continue;
+                foreach (var p in flowers) if (Mathf.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) < 0.7f) { bad = true; break; }
+                if (bad) continue;
+                flowers.Add(new PosItem { x = R1(x), z = R1(z) });
+            }
         }
         w.FLOWERS = flowers.ToArray();
 

@@ -9,7 +9,8 @@ public class WaterSim : MonoBehaviour
 
     public RiverDef River;
     public float Level = -1.95f;        // 静水面高度
-    public float Current = 0.10f;       // 顺流速度（m/s，河道中心；缓流）
+    public bool Animate = false;        // 静止水面（作者要求；置 true 恢复高度场模拟）
+    public float Current = 0f;          // 静止模式无流速
     public float WaveSpeed = 0.85f;     // 波速（m/s）
     public float Damping = 0.994f;
     const float StepX = 1f;             // 顺河采样间距
@@ -77,16 +78,17 @@ public class WaterSim : MonoBehaviour
                     Mathf.SmoothStep(0f, 1f, (edge - 0.88f) / 0.12f) * 0.22f);
             }
 
-        // 初始扰动：几组正弦叠加，避免死水面
+        // 静止模式：高度场清零（保留模拟代码，Animate=true 可恢复）
         var rnd = new System.Random(20261021);
-        for (int i = 0; i < _nx; i++)
-            for (int j = 0; j < _nt; j++)
-            {
-                float x = river.from + i * StepX;
-                float t = -river.width / 2f + j * StepT;
-                _h[i * _nt + j] = 0.008f * Mathf.Sin(x * 0.35f + t * 0.8f) + 0.005f * Mathf.Sin(x * 0.9f - t * 0.3f)
-                                  + (float)(rnd.NextDouble() - 0.5) * 0.01f;
-            }
+        if (Animate)
+            for (int i = 0; i < _nx; i++)
+                for (int j = 0; j < _nt; j++)
+                {
+                    float x = river.from + i * StepX;
+                    float t = -river.width / 2f + j * StepT;
+                    _h[i * _nt + j] = 0.008f * Mathf.Sin(x * 0.35f + t * 0.8f) + 0.005f * Mathf.Sin(x * 0.9f - t * 0.3f)
+                                      + (float)(rnd.NextDouble() - 0.5) * 0.01f;
+                }
 
         // 网格
         var uvs = new Vector2[n];
@@ -98,7 +100,7 @@ public class WaterSim : MonoBehaviour
                 float t = -river.width / 2f + j * StepT;
                 _verts[idx] = new Vector3(x, Level, RZ(x) + t);
                 uvs[idx] = new Vector2(x / 4f, t / 4f);
-                _colors[idx] = Color.black;
+                _colors[idx] = new Color(_staticFoam[idx], 0f, 0f, 1f);
             }
         var tris = new int[(_nx - 1) * (_nt - 1) * 6];
         int o = 0;
@@ -130,7 +132,7 @@ public class WaterSim : MonoBehaviour
 
     void Update()
     {
-        if (_mesh == null) return;
+        if (_mesh == null || !Animate) return;
         if (_weather == null) _weather = FindObjectOfType<Weather>();
         float dt = Mathf.Min(Time.deltaTime, 1f / 30f);
         Simulate(dt);

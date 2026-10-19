@@ -411,12 +411,18 @@ public class WorldBuilder : MonoBehaviour
                             Box(wheel, new Vector3(0f, Mathf.Cos(a) * R / 2f, Mathf.Sin(a) * R / 2f), new Vector3(0.12f, R, 0.12f),
                                 ColMat("#d8d2c4"), new Vector3(a * Mathf.Rad2Deg, 0f, 0f));
                         }
+                        // 吊舱：绕轮心公转但保持正立（与轮缘同速）
+                        var ring = NewGo("gondolas", grp).transform;
+                        ring.localPosition = new Vector3(0f, 9.5f, 0f);
                         for (int i = 0; i < 12; i++)
                         {
                             float a = i / 12f * Mathf.PI * 2f;
-                            Box(grp, new Vector3(0f, 9.5f + Mathf.Cos(a) * R - 0.5f, Mathf.Sin(a) * R), new Vector3(0.95f, 0.8f, 0.9f),
+                            var car = NewGo("car", ring).transform;
+                            car.localPosition = new Vector3(0f, Mathf.Cos(a) * R - 0.5f, Mathf.Sin(a) * R);
+                            Box(car, Vector3.zero, new Vector3(0.95f, 0.8f, 0.9f),
                                 ColMat(i % 3 == 0 ? "#e8c46a" : (i % 3 == 1 ? "#5a8fc8" : "#c9553f")));
                         }
+                        ring.gameObject.AddComponent<GondolaRing>().Radius = R;
                         Box(grp, new Vector3(0f, 0.12f, 0f), new Vector3(6f, 0.24f, 7f), ColMat("#b8b0a2"));
                     }
                     break;
@@ -425,7 +431,9 @@ public class WorldBuilder : MonoBehaviour
                         Cylinder(grp, new Vector3(0f, 0.18f, 0f), 5.1f, 0.36f, ColMat("#b8ac96"));
                         Cylinder(grp, new Vector3(0f, 3.2f, 0f), 0.42f, 6.4f, ColMat("#8f8a80"));
                         var spin = NewGo("spin", grp).transform;
-                        spin.gameObject.AddComponent<Spin>().DegPerSec = 9f;
+                        var carouselSpin = spin.gameObject.AddComponent<Spin>();
+                        carouselSpin.Axis = Vector3.up;
+                        carouselSpin.DegPerSec = 9f;
                         MeshObj(spin, MeshFactory.Cone(5.4f, 2.4f, 16, true, 2f), new Vector3(0f, 4.1f, 0f), LitTex("awning"));
                         for (int i = 0; i < 8; i++)
                         {
@@ -443,7 +451,9 @@ public class WorldBuilder : MonoBehaviour
                         Box(grp, new Vector3(0f, 4.6f, 0f), new Vector3(0.7f, 9.2f, 0.7f), MatMetal("#8a9099"));
                         var spin = NewGo("spin", grp).transform;
                         spin.localPosition = new Vector3(0f, 9f, 0f);
-                        spin.gameObject.AddComponent<Spin>().DegPerSec = 16f;
+                        var swingSpin = spin.gameObject.AddComponent<Spin>();
+                        swingSpin.Axis = Vector3.up;
+                        swingSpin.DegPerSec = 16f;
                         Cylinder(spin, Vector3.zero, 3.5f, 0.3f, MatMetal("#6f757e"));
                         for (int i = 0; i < 8; i++)
                         {
@@ -1331,9 +1341,11 @@ public class WorldBuilder : MonoBehaviour
             Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
             Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
-            // 门前绿篱：叶簇贴图（与树冠同材质体系），世界尺度 UV
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(-1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.3f, 0.62f, 0.55f), TexScale.LeafMeters), new Vector3(1.95f, -h / 2f + 0.32f, d / 2f + 0.55f), LitTinted("leaves", "#3d7a37"));
+            // 门前绿篱：沿立面连续的矮篱（中间留出门洞），不再是两块孤立的绿方块
+            float hedgeW = Mathf.Max(1.6f, w * 0.32f);
+            foreach (int sgn in new[] { -1, 1 })
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
+                    new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#3d7a37"));
             if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
         }
     }
