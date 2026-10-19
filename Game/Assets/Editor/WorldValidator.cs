@@ -335,4 +335,101 @@ public static class WorldValidator
         Debug.Log("[WorldValidator] 已导出 " + path);
     }
     public static void DumpJsonBatch() { DumpJson(); }
+
+    // ── 小镇总平面校验（docs/18 的四条净距规则，直接作用于 TownData）──
+    [MenuItem("Campus/校验小镇布点")]
+    public static void TownMenu() => ValidateTown(false);
+    public static void TownBatch() => ValidateTown(true);
+
+    static void ValidateTown(bool batch)
+    {
+        var W = TownData.Build();
+        var errors = new List<string>();
+        float RZ(float x) => W.RIVER.amp * Mathf.Sin((x + W.RIVER.phase) / W.RIVER.freq) + W.RIVER.offset;
+
+        // 建筑轮廓（含主角家）
+        var blds = new List<(string name, float x, float z, float hw, float hd)>();
+        foreach (var b in W.BUILDINGS) blds.Add((b.name, b.pos[0], b.pos[1], b.size[0] / 2f, b.size[2] / 2f));
+        blds.Add(("主角家", W.VILLA.x, W.VILLA.z, W.VILLA.w / 2f, W.VILLA.d / 2f));
+
+        // 1) 建筑 ↔ 道路：净距 ≥1m
+        foreach (var b in blds)
+            foreach (var r in W.ROADS)
+            {
+                float rx = r.axis == "z" ? r.at : (r.from + r.to) / 2f;
+                float rz = r.axis == "z" ? (r.from + r.to) / 2f : r.at;
+                float rhw = r.axis == "z" ? r.width / 2f : (r.to - r.from) / 2f;
+                float rhd = r.axis == "z" ? (r.to - r.from) / 2f : r.width / 2f;
+                if (Mathf.Abs(b.x - rx) < b.hw + rhw + 1f && Mathf.Abs(b.z - rz) < b.hd + rhd + 1f)
+                    errors.Add($"{b.name} × 道路 {r.id}（净距 <1m）");
+            }
+
+        // 1b) 建筑 ↔ 步道（3m 铺装条，含斜向）：沿中心线 1m 采样
+        foreach (var p in W.PROPS)
+        {
+            if (p.type != "plaza" || p.w > 3.5f) continue;
+            int n = Mathf.Max(2, Mathf.CeilToInt(p.d));
+            for (int i = 0; i <= n; i++)
+            {
+                float t = i / (float)n;
+                float px = p.x + Mathf.Sin(p.ry) * (t - 0.5f) * p.d;
+                float pz = p.z + Mathf.Cos(p.ry) * (t - 0.5f) * p.d;
+                foreach (var b in blds)
+                    if (Mathf.Abs(px - b.x) < b.hw + p.w / 2f + 1f && Mathf.Abs(pz - b.z) < b.hd + p.w / 2f + 1f)
+                        errors.Add($"{b.name} × 步道（净距 <1m）");
+            }
+        }
+
+        // 2) 建筑 ↔ 河道：建筑 z 范围须完全离开河道中心线 ±16m
+        foreach (var b in blds)
+        {
+            float lo = Mathf.Min(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) - 16f;
+            float hi = Mathf.Max(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) + 16f;
+            if (!(b.z + b.hd < lo || b.z - b.hd > hi))
+                errors.Add($"{b.name} 距河道过近（中心线 ±16m 内）");
+        }
+
+        // 3) 建筑 ↔ 建筑：间距 ≥0.5m
+        for (int i = 0; i < blds.Count; i++)
+            for (int j = i + 1; j < blds.Count; j++)
+            {
+                var a = blds[i]; var c = blds[j];
+                if (Mathf.Abs(a.x - c.x) < a.hw + c.hw - 0.5f && Mathf.Abs(a.z - c.z) < a.hd + c.hd - 0.5f)
+                    errors.Add($"{a.name} × {c.name}（间距 <0.5m）");
+            }
+
+        // 4) 道路/步道不得压到河面（桥位除外）
+        void CheckRiver(float x, float z, string name)
+        {
+            if (Mathf.Abs(z - RZ(x)) >= W.RIVER.width / 2f) return;
+            foreach (var br in W.RIVER.bridges)
+                if (Mathf.Abs(x - br.x) < br.width / 2f + 1f) return;
+            errors.Add($"{name} 直接压到河面（无桥）");
+        }
+        foreach (var r in W.ROADS)
+        {
+            int n = Mathf.Max(2, Mathf.CeilToInt((r.to - r.from) / 2f));
+            for (int i = 0; i <= n; i++)
+            {
+                float t = Mathf.Lerp(r.from, r.to, i / (float)n);
+                if (r.axis == "z") CheckRiver(r.at, t, "道路 " + r.id);
+                else CheckRiver(t, r.at, "道路 " + r.id);
+            }
+        }
+        foreach (var p in W.PROPS)
+        {
+            if (p.type != "plaza" || p.w > 3.5f) continue;
+            int n = Mathf.Max(2, Mathf.CeilToInt(p.d / 2f));
+            for (int i = 0; i <= n; i++)
+            {
+                float t = i / (float)n;
+                CheckRiver(p.x + Mathf.Sin(p.ry) * (t - 0.5f) * p.d, p.z + Mathf.Cos(p.ry) * (t - 0.5f) * p.d, "步道");
+            }
+        }
+
+        foreach (var e in errors) Debug.LogError("[TownValidator] ✗ " + e);
+        if (errors.Count == 0) Debug.Log($"[TownValidator] ✓ 小镇校验通过：建筑 {blds.Count} 栋 / 道路 {W.ROADS.Length} 条，零违规");
+        else Debug.LogError($"[TownValidator] 小镇校验失败：{errors.Count} 处违规");
+        if (batch) EditorApplication.Exit(errors.Count == 0 ? 0 : 1);
+    }
 }

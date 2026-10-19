@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -157,6 +158,198 @@ public static class MeshFactory
             new Vector2(0, 0), new Vector2(1, 0), new Vector2(0.5f, 1),
         };
         m.triangles = new[] { 0, 1, 2, 3, 5, 4 };   // 正面 + 背面各一组
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // ── 沿 x 方向的地形条带 / 河岸墙 / 贴地条带（小镇河道地形用）──
+    // 条带：zA(x) 为北边界、zB(x) 为南边界；UV = 世界坐标 / period（与整块地面同一平铺基准，接缝连续）
+    public static Mesh Strip(Func<float, float> zA, Func<float, float> zB, float x0, float x1, int steps, float period,
+        float y = 0f)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= steps; i++)
+        {
+            float x = Mathf.Lerp(x0, x1, i / (float)steps);
+            float za = zA(x), zb = zB(x);
+            verts.Add(new Vector3(x, y, za));
+            verts.Add(new Vector3(x, y, zb));
+            uvs.Add(new Vector2(x / period, za / period));
+            uvs.Add(new Vector2(x / period, zb / period));
+        }
+        for (int i = 0; i < steps; i++)
+        {
+            int a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+            tris.Add(a); tris.Add(d); tris.Add(c);
+            tris.Add(a); tris.Add(b); tris.Add(d);
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 竖直护岸墙：沿 x 方向的折线（z = zAt(x)），从 yTop 到 yBottom；UV 的 v 以墙底为 0（贴图底部勒脚贴水面）
+    // 双面时给背面单独一份顶点（否则正反绕序共用顶点 → 法线互相抵消变黑）
+    public static Mesh RibbonWall(Func<float, float> zAt, float x0, float x1, int steps,
+        float yTop, float yBottom, float period, bool doubleSided = true)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        float h = yTop - yBottom;
+        void Build(bool flip)
+        {
+            int baseIdx = verts.Count;
+            for (int i = 0; i <= steps; i++)
+            {
+                float x = Mathf.Lerp(x0, x1, i / (float)steps);
+                float z = zAt(x);
+                verts.Add(new Vector3(x, yTop, z));
+                verts.Add(new Vector3(x, yBottom, z));
+                uvs.Add(new Vector2(x / period, h / period));
+                uvs.Add(new Vector2(x / period, 0f));
+            }
+            for (int i = 0; i < steps; i++)
+            {
+                int a = baseIdx + i * 2, b = a + 1, c = a + 2, d = a + 3;   // a=顶, b=底
+                if (!flip)
+                {
+                    tris.Add(a); tris.Add(b); tris.Add(d);           // 朝 +z
+                    tris.Add(a); tris.Add(d); tris.Add(c);
+                }
+                else
+                {
+                    tris.Add(a); tris.Add(d); tris.Add(b);           // 朝 -z
+                    tris.Add(a); tris.Add(c); tris.Add(d);
+                }
+            }
+        }
+        Build(false);
+        if (doubleSided) Build(true);
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 椭圆水面（池塘）：UV = 局部坐标 / period（与河水同一密度）；法线 +Y
+    public static Mesh Disc(float rx, float rz, int segments, float period)
+    {
+        var verts = new List<Vector3> { new Vector3(0, 0, 0) };
+        var uvs = new List<Vector2> { new Vector2(0, 0) };
+        var tris = new List<int>();
+        for (int i = 0; i <= segments; i++)
+        {
+            float a = i / (float)segments * Mathf.PI * 2f;
+            float x = Mathf.Cos(a) * rx, z = Mathf.Sin(a) * rz;
+            verts.Add(new Vector3(x, 0, z));
+            uvs.Add(new Vector2(x / period, z / period));
+        }
+        for (int i = 1; i <= segments; i++)
+        {
+            tris.Add(0); tris.Add(i + 1); tris.Add(i);
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 椭圆环（池塘石沿）：内外两圈；UV = 世界弧长/period 近似为局部坐标/period
+    public static Mesh Ring(float rxIn, float rzIn, float rxOut, float rzOut, int segments, float period)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= segments; i++)
+        {
+            float a = i / (float)segments * Mathf.PI * 2f;
+            float ca = Mathf.Cos(a), sa = Mathf.Sin(a);
+            verts.Add(new Vector3(ca * rxIn, 0, sa * rzIn));
+            verts.Add(new Vector3(ca * rxOut, 0, sa * rzOut));
+            uvs.Add(new Vector2(ca * rxIn / period, sa * rzIn / period));
+            uvs.Add(new Vector2(ca * rxOut / period, sa * rzOut / period));
+        }
+        for (int i = 0; i < segments; i++)
+        {
+            int a = i * 2, b = a + 1, c = a + 2, d = a + 3;
+            tris.Add(a); tris.Add(c); tris.Add(d);
+            tris.Add(a); tris.Add(d); tris.Add(b);
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 石拱桥面：带 arches 个半椭圆拱洞的竖面（XY 平面；正/反两面各一份顶点，法线不互相抵消）
+    // span/height = 面尺寸；holeW/holeH = 单拱洞宽/高；texW = 石纹贴图覆盖米数（UV 按世界比例）
+    public static Mesh ArchFace(float span, float height, int arches, float holeW, float holeH, float texW)
+    {
+        int cols = Mathf.Max(12, arches * 28);
+        float colW = span / cols;
+        float bayW = span / arches;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+
+        float HoleTop(float xLocal)
+        {
+            float bayU = Mathf.Repeat(xLocal + span / 2f, bayW) - bayW / 2f;
+            float r = holeW / 2f;
+            if (Mathf.Abs(bayU) >= r) return 0f;
+            return holeH * Mathf.Sqrt(1f - (bayU / r) * (bayU / r));
+        }
+
+        void Build(bool flip)
+        {
+            for (int i = 0; i < cols; i++)
+            {
+                float x0 = -span / 2f + i * colW, x1 = x0 + colW;
+                float yb = -height / 2f + HoleTop(x0 + colW * 0.5f);
+                float yt = height / 2f;
+                if (yt - yb < 0.02f) continue;
+                int b = verts.Count;
+                verts.Add(new Vector3(x0, yb, 0)); verts.Add(new Vector3(x1, yb, 0));
+                verts.Add(new Vector3(x1, yt, 0)); verts.Add(new Vector3(x0, yt, 0));
+                uvs.Add(new Vector2((x0 + span / 2f) / texW, (yb + height / 2f) / texW));
+                uvs.Add(new Vector2((x1 + span / 2f) / texW, (yb + height / 2f) / texW));
+                uvs.Add(new Vector2((x1 + span / 2f) / texW, height / texW));
+                uvs.Add(new Vector2((x0 + span / 2f) / texW, height / texW));
+                if (!flip)
+                {
+                    tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
+                    tris.Add(b); tris.Add(b + 2); tris.Add(b + 3);
+                }
+                else
+                {
+                    tris.Add(b); tris.Add(b + 2); tris.Add(b + 1);
+                    tris.Add(b); tris.Add(b + 3); tris.Add(b + 2);
+                }
+            }
+        }
+        Build(false); Build(true);
+
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
         m.RecalculateNormals();
         m.RecalculateBounds();
         return m;

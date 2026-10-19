@@ -30,6 +30,7 @@ public class WorldData
     public PosItem[] BORDER_ROCKS;
     public ReedItem[] REEDS;
     public SpotDef[] SPOTS;
+    public RiverDef RIVER;
 
     public static WorldData Load()
     {
@@ -51,7 +52,7 @@ public class WorldData
 }
 
 [Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }
-[Serializable] public class RoadDef { public string id, axis, kind; public float at, from, to, width; public bool fence; }
+[Serializable] public class RoadDef { public string id, axis, kind; public float at, from, to, width; public bool fence; public bool sidewalk; }
 [Serializable] public class PropDef
 {
     public string type, kind;
@@ -70,3 +71,13 @@ public class WorldData
 [Serializable] public class RockeryItem { public float x, z, s; }
 [Serializable] public class ReedItem { public float x, z, h; public int t; }
 [Serializable] public class SpotDef { public string name; public float x, z, r; }
+
+// 河道（S 形中心线 z = amp·sin((x+phase)/freq) + offset；两端可延伸到界外）
+[Serializable] public class RiverDef
+{
+    public float width;
+    public float amp, freq, phase, offset;
+    public float from, to;
+    public BridgeDef[] bridges;
+}
+[Serializable] public class BridgeDef { public float x, width; public int arches; public bool covered; }

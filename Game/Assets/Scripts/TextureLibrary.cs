@@ -966,6 +966,107 @@ public static class TextureLibrary
         return p;
     }
 
+    // ── 小镇新增：河水 / 桥用条石 / 木板 / 钟面 ──
+    // 河水（4m 见方 @160px/米）：深青绿底 + 顺流水纹 + 横向微波 + 逆光闪点；所有细节 9 次平铺绘制保证无缝
+    static Px Water()
+    {
+        var p = new Px(640, 640);
+        p.FillRect(0, 0, 640, 640, C("#4d7f8e"));
+        void Wrap(float x, float y, float w, float h, Color c)
+        {
+            for (int ox = -1; ox <= 1; ox++)
+                for (int oy = -1; oy <= 1; oy++)
+                    p.FillRect(x + ox * 640, y + oy * 640, w, h, c);
+        }
+        for (int i = 0; i < 34; i++)
+            Wrap(R.Int(600), R.Int(600), 28 + R.Int(90), 18 + R.Int(60),
+                C(R.Int(2) == 0 ? "rgba(30,72,84,0.20)" : "rgba(104,148,158,0.13)"));
+        for (int i = 0; i < 460; i++)
+            Wrap(R.Int(560), R.Int(636), 18 + R.Int(64), 1 + R.Int(2),
+                C(R.Int(3) == 0 ? "rgba(190,216,220,0.18)" : "rgba(32,72,84,0.16)"));
+        for (int i = 0; i < 80; i++)
+            Wrap(R.Int(636), R.Int(600), 1, 16 + R.Int(46), C("rgba(130,170,178,0.16)"));
+        for (int i = 0; i < 110; i++)
+            Wrap(R.Int(638), R.Int(638), 2, 1, C("rgba(214,232,234,0.30)"));
+        return p;
+    }
+
+    // 桥用条石（2.4m 见方，条石 0.8×0.4m）：暖灰石灰岩 + 倒角 + 水线潮湿痕（贴图底部）
+    static Px BridgeStone()
+    {
+        var p = new Px(384, 384);
+        p.FillRect(0, 0, 384, 384, C("#8f877a"));
+        var cols = new[] { "#a89f92", "#a1988a", "#b0a798", "#988f82" };
+        const int bw = 128, bh = 64;
+        for (int row = 0; row < 6; row++)
+            for (int col = -1; col < 5; col++)
+            {
+                float x = col * bw + (row % 2) * (bw / 2);
+                float y = row * bh;
+                p.FillRect(x + 2, y + 2, bw - 4, bh - 4, C(cols[R.Int(4)]));
+                p.FillRect(x + 2, y + 2, bw - 4, 2, C("rgba(255,255,255,0.10)"));
+                p.FillRect(x + 2, y + bh - 4, bw - 4, 2, C("rgba(0,0,0,0.16)"));
+                for (int i = 0; i < 10; i++)
+                    p.FillRect(x + 4 + R.Int(bw - 12), y + 4 + R.Int(bh - 12), 4 + R.Int(6), 2,
+                        C(R.Int(2) == 0 ? "rgba(90,84,74,0.16)" : "rgba(226,220,208,0.18)"));
+            }
+        for (int i = 0; i < 30; i++)
+            p.FillRect(R.Int(380), 300 + R.Int(80), 3 + R.Int(8), 2, C("rgba(60,78,64,0.14)"));
+        return p;
+    }
+
+    // 木板（2m 见方，板宽 0.25m）：廊桥桥面 / 栏杆
+    static Px Wood()
+    {
+        var p = new Px(320, 320);
+        p.FillRect(0, 0, 320, 320, C("#8a6a4a"));
+        var cols = new[] { "#96754f", "#8a6a48", "#9d7c55", "#82633f" };
+        for (int b = 0; b < 8; b++)
+        {
+            float x = b * 40;
+            p.FillRect(x + 1, 0, 38, 320, C(cols[R.Int(4)]));
+            p.FillRect(x, 0, 2, 320, C("rgba(60,42,28,0.45)"));
+            p.FillRect(x + 2, 0, 1, 320, C("rgba(255,240,220,0.06)"));
+            for (int i = 0; i < 12; i++)
+                p.FillRect(x + 3 + R.Int(34), R.Int(310), 1 + R.Int(2), 12 + R.Int(40),
+                    C(R.Int(2) == 0 ? "rgba(60,44,30,0.18)" : "rgba(230,206,176,0.10)"));
+            if (b % 2 == 0) p.FillRect(x + 6 + R.Int(24), R.Int(300), 4, 3, C("rgba(52,38,26,0.45)"));
+        }
+        for (int i = 0; i < 4; i++)
+            p.FillRect(0, 60 + i * 70, 320, 8, C("rgba(50,36,24,0.18)"));
+        return p;
+    }
+
+    // 钟面（1.2m 见方 @160px/米）：深色外圈 + 罗马刻度 + 10:10 指针
+    static Px ClockFace()
+    {
+        var p = new Px(192, 192);
+        p.FillRect(0, 0, 192, 192, C("#f2ecdc"));
+        p.FillCircle(96, 96, 92, C("#3a2f28"));
+        p.FillCircle(96, 96, 84, C("#f7f2e6"));
+        p.StrokeCircle(96, 96, 88, 3, C("#b08a4a"));
+        for (int i = 0; i < 12; i++)
+        {
+            float a = i / 12f * Mathf.PI * 2;
+            float x = 96 + Mathf.Sin(a) * 70, y = 96 - Mathf.Cos(a) * 70;
+            p.FillRect(x - 3, y - 3, 6, 6, C(i % 3 == 0 ? "#2f2620" : "#6b5a48"));
+        }
+        void Line(float x0, float y0, float x1, float y1, float w, Color c)
+        {
+            const int n = 30;
+            for (int i = 0; i <= n; i++)
+            {
+                float t = i / (float)n;
+                p.FillRect(Mathf.Lerp(x0, x1, t) - w / 2, Mathf.Lerp(y0, y1, t) - w / 2, w, w, c);
+            }
+        }
+        Line(96, 96, 118, 52, 6, C("#2f2620"));
+        Line(96, 96, 78, 34, 5, C("#2f2620"));
+        p.FillCircle(96, 96, 7, C("#2f2620"));
+        p.FillCircle(96, 96, 3, C("#b08a4a"));
+        return p;
+    }
+
     // ── 缓存与入口（名称与现有 PNG 文件名一致）──
     static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 
@@ -979,6 +1080,7 @@ public static class TextureLibrary
             "grass" => Grass(), "path" => PathTex(), "flower" => Flower(), "dirt" => Dirt(),
             "leaves" => Leaves(), "bark" => Bark(), "concrete" => Concrete(),
             "rain_streak" => RainStreak(), "snow_flake" => SnowFlake(), "snow_ground" => SnowGround(),
+            "water" => Water(), "bridge_stone" => BridgeStone(), "wood" => Wood(), "clock" => ClockFace(),
             "track" => Track(), "pond" => Pond(), "sky_day" => SkyDay(), "sky_night" => SkyNight(),
             "lamp_glow" => LampGlow(), "roof_villa" => Roof("#3a434e"), "villa" => Villa(),
             "player" => Character(), "door" => Door(), "awning" => Stripes(),
@@ -999,6 +1101,16 @@ public static class TextureLibrary
     // 名称分发：固定名 + 参数化名（建筑/边翼/屋面/远景外墙）；找不到返回 null 由调用方回退 Resources（招牌 PNG）
     static WorldData _world;
     static WorldData Wd => _world ?? (_world = CampusData.Build());
+
+    // 当前世界（小镇/校园）：立面与屋面贴图按当前世界的建筑数据生成
+    public static void SetWorld(WorldData w)
+    {
+        if (w != null && !ReferenceEquals(w, _world))
+        {
+            _world = w;
+            Cache.Clear();          // 同一次运行切换世界时避免拿到另一世界的立面贴图
+        }
+    }
 
     public static Texture2D ByName(string name, bool pixel, bool repeat)
     {
@@ -1026,21 +1138,19 @@ public static class TextureLibrary
         }
         if (name.StartsWith("wall_") || name.StartsWith("wing_"))
         {
-            var parts = name.Split('_');               // wall_teach_day / wing_teach_day
-            if (parts.Length >= 3)
+            // 名字格式 wall_<id>_day / wing_<id>_night —— id 自身可能含下划线（小镇的 s_dorm / r_apt2）
+            bool wing = name.StartsWith("wing_");
+            string rest = name.Substring(wing ? 5 : 5);
+            bool night = rest.EndsWith("_night");
+            string id = rest.Substring(0, rest.Length - (night ? 6 : 4));
+            var b = Array.Find(Wd.BUILDINGS, x => x.id == id);
+            if (b != null)
             {
-                string id = parts[1];
-                bool night = parts[2] == "night";
-                var b = Array.Find(Wd.BUILDINGS, x => x.id == id);
-                if (b != null)
-                {
-                    bool wing = parts[0] == "wing";
-                    if (wing)
-                        return BuildingWall(b.wall, b.trim, b.plinth, 3, 2, false, night ? 0.55f : 0.05f,
-                            4.6f, b.size[1] * 0.72f);
-                    return BuildingWall(b.wall, b.trim, b.plinth, b.cols, b.rows, b.banner, night ? 0.55f : 0.05f,
-                        b.size[0], b.size[1]);
-                }
+                if (wing)
+                    return BuildingWall(b.wall, b.trim, b.plinth, 3, 2, false, night ? 0.55f : 0.05f,
+                        4.6f, b.size[1] * 0.72f);
+                return BuildingWall(b.wall, b.trim, b.plinth, b.cols, b.rows, b.banner, night ? 0.55f : 0.05f,
+                    b.size[0], b.size[1]);
             }
         }
         if (name.StartsWith("roof_"))
@@ -1083,7 +1193,7 @@ public static class TextureLibrary
     public static void DumpAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "rain_streak", "snow_flake", "snow_ground", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h" })
+        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "rain_streak", "snow_flake", "snow_ground", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h", "water", "bridge_stone", "wood", "clock" })
         {
             var t = Get(n, true, true);
             File.WriteAllBytes(Path.Combine(dir, n + ".png"), t.EncodeToPNG());

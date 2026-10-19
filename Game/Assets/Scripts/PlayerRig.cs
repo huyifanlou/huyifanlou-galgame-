@@ -21,6 +21,7 @@ public class PlayerRig : MonoBehaviour
     bool _alignPaused, _camInit, _dragging;
     bool _firstPerson;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
     float _fpPitch;             // 第一人称俯仰（上正下负）
+    float _groundY;             // 脚底高度（人行道/桥面）
     Renderer _spriteR;
     Mesh _spriteMesh;
     Vector3 _dragLast;
@@ -46,7 +47,7 @@ public class PlayerRig : MonoBehaviour
         _cam.nearClipPlane = 0.5f;
         _cam.farClipPlane = 260f;
 
-        var spawn = new Vector2(0f, 4f);
+        var spawn = new Vector2(w.Spawn.x, w.Spawn.z);
         var px = Args.F("-px"); if (px.HasValue) spawn.x = px.Value;
         var pz = Args.F("-pz"); if (pz.HasValue) spawn.y = pz.Value;
 
@@ -174,12 +175,11 @@ public class PlayerRig : MonoBehaviour
             if (!Collides(nx, p.z)) p.x = nx;
             float nz = Mathf.Clamp(p.z + dirZ * MOVE_SPEED * dt, -_bound, _bound);
             if (!Collides(p.x, nz)) p.z = nz;
-            p.y = Mathf.Abs(Mathf.Sin(Time.time * 10f)) * 0.05f;   // 走路小跳
         }
-        else
-        {
-            p.y *= 0.8f;
-        }
+        // 脚底跟随地面（人行道 12cm / 桥面 / 车行道），叠加走路小跳
+        float gy = _w != null ? _w.GroundY(p.x, p.z) : 0f;
+        _groundY = Mathf.Lerp(_groundY, gy, Mathf.Min(1f, dt * 12f));
+        p.y = _groundY + (moving ? Mathf.Abs(Mathf.Sin(Time.time * 10f)) * 0.05f : 0f);
         _player.position = p;
 
         // 精灵朝向与帧（背对镜头=站立姿态；移动朝移动方向；拖拽时冻结）

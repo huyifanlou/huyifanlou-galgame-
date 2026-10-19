@@ -41,5 +41,9 @@ public static class TexScale
         ["leaves"] = new Vector2(LeafMeters, LeafMeters),   // 树冠（世界尺度 UV 箱体/锥体）
         ["bark"] = new Vector2(BarkMeters, BarkMeters),     // 树干
         ["concrete"] = new Vector2(2.4f, 2.4f),             // 矮墙/立柱：384px → 160px/米（含每 2.4m 砌筑缝）
+        ["water"] = new Vector2(4f, 4f),                    // 河水：640px → 160px/米（贴图无缝平铺）
+        ["bridge_stone"] = new Vector2(2.4f, 2.4f),         // 桥用条石：384px → 160px/米
+        ["wood"] = new Vector2(2f, 2f),                     // 廊桥木板：320px → 160px/米
+        ["clock"] = new Vector2(1.2f, 1.2f),                // 钟面：192px → 160px/米
     };
 }

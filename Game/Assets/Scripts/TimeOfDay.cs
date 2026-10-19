@@ -11,7 +11,7 @@ public class TimeOfDay : MonoBehaviour
 
     float _toastUntil;
     WorldBuilder _w;
-    Light _dir, _up;
+    Light _dir, _up, _fill;
     Weather _wth;
     bool _winNight;
     PostFX _post;
@@ -37,7 +37,7 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
     // 写实向（2026-10-18 第二版）：压低整体曝光 + 保住「直射 : 环境」比 → 不再晃眼、层次更厚
     // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
-    const float DAY_AMB = 0.155f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
+    const float DAY_AMB = 0.175f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
     const float NIGHT_AMB = 0.28f, NIGHT_HEMI = 0.18f, NIGHT_DIR_I = 0.52f;
     const float DAY_FOG_NEAR = 52f, DAY_FOG_FAR = 142f;
     const float NIGHT_FOG_NEAR = 44f, NIGHT_FOG_FAR = 132f;
@@ -99,6 +99,16 @@ public class TimeOfDay : MonoBehaviour
         _up.color = DAY_HEMI_SKY;
         _up.intensity = DAY_HEMI * 0.55f;
         _up.shadows = LightShadows.None;
+
+        // 北向补光：把背阴立面（城镇里大量朝北的沿街面）抬起来，避免整面发黑
+        var fill = new GameObject("NorthFill");
+        fill.transform.SetParent(transform, false);
+        fill.transform.rotation = Quaternion.Euler(22f, 200f, 0f);
+        _fill = fill.AddComponent<Light>();
+        _fill.type = LightType.Directional;
+        _fill.color = DAY_HEMI_SKY;
+        _fill.intensity = 0.18f;
+        _fill.shadows = LightShadows.None;
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
         RenderSettings.fog = true;
@@ -183,6 +193,11 @@ public class TimeOfDay : MonoBehaviour
         {
             _up.intensity = Mathf.Lerp(DAY_HEMI, NIGHT_HEMI, m) * 0.55f;
             _up.color = sky;
+        }
+        if (_fill != null)
+        {
+            _fill.intensity = Mathf.Lerp(0.18f, 0.07f, m) * wAmb;
+            _fill.color = sky;
         }
 
         // 雾（雨雪：更近、更灰/更白）

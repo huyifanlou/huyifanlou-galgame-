@@ -40,6 +40,10 @@ public static class MatLib
     public static float SmoothnessOf(string tex)
     {
         if (tex == "pond") return 0.55f;                                   // 水面
+        if (tex == "water") return 0.38f;                                  // 河水（湿润但不刺眼）
+        if (tex == "bridge_stone") return 0.12f;                           // 桥体条石
+        if (tex == "wood") return 0.08f;                                   // 廊桥木板
+        if (tex == "clock") return 0.12f;                                  // 钟面
         if (tex.StartsWith("road_")) return 0.13f;                         // 石板路
         if (tex == "path" || tex.StartsWith("roadband")) return 0.10f;     // 铺装/石带
         if (tex == "door") return 0.16f;                                   // 漆面门
@@ -139,6 +143,24 @@ public static class MatLib
         m.mainTexture = Tex(texName, pixel: false, repeat: true);
         m.SetFloat("_Metallic", 0f);
         m.SetFloat("_Glossiness", smoothness);
+        ConfigureCutout(m);
+        return m;
+    }
+
+    // 直接用 Texture2D 建材质（程序化参数化贴图：石拱桥每跨面片 等）
+    public static Material LitTexture(Texture2D t, float tu = 1f, float tv = 1f, float smoothness = 0f)
+    {
+        var m = new Material(Shader.Find("Standard"));
+        m.mainTexture = t;
+        m.mainTextureScale = new Vector2(tu, tv);
+        m.SetFloat("_Metallic", 0f);
+        m.SetFloat("_Glossiness", smoothness);
+        return m;
+    }
+
+    public static Material CutoutTexture(Texture2D t, float tu = 1f, float tv = 1f, float smoothness = 0f)
+    {
+        var m = LitTexture(t, tu, tv, smoothness);
         ConfigureCutout(m);
         return m;
     }
