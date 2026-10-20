@@ -257,6 +257,76 @@ public static class TownData
         return false;
     }
 
+    // ── 学校区域道路/步道两侧矮墙：路口与建筑入口自动留口 ──
+    static FenceDef[] BuildSchoolWalls()
+    {
+        var bands = new (string axis, float at, float from, float to, float width)[]
+        {
+            ("z", -45f, -92f, -26f, 5f),     // 中央街（学校段）
+            ("z", -84f, -76f, -26f, 5f),     // 西环路北（学校段）
+            ("x", -71f, -84f, -48f, 3f),     // 学校北支路
+            ("x", -54f, -84f, -45f, 3f),     // 学校西支路
+            ("x", -45.5f, -41.5f, -14f, 3f), // 学校东支路
+        };
+        var runs = new List<FenceDef>();
+        foreach (var b in bands)
+        {
+            float off = b.width / 2f + (b.width >= 4f ? 1.9f : 0.8f);
+            for (int sgn = -1; sgn <= 1; sgn += 2)
+            {
+                float at = b.at + sgn * off;
+                var gaps = new List<(float a, float c)>();
+                foreach (var o in bands)
+                {
+                    if (o.axis == b.axis) continue;
+                    if (b.axis == "z")
+                    {
+                        if (!(o.from - 0.5f <= at && at <= o.to + 0.5f)) continue;
+                        if (o.at < b.from - 0.5f || o.at > b.to + 0.5f) continue;
+                    }
+                    else
+                    {
+                        if (!(o.from - 0.5f <= at && at <= o.to + 0.5f)) continue;
+                        if (o.at < b.from - 0.5f || o.at > b.to + 0.5f) continue;
+                    }
+                    gaps.Add((o.at - o.width / 2f - 1.3f, o.at + o.width / 2f + 1.3f));
+                }
+                foreach (var bd in Buildings)
+                {
+                    if (!bd.id.StartsWith("s_")) continue;
+                    float doorX = bd.pos[0];
+                    float doorZ = bd.pos[1] + bd.face * (bd.size[2] / 2f + 0.9f);
+                    if (b.axis == "z")
+                    {
+                        if (Mathf.Abs(doorX - at) > 4.5f) continue;
+                        if (doorZ < b.from - 1f || doorZ > b.to + 1f) continue;
+                        gaps.Add((doorZ - 1.5f, doorZ + 1.5f));
+                    }
+                    else
+                    {
+                        if (Mathf.Abs(doorZ - at) > 4.5f) continue;
+                        if (doorX < b.from - 1f || doorX > b.to + 1f) continue;
+                        gaps.Add((doorX - 1.5f, doorX + 1.5f));
+                    }
+                }
+                // 学校大门（中央街西侧，门卫旁边）
+                if (b.axis == "z" && Mathf.Abs(b.at + 45f) < 0.1f && sgn < 0)
+                    gaps.Add((-34f, -28f));
+                gaps.Sort((p, q) => p.a.CompareTo(q.a));
+                float cur = b.from;
+                foreach (var (ga, gc) in gaps)
+                {
+                    float gs = Mathf.Max(ga, b.from), ge = Mathf.Min(gc, b.to);
+                    if (ge <= cur) continue;
+                    if (gs > cur + 1.2f) runs.Add(new FenceDef { axis = b.axis, at = at, from = cur, to = gs });
+                    cur = Mathf.Max(cur, ge);
+                }
+                if (b.to > cur + 1.2f) runs.Add(new FenceDef { axis = b.axis, at = at, from = cur, to = b.to });
+            }
+        }
+        return runs.ToArray();
+    }
+
     static bool NearBuilding(float x, float z, float margin)
     {
         foreach (var b in Buildings)
@@ -297,7 +367,7 @@ public static class TownData
             PROPS = Props,
             POND = new PondDef { pos = new[] { 34f, -40f }, r = 20f },
             VILLA = new VillaDef { x = -35.5f, z = 66f, w = 12f, h = 6f, d = 6f, face = 1 },
-            FENCES = new FenceDef[0],
+            FENCES = BuildSchoolWalls(),
             DISTANT_BUILDINGS = new DistantDef[0],
             ROCKERIES = new RockeryItem[0],
             REEDS = new ReedItem[0],
