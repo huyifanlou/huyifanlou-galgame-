@@ -1228,24 +1228,40 @@ public class WorldBuilder : MonoBehaviour
             Box(g, new Vector3(sx * (w / 2f - 0.22f), 2.55f, 0f), new Vector3(0.26f, 0.26f, span), ColMat("#7a5a3e"));
             Box(g, new Vector3(sx * (w / 2f - 0.22f), 1.05f, 0f), new Vector3(0.16f, 0.14f, span), ColMat("#8a6a48"));
         }
-        // 双坡瓦顶（沿桥长方向起脊）：檐口低、屋脊高；左右坡向相反
-        const float ang = 0.42f;
-        float half = (w + 1.8f) / 2f;
+        // 木廊桥屋顶：低缓人字坡 + 暖色瓦、山墙封板、博风板、檐口梁
+        const float ang = 0.30f;
+        float half = (w + 1.2f) / 2f;
         float slope = half / Mathf.Cos(ang);
-        float eaveY = 2.95f;
+        float eaveY = 2.70f;
         float ridgeY = eaveY + half * Mathf.Tan(ang);
         float midY = (eaveY + ridgeY) / 2f;
-        // 右坡：外端(+x)低 → 绕 Z 负角；左坡：外端(-x)低 → 绕 Z 正角
-        MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.22f, span + 1.4f), 4f, 2f),
-            new Vector3(half / 2f, midY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, -ang * Mathf.Rad2Deg));
-        MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.22f, span + 1.4f), 4f, 2f),
-            new Vector3(-half / 2f, midY, 0f), LitTex("roof_villa"), new Vector3(0f, 0f, ang * Mathf.Rad2Deg));
-        Box(g, new Vector3(0f, ridgeY + 0.12f, 0f), new Vector3(0.44f, 0.26f, span + 1.6f), ColMat("#2b3038"));
-        // 檐口封板 + 柱顶横梁，封住屋顶与木构之间的缝
+        var bridgeRoof = MatLib.LitTexture(TextureLibrary.RoofTex("#6a4a3c"), 4f, 2f, 0.2f);
+        // 右坡(+x)外端低 → 绕 Z 负角；左坡相反
+        MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.2f, span + 1.2f), 4f, 2f),
+            new Vector3(half / 2f, midY, 0f), bridgeRoof, new Vector3(0f, 0f, -ang * Mathf.Rad2Deg));
+        MeshObj(g, MeshFactory.BoxUV(new Vector3(slope, 0.2f, span + 1.2f), 4f, 2f),
+            new Vector3(-half / 2f, midY, 0f), bridgeRoof, new Vector3(0f, 0f, ang * Mathf.Rad2Deg));
+        Box(g, new Vector3(0f, ridgeY + 0.1f, 0f), new Vector3(0.4f, 0.2f, span + 1.35f), ColMat("#3a2f2a"));
+        // 山墙封板（两端，封住屋顶与横梁之间，入口上方）
+        float gableH = ridgeY - 2.55f;
+        foreach (int sz in new[] { -1, 1 })
+        {
+            var tri = NewGo("bridge_gable", g).transform;
+            tri.localPosition = new Vector3(0f, 2.55f, sz * (span / 2f + 0.02f));
+            MeshObj(tri, MeshFactory.Triangle(w + 1.2f, gableH), Vector3.zero, ColMat("#6a4a34"));
+            // 博风板（沿两端斜边）
+            Box(g, new Vector3(half / 2f, midY, sz * (span / 2f + 0.05f)), new Vector3(slope, 0.22f, 0.18f),
+                ColMat("#4a3528"), new Vector3(0f, 0f, -ang * Mathf.Rad2Deg));
+            Box(g, new Vector3(-half / 2f, midY, sz * (span / 2f + 0.05f)), new Vector3(slope, 0.22f, 0.18f),
+                ColMat("#4a3528"), new Vector3(0f, 0f, ang * Mathf.Rad2Deg));
+        }
+        // 檐口梁 + 椽头
         foreach (int sgn in new[] { -1, 1 })
         {
-            Box(g, new Vector3(sgn * half, eaveY, 0f), new Vector3(0.26f, 0.3f, span + 1.4f), ColMat("#6a4a34"));
-            Box(g, new Vector3(sgn * (w / 2f - 0.22f), 2.82f, 0f), new Vector3(0.22f, 0.22f, span + 0.6f), ColMat("#7a5a3e"));
+            Box(g, new Vector3(sgn * half, eaveY, 0f), new Vector3(0.24f, 0.26f, span + 1.2f), ColMat("#6a4a34"));
+            Box(g, new Vector3(sgn * (w / 2f - 0.22f), 2.58f, 0f), new Vector3(0.2f, 0.2f, span + 0.6f), ColMat("#7a5a3e"));
+            for (float rz = -span / 2f + 0.6f; rz <= span / 2f; rz += 1.4f)
+                Box(g, new Vector3(sgn * (half - 0.18f), eaveY - 0.12f, rz), new Vector3(0.45f, 0.1f, 0.12f), ColMat("#5a4030"));
         }
         // 顶棚（从桥下看是木色天花，不是黑色屋顶底面）
         MeshObj(g, MeshFactory.BoxUV(new Vector3(w - 0.2f, 0.06f, span), 2f), new Vector3(0f, 2.62f, 0f), LitTex("wood"));
