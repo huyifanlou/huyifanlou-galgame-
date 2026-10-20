@@ -12,6 +12,8 @@ public class Minimap : MonoBehaviour
     bool _large;
     readonly List<(string name, float x, float z, Color col)> _marks =
         new List<(string name, float x, float z, Color col)>();
+    readonly List<(string name, float x, float z)> _dest = new List<(string name, float x, float z)>();
+    int _pending = -1;
 
     public void Init(WorldBuilder w, PlayerRig rig)
     {
@@ -20,6 +22,7 @@ public class Minimap : MonoBehaviour
         if (Args.Str("-map") == "1") _large = true;
         BuildMap();
         MakeCircleTextures();
+        BuildDestinations();
     }
 
     static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
@@ -130,8 +133,27 @@ public class Minimap : MonoBehaviour
         _marks.Add(("公园", 34, -40, Hex("#7ab0a0")));
         _marks.Add(("神社", 79, -78, Hex("#d08070")));
         _marks.Add(("游乐场", 50, 38, Hex("#c080c0")));
-        _marks.Add(("车站", 76, 76, Hex("#c8b090")));
+        _marks.Add(("车站", 76, 86, Hex("#c8b090")));
         _marks.Add(("家", -35.5f, 66, Hex("#f0d0a0")));
+    }
+
+    void BuildDestinations()
+    {
+        var w = _w.W;
+        BuildingDef Find(string id) => System.Array.Find(w.BUILDINGS, b => b.id == id);
+        void AddB(string label, string id)
+        {
+            var b = Find(id);
+            if (b != null) _dest.Add((label, b.pos[0], b.pos[1] + b.face * (b.size[2] / 2f + 1.7f)));
+        }
+        _dest.Add(("家", w.VILLA.x, w.VILLA.z + w.VILLA.d / 2f + 1.7f));
+        AddB("学校", "s_teach");
+        AddB("神社", "k_haiden");
+        AddB("车站", "st_hall");
+        AddB("游乐场", "f_ticket");
+        _dest.Add(("钟楼", -14f, -4f));
+        _dest.Add(("公园", 34f, -24f));
+        _dest.Add(("老街", -52f, 29f));
     }
 
     void MakeCircleTextures()
@@ -187,47 +209,69 @@ public class Minimap : MonoBehaviour
         var title = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
         title.normal.textColor = new Color(1f, 0.95f, 0.85f);
         GUI.Label(new Rect(x, y, size, 18f),
-            _large ? "M 缩小 · 点击传送" : "小镇地图（M 放大 · 点击传送）", title);
+            _large ? "M 缩小 · 点地标二次确认 · 空白处直接传送" : "小镇地图（M 放大 · 地标确认传送）", title);
 
         var small = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
-        foreach (var m in _marks)
+
+        // 具名传送点
+        for (int i = 0; i < _dest.Count; i++)
         {
-            float mx = x + (m.x - _min) / (_max - _min) * size;
-            float my = top + (m.z - _min) / (_max - _min) * size;
-            if ((new Vector2(mx, my) - center).sqrMagnitude > (radius * 0.98f) * (radius * 0.98f)) continue;
-            GUI.color = m.col;
-            GUI.DrawTexture(new Rect(mx - 3.5f, my - 3.5f, 7f, 7f), Texture2D.whiteTexture);
+            var d = _dest[i];
+            float dx = x + (d.x - _min) / (_max - _min) * size;
+            float dy = top + (d.z - _min) / (_max - _min) * size;
+            if ((new Vector2(dx, dy) - center).sqrMagnitude > (radius * 0.96f) * (radius * 0.96f)) continue;
+            GUI.color = new Color(1f, 0.95f, 0.8f);
+            GUI.DrawTexture(new Rect(dx - 5f, dy - 5f, 10f, 10f), Texture2D.whiteTexture);
+            GUI.color = new Color(0.15f, 0.35f, 0.55f);
+            GUI.DrawTexture(new Rect(dx - 3f, dy - 3f, 6f, 6f), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            float lw = _large ? 84f : 58f;
-            float lx = mx + 6f;
-            if (lx + lw > center.x + radius - 4f) lx = mx - 6f - lw;
-            float ly = Mathf.Clamp(my - 8f, top, top + size - 14f);
-            GUI.color = new Color(0f, 0f, 0f, 0.45f);
-            GUI.DrawTexture(new Rect(lx - 2f, ly, lw + 4f, 14f), Texture2D.whiteTexture);
-            GUI.color = Color.white;
-            var label = new GUIStyle(small);
-            label.normal.textColor = new Color(1f, 0.96f, 0.88f, 0.95f);
-            GUI.Label(new Rect(lx, ly, lw, 14f), m.name, label);
+            if (_large)
+            {
+                var dl = new GUIStyle(small);
+                dl.normal.textColor = new Color(0.8f, 0.95f, 1f, 1f);
+                GUI.Label(new Rect(dx + 7f, dy - 8f, 60f, 14f), "▸" + d.name, dl);
+            }
         }
 
-        var p = _rig.Position;
-        float px = x + (p.x - _min) / (_max - _min) * size;
-        float py = top + (p.z - _min) / (_max - _min) * size;
-        var off = new Vector2(px, py) - center;
-        if (off.sqrMagnitude > (radius - 6f) * (radius - 6f))
-            off = off.normalized * (radius - 6f);
-        px = center.x + off.x;
-        py = center.y + off.y;
-        GUI.color = new Color(0.15f, 0.1f, 0.05f);
-        GUI.DrawTexture(new Rect(px - 4f, py - 4f, 8f, 8f), Texture2D.whiteTexture);
-        GUI.color = new Color(1f, 0.85f, 0.25f);
-        GUI.DrawTexture(new Rect(px - 3f, py - 3f, 6f, 6f), Texture2D.whiteTexture);
-        GUI.color = Color.white;
-
         var e = Event.current;
+        if (_pending >= 0)
+        {
+            // 二次确认框
+            float pw = 360f, ph = 150f;
+            var pr = new Rect((Screen.width - pw) / 2f, (Screen.height - ph) / 2f, pw, ph);
+            GUI.color = new Color(0.04f, 0.05f, 0.06f, 0.96f);
+            GUI.DrawTexture(pr, Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            var st = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+            st.normal.textColor = new Color(1f, 0.95f, 0.85f);
+            GUI.Label(new Rect(pr.x, pr.y + 18f, pw, 30f), $"传送到「{_dest[_pending].name}」？", st);
+            var sst = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
+            sst.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
+            GUI.Label(new Rect(pr.x, pr.y + 50f, pw, 20f), "会传送到该建筑/区域的门前", sst);
+            if (GUI.Button(new Rect(pr.x + 60f, pr.y + 92f, 100f, 36f), "确认"))
+            {
+                var d = _dest[_pending];
+                _rig.Teleport(d.x, d.z);
+                _pending = -1;
+            }
+            if (GUI.Button(new Rect(pr.x + 200f, pr.y + 92f, 100f, 36f), "取消")) _pending = -1;
+            return;
+        }
+
         if (e.type == EventType.MouseDown && e.button == 0 && mapRect.Contains(e.mousePosition) &&
             (e.mousePosition - center).sqrMagnitude <= radius * radius)
         {
+            // 先判定是否点在具名传送点上
+            int hit = -1;
+            float best = _large ? 18f : 12f;
+            for (int i = 0; i < _dest.Count; i++)
+            {
+                float dx = x + (_dest[i].x - _min) / (_max - _min) * size;
+                float dy = top + (_dest[i].z - _min) / (_max - _min) * size;
+                float dd = (new Vector2(dx, dy) - e.mousePosition).magnitude;
+                if (dd < best) { best = dd; hit = i; }
+            }
+            if (hit >= 0) { _pending = hit; e.Use(); return; }
             float wx = Mathf.Lerp(_min, _max, (e.mousePosition.x - x) / size);
             float wz = Mathf.Lerp(_min, _max, (e.mousePosition.y - top) / size);
             if (_rig.Teleport(wx, wz)) e.Use();

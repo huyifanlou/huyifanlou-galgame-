@@ -200,6 +200,14 @@ public class WorldBuilder : MonoBehaviour
             else if (p.type == "ride_pendulum") grp.gameObject.AddComponent<ProximityHide>().Radius = 5f;
             switch (p.type)
             {
+                case "plaza_round":
+                    {
+                        MeshObj(grp, MeshFactory.Disc(p.r, p.r, 56, TexScale.PathPeriod),
+                            new Vector3(0, 0.010f, 0), LitTex("path"));
+                        MeshObj(grp, MeshFactory.Ring(p.r, p.r, p.r + 0.55f, p.r + 0.55f, 56, 2.4f),
+                            new Vector3(0, 0.014f, 0), LitTex("bridge_stone"));
+                    }
+                    break;
                 case "plaza":
                     {
                         // 世界对齐 UV：多块铺装相接时石纹连续；高度压到路面/环塘路之下，避免盖住其他地面
@@ -1189,8 +1197,7 @@ public class WorldBuilder : MonoBehaviour
         }
 
         // 桥下水面阴影
-        MeshObj(g, MeshFactory.Quad(w * 0.9f, span * 0.85f), new Vector3(0f, -1.94f, 0f),
-            MatLib.Shadow(new Color(0f, 0f, 0f, 0.20f)), default, false, false);
+
     }
 
     // 木廊桥：木板桥面 + 木柱 + 双坡瓦顶（东段地标）
@@ -1243,8 +1250,7 @@ public class WorldBuilder : MonoBehaviour
         // 顶棚（从桥下看是木色天花，不是黑色屋顶底面）
         MeshObj(g, MeshFactory.BoxUV(new Vector3(w - 0.2f, 0.06f, span), 2f), new Vector3(0f, 2.62f, 0f), LitTex("wood"));
 
-        MeshObj(g, MeshFactory.Quad(w * 0.9f, span * 0.8f), new Vector3(0f, -1.94f, 0f),
-            MatLib.Shadow(new Color(0f, 0f, 0f, 0.20f)), default, false, false);
+
     }
 
     // 场地：操场（跑道贴图）/ 篮球场 / 网球场 + 路口铺装
@@ -1631,6 +1637,40 @@ public class WorldBuilder : MonoBehaviour
                 }
                 Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.45f), new Vector3(0.08f, 0.85f, 0.5f), ColMat(b.trim));
                 Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.72f), new Vector3(0.05f, 0.5f, 0.3f), ColMat("#c9a24a"), default, false);
+
+                // 店铺类型差异（茶楼/绸缎药铺/书店照相馆/超市便利店）
+                string sid = b.id;
+                if (sid == "o_tea" || sid == "r_rest")
+                {
+                    // 二层挑台 + 栏杆 + 红灯笼（茶楼/餐馆）
+                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(w * 0.8f, 0.16f, 0.85f), 2f),
+                        new Vector3(0f, -h / 2f + 3.75f, d / 2f + 0.5f), LitTex("wood"));
+                    for (float rx = -w * 0.34f; rx <= w * 0.36f; rx += Mathf.Max(1f, w * 0.17f))
+                        Box(grp, new Vector3(rx, -h / 2f + 4.2f, d / 2f + 0.9f), new Vector3(0.08f, 0.9f, 0.08f), ColMat("#8a6a48"));
+                    Box(grp, new Vector3(0f, -h / 2f + 4.65f, d / 2f + 0.9f), new Vector3(w * 0.75f, 0.1f, 0.12f), ColMat("#a87e52"));
+                    Cylinder(grp, new Vector3(-w * 0.3f, -h / 2f + 3.0f, d / 2f + 0.75f), 0.16f, 0.42f, ColMat("#b8352f"));
+                    Cylinder(grp, new Vector3(w * 0.3f, -h / 2f + 3.0f, d / 2f + 0.75f), 0.16f, 0.42f, ColMat("#b8352f"));
+                }
+                else if (sid == "o_silk" || sid == "o_pharm" || sid == "r_book" || sid == "r_photo")
+                {
+                    // 展示橱窗 + 格子（绸缎庄/药铺/书店/照相馆），避开门洞
+                    foreach (int sx in new[] { -1, 1 })
+                    {
+                        Face(grp, Mathf.Max(1.4f, w * 0.26f), 1.7f,
+                            new Vector3(sx * w * 0.3f, -h / 2f + 1.75f, d / 2f + 0.045f),
+                            MatLib.LitColor(MatLib.Hex("#33414c"), 0.25f));
+                        for (int gi = 0; gi < 4; gi++)
+                            Box(grp, new Vector3(sx * w * 0.3f - w * 0.11f + gi * w * 0.073f, -h / 2f + 1.75f, d / 2f + 0.09f),
+                                new Vector3(0.05f, 1.7f, 0.05f), ColMat(b.trim));
+                    }
+                    Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.3f, d / 2f + 0.42f), new Vector3(0.08f, 1.1f, 0.5f), ColMat("#2f3a34"));
+                }
+                else if (sid == "r_market" || sid == "r_conv")
+                {
+                    // 横条招牌（超市/便利店，看板建筑）
+                    Box(grp, new Vector3(0f, -h / 2f + 3.05f, d / 2f + 0.35f), new Vector3(w * 0.85f, 0.55f, 0.16f), ColMat("#3f7a52"));
+                    Box(grp, new Vector3(0f, -h / 2f + 3.05f, d / 2f + 0.44f), new Vector3(w * 0.7f, 0.24f, 0.03f), ColMat("#f2efe6"), default, false);
+                }
             }
             // 门前绿篱（神社不种）
             if (!b.id.StartsWith("k_"))

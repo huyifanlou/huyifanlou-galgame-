@@ -8,8 +8,8 @@ using UnityEngine;
 //   用 -campus 启动可回到原校园世界，默认进入小镇
 public static class TownData
 {
-    public const float BOUND = 95f;
-    public const float GROUND_SIZE = 220f;
+    public const float BOUND = 110f;
+    public const float GROUND_SIZE = 260f;
 
     public static float RiverZ(float x) => 10f * Mathf.Sin((x + 40f) / 34f) + 2f;
 
@@ -92,14 +92,14 @@ public static class TownData
         B("r_two4", "两层小楼", -22, 78, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
 
         // ── 第4排：单元楼（4/6/5/4 层）──
-        B("r_apt1", "单元楼", -74, 87.5f, 12, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
-        B("r_apt2", "单元楼", -58, 87.5f, 12, 18, 7, "#bfb6a4", "#ece6d8", "#857c6c", "#3f4650", 4, 6, -1),
-        B("r_apt3", "单元楼", -34, 87.5f, 14, 15, 7, "#c4bbaa", "#eee8da", "#887f6e", "#444a54", 5, 5, -1),
-        B("r_apt4", "单元楼", -19.5f, 87.5f, 11, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
+        B("r_apt1", "单元楼", -74, 93f, 12, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
+        B("r_apt2", "单元楼", -58, 93f, 12, 18, 7, "#bfb6a4", "#ece6d8", "#857c6c", "#3f4650", 4, 6, -1),
+        B("r_apt3", "单元楼", -34, 93f, 14, 15, 7, "#c4bbaa", "#eee8da", "#887f6e", "#444a54", 5, 5, -1),
+        B("r_apt4", "单元楼", -19.5f, 93f, 11, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
 
         // ── 车站 ──
-        B("st_hall", "站房", 76, 76, 20, 9, 9, W_BRICK, T_CREAM, P_DARK, R_SLATE, 5, 2, -1, "grand"),
-        B("st_platform", "站台", 76, 84, 22, 1.2f, 4, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, -1, "plain"),
+        B("st_hall", "站房", 76, 86, 20, 9, 9, W_BRICK, T_CREAM, P_DARK, R_SLATE, 5, 2, -1, "grand"),
+        B("st_platform", "站台", 76, 98, 22, 1.2f, 4, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, -1, "plain"),
 
         // ── 游乐场（体块：其余设施用专门道具）──
         B("f_ticket", "售票处", 11, 36, 5, 3.2f, 8, "#e8c46a", "#fff6e0", "#a8843c", "#b8452f", 2, 1, 1, "plain"),
@@ -124,7 +124,7 @@ public static class TownData
         R("resN", "x", 49f, -74f, -16f, 4f, "slab"),              // 住宅北街
         R("resM", "x", 72f, -74f, -16f, 4f, "slab"),              // 住宅中街
         R("stSt", "x", 58f, 6f, 92f, 7f, "slab"),                 // 车站街
-        R("stRd", "z", 58f, 58f, 88f, 6f, "slab"),                // 车站路
+        R("stRd", "z", 58f, 58f, 96f, 6f, "slab"),                // 车站路
         R("parkRd", "z", 65f, -46f, -10f, 5f, "slab"),            // 公园联络路
         R("fest", "x", -46f, 62f, 94f, 12f, "mainstone", false),  // 夏日祭参道（整幅铺石，无侧石）
         R("shrineSteps", "z", 79f, -62f, -48f, 10f, "slab", false), // 神社石阶
@@ -161,12 +161,12 @@ public static class TownData
         PL2(-74, 60.5f, -16, 60.5f),
 
         // 广场 / 站前 / 停车
-        P("plaza", -15, -12, w: 18, d: 20),                       // 钟楼广场
-        P("plaza", 76, 68, w: 26, d: 6),                          // 站前广场
+        P("plaza_round", -15, -12, r: 11f),                       // 钟楼广场
+        P("plaza", 76, 78, w: 26, d: 6),                          // 站前广场
         P("parking", 20, 72, w: 24, d: 16),
         P("crates", 44, 74, w: 14, d: 14),
         P("clocktower", -14, -12),
-        P("railway", 0, 92, len: 212),
+        P("railway", 0, 104, len: 250),
         P("torii", 79, -63.4f, w: 10),
 
         // 游乐场设施
@@ -264,9 +264,9 @@ public static class TownData
         {
             ("z", -45f, -92f, -26f, 5f),     // 中央街（学校段）
             ("z", -84f, -76f, -26f, 5f),     // 西环路北（学校段）
-            ("x", -71f, -84f, -48f, 3f),     // 学校北支路
-            ("x", -54f, -84f, -45f, 3f),     // 学校西支路
-            ("x", -45.5f, -41.5f, -14f, 3f), // 学校东支路
+            ("x", -71f, -84f, -50.5f, 3f),     // 学校北支路
+            ("x", -54f, -84f, -50.5f, 3f),     // 学校西支路
+            ("x", -45.5f, -40f, -14f, 3f), // 学校东支路
         };
         var runs = new List<FenceDef>();
         foreach (var b in bands)
@@ -289,7 +289,7 @@ public static class TownData
                         if (!(o.from - 0.5f <= at && at <= o.to + 0.5f)) continue;
                         if (o.at < b.from - 0.5f || o.at > b.to + 0.5f) continue;
                     }
-                    gaps.Add((o.at - o.width / 2f - 1.3f, o.at + o.width / 2f + 1.3f));
+                    gaps.Add((o.at - o.width / 2f - 2.2f, o.at + o.width / 2f + 2.2f));
                 }
                 foreach (var bd in Buildings)
                 {
@@ -300,15 +300,20 @@ public static class TownData
                     {
                         if (Mathf.Abs(doorX - at) > 4.5f) continue;
                         if (doorZ < b.from - 1f || doorZ > b.to + 1f) continue;
-                        gaps.Add((doorZ - 1.5f, doorZ + 1.5f));
+                        gaps.Add((doorZ - 1.8f, doorZ + 1.8f));
                     }
                     else
                     {
                         if (Mathf.Abs(doorZ - at) > 4.5f) continue;
                         if (doorX < b.from - 1f || doorX > b.to + 1f) continue;
-                        gaps.Add((doorX - 1.5f, doorX + 1.5f));
+                        gaps.Add((doorX - 1.8f, doorX + 1.8f));
                     }
                 }
+                // 校内支路在中央街/环路墙上的开口（支路墙体已收在墙外，这里补主墙开口）
+                if (b.axis == "z" && Mathf.Abs(b.at + 45f) < 6f)
+                    foreach (float gz in new[] { -71f, -54f, -45.5f }) gaps.Add((gz - 3f, gz + 3f));
+                if (b.axis == "z" && (Mathf.Abs(b.at + 88f) < 3f || Mathf.Abs(b.at + 80f) < 3f))
+                    foreach (float gz in new[] { -71f, -54f }) gaps.Add((gz - 3f, gz + 3f));
                 // 学校大门（中央街西侧，门卫旁边）
                 if (b.axis == "z" && Mathf.Abs(b.at + 45f) < 0.1f && sgn < 0)
                     gaps.Add((-34f, -28f));
@@ -375,7 +380,7 @@ public static class TownData
             SMALL_ROCKS = new PosItem[0],
             RIVER = new RiverDef
             {
-                width = 16f, amp = 10f, freq = 34f, phase = 40f, offset = 2f, from = -110f, to = 110f,
+                width = 16f, amp = 10f, freq = 34f, phase = 40f, offset = 2f, from = -130f, to = 130f,
                 bridges = new[]
                 {
                     new BridgeDef { x = 0f, width = 11f, arches = 3 },
@@ -575,7 +580,7 @@ public static class TownData
             L(x, 62.5f, Mathf.PI / 2f);
         }
         // 站前广场
-        L(70f, 68f, Mathf.PI / 2f); L(82f, 68f, Mathf.PI / 2f);
+        L(70f, 78f, Mathf.PI / 2f); L(82f, 78f, Mathf.PI / 2f);
         // 公园（池塘四角）
         L(34f, -57f, Mathf.PI / 2f); L(34f, -23f, -Mathf.PI / 2f);
         L(14f, -40f, 0f); L(54f, -40f, Mathf.PI);
@@ -607,6 +612,17 @@ public static class TownData
                         l.z = r.at + side * (r.width / 2f + 0.55f);
                     }
                 }
+        // 不在建筑门口放路灯（门前 2.8m 内）
+        lamps.RemoveAll(l =>
+        {
+            foreach (var b in Buildings)
+            {
+                float dz = b.pos[1] + b.face * (b.size[2] / 2f + 0.9f);
+                if (Mathf.Abs(l.x - b.pos[0]) < 2.8f && Mathf.Abs(l.z - dz) < 2.8f) return true;
+            }
+            if (Mathf.Abs(l.x + 35.5f) < 3f && Mathf.Abs(l.z - 69f) < 2.6f) return true;
+            return false;
+        });
         w.LAMPS = lamps.ToArray();
 
         // 边界林带
@@ -614,7 +630,7 @@ public static class TownData
         for (int i = 0; i < 96; i++)
         {
             float a = i / 96f * Mathf.PI * 2f;
-            float r = 101f + (float)rnd.Next() * 6f;
+            float r = 116f + (float)rnd.Next() * 6f;
             bt.Add(new TreeItem { x = R1(Mathf.Cos(a) * r), z = R1(Mathf.Sin(a) * r), v = 6 + rnd.NextInt(3) });
         }
         var btKept = new List<TreeItem>();
