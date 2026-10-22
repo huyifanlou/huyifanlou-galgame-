@@ -1041,6 +1041,7 @@ public class WorldBuilder : MonoBehaviour
                 h += PEAKS[i, 2] * Mathf.Exp(-(dx2 * dx2 + dz2 * dz2) / (2f * sd * sd));
             }
             h *= 0.82f + 0.36f * Mathf.PerlinNoise(x * 0.011f + 11.3f, z * 0.011f + 5.7f);
+            h *= 0.90f + 0.20f * Mathf.PerlinNoise(x * 0.031f + 31.7f, z * 0.031f + 17.3f);   // 第二层起伏，避免山包太规整
             if (W.RIVER != null)
             {
                 float dz = Mathf.Abs(z - RZ(x));
@@ -1066,10 +1067,10 @@ public class WorldBuilder : MonoBehaviour
     {
         float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
         float half = W.RIVER.width / 2f;
-        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 230, 76, period,
-            (x, z) => y + RimH(x, z), true);
-        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 230, 76, period,
-            (x, z) => y + RimH(x, z), true);
+        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 340, 120, period,
+            (x, z) => y + RimH(x, z));
+        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 340, 120, period,
+            (x, z) => y + RimH(x, z));
         var ci = new CombineInstance[2];
         ci[0].mesh = north; ci[0].transform = Matrix4x4.identity;
         ci[1].mesh = south; ci[1].transform = Matrix4x4.identity;
@@ -2026,8 +2027,8 @@ public class WorldBuilder : MonoBehaviour
     {
         if (W.RIVER == null) return;
         var g = NewGo("ForestBelt", Root).transform;
-        var cone = MeshFactory.Cone(1f, 1f, 6, false, 0f);
-        var ball = MeshFactory.Sphere(1f, 8, 5);
+        var cone = MeshFactory.Cone(1f, 1f, 8, false, 0f);
+        var ball = MeshFactory.Sphere(1f, 10, 7);
         var trunk = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
         const int SP = 7;
         var lists = new List<CombineInstance>[SP];
@@ -2120,33 +2121,46 @@ public class WorldBuilder : MonoBehaviour
                 float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 5.4f;
                 float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
                 if (Mathf.Abs(z - RZ(x)) < 13f) continue;                                   // 河谷留空
-                if (Mathf.Abs(x) < 138f && Mathf.Abs(z - 104f) < 9f) continue;              // 铁路走廊
-                if (Mathf.Abs(Mathf.Abs(x) - 124f) < 15f && Mathf.Abs(z - 104f) < 15f) continue;  // 隧道口
+                if (Mathf.Abs(x) < 122f && Mathf.Abs(z - 104f) < 6.5f) continue;            // 铁路走廊（到洞门为止）
                 // 内圈按噪声留出林窗：径向对齐，能看到后面的第二圈与山体，边界才有纵深
                 if (inner && Mathf.PerlinNoise(a * 2.6f + 3.1f, 0.7f) < 0.34f) continue;
-                // 林线：13m 等高线以上不长树，山顶留空，山形才露得出来
-                if (RimH(x, z) > 13f) continue;
+                // 林线：18m 等高线以上不长树，山顶留空，山形才露得出来
+                if (RimH(x, z) > 18f) continue;
                 float h = inner ? 6.5f + (float)rnd.NextDouble() * 7f : 9f + (float)rnd.NextDouble() * 8f;
                 Add(x, z, h);
             }
         }
 
-        // 5 灌木：贴着林缘的低矮球丛，压住树干与草地的接缝
-        for (float r0 = 129f; r0 < 150f; r0 += 2.6f)
+        // 洞门上方补一丛树：否则洞口正上方是一整块光秃秃的绿坡
+        foreach (int sgn in new[] { -1, 1 })
         {
-            int n = Mathf.Max(16, Mathf.RoundToInt(2f * Mathf.PI * r0 / 4.2f));
+            for (int i = 0; i < 18; i++)
+            {
+                float x = sgn * (125f + (float)rnd.NextDouble() * 18f);
+                float z = 104f + ((float)rnd.NextDouble() - 0.5f) * 28f;
+                if (Mathf.Abs(x) < 122f && Mathf.Abs(z - 104f) < 6.5f) continue;
+                if (RimH(x, z) > 18f) continue;
+                Add(x, z, 8f + (float)rnd.NextDouble() * 6f);
+            }
+        }
+
+        // 5 灌木：贴着林缘的低矮丛，三球一丛，压住树干与草地的接缝
+        for (float r0 = 129f; r0 < 152f; r0 += 2.4f)
+        {
+            int n = Mathf.Max(20, Mathf.RoundToInt(2f * Mathf.PI * r0 / 3.6f));
             for (int k = 0; k < n; k++)
             {
-                if (rnd.NextDouble() < 0.42) continue;
+                if (rnd.NextDouble() < 0.38) continue;
                 float a = (k + (float)rnd.NextDouble() * 0.9f) / n * Mathf.PI * 2f;
-                float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 3.4f;
+                float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 3.2f;
                 float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
                 if (Mathf.Abs(z - RZ(x)) < 12f) continue;
                 if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
                 float y = RimH(x, z);
-                float rad = 0.75f + (float)rnd.NextDouble() * 0.75f;
-                Ball(5, x, y + rad * 0.62f, z, rad, 0.72f);
-                Ball(5, x + rad * 0.7f, y + rad * 0.42f, z + rad * 0.35f, rad * 0.66f, 0.72f);
+                float rad = 0.42f + (float)rnd.NextDouble() * 0.34f;
+                Ball(5, x, y + rad * 0.55f, z, rad, 0.7f);
+                Ball(5, x + rad * 0.85f, y + rad * 0.40f, z + rad * 0.45f, rad * 0.68f, 0.7f);
+                Ball(5, x - rad * 0.6f, y + rad * 0.34f, z + rad * 0.7f, rad * 0.55f, 0.7f);
             }
         }
 
@@ -2172,7 +2186,7 @@ public class WorldBuilder : MonoBehaviour
     {
         if (W.RIVER == null) return;
         var g = NewGo("RailTunnels", Root).transform;
-        var stone = LitTex("concrete", 2.6f, 2.6f);
+        var stone = LitTex("bridge_stone", 2.4f, 2.4f);
         var trim = ColMat("#b9b2a2");
         var dark = MatLib.UnlitColor(MatLib.Hex("#0b0e11"));
         foreach (int sgn in new[] { -1, 1 })
