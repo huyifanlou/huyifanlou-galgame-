@@ -599,7 +599,7 @@ public static class TextureLibrary
     static Px SkyDay()
     {
         var p = new Px(2048, 1024);
-        var bands = new[] { "#3f86cf", "#4b93d6", "#599edc", "#68aae2", "#79b9e8", "#8cc6ee", "#9fd2f2", "#b2dcf5", "#c0e3f6", "#cfe8f8" };
+        var bands = new[] { "#3f86cf", "#4b93d6", "#599edc", "#68aae2", "#79b9e8", "#8cc6ee", "#9fd2f2", "#a9d2ef", "#b2d8f2", "#b8dcf3" };
         float step = 512f / bands.Length;
         for (int i = 0; i < bands.Length; i++) p.FillRect(0, (int)Math.Floor(i * step), 2048, (int)Math.Ceiling(step) + 1, C(bands[i]));
         p.FillRect(0, 512, 2048, 512, C(bands[bands.Length - 1]));

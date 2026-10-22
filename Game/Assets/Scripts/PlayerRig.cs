@@ -45,7 +45,7 @@ public class PlayerRig : MonoBehaviour
         _cam.backgroundColor = MatLib.Hex("#10141c");
         _cam.fieldOfView = 46f;
         _cam.nearClipPlane = 0.5f;
-        _cam.farClipPlane = 320f;   // 必须覆盖天空穹顶最远端（半径170+玩家95），否则走远后天空出现黑幕
+        _cam.farClipPlane = 560f;   // 覆盖天空穹顶（半径 420 + 玩家 128）与远景山脊，否则走远后天空出现黑幕
 
         var spawn = new Vector2(w.Spawn.x, w.Spawn.z);
         var px = Args.F("-px"); if (px.HasValue) spawn.x = px.Value;
@@ -83,12 +83,22 @@ public class PlayerRig : MonoBehaviour
 
     public Vector3 Position => _player != null ? _player.position : Vector3.zero;
 
+    // 圆形边界：世界是圆的（小地图也是圆的），方形四角会跑进边界山体里
+    Vector2 ClampRound(float x, float z, float margin = 0f)
+    {
+        float lim = _bound - margin;
+        float r = Mathf.Sqrt(x * x + z * z);
+        if (r <= lim) return new Vector2(x, z);
+        float k = lim / r;
+        return new Vector2(x * k, z * k);
+    }
+
     // 传送（小地图点击）：落在阻挡里时向四周找最近的可站立点
     public bool Teleport(float x, float z)
     {
         if (_player == null || _w == null) return false;
-        x = Mathf.Clamp(x, -_bound + 1.5f, _bound - 1.5f);
-        z = Mathf.Clamp(z, -_bound + 1.5f, _bound - 1.5f);
+        var c0 = ClampRound(x, z, 1.5f);
+        x = c0.x; z = c0.y;
         if (Collides(x, z))
         {
             bool ok = false;
@@ -97,7 +107,7 @@ public class PlayerRig : MonoBehaviour
                 {
                     float a = k / 16f * Mathf.PI * 2f;
                     float nx = x + Mathf.Cos(a) * r, nz = z + Mathf.Sin(a) * r;
-                    if (Mathf.Abs(nx) > _bound - 1.5f || Mathf.Abs(nz) > _bound - 1.5f) continue;
+                    if (nx * nx + nz * nz > (_bound - 1.5f) * (_bound - 1.5f)) continue;
                     if (!Collides(nx, nz)) { x = nx; z = nz; ok = true; }
                 }
             if (!ok) return false;
@@ -210,10 +220,9 @@ public class PlayerRig : MonoBehaviour
             float len = Mathf.Sqrt(dirX * dirX + dirZ * dirZ);
             dirX /= len;
             dirZ /= len;
-            float nx = Mathf.Clamp(p.x + dirX * MOVE_SPEED * dt, -_bound, _bound);
-            if (!Collides(nx, p.z)) p.x = nx;
-            float nz = Mathf.Clamp(p.z + dirZ * MOVE_SPEED * dt, -_bound, _bound);
-            if (!Collides(p.x, nz)) p.z = nz;
+            var cand = ClampRound(p.x + dirX * MOVE_SPEED * dt, p.z + dirZ * MOVE_SPEED * dt);
+            if (!Collides(cand.x, p.z)) p.x = cand.x;
+            if (!Collides(p.x, cand.y)) p.z = cand.y;
         }
         // 脚底跟随地面（人行道 12cm / 桥面 / 车行道），叠加走路小跳
         float gy = _w != null ? _w.GroundY(p.x, p.z) : 0f;

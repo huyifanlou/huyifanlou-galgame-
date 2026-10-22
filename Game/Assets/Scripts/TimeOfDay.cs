@@ -40,8 +40,8 @@ public class TimeOfDay : MonoBehaviour
     // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
     const float DAY_AMB = 0.175f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
     const float NIGHT_AMB = 0.40f, NIGHT_HEMI = 0.26f, NIGHT_DIR_I = 0.72f;
-    const float DAY_FOG_NEAR = 52f, DAY_FOG_FAR = 142f;
-    const float NIGHT_FOG_NEAR = 44f, NIGHT_FOG_FAR = 132f;
+    const float DAY_FOG_NEAR = 70f, DAY_FOG_FAR = 300f;
+    const float NIGHT_FOG_NEAR = 60f, NIGHT_FOG_FAR = 230f;
 
     public static float Smooth(float x) => x * x * (3f - 2f * x);
 

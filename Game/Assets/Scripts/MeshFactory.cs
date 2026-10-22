@@ -226,6 +226,45 @@ public static class MeshFactory
         return m;
     }
 
+    // 带起伏的地形条带：za(x)~zb(x) 之间分 rows 行，每点高度由 h(x,z) 给出（边界缓丘用）
+    // UV 仍按世界坐标 / period，与平地草皮密度一致
+    public static Mesh StripH(Func<float, float> zA, Func<float, float> zB, float x0, float x1,
+        int steps, int rows, float period, Func<float, float, float> h)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        int row = rows + 1;
+        for (int i = 0; i <= steps; i++)
+        {
+            float x = Mathf.Lerp(x0, x1, i / (float)steps);
+            float za = zA(x), zb = zB(x);
+            for (int j = 0; j <= rows; j++)
+            {
+                float z = Mathf.Lerp(za, zb, j / (float)rows);
+                verts.Add(new Vector3(x, h(x, z), z));
+                uvs.Add(new Vector2(x / period, z / period));
+            }
+        }
+        for (int i = 0; i < steps; i++)
+        {
+            for (int j = 0; j < rows; j++)
+            {
+                int a = i * row + j, b = a + 1, c = a + row, d = c + 1;
+                tris.Add(a); tris.Add(b); tris.Add(d);
+                tris.Add(a); tris.Add(d); tris.Add(c);
+            }
+        }
+        var m = new Mesh();
+        m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
     // 竖直护岸墙：沿 x 方向的折线（z = zAt(x)），从 yTop 到 yBottom；UV 的 v 以墙底为 0（贴图底部勒脚贴水面）
     // 双面时给背面单独一份顶点（否则正反绕序共用顶点 → 法线互相抵消变黑）
     public static Mesh RibbonWall(Func<float, float> zAt, float x0, float x1, int steps,

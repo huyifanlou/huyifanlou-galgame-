@@ -8,8 +8,8 @@ using UnityEngine;
 //   用 -campus 启动可回到原校园世界，默认进入小镇
 public static class TownData
 {
-    public const float BOUND = 110f;
-    public const float GROUND_SIZE = 260f;
+    public const float BOUND = 128f;
+    public const float GROUND_SIZE = 620f;
 
     public static float RiverZ(float x) => 10f * Mathf.Sin((x + 40f) / 34f) + 2f;
 
@@ -166,7 +166,7 @@ public static class TownData
         P("parking", 20, 72, w: 24, d: 16),
         P("crates", 44, 74, w: 14, d: 14),
         P("clocktower", -14, -12),
-        P("railway", 0, 104, len: 250),
+        P("railway", 0, 104, len: 236),
         P("torii", 79, -63.4f, w: 10),
 
         // 游乐场设施
@@ -380,7 +380,7 @@ public static class TownData
             SMALL_ROCKS = new PosItem[0],
             RIVER = new RiverDef
             {
-                width = 16f, amp = 10f, freq = 34f, phase = 40f, offset = 2f, from = -130f, to = 130f,
+                width = 16f, amp = 10f, freq = 34f, phase = 40f, offset = 2f, from = -310f, to = 310f,
                 bridges = new[]
                 {
                     new BridgeDef { x = 0f, width = 11f, arches = 3 },
@@ -396,7 +396,7 @@ public static class TownData
 
         void TryTree(float x, float z, int v, float gap = 2.6f)
         {
-            if (Mathf.Abs(x) > BOUND - 3f || Mathf.Abs(z) > BOUND - 3f) return;
+            if (x * x + z * z > (BOUND - 3f) * (BOUND - 3f)) return;   // 圆形边界内才种（外侧是抬升的缓丘）
             if (InKeep(x, z, keep)) return;
             foreach (var t in trees)
                 if (Mathf.Sqrt((x - t.x) * (x - t.x) + (z - t.z) * (z - t.z)) < gap) return;
