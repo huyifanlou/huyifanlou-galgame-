@@ -106,13 +106,20 @@ public static class MatLib
     }
 
     // 像素小人精灵：Standard Cutout（alphaTest 0.4，与 web 一致）；UV 由 mainTextureScale/Offset 驱动帧动画
-    public static Material Sprite(string texName, float smoothness = 0f)
+    public static Material Sprite(string texName, float smoothness = 0f, float emissive = 0f)
     {
         var m = new Material(Shader.Find("Standard"));
         m.mainTexture = Tex(texName, pixel: true, repeat: true);
         m.SetFloat("_Metallic", 0f);
         m.SetFloat("_Glossiness", smoothness);
         ConfigureCutout(m);
+        if (emissive > 0f)
+        {
+            // 角色专用：背光时不至于整张脸糊成黑的（自发光用主贴图调制，不额外提亮颜色）
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", new Color(emissive, emissive, emissive));
+            m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        }
         return m;
     }
 

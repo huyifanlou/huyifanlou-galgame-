@@ -101,14 +101,16 @@ public class TimeOfDay : MonoBehaviour
         _up.intensity = DAY_HEMI * 0.55f;
         _up.shadows = LightShadows.None;
 
-        // 北向补光：把背阴立面（城镇里大量朝北的沿街面）抬起来，避免整面发黑
+        // 北向补光：把背阴立面（城镇里大量朝北/朝西的沿街面、背光的人物正面）抬起来。
+        // 注意：平行光是沿 transform.forward 射出的，要让「朝 -X/-Z 的面」受光，光线必须射向 +X/+Z
+        // （上一版写的是 Euler(22,200,0)，光线和太阳同向，等于把主光又加了一遍，背光面一点没补到）
         var fill = new GameObject("NorthFill");
         fill.transform.SetParent(transform, false);
-        fill.transform.rotation = Quaternion.Euler(22f, 200f, 0f);
+        fill.transform.rotation = Quaternion.Euler(26f, 22f, 0f);
         _fill = fill.AddComponent<Light>();
         _fill.type = LightType.Directional;
         _fill.color = DAY_HEMI_SKY;
-        _fill.intensity = 0.18f;
+        _fill.intensity = 0.22f;
         _fill.shadows = LightShadows.None;
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
@@ -206,7 +208,7 @@ public class TimeOfDay : MonoBehaviour
         Shader.SetGlobalFloat("_WaterAmbient", Mathf.Lerp(1f, 0.3f, m));
         if (_fill != null)
         {
-            _fill.intensity = Mathf.Lerp(0.18f, 0.07f, m) * wAmb;
+            _fill.intensity = Mathf.Lerp(0.22f, 0.12f, m) * wAmb;
             _fill.color = sky;
         }
 
