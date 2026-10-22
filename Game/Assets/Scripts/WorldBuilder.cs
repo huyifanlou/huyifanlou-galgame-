@@ -798,7 +798,6 @@ public class WorldBuilder : MonoBehaviour
         Villa();
         Trees();
         ForestBelt();
-        Ridges();
         RailTunnels();
         Distant();
         SnowLayer();
@@ -1003,36 +1002,61 @@ public class WorldBuilder : MonoBehaviour
     float RZ(float x) => W.RIVER == null ? 0f
         : W.RIVER.amp * Mathf.Sin((x + W.RIVER.phase) / W.RIVER.freq) + W.RIVER.offset;
 
-    // 边界地貌高度：r ≤ 130 全平（可行走区必须平），130 起抬升为缓丘，210 外继续加高到山脊
+    // 环形山峰表：角度(°)、离中心距离、峰高、影响半径（高斯）——刻意高低不一，避免一圈等高土坡
+    static readonly float[,] PEAKS =
+    {
+        {   9f, 236f, 30f, 54f },
+        {  42f, 208f, 16f, 38f },
+        {  74f, 252f, 40f, 60f },
+        { 106f, 204f, 12f, 34f },
+        { 137f, 240f, 27f, 48f },
+        { 168f, 268f, 44f, 62f },
+        { 199f, 214f, 15f, 36f },
+        { 229f, 246f, 29f, 46f },
+        { 259f, 258f, 36f, 54f },
+        { 290f, 206f, 13f, 34f },
+        { 318f, 238f, 24f, 44f },
+        { 345f, 224f, 20f, 40f },
+    };
+
+    // 边界地貌高度：r ≤ 128 全平（可行走区必须平），128 起缓坡，外侧叠加一圈高低不一的山峰
     // 河谷（距河 13m 内）与铁路走廊（z≈104）各自压平，避免把水面/铁轨埋进山体
-    // 两端隧道口另加一个高斯鼓包，让铁轨尽头是一座山而不是空气
     float RimH(float x, float z)
     {
         float r = Mathf.Sqrt(x * x + z * z);
         float h = 0f;
         if (r > 128f)
         {
-            float t = Mathf.Clamp01((r - 128f) / 70f);
-            h = Mathf.SmoothStep(0f, 1f, t) * 10f;
-            float t2 = Mathf.Clamp01((r - 198f) / 110f);
-            h += Mathf.SmoothStep(0f, 1f, t2) * 10f;
-            h *= 0.72f + 0.5f * Mathf.PerlinNoise(x * 0.0085f + 11.3f, z * 0.0085f + 5.7f);
+            float t = Mathf.Clamp01((r - 128f) / 66f);
+            h = Mathf.SmoothStep(0f, 1f, t) * 6f;
+            float t2 = Mathf.Clamp01((r - 196f) / 110f);
+            h += Mathf.SmoothStep(0f, 1f, t2) * 5f;
+            // 山峰：每个峰独立的高斯鼓包
+            for (int i = 0; i < PEAKS.GetLength(0); i++)
+            {
+                float a = PEAKS[i, 0] * Mathf.Deg2Rad;
+                float px = Mathf.Cos(a) * PEAKS[i, 1], pz = Mathf.Sin(a) * PEAKS[i, 1];
+                float dx2 = x - px, dz2 = z - pz;
+                float sd = PEAKS[i, 3];
+                h += PEAKS[i, 2] * Mathf.Exp(-(dx2 * dx2 + dz2 * dz2) / (2f * sd * sd));
+            }
+            h *= 0.82f + 0.36f * Mathf.PerlinNoise(x * 0.011f + 11.3f, z * 0.011f + 5.7f);
             if (W.RIVER != null)
             {
                 float dz = Mathf.Abs(z - RZ(x));
                 h *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((dz - 13f) / 24f));
             }
-            // 铁路走廊：轨面两侧 9m 内压平，24m 外恢复；一直平到洞门里（124）
-            if (Mathf.Abs(x) < 124f)
+            // 铁路走廊：轨面两侧 9m 内压平，24m 外恢复；一直平到洞门口（120）
+            if (Mathf.Abs(x) < 120f)
                 h *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((Mathf.Abs(z - 104f) - 9f) / 15f));
         }
-        // 隧道口山体：洞门（±118）背后 6m 起坡，铁轨尽头是一座山而不是空气
+        // 隧道口山体：洞门（±118）背后 2m 起坡，用 12m 的坡长堆到 10m 高，不做成直立的墙
         float ax = Mathf.Abs(x);
-        if (ax > 124f)
+        if (ax > 120f)
         {
-            float dx = x - Mathf.Sign(x) * 130f;
+            float dx = x - Mathf.Sign(x) * 132f;
             float d2 = dx * dx + (z - 104f) * (z - 104f);
-            h += 6f * Mathf.Exp(-d2 / (2f * 14f * 14f)) * Mathf.Clamp01((ax - 124f) / 4f);
+            h += 10f * Mathf.Exp(-d2 / (2f * 16f * 16f)) * Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((ax - 120f) / 9f));
         }
         return h;
     }
@@ -1042,10 +1066,10 @@ public class WorldBuilder : MonoBehaviour
     {
         float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
         float half = W.RIVER.width / 2f;
-        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 260, 90, period,
-            (x, z) => y + RimH(x, z));
-        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 260, 90, period,
-            (x, z) => y + RimH(x, z));
+        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 230, 76, period,
+            (x, z) => y + RimH(x, z), true);
+        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 230, 76, period,
+            (x, z) => y + RimH(x, z), true);
         var ci = new CombineInstance[2];
         ci[0].mesh = north; ci[0].transform = Matrix4x4.identity;
         ci[1].mesh = south; ci[1].transform = Matrix4x4.identity;
@@ -1997,35 +2021,91 @@ public class WorldBuilder : MonoBehaviour
         }
     }
 
-    // ── 边界密林：132~214m 环带，合并成 3 个网格（只做视觉挡墙，不参与碰撞/近距隐藏）──
+    // ── 边界密林：134~262m 环带，6 种树（松/阔叶/杉/樱/落叶/灌木），每种合并成 1 个网格 ──
     void ForestBelt()
     {
         if (W.RIVER == null) return;
         var g = NewGo("ForestBelt", Root).transform;
         var cone = MeshFactory.Cone(1f, 1f, 6, false, 0f);
+        var ball = MeshFactory.Sphere(1f, 8, 5);
         var trunk = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
-        var lists = new List<CombineInstance>[3];
-        for (int i = 0; i < 3; i++) lists[i] = new List<CombineInstance>();
+        const int SP = 7;
+        var lists = new List<CombineInstance>[SP];
+        for (int i = 0; i < SP; i++) lists[i] = new List<CombineInstance>();
         var rnd = new System.Random(20261022);
 
-        void Add(float x, float z, float h, int slot, bool layered)
+        void Trunk(int sp, float x, float y, float z, float h, float frac)
         {
-            float y = RimH(x, z);
-            float tw = Mathf.Max(0.16f, h * 0.045f);
-            lists[slot].Add(new CombineInstance
+            float w = Mathf.Max(0.16f, h * 0.042f);
+            lists[sp].Add(new CombineInstance
             {
                 mesh = trunk,
-                transform = Matrix4x4.TRS(new Vector3(x, y + h * 0.175f, z), Quaternion.identity, new Vector3(tw, h * 0.35f, tw))
+                transform = Matrix4x4.TRS(new Vector3(x, y + h * frac * 0.5f, z), Quaternion.identity, new Vector3(w, h * frac, w))
             });
-            if (layered)
+        }
+        void Cone(int sp, float x, float y, float z, float rad, float hh)
+        {
+            lists[sp].Add(new CombineInstance
             {
-                lists[slot].Add(new CombineInstance { mesh = cone, transform = Matrix4x4.TRS(new Vector3(x, y + h * 0.18f, z), Quaternion.identity, new Vector3(h * 0.27f, h * 0.52f, h * 0.27f)) });
-                lists[slot].Add(new CombineInstance { mesh = cone, transform = Matrix4x4.TRS(new Vector3(x, y + h * 0.42f, z), Quaternion.identity, new Vector3(h * 0.20f, h * 0.45f, h * 0.20f)) });
-                lists[slot].Add(new CombineInstance { mesh = cone, transform = Matrix4x4.TRS(new Vector3(x, y + h * 0.62f, z), Quaternion.identity, new Vector3(h * 0.13f, h * 0.38f, h * 0.13f)) });
+                mesh = cone,
+                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, hh, rad))
+            });
+        }
+        void Ball(int sp, float x, float y, float z, float rad, float sy = 0.86f)
+        {
+            lists[sp].Add(new CombineInstance
+            {
+                mesh = ball,
+                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, rad * sy, rad))
+            });
+        }
+
+        void Add(float x, float z, float h)
+        {
+            float y = RimH(x, z);
+            float aDeg = Mathf.Atan2(z, x) * Mathf.Rad2Deg;
+            bool shrineSide = Mathf.Abs(Mathf.DeltaAngle(aDeg, -38f)) < 26f;   // 神社一带多种樱
+            float roll = (float)rnd.NextDouble();
+            if (shrineSide) roll = roll * 0.72f;                                // 神社一带樱的比例翻倍
+            if (roll < 0.30f)                                                   // 0 松
+            {
+                Trunk(0, x, y, z, h, 0.34f);
+                Cone(0, x, y + h * 0.16f, z, h * 0.27f, h * 0.52f);
+                Cone(0, x, y + h * 0.40f, z, h * 0.20f, h * 0.44f);
+                Cone(0, x, y + h * 0.60f, z, h * 0.13f, h * 0.38f);
             }
-            else
+            else if (roll < 0.54f)                                              // 1 阔叶
             {
-                lists[slot].Add(new CombineInstance { mesh = cone, transform = Matrix4x4.TRS(new Vector3(x, y + h * 0.25f, z), Quaternion.identity, new Vector3(h * 0.24f, h * 0.75f, h * 0.24f)) });
+                Trunk(1, x, y, z, h, 0.52f);
+                Ball(1, x, y + h * 0.62f, z, h * 0.27f);
+                Ball(1, x - h * 0.15f, y + h * 0.53f, z + h * 0.10f, h * 0.18f);
+                Ball(1, x + h * 0.16f, y + h * 0.57f, z - h * 0.12f, h * 0.16f);
+            }
+            else if (roll < 0.74f)                                              // 2 杉（窄高）
+            {
+                Trunk(2, x, y, z, h, 0.22f);
+                Cone(2, x, y + h * 0.12f, z, h * 0.17f, h * 0.80f);
+                Cone(2, x, y + h * 0.66f, z, h * 0.10f, h * 0.34f);
+            }
+            else if (roll < 0.80f)                                              // 3 樱
+            {
+                Trunk(3, x, y, z, h, 0.44f);
+                Ball(3, x, y + h * 0.60f, z, h * 0.24f, 0.78f);
+                Ball(3, x + h * 0.17f, y + h * 0.52f, z + h * 0.06f, h * 0.17f, 0.78f);
+                Ball(3, x - h * 0.15f, y + h * 0.56f, z - h * 0.09f, h * 0.15f, 0.78f);
+            }
+            else if (roll < 0.88f)                                              // 4 落叶乔木（细高、冠小）
+            {
+                Trunk(4, x, y, z, h, 0.64f);
+                Ball(4, x, y + h * 0.76f, z, h * 0.17f, 1.05f);
+                Ball(4, x + h * 0.12f, y + h * 0.66f, z, h * 0.12f, 1.0f);
+            }
+            else                                                                // 6 秋色阔叶（橙黄，打散一片绿）
+            {
+                Trunk(6, x, y, z, h, 0.50f);
+                Ball(6, x, y + h * 0.60f, z, h * 0.25f);
+                Ball(6, x + h * 0.14f, y + h * 0.52f, z + h * 0.11f, h * 0.17f);
+                Ball(6, x - h * 0.13f, y + h * 0.56f, z - h * 0.10f, h * 0.15f);
             }
         }
 
@@ -2042,70 +2122,49 @@ public class WorldBuilder : MonoBehaviour
                 if (Mathf.Abs(z - RZ(x)) < 13f) continue;                                   // 河谷留空
                 if (Mathf.Abs(x) < 138f && Mathf.Abs(z - 104f) < 9f) continue;              // 铁路走廊
                 if (Mathf.Abs(Mathf.Abs(x) - 124f) < 15f && Mathf.Abs(z - 104f) < 15f) continue;  // 隧道口
-                // 内圈按噪声留出林窗：径向对齐，能看到后面的第二圈与山丘，边界才有纵深
+                // 内圈按噪声留出林窗：径向对齐，能看到后面的第二圈与山体，边界才有纵深
                 if (inner && Mathf.PerlinNoise(a * 2.6f + 3.1f, 0.7f) < 0.34f) continue;
+                // 林线：13m 等高线以上不长树，山顶留空，山形才露得出来
+                if (RimH(x, z) > 13f) continue;
                 float h = inner ? 6.5f + (float)rnd.NextDouble() * 7f : 9f + (float)rnd.NextDouble() * 8f;
-                Add(x, z, h, rnd.Next(3), inner);
+                Add(x, z, h);
             }
         }
 
-        var cols = new[] { "#5b9660", "#4f8756", "#67a36a" };
-        for (int i = 0; i < 3; i++)
+        // 5 灌木：贴着林缘的低矮球丛，压住树干与草地的接缝
+        for (float r0 = 129f; r0 < 150f; r0 += 2.6f)
+        {
+            int n = Mathf.Max(16, Mathf.RoundToInt(2f * Mathf.PI * r0 / 4.2f));
+            for (int k = 0; k < n; k++)
+            {
+                if (rnd.NextDouble() < 0.42) continue;
+                float a = (k + (float)rnd.NextDouble() * 0.9f) / n * Mathf.PI * 2f;
+                float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 3.4f;
+                float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
+                if (Mathf.Abs(z - RZ(x)) < 12f) continue;
+                if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
+                float y = RimH(x, z);
+                float rad = 0.75f + (float)rnd.NextDouble() * 0.75f;
+                Ball(5, x, y + rad * 0.62f, z, rad, 0.72f);
+                Ball(5, x + rad * 0.7f, y + rad * 0.42f, z + rad * 0.35f, rad * 0.66f, 0.72f);
+            }
+        }
+
+        var cols = new[] { "#4a8250", "#5f9c63", "#3a6a44", "#cf94ad", "#6aa06a", "#4a7a4e", "#c08a45" };
+        var names = new[] { "pine", "broad", "fir", "cherry", "decid", "bush", "autumn" };
+        for (int i = 0; i < SP; i++)
         {
             if (lists[i].Count == 0) continue;
             var m = new Mesh();
             m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             m.CombineMeshes(lists[i].ToArray(), true, true);
             m.RecalculateBounds();
-            var go = NewGo("belt" + i, g);
+            var go = NewGo(names[i], g);
             go.AddComponent<MeshFilter>().sharedMesh = m;
             var mr = go.AddComponent<MeshRenderer>();
             mr.sharedMaterial = ColMat(cols[i]);
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
-    }
-
-    // ── 远景山脊：两圈环形剪影，靠雾做空气透视，把天空下沿填住 ──
-    void Ridges()
-    {
-        var g = NewGo("Ridges", Root).transform;
-        Ridge(g, 222f, 18f, 34f, "#3d4854");
-        Ridge(g, 285f, 26f, 42f, "#4a5764");
-    }
-
-    void Ridge(Transform parent, float radius, float baseH, float peak, string hex)
-    {
-        const int n = 200;
-        var verts = new List<Vector3>();
-        var tris = new List<int>();
-        for (int i = 0; i <= n; i++)
-        {
-            float a = i / (float)n * Mathf.PI * 2f;
-            float x = Mathf.Cos(a) * radius, z = Mathf.Sin(a) * radius;
-            float n1 = Mathf.PerlinNoise(x * 0.0042f + 17.1f, z * 0.0042f + 3.3f);
-            float n2 = Mathf.PerlinNoise(x * 0.015f + 41.7f, z * 0.015f + 8.9f);
-            float h = baseH + peak * (0.32f + 0.68f * n1) + 4.5f * n2;
-            verts.Add(new Vector3(x, -3f, z));
-            verts.Add(new Vector3(x, h, z));
-        }
-        for (int i = 0; i < n; i++)
-        {
-            int a0 = i * 2, b0 = a0 + 1, a1 = a0 + 2, b1 = a0 + 3;
-            // 只做法线朝内的一面（玩家永远在环内，外侧看不到）
-            tris.Add(a0); tris.Add(b1); tris.Add(b0);
-            tris.Add(a0); tris.Add(a1); tris.Add(b1);
-        }
-        var m = new Mesh();
-        m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        m.SetVertices(verts);
-        m.SetTriangles(tris, 0);
-        m.RecalculateNormals();
-        m.RecalculateBounds();
-        var go = NewGo("ridge", parent);
-        go.AddComponent<MeshFilter>().sharedMesh = m;
-        var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = ColMat(hex);
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
 
     // ── 铁路收口：两端石砌洞门 + 洞内暗腔，铁轨不再通向世界外 ──

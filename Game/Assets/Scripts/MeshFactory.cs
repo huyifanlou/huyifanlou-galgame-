@@ -139,6 +139,42 @@ public static class MeshFactory
         return m;
     }
 
+    // 低面数球（阔叶树冠 / 灌木）：朝外、平滑法线
+    public static Mesh Sphere(float radius, int sectors = 8, int rings = 6)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= rings; i++)
+        {
+            float theta = i * Mathf.PI / rings;
+            float sinT = Mathf.Sin(theta), cosT = Mathf.Cos(theta);
+            for (int j = 0; j <= sectors; j++)
+            {
+                float phi = j * Mathf.PI * 2f / sectors;
+                verts.Add(new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi)) * radius);
+                uvs.Add(new Vector2((float)j / sectors, 1f - (float)i / rings));
+            }
+        }
+        int row = sectors + 1;
+        for (int i = 0; i < rings; i++)
+        {
+            for (int j = 0; j < sectors; j++)
+            {
+                int a = i * row + j, b = (i + 1) * row + j, c = (i + 1) * row + j + 1, d = i * row + j + 1;
+                tris.Add(a); tris.Add(c); tris.Add(b);          // 朝外
+                tris.Add(a); tris.Add(d); tris.Add(c);
+            }
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
     // 三角形端封（山墙）：XY 平面、双面（两面缠绕都写入，等价 web 的 DoubleSide）——勿加回单面
     public static Mesh Triangle(float baseW, float height)
     {
@@ -226,14 +262,50 @@ public static class MeshFactory
         return m;
     }
 
-    // 带起伏的地形条带：za(x)~zb(x) 之间分 rows 行，每点高度由 h(x,z) 给出（边界缓丘用）
+    // 带起伏的地形条带：za(x)~zb(x) 之间分 rows 行，每点高度由 h(x,z) 给出（边界山体用）
     // UV 仍按世界坐标 / period，与平地草皮密度一致
+    // flat = true 时每个格子独立顶点、用面法线（低面数块面山体，配合像素风）
     public static Mesh StripH(Func<float, float> zA, Func<float, float> zB, float x0, float x1,
-        int steps, int rows, float period, Func<float, float, float> h)
+        int steps, int rows, float period, Func<float, float, float> h, bool flat = false)
     {
         var verts = new List<Vector3>();
         var uvs = new List<Vector2>();
         var tris = new List<int>();
+        if (flat)
+        {
+            var normals = new List<Vector3>();
+            for (int i = 0; i < steps; i++)
+            {
+                float xa = Mathf.Lerp(x0, x1, i / (float)steps);
+                float xb = Mathf.Lerp(x0, x1, (i + 1) / (float)steps);
+                for (int j = 0; j < rows; j++)
+                {
+                    float za = zA(xa), zb = zB(xa), za2 = zA(xb), zb2 = zB(xb);
+                    var p0 = new Vector3(xa, h(xa, Mathf.Lerp(za, zb, j / (float)rows)), Mathf.Lerp(za, zb, j / (float)rows));
+                    var p1 = new Vector3(xa, h(xa, Mathf.Lerp(za, zb, (j + 1) / (float)rows)), Mathf.Lerp(za, zb, (j + 1) / (float)rows));
+                    var p2 = new Vector3(xb, h(xb, Mathf.Lerp(za2, zb2, (j + 1) / (float)rows)), Mathf.Lerp(za2, zb2, (j + 1) / (float)rows));
+                    var p3 = new Vector3(xb, h(xb, Mathf.Lerp(za2, zb2, j / (float)rows)), Mathf.Lerp(za2, zb2, j / (float)rows));
+                    var n = Vector3.Cross(p1 - p0, p3 - p0).normalized;
+                    int b = verts.Count;
+                    foreach (var p in new[] { p0, p1, p2, p3 })
+                    {
+                        verts.Add(p);
+                        uvs.Add(new Vector2(p.x / period, p.z / period));
+                    }
+                    tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
+                    tris.Add(b); tris.Add(b + 2); tris.Add(b + 3);
+                    for (int k = 0; k < 4; k++) normals.Add(n);
+                }
+            }
+            var mf = new Mesh();
+            mf.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            mf.SetVertices(verts);
+            mf.SetUVs(0, uvs);
+            mf.SetNormals(normals);
+            mf.SetTriangles(tris, 0);
+            mf.RecalculateBounds();
+            return mf;
+        }
         int row = rows + 1;
         for (int i = 0; i <= steps; i++)
         {
