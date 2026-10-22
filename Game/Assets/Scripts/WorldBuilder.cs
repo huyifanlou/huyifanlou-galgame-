@@ -2028,7 +2028,7 @@ public class WorldBuilder : MonoBehaviour
         if (W.RIVER == null) return;
         var g = NewGo("ForestBelt", Root).transform;
         var cone = MeshFactory.Cone(1f, 1f, 8, false, 0f);
-        var ball = MeshFactory.Sphere(1f, 10, 7);
+        var canopy = MeshFactory.Canopy(1f, 12, 8, 0.22f);
         var trunk = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
         const int SP = 7;
         var lists = new List<CombineInstance>[SP];
@@ -2052,12 +2052,13 @@ public class WorldBuilder : MonoBehaviour
                 transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, hh, rad))
             });
         }
-        void Ball(int sp, float x, float y, float z, float rad, float sy = 0.86f)
+        void Ball(int sp, float x, float y, float z, float rad, float sy = 0.9f)
         {
+            float rot = (float)rnd.NextDouble() * 360f;   // 每个冠随机转一圈，同一个网格也有不同轮廓
             lists[sp].Add(new CombineInstance
             {
-                mesh = ball,
-                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, rad * sy, rad))
+                mesh = canopy,
+                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0f, rot, 0f), new Vector3(rad, rad * sy, rad))
             });
         }
 
@@ -2077,10 +2078,9 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (roll < 0.54f)                                              // 1 阔叶
             {
-                Trunk(1, x, y, z, h, 0.52f);
-                Ball(1, x, y + h * 0.62f, z, h * 0.27f);
-                Ball(1, x - h * 0.15f, y + h * 0.53f, z + h * 0.10f, h * 0.18f);
-                Ball(1, x + h * 0.16f, y + h * 0.57f, z - h * 0.12f, h * 0.16f);
+                Trunk(1, x, y, z, h, 0.56f);
+                Ball(1, x, y + h * 0.62f, z, h * 0.29f, 0.95f);
+                Ball(1, x + h * 0.12f, y + h * 0.75f, z - h * 0.08f, h * 0.18f, 0.95f);
             }
             else if (roll < 0.74f)                                              // 2 杉（窄高）
             {
@@ -2090,23 +2090,21 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (roll < 0.80f)                                              // 3 樱
             {
-                Trunk(3, x, y, z, h, 0.44f);
-                Ball(3, x, y + h * 0.60f, z, h * 0.24f, 0.78f);
-                Ball(3, x + h * 0.17f, y + h * 0.52f, z + h * 0.06f, h * 0.17f, 0.78f);
-                Ball(3, x - h * 0.15f, y + h * 0.56f, z - h * 0.09f, h * 0.15f, 0.78f);
+                Trunk(3, x, y, z, h, 0.50f);
+                Ball(3, x, y + h * 0.62f, z, h * 0.26f, 0.84f);
+                Ball(3, x - h * 0.13f, y + h * 0.74f, z + h * 0.07f, h * 0.16f, 0.84f);
             }
             else if (roll < 0.88f)                                              // 4 落叶乔木（细高、冠小）
             {
-                Trunk(4, x, y, z, h, 0.64f);
-                Ball(4, x, y + h * 0.76f, z, h * 0.17f, 1.05f);
-                Ball(4, x + h * 0.12f, y + h * 0.66f, z, h * 0.12f, 1.0f);
+                Trunk(4, x, y, z, h, 0.68f);
+                Ball(4, x, y + h * 0.76f, z, h * 0.20f, 1.05f);
+                Ball(4, x + h * 0.09f, y + h * 0.87f, z, h * 0.12f, 1.0f);
             }
             else                                                                // 6 秋色阔叶（橙黄，打散一片绿）
             {
-                Trunk(6, x, y, z, h, 0.50f);
-                Ball(6, x, y + h * 0.60f, z, h * 0.25f);
-                Ball(6, x + h * 0.14f, y + h * 0.52f, z + h * 0.11f, h * 0.17f);
-                Ball(6, x - h * 0.13f, y + h * 0.56f, z - h * 0.10f, h * 0.15f);
+                Trunk(6, x, y, z, h, 0.54f);
+                Ball(6, x, y + h * 0.62f, z, h * 0.28f, 0.92f);
+                Ball(6, x - h * 0.11f, y + h * 0.74f, z + h * 0.09f, h * 0.17f, 0.92f);
             }
         }
 
@@ -2145,26 +2143,26 @@ public class WorldBuilder : MonoBehaviour
         }
 
         // 5 灌木：贴着林缘的低矮丛，三球一丛，压住树干与草地的接缝
-        for (float r0 = 129f; r0 < 152f; r0 += 2.4f)
+        for (float r0 = 131f; r0 < 152f; r0 += 2.4f)
         {
             int n = Mathf.Max(20, Mathf.RoundToInt(2f * Mathf.PI * r0 / 3.6f));
             for (int k = 0; k < n; k++)
             {
-                if (rnd.NextDouble() < 0.38) continue;
+                if (rnd.NextDouble() < 0.52) continue;
                 float a = (k + (float)rnd.NextDouble() * 0.9f) / n * Mathf.PI * 2f;
                 float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 3.2f;
                 float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
                 if (Mathf.Abs(z - RZ(x)) < 12f) continue;
                 if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
                 float y = RimH(x, z);
-                float rad = 0.42f + (float)rnd.NextDouble() * 0.34f;
-                Ball(5, x, y + rad * 0.55f, z, rad, 0.7f);
-                Ball(5, x + rad * 0.85f, y + rad * 0.40f, z + rad * 0.45f, rad * 0.68f, 0.7f);
-                Ball(5, x - rad * 0.6f, y + rad * 0.34f, z + rad * 0.7f, rad * 0.55f, 0.7f);
+                float rad = 0.62f + (float)rnd.NextDouble() * 0.45f;
+                Ball(5, x, y + rad * 0.52f, z, rad, 0.66f);
+                Ball(5, x + rad * 0.9f, y + rad * 0.36f, z + rad * 0.5f, rad * 0.66f, 0.66f);
+                Ball(5, x - rad * 0.7f, y + rad * 0.30f, z + rad * 0.8f, rad * 0.55f, 0.66f);
             }
         }
 
-        var cols = new[] { "#4a8250", "#5f9c63", "#3a6a44", "#cf94ad", "#6aa06a", "#4a7a4e", "#c08a45" };
+        var cols = new[] { "#4a8250", "#5f9c63", "#3a6a44", "#cf94ad", "#6aa06a", "#5a9159", "#c08a45" };
         var names = new[] { "pine", "broad", "fir", "cherry", "decid", "bush", "autumn" };
         for (int i = 0; i < SP; i++)
         {

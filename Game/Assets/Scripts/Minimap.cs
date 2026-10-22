@@ -6,7 +6,7 @@ public class Minimap : MonoBehaviour
 {
     WorldBuilder _w;
     PlayerRig _rig;
-    Texture2D _map, _disc, _ring;
+    Texture2D _map, _disc, _ring, _me;
     const int Res = 512;
     float _min, _max;
     bool _large;
@@ -22,6 +22,7 @@ public class Minimap : MonoBehaviour
         if (Args.Str("-map") == "1") _large = true;
         BuildMap();
         MakeCircleTextures();
+        MakeMeTexture();
         BuildDestinations();
     }
 
@@ -178,6 +179,37 @@ public class Minimap : MonoBehaviour
         _disc.wrapMode = _ring.wrapMode = TextureWrapMode.Clamp;
     }
 
+    // 玩家自己的箭头（深色描边 + 暖黄填充，尖端朝上）
+    void MakeMeTexture()
+    {
+        const int S = 40;
+        _me = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        var px = new Color[S * S];
+        for (int i = 0; i < px.Length; i++) px[i] = new Color(0, 0, 0, 0);
+
+        void Tri(float apexY, float baseY, float halfBase, Color c)
+        {
+            for (int y = 0; y < S; y++)
+            {
+                float t = (y - apexY) / (baseY - apexY);
+                if (t < 0f || t > 1f) continue;
+                float hw = halfBase * t;
+                int x0 = Mathf.CeilToInt(S / 2f - hw), x1 = Mathf.FloorToInt(S / 2f + hw);
+                for (int x = x0; x <= x1; x++)
+                {
+                    if (x < 0 || x >= S) continue;
+                    px[(S - 1 - y) * S + x] = c;
+                }
+            }
+        }
+        Tri(2.5f, 37f, 15.5f, new Color(0.13f, 0.11f, 0.09f, 0.96f));
+        Tri(5.5f, 33f, 11.5f, new Color(1f, 0.84f, 0.45f, 1f));
+        _me.SetPixels(px);
+        _me.Apply();
+        _me.filterMode = FilterMode.Bilinear;
+        _me.wrapMode = TextureWrapMode.Clamp;
+    }
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.M)) _large = !_large;
@@ -232,6 +264,18 @@ public class Minimap : MonoBehaviour
                 GUI.Label(new Rect(dx + 7f, dy - 8f, 60f, 14f), "▸" + d.name, dl);
             }
         }
+
+        // 玩家自己：随相机朝向旋转的箭头（始终压在地标之上）
+        var pp = _rig.Position;
+        float mx = x + (pp.x - _min) / (_max - _min) * size;
+        float mz = top + (pp.z - _min) / (_max - _min) * size;
+        float asz = Mathf.Clamp(size * 0.085f, 15f, 44f);
+        var savedMtx = GUI.matrix;
+        GUIUtility.RotateAroundPivot(-_rig.Yaw * Mathf.Rad2Deg, new Vector2(mx, mz));
+        GUI.color = Color.white;
+        GUI.DrawTexture(new Rect(mx - asz / 2f, mz - asz / 2f, asz, asz), _me);
+        GUI.matrix = savedMtx;
+        GUI.color = Color.white;
 
         var e = Event.current;
         if (_pending >= 0)

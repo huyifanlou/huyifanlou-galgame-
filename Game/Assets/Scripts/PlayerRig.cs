@@ -82,6 +82,7 @@ public class PlayerRig : MonoBehaviour
     }
 
     public Vector3 Position => _player != null ? _player.position : Vector3.zero;
+    public float Yaw => _yaw;   // 相机朝向（小地图上的自己用）
 
     // 圆形边界：世界是圆的（小地图也是圆的），方形四角会跑进边界山体里
     Vector2 ClampRound(float x, float z, float margin = 0f)

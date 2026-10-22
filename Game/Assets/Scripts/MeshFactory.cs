@@ -175,6 +175,48 @@ public static class MeshFactory
         return m;
     }
 
+    // 树冠：球体按方向做低频噪声径向位移 + 平底，读起来是一团树而不是几个球
+    public static Mesh Canopy(float radius, int sectors = 12, int rings = 8, float lump = 0.22f, float seed = 0f)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= rings; i++)
+        {
+            float theta = i * Mathf.PI / rings;
+            float sinT = Mathf.Sin(theta), cosT = Mathf.Cos(theta);
+            for (int j = 0; j <= sectors; j++)
+            {
+                float phi = j * Mathf.PI * 2f / sectors;
+                var d = new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi));
+                float n1 = Mathf.PerlinNoise(d.x * 1.9f + seed, d.z * 1.9f + seed * 1.7f) - 0.5f;
+                float n2 = Mathf.PerlinNoise(d.y * 2.9f + seed * 0.6f, d.x * 2.9f + 13.1f) - 0.5f;
+                float rr = radius * (1f + lump * n1 * 2f + lump * 0.7f * n2 * 2f);
+                var p = d * rr;
+                p.y = Mathf.Max(p.y, -radius * 0.42f);      // 平底：树冠不会是个完整球
+                verts.Add(p);
+                uvs.Add(new Vector2((float)j / sectors, 1f - (float)i / rings));
+            }
+        }
+        int row = sectors + 1;
+        for (int i = 0; i < rings; i++)
+        {
+            for (int j = 0; j < sectors; j++)
+            {
+                int a = i * row + j, b = (i + 1) * row + j, c = (i + 1) * row + j + 1, d2 = i * row + j + 1;
+                tris.Add(a); tris.Add(c); tris.Add(b);
+                tris.Add(a); tris.Add(d2); tris.Add(c);
+            }
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
     // 三角形端封（山墙）：XY 平面、双面（两面缠绕都写入，等价 web 的 DoubleSide）——勿加回单面
     public static Mesh Triangle(float baseW, float height)
     {

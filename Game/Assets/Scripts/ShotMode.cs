@@ -28,6 +28,8 @@ public class ShotMode : MonoBehaviour
         {
             var cam = Camera.main;
             Debug.Log($"[ShotMode] player=({wb.Player.position.x:F2},{wb.Player.position.y:F2},{wb.Player.position.z:F2}) cam={(cam != null ? cam.transform.position.ToString("F2") : "null")}");
+            var rig = GetComponent<PlayerRig>();
+            if (rig != null) Debug.Log($"[ShotMode] yaw={rig.Yaw:F3}");
         }
         string abs = _path;
         if (!System.IO.Path.IsPathRooted(abs)) abs = System.IO.Path.GetFullPath(abs);
