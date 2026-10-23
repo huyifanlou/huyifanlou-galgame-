@@ -65,12 +65,13 @@ public class Hud : MonoBehaviour
         string wname = string.IsNullOrEmpty(Time.WeatherName) ? "" : " · " + Time.WeatherName;
         GUI.Label(new Rect(W - 420, 12, 400, 24), $"第 {Time.DayNum} 天 · {icon} {hh:D2}:{mm:D2} · {speed}{wname}", _clock);
 
-        // 底部中央：交互提示
-        if (!string.IsNullOrEmpty(Time.Near))
+        // 底部中央：交互提示（室内给整句，室外给「按 F 进入」）
+        string prompt = !string.IsNullOrEmpty(Time.NearLabel) ? Time.NearLabel
+            : (!string.IsNullOrEmpty(Time.Near) ? $"按 F 进入「{Time.Near}」" : null);
+        if (prompt != null)
         {
-            var txt = $"按 F 进入「{Time.Near}」";
-            var size = _prompt.CalcSize(new GUIContent(txt));
-            GUI.Label(new Rect((W - size.x) / 2f, H - 74 - size.y, size.x, size.y), txt, _prompt);
+            var size = _prompt.CalcSize(new GUIContent(prompt));
+            GUI.Label(new Rect((W - size.x) / 2f, H - 74 - size.y, size.x, size.y), prompt, _prompt);
         }
 
         // 右下：版本号

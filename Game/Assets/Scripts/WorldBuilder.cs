@@ -770,6 +770,12 @@ public class WorldBuilder : MonoBehaviour
             LitTex("roadband_v"), LitTex("roadband_h"), LitTex("bridge_stone"), LitTex("wood"), LitTex("water"), GrassMat,
         };
         wth.Init(Player, tod, wet, LeafMats, _snowLayerR, _snowLayerMat);
+
+        // 室内（家 / 教学楼）：一次建好并隐藏，走到门口按 F 进入
+        var im = GetComponent<InteriorManager>();
+        if (im == null) im = gameObject.AddComponent<InteriorManager>();
+        im.Init(this, rig, tod, wth, mm);
+        if (rig != null) rig.BindInterior(im);
     }
 
     public WorldData BuildWorld()

@@ -1109,6 +1109,79 @@ public static class TextureLibrary
         return t;
     }
 
+    // ── 室内贴图（家 / 教学楼）──
+    // 木地板：横向长条 + 错缝 + 细木纹。320px ≈ 2m，Repeat 后接缝自然
+    static Px FloorWood()
+    {
+        var p = new Px(320, 320);
+        var cols = new[] { "#b3906a", "#a8855f", "#bd9a73", "#9d7b57" };
+        for (int r = 0; r < 8; r++)
+        {
+            float y = r * 40;
+            p.FillRect(0, y, 320, 38, C(cols[R.Int(4)]));
+            p.FillRect(0, y + 38, 320, 2, C("rgba(72,50,32,0.55)"));
+            for (int i = 0; i < 16; i++)
+                p.FillRect(R.Int(316), y + 3 + R.Int(30), 8 + R.Int(40), 1,
+                    C(R.Int(2) == 0 ? "rgba(96,68,42,0.22)" : "rgba(240,224,196,0.12)"));
+            float jx = r % 2 == 0 ? 96 + R.Int(60) : 208 + R.Int(60);
+            p.FillRect(jx, y, 2, 38, C("rgba(72,50,32,0.5)"));
+        }
+        return p;
+    }
+
+    // 壁纸：米色底 + 细竖条 + 轻噪点（256px ≈ 1.6m）
+    static Px WallPaper()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#ddd6c8"));
+        for (int x = 0; x < 256; x += 12)
+        {
+            p.FillRect(x, 0, 1, 256, C("rgba(178,168,150,0.30)"));
+            p.FillRect(x + 1, 0, 1, 256, C("rgba(255,252,244,0.22)"));
+        }
+        for (int i = 0; i < 90; i++)
+            p.FillRect(R.Int(256), R.Int(256), 1, 1, C("rgba(150,140,124,0.12)"));
+        return p;
+    }
+
+    // 瓷砖：64px 方格，浅灰双色错缝（卫生间 / 走廊）
+    static Px FloorTile()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#c9cdd0"));
+        for (int ty = 0; ty < 4; ty++)
+            for (int tx = 0; tx < 4; tx++)
+                p.FillRect(tx * 64 + 1, ty * 64 + 1, 62, 62,
+                    C((tx + ty) % 2 == 0 ? "#dfe3e6" : "#d2d6d9"));
+        return p;
+    }
+
+    // 天花板：白色微颗粒 + 板缝
+    static Px Ceiling()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#e8e6e1"));
+        for (int i = 0; i < 220; i++)
+            p.FillRect(R.Int(256), R.Int(256), 2, 2, C("rgba(206,202,196,0.35)"));
+        p.FillRect(0, 127, 256, 2, C("rgba(190,186,180,0.55)"));
+        p.FillRect(127, 0, 2, 256, C("rgba(190,186,180,0.55)"));
+        return p;
+    }
+
+    // 黑板：深绿板面 + 粉笔灰痕 + 木框
+    static Px Blackboard()
+    {
+        var p = new Px(320, 160);
+        p.FillRect(0, 0, 320, 160, C("#2f4a3a"));
+        for (int i = 0; i < 160; i++)
+            p.FillRect(R.Int(320), R.Int(160), 2 + R.Int(10), 1, C("rgba(220,226,214,0.05)"));
+        p.FillRect(0, 0, 320, 6, C("#8a6a44"));
+        p.FillRect(0, 154, 320, 6, C("#8a6a44"));
+        p.FillRect(0, 0, 6, 160, C("#8a6a44"));
+        p.FillRect(314, 0, 6, 160, C("#8a6a44"));
+        return p;
+    }
+
     // ── 缓存与入口（名称与现有 PNG 文件名一致）──
     static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 
@@ -1129,6 +1202,8 @@ public static class TextureLibrary
             "court_basket" => Court("basket"), "court_tennis" => Court("tennis"),
             "road_mainstone" => Road("mainstone"), "road_cobble" => Road("cobble"),
             "roadband_v" => RoadBand(true), "roadband_h" => RoadBand(false),
+            "in_floor" => FloorWood(), "in_wall" => WallPaper(), "in_tile" => FloorTile(),
+            "in_ceil" => Ceiling(), "in_board" => Blackboard(),
             _ => null,
         };
         if (px == null) return null;

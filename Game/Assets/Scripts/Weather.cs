@@ -10,6 +10,7 @@ public class Weather : MonoBehaviour
 {
     public enum Kind { Clear, Rain, Snow }
     public Kind Current { get; private set; } = Kind.Clear;
+    public bool Indoor;                     // 室内：不下雨雪（粒子停发，天气状态保留）
     public float RainAmt { get; private set; }
     public float SnowAmt { get; private set; }
     public float FogAmt => Mathf.Max(RainAmt, SnowAmt);
@@ -101,8 +102,9 @@ public class Weather : MonoBehaviour
             if (_rain != null) _rain.transform.position = _player.position + new Vector3(0f, 11f, 0f);
             if (_snow != null) _snow.transform.position = _player.position + new Vector3(0f, 9f, 0f);
         }
-        SetEmission(_rain, RainAmt * 1500f);   // 作者反馈雨点太多：4200 → 1500
-        SetEmission(_snow, SnowAmt * 1600f);
+        float outMul = Indoor ? 0f : 1f;
+        SetEmission(_rain, RainAmt * 1500f * outMul);   // 作者反馈雨点太多：4200 → 1500
+        SetEmission(_snow, SnowAmt * 1600f * outMul);
 
         // 湿地面：变暗 + 起光（雨天最明显的写实线索）
         for (int i = 0; i < _wet.Count; i++)

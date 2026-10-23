@@ -20,6 +20,8 @@ public class TimeOfDay : MonoBehaviour
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
     public string Near { get; set; }         // 面前可交互地点名（由 PlayerRig 写入，Hud 显示）
+    public string NearLabel { get; set; }    // 直接给整句提示（室内用），优先于 Near
+    public bool Indoor;                      // 室内：环境光提亮偏暖
     public string WeatherName = "";          // 天气标签（由 Weather 写入，Hud 显示）
 
     // —— web 版配色常量 ——
@@ -183,6 +185,12 @@ public class TimeOfDay : MonoBehaviour
         Color sky = Color.Lerp(DAY_HEMI_SKY, NIGHT_HEMI_SKY, m);
         Color amb = Color.Lerp(sky, gnd, 0.28f);
         float ambI = Mathf.Lerp(DAY_AMB, NIGHT_AMB, m) * wAmb;
+        // 室内：没有天光直射，靠环境光撑亮度，并偏暖（室内灯多为暖白）
+        if (Indoor)
+        {
+            amb = Color.Lerp(amb, new Color(0.95f, 0.92f, 0.86f), 0.6f);
+            ambI *= 1.55f;
+        }
         RenderSettings.ambientLight = new Color(amb.r * ambI, amb.g * ambI, amb.b * ambI, 1f);
 
         if (_dir != null)
