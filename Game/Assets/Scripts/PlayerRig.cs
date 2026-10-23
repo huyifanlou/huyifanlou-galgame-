@@ -70,7 +70,12 @@ public class PlayerRig : MonoBehaviour
         if (dist.HasValue && dist.Value > 22f && !pitch.HasValue) _pitch = Mathf.Max(_pitch, 1.0f);  // 远机位默认俯视（显式 -pitch 时尊重调用方）
         _distForced = dist.HasValue; _pitchForced = pitch.HasValue;
         if (Args.Str("-freeze") == "1") _alignPaused = true;
-        if (Args.Str("-fp") == "1") _firstPerson = true;   // 验收：以第一人称启动
+        if (Args.Str("-fp") == "1")
+        {
+            _firstPerson = true;                            // 验收：以第一人称启动
+            var fpp = Args.F("-pitch");                     // 第一人称俯仰（负=往下看，室内看家具用）
+            if (fpp.HasValue) _fpPitch = Mathf.Clamp(fpp.Value, -1.1f, 1.1f);
+        }
 
         // 验收：-sim d,40 → 前 40 帧模拟按住 D
         var sim = Args.Str("-sim");

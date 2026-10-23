@@ -189,7 +189,7 @@ public class TimeOfDay : MonoBehaviour
         if (Indoor)
         {
             amb = Color.Lerp(amb, new Color(0.95f, 0.92f, 0.86f), 0.6f);
-            ambI *= 1.55f;
+            ambI *= 2.8f;
         }
         RenderSettings.ambientLight = new Color(amb.r * ambI, amb.g * ambI, amb.b * ambI, 1f);
 
