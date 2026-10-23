@@ -271,6 +271,9 @@ public class PlayerRig : MonoBehaviour
         _groundY = Mathf.Lerp(_groundY, gy, Mathf.Min(1f, dt * 12f));
         p.y = _groundY + (moving ? Mathf.Abs(Mathf.Sin(Time.time * 10f)) * 0.05f : 0f);
         _player.position = p;
+        // 验收：-sim 模拟行走时每 30 帧打一次坐标，便于确认楼梯/门能不能过去
+        if (_simFrames > 0 && Time.frameCount % 30 == 0)
+            Debug.Log($"[Sim] f={Time.frameCount} pos=({p.x:F2},{p.y:F2},{p.z:F2}) moving={moving}");
 
         // 精灵朝向与帧（背对镜头=站立姿态；移动朝移动方向；拖拽时冻结）
         var camPos = _cam.transform.position;

@@ -386,15 +386,15 @@ public static class InteriorBuilder
         Stairs(p, it, ox + 7.6f, 5.6f, ox + 9.6f, 0.4f, 0, 1, false, woodDark);
         WallZ(p, it, 0.4f, 5.6f, ox + 7.6f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
         WallX(p, it, ox + 7.6f, ox + 9.6f, 0.4f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
-        Rail(p, new Vector3(ox + 7.65f, 1.10f, 5.6f), new Vector3(ox + 7.65f, 4.50f, 0.4f), woodDark);
+        Lamp(p, new Vector3(ox + 8.6f, 2.95f, 3.0f), 6f, 1.1f);          // 楼梯间灯
 
         // ── 二层隔墙：起居厅 / 主卧 + 浴室 + 书房 ──
         WallX(p, it, ox - 10f, ox - 4.0f, 1.0f, y1, h1, 0f, 0f, 2.2f, wall, F1);
         WallX(p, it, ox - 2.6f, ox + 1.0f, 1.0f, y1, h1, 0f, 0f, 2.2f, wall, F1);
         WallX(p, it, ox + 2.4f, ox + 6.0f, 1.0f, y1, h1, 0f, 0f, 2.2f, wall, F1);
-        WallX(p, it, ox + 7.4f, ox + 10f, 1.0f, y1, h1, 0f, 0f, 2.2f, wall, F1);
         WallZ(p, it, 1.0f, 7f, ox - 1f, y1, h1, 0f, 0f, 2.2f, wall, F1);
         WallZ(p, it, 1.0f, 7f, ox + 4f, y1, h1, 0f, 0f, 2.2f, wall, F1);
+        WallZ(p, it, 1.0f, 7f, ox + 7.4f, y1, h1, 0f, 0f, 2.2f, wall, F1);   // 书房东墙 = 楼梯间西墙
 
         // ── 一层客厅（西半）──
         Rug(p, new Vector3(ox - 5.6f, 0.06f, 2.0f), 5.2f, 3.8f, fabric2);
@@ -414,10 +414,10 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox - 1.0f, 2.85f, -5.0f), 7f, 0.9f);
 
         // ── 一层厨房餐厅（东半）──
-        Part(p, new Vector3(ox + 4.5f, 0.45f, 6.55f), new Vector3(8.0f, 0.9f, 0.58f), white, 1f);          // 北侧台面柜
-        Part(p, new Vector3(ox + 4.5f, 0.92f, 6.55f), new Vector3(8.05f, 0.06f, 0.64f), C("#d9d3c6"), 1f); // 台面板
-        Part(p, new Vector3(ox + 9.5f, 0.45f, 3.4f), new Vector3(0.58f, 0.9f, 4.6f), white, 1f);           // 东侧台面柜
-        Part(p, new Vector3(ox + 9.5f, 0.92f, 3.4f), new Vector3(0.64f, 0.06f, 4.65f), C("#d9d3c6"), 1f);
+        Part(p, new Vector3(ox + 3.85f, 0.45f, 6.55f), new Vector3(6.7f, 0.9f, 0.58f), white, 1f);         // 北侧台面柜
+        Part(p, new Vector3(ox + 3.85f, 0.92f, 6.55f), new Vector3(6.75f, 0.06f, 0.64f), C("#d9d3c6"), 1f);// 台面板
+        Part(p, new Vector3(ox + 9.5f, 0.45f, -4.0f), new Vector3(0.58f, 0.9f, 5.0f), white, 1f);          // 东侧台面柜（挪到楼梯南侧）
+        Part(p, new Vector3(ox + 9.5f, 0.92f, -4.0f), new Vector3(0.64f, 0.06f, 5.05f), C("#d9d3c6"), 1f);
         Part(p, new Vector3(ox + 1.3f, 0.95f, 5.7f), new Vector3(0.9f, 1.9f, 0.8f), metal, 1f);            // 冰箱
         Part(p, new Vector3(ox + 1.3f, 1.55f, 5.28f), new Vector3(0.04f, 0.5f, 0.04f), C("#5c636d"), 1f);  // 冰箱把手
         Table(p, new Vector3(ox + 4.2f, 0f, 1.5f), 2.0f, 1.1f, 0.76f, wood);                              // 餐桌
@@ -433,8 +433,8 @@ public static class InteriorBuilder
         Reg(it, ox - 6.5f, 6.5f, 3.0f, 0.5f, F0);     // 电视柜
         Reg(it, ox - 8.6f, -5.5f, 0.5f, 2.4f, F0);    // 书架
         Reg(it, ox - 1.5f, -6.45f, 1.2f, 0.45f, F0);  // 鞋柜
-        Reg(it, ox + 4.5f, 6.55f, 8.0f, 0.58f, F0);   // 北台面
-        Reg(it, ox + 9.5f, 3.4f, 0.58f, 4.6f, F0);    // 东台面
+        Reg(it, ox + 3.85f, 6.55f, 6.7f, 0.58f, F0);  // 北台面
+        Reg(it, ox + 9.5f, -4.0f, 0.58f, 5.0f, F0);   // 东台面
         Reg(it, ox + 1.3f, 5.7f, 0.9f, 0.8f, F0);     // 冰箱
         Reg(it, ox + 4.2f, 1.5f, 2.0f, 1.1f, F0);     // 餐桌
 
@@ -472,13 +472,13 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 1.5f, y1 + 2.8f, 4.0f), 7f, 1.05f);
 
         // ── 二层书房（x 4..10）──
-        Part(p, new Vector3(ox + 9.4f, y1 + 1.05f, 3.0f), new Vector3(0.55f, 2.1f, 2.6f), woodDark, 1f);   // 书架
+        Part(p, new Vector3(ox + 6.9f, y1 + 1.05f, 3.0f), new Vector3(0.55f, 2.1f, 2.6f), woodDark, 1f);   // 书架
         for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox + 9.4f, y1 + 0.45f + i * 0.5f, 3.0f), new Vector3(0.6f, 0.04f, 2.5f), C("#4a3b2c"), 1f);
-        Table(p, new Vector3(ox + 6.6f, y1, 5.6f), 1.9f, 0.85f, 0.76f, wood);
-        Chair(p, it, new Vector3(ox + 6.6f, y1, 4.75f), 0f, wood, F1, true);
-        Part(p, new Vector3(ox + 5.2f, y1 + 0.42f, 2.4f), new Vector3(1.0f, 0.72f, 1.0f), fabric, 1.2f);   // 单人沙发
-        Part(p, new Vector3(ox + 4.75f, y1 + 0.76f, 2.4f), new Vector3(0.2f, 0.66f, 1.0f), fabric, 1.2f);
+            Part(p, new Vector3(ox + 6.9f, y1 + 0.45f + i * 0.5f, 3.0f), new Vector3(0.6f, 0.04f, 2.5f), C("#4a3b2c"), 1f);
+        Table(p, new Vector3(ox + 5.6f, y1, 5.6f), 1.8f, 0.85f, 0.76f, wood);
+        Chair(p, it, new Vector3(ox + 5.6f, y1, 4.75f), 0f, wood, F1, true);
+        Part(p, new Vector3(ox + 5.0f, y1 + 0.42f, 2.4f), new Vector3(1.0f, 0.72f, 1.0f), fabric, 1.2f);   // 单人沙发
+        Part(p, new Vector3(ox + 4.55f, y1 + 0.76f, 2.4f), new Vector3(0.2f, 0.66f, 1.0f), fabric, 1.2f);
         Lamp(p, new Vector3(ox + 7.0f, y1 + 2.8f, 4.6f), 8f, 1.1f);
 
         // 二层家具碰撞
@@ -493,9 +493,9 @@ public static class InteriorBuilder
         Reg(it, ox + 2.6f, 5.6f, 2.2f, 1.0f, F1);     // 浴缸
         Reg(it, ox - 0.2f, 6.35f, 1.4f, 0.55f, F1);   // 洗手台
         Reg(it, ox + 3.4f, 2.3f, 0.45f, 0.65f, F1);   // 马桶
-        Reg(it, ox + 9.4f, 3.0f, 0.55f, 2.6f, F1);    // 书房书架
-        Reg(it, ox + 6.6f, 5.6f, 1.9f, 0.85f, F1);    // 书房书桌
-        Reg(it, ox + 5.2f, 2.4f, 1.0f, 1.0f, F1);     // 单人沙发
+        Reg(it, ox + 6.9f, 3.0f, 0.55f, 2.6f, F1);    // 书房书架
+        Reg(it, ox + 5.6f, 5.6f, 1.8f, 0.85f, F1);    // 书房书桌
+        Reg(it, ox + 5.0f, 2.4f, 1.0f, 1.0f, F1);     // 单人沙发
 
         return it;
     }
@@ -572,7 +572,7 @@ public static class InteriorBuilder
         Stairs(p, it, ox - 9.4f, 3.4f, ox - 14.8f, 1.4f, 0, 1, true, woodDark);
         WallX(p, it, ox - 14.8f, ox - 9.4f, 1.4f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallZ(p, it, 1.4f, 3.4f, ox - 14.8f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
-        Rail(p, new Vector3(ox - 9.4f, 1.10f, 3.42f), new Vector3(ox - 14.8f, 5.10f, 3.42f), woodDark);
+        Lamp(p, new Vector3(ox - 12.1f, 3.5f, 2.4f), 7f, 1.15f);         // 楼梯间灯
 
         // ── 二层：走廊 + 三间教室 ──
         WallX(p, it, ox - 16.9f, ox - 11.0f, 0.6f, y1, h1, 0f, 0f, 2.3f, wall, F1);
