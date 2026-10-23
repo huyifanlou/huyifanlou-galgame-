@@ -98,8 +98,8 @@ public class PlayerRig : MonoBehaviour
         if (on)
         {
             _distMin = 3.2f;
-            if (!_distForced) _dist = 4.8f;
-            if (!_pitchForced) _pitch = 0.30f;
+            if (!_distForced) _dist = 5.2f;
+            if (!_pitchForced) _pitch = 0.26f;
             _groundY = floorY;
             _player.position = new Vector3(at.x, floorY, at.y);
             _alignPaused = false;
