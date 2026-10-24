@@ -235,7 +235,7 @@ public static class InteriorBuilder
     }
 
     // 室内灯：点光 + 灯罩（不投影，省性能）
-    static void Lamp(Transform p, Vector3 pos, float range, float intensity, string hex = "#ffe9c8")
+    static void Lamp(Transform p, Vector3 pos, float range, float intensity, string hex = "#fff1de")
     {
         var go = new GameObject("lamp");
         go.transform.SetParent(p, false);
@@ -275,6 +275,63 @@ public static class InteriorBuilder
         Part(g, new Vector3(-w * 0.5f, 0f, 0.02f), new Vector3(0.09f, h, 0.1f), fr, 1f);
         Part(g, new Vector3(w * 0.5f, 0f, 0.02f), new Vector3(0.09f, h, 0.1f), fr, 1f);
         Part(g, new Vector3(0f, 0f, 0.02f), new Vector3(0.06f, h, 0.1f), fr, 1f);
+    }
+
+    // 墙面板：贴在墙内表面的薄片，用来给每个房间换壁纸 / 做墙裙（纯视觉，不参与碰撞）
+    static void Panel(Transform p, float x1, float z1, float x2, float z2, float y0, float h, Material mat)
+    {
+        float w = Mathf.Abs(x2 - x1), d = Mathf.Abs(z2 - z1);
+        Part(p, new Vector3((x1 + x2) * 0.5f, y0 + h * 0.5f, (z1 + z2) * 0.5f),
+             new Vector3(Mathf.Max(w, 0.05f), h, Mathf.Max(d, 0.05f)), mat, 1.1f);
+    }
+
+    // 踢脚线
+    static void Skirt(Transform p, float x1, float z1, float x2, float z2, float y0)
+        => Panel(p, x1, z1, x2, z2, y0, 0.12f, C("#5f4a38"));
+
+    // 挂画：外框 + 画面 + 两块色块
+    static void Picture(Transform p, Vector3 pos, float w, float h, float ry)
+    {
+        var g = new GameObject("pic").transform;
+        g.SetParent(p, false);
+        g.localPosition = pos;
+        g.localEulerAngles = new Vector3(0f, ry, 0f);
+        Part(g, Vector3.zero, new Vector3(w + 0.10f, h + 0.10f, 0.05f), C("#6f5540"), 1f);
+        Part(g, new Vector3(0f, 0f, 0.035f), new Vector3(w, h, 0.02f), C("#b9c8c0"), 1f);
+        Part(g, new Vector3(-w * 0.12f, h * 0.10f, 0.05f), new Vector3(w * 0.5f, h * 0.45f, 0.01f), C("#8a9e94"), 1f);
+        Part(g, new Vector3(w * 0.22f, -h * 0.16f, 0.05f), new Vector3(w * 0.32f, h * 0.3f, 0.01f), C("#a8b8ae"), 1f);
+    }
+
+    // 挂钟
+    static void WallClock(Transform p, Vector3 pos, float ry)
+    {
+        var g = new GameObject("clock").transform;
+        g.SetParent(p, false);
+        g.localPosition = pos;
+        g.localEulerAngles = new Vector3(0f, ry, 0f);
+        Part(g, Vector3.zero, new Vector3(0.44f, 0.44f, 0.05f), C("#f4f1e8"), 1f);
+        Part(g, new Vector3(0f, 0.07f, 0.04f), new Vector3(0.03f, 0.15f, 0.012f), C("#3a3f47"), 1f);
+        Part(g, new Vector3(0.05f, 0f, 0.04f), new Vector3(0.11f, 0.03f, 0.012f), C("#3a3f47"), 1f);
+    }
+
+    // 绿植：花盆 + 不规则叶团
+    static void Plant(Transform p, Vector3 pos, float s = 1f)
+    {
+        Part(p, pos + new Vector3(0f, 0.22f * s, 0f), new Vector3(0.34f * s, 0.44f * s, 0.34f * s), C("#8a5a3c"), 1f);
+        var go = new GameObject("leaf");
+        go.transform.SetParent(p, false);
+        go.transform.localPosition = pos + new Vector3(0f, 0.60f * s, 0f);
+        go.transform.localScale = Vector3.one * s;
+        go.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Canopy(0.40f, 10, 6, 0.34f, 3.1f);
+        go.AddComponent<MeshRenderer>().sharedMaterial = C("#3f7a3f");
+    }
+
+    // 窗帘（窗两侧各一片）+ 帘杆
+    static void Curtain(Transform p, float cx, float y, float cz, float w, float h, Material cloth)
+    {
+        Part(p, new Vector3(cx - w * 0.5f + 0.20f, y + h * 0.5f, cz), new Vector3(0.34f, h, 0.07f), cloth, 1f);
+        Part(p, new Vector3(cx + w * 0.5f - 0.20f, y + h * 0.5f, cz), new Vector3(0.34f, h, 0.07f), cloth, 1f);
+        Part(p, new Vector3(cx, y + h + 0.06f, cz), new Vector3(w + 0.4f, 0.06f, 0.09f), C("#6f5540"), 1f);
     }
 
     // 贴地薄片（地毯 / 地垫）
@@ -442,6 +499,53 @@ public static class InteriorBuilder
         WallZ(p, it, ZC, ZN, ox + XA, y1, h1, 0f, 0f, 2.2f, wall, F1);
         WallZ(p, it, ZC, ZN, ox + 1.4f, y1, h1, 0f, 0f, 2.2f, wall, F1);                    // 卫生间 / 衣帽间
         WallZ(p, it, ZC, ZN, ox + XB, y1, h1, 0f, 0f, 2.2f, wall, F1);
+
+        // ── 墙面材质：每个房间一种，别全是一个色 ──
+        var wallA = T("in_wall");       // 米色壁纸（客厅 / 玄关 / 楼梯间）
+        var wallB = T("in_wall2");      // 淡蓝灰（主卧 / 起居厅）
+        var wallC = T("in_wall3");      // 暖褐小花（次卧 / 储藏 / 家务）
+        var wallT = T("in_walltile");   // 白墙砖（厨房 / 卫生间）
+        var wallP = T("in_panel");      // 木饰面（书房 / 衣帽间）
+        var cloth = C("#c9b79c");       // 窗帘布
+
+        // 一层（贴皮贴在墙内表面，0.14 = 外墙半厚 0.12 + 0.02）
+        Panel(p, ox + XW, ZS + 0.14f, ox + XA, ZS + 0.14f, 0.02f, 3.2f, wallA);          // 客厅 南
+        Panel(p, ox + XW + 0.14f, ZS, ox + XW + 0.14f, ZM, 0.02f, 3.2f, wallA);          // 客厅 西
+        Panel(p, ox + XA, ZS + 0.14f, ox - 1.0f, ZS + 0.14f, 0.02f, 3.2f, wallA);        // 玄关 南（门西）
+        Panel(p, ox + 1.0f, ZS + 0.14f, ox + XB, ZS + 0.14f, 0.02f, 3.2f, wallA);        // 玄关 南（门东）
+        Panel(p, ox + XB, ZS + 0.14f, ox + XE, ZS + 0.14f, 0.02f, 3.2f, wallT);          // 厨房 南
+        Panel(p, ox + XE - 0.14f, ZS, ox + XE - 0.14f, ZM, 0.02f, 3.2f, wallT);          // 厨房 东
+        Panel(p, ox + XW + 0.14f, ZC, ox + XW + 0.14f, ZN, 0.02f, 3.2f, wallT);          // 客卫 西
+        Panel(p, ox + XW, ZN - 0.14f, ox + XB, ZN - 0.14f, 0.02f, 3.2f, wallC);          // 储藏 / 家务 北
+        Panel(p, ox + XB, ZN - 0.14f, ox + XE, ZN - 0.14f, 0.02f, 3.2f, wallA);          // 楼梯间 北
+        Panel(p, ox + XE - 0.14f, ZC, ox + XE - 0.14f, ZN, 0.02f, 3.2f, wallA);          // 楼梯间 东
+        // 踢脚线
+        Skirt(p, ox + XW + 0.18f, ZS, ox + XW + 0.18f, ZM, 0.02f);
+        Skirt(p, ox + XW, ZS + 0.18f, ox + XA, ZS + 0.18f, 0.02f);
+
+        // 二层
+        Panel(p, ox + XW, ZS + 0.14f, ox + XA, ZS + 0.14f, y1, 3.2f, wallB);             // 主卧 南
+        Panel(p, ox + XW + 0.14f, ZS, ox + XW + 0.14f, ZM, y1, 3.2f, wallB);             // 主卧 西
+        Panel(p, ox + XA, ZS + 0.14f, ox + XB, ZS + 0.14f, y1, 3.2f, wallB);             // 起居厅 南
+        Panel(p, ox + XB, ZS + 0.14f, ox + XE, ZS + 0.14f, y1, 3.2f, wallC);             // 次卧 南
+        Panel(p, ox + XE - 0.14f, ZS, ox + XE - 0.14f, ZM, y1, 3.2f, wallC);             // 次卧 东
+        Panel(p, ox + XW, ZN - 0.14f, ox + XA, ZN - 0.14f, y1, 3.2f, wallP);             // 书房 北
+        Panel(p, ox + XW + 0.14f, ZC, ox + XW + 0.14f, ZN, y1, 3.2f, wallP);             // 书房 西
+        Panel(p, ox + XA, ZN - 0.14f, ox + 1.4f, ZN - 0.14f, y1, 3.2f, wallT);           // 卫生间 北
+        Panel(p, ox + 1.4f, ZN - 0.14f, ox + XB, ZN - 0.14f, y1, 3.2f, wallP);           // 衣帽间 北
+        Skirt(p, ox + XW, ZS + 0.18f, ox + XA, ZS + 0.18f, y1);
+
+        // ── 装饰 ──
+        Picture(p, new Vector3(ox + XW + 0.17f, 1.80f, -4.5f), 0.9f, 0.7f, 90f);         // 客厅 挂画
+        Picture(p, new Vector3(ox + XW + 0.17f, 1.80f, -2.9f), 0.7f, 0.9f, 90f);
+        WallClock(p, new Vector3(ox + XW + 0.17f, 2.50f, -1.2f), 90f);                   // 客厅 挂钟
+        Plant(p, new Vector3(ox - 7.35f, 0.02f, -5.35f), 1.0f);                          // 客厅 绿植
+        Picture(p, new Vector3(ox + XA + 0.16f, 1.70f, -2.6f), 0.8f, 0.6f, 90f);         // 餐厅 挂画
+        Picture(p, new Vector3(ox - 5.6f, y1 + 1.85f, ZS + 0.17f), 1.1f, 0.7f, 0f);      // 主卧 挂画
+        Curtain(p, ox - 5.6f, y1 + 0.95f, ZS + 0.22f, 2.0f, 1.5f, cloth);                // 主卧 窗帘
+        Curtain(p, ox + 5.4f, y1 + 0.95f, ZS + 0.22f, 1.4f, 1.4f, cloth);                // 次卧 窗帘
+        Picture(p, new Vector3(ox - 4.6f, y1 + 1.85f, ZN - 0.17f), 1.0f, 0.7f, 180f);    // 书房 挂画
+        Plant(p, new Vector3(ox + 3.0f, y1, 5.5f), 0.9f);                                // 衣帽间 绿植
 
         // ── 一层窗（朝南外墙）──
         Window(p, new Vector3(ox - 6.4f, 1.75f, -5.83f), 1.8f, 1.4f, 0f);
@@ -760,6 +864,13 @@ public static class InteriorBuilder
 
         // 黑板（宽 4.0 × 高 1.2，下沿离地 0.9）+ 讲台
         Part(p, new Vector3(cx, fy + 1.50f, zBack + 0.06f), new Vector3(4.0f, 1.2f, 0.07f), board, 4.0f);
+        // 墙裙（上白下浅绿，学校教室惯例）+ 黑板上方的挂钟
+        var skirt = C("#8fae98");
+        Panel(p, cx - w * 0.5f + 0.05f, zBack + 0.03f, cx + w * 0.5f - 0.05f, zBack + 0.03f, fy, 1.0f, skirt);
+        Panel(p, cx - w * 0.5f + 0.05f, zFront - 0.03f, cx + w * 0.5f - 0.05f, zFront - 0.03f, fy, 1.0f, skirt);
+        Panel(p, cx - w * 0.5f + 0.03f, cz - d * 0.5f + 0.05f, cx - w * 0.5f + 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
+        Panel(p, cx + w * 0.5f - 0.03f, cz - d * 0.5f + 0.05f, cx + w * 0.5f - 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
+        WallClock(p, new Vector3(cx, fy + 2.60f, zBack + 0.18f), 0f);
         Part(p, new Vector3(cx, fy + 0.40f, zBack + 0.75f), new Vector3(1.6f, 0.80f, 0.7f), wood, 1f);
         Part(p, new Vector3(cx, fy + 0.82f, zBack + 0.75f), new Vector3(1.7f, 0.05f, 0.76f), C("#d9d3c6"), 1f);
 
@@ -790,7 +901,7 @@ public static class InteriorBuilder
         Part(p, new Vector3(cx - w * 0.5f + 0.08f, fy + 1.65f, cz + 1.6f), new Vector3(0.05f, 1.2f, 3.6f), green, 3.6f);
 
         // 教室灯（两盏，挂在课桌区上方）
-        Lamp(p, new Vector3(cx - 2.2f, fy + 3.35f, cz), 8f, 0.55f);
-        Lamp(p, new Vector3(cx + 2.2f, fy + 3.35f, cz), 8f, 0.55f);
+        Lamp(p, new Vector3(cx - 2.2f, fy + 3.35f, cz), 9f, 0.85f);
+        Lamp(p, new Vector3(cx + 2.2f, fy + 3.35f, cz), 9f, 0.85f);
     }
 }

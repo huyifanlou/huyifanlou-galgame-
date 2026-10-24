@@ -1182,6 +1182,62 @@ public static class TextureLibrary
         return p;
     }
 
+    // 墙纸②：淡蓝灰 + 细竖条（卧室/起居厅）
+    static Px WallPaperBlue()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#b3c8d6"));
+        for (int x = 0; x < 256; x += 10)
+        {
+            p.FillRect(x, 0, 1, 256, C("rgba(150,172,184,0.30)"));
+            p.FillRect(x + 1, 0, 1, 256, C("rgba(255,255,255,0.22)"));
+        }
+        for (int i = 0; i < 70; i++)
+            p.FillRect(R.Int(256), R.Int(256), 1, 1, C("rgba(255,255,255,0.20)"));
+        return p;
+    }
+
+    // 墙纸③：暖褐 + 小花点（次卧/书房/储藏）
+    static Px WallPaperWarm()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#cbb49a"));
+        for (int y = 14; y < 256; y += 30)
+            for (int x = 14; x < 256; x += 30)
+                p.FillRect(x + R.Int(6), y + R.Int(6), 3, 3, C("rgba(146,116,90,0.35)"));
+        for (int i = 0; i < 50; i++)
+            p.FillRect(R.Int(256), R.Int(256), 1, 1, C("rgba(255,250,240,0.18)"));
+        return p;
+    }
+
+    // 墙砖：白瓷砖 + 灰缝（厨房/卫生间）
+    static Px WallTile()
+    {
+        var p = new Px(256, 256);
+        p.FillRect(0, 0, 256, 256, C("#9aa0a6"));
+        for (int ty = 0; ty < 4; ty++)
+            for (int tx = 0; tx < 4; tx++)
+                p.FillRect(tx * 64 + 2, ty * 64 + 2, 60, 60,
+                    C((tx + ty) % 2 == 0 ? "#eef0f2" : "#e4e7ea"));
+        return p;
+    }
+
+    // 木饰面：竖向窄板（书房/衣帽间）
+    static Px WoodPanel()
+    {
+        var p = new Px(256, 256);
+        var cols = new[] { "#96754f", "#8a6a48", "#9d7c55", "#82633f" };
+        for (int b = 0; b < 8; b++)
+        {
+            float x = b * 32;
+            p.FillRect(x + 1, 0, 30, 256, C(cols[R.Int(4)]));
+            p.FillRect(x, 0, 2, 256, C("rgba(60,42,28,0.5)"));
+            for (int i = 0; i < 8; i++)
+                p.FillRect(x + 3 + R.Int(26), R.Int(250), 1, 10 + R.Int(30), C("rgba(60,44,30,0.16)"));
+        }
+        return p;
+    }
+
     // ── 缓存与入口（名称与现有 PNG 文件名一致）──
     static readonly Dictionary<string, Texture2D> Cache = new Dictionary<string, Texture2D>();
 
@@ -1204,6 +1260,8 @@ public static class TextureLibrary
             "roadband_v" => RoadBand(true), "roadband_h" => RoadBand(false),
             "in_floor" => FloorWood(), "in_wall" => WallPaper(), "in_tile" => FloorTile(),
             "in_ceil" => Ceiling(), "in_board" => Blackboard(),
+            "in_wall2" => WallPaperBlue(), "in_wall3" => WallPaperWarm(),
+            "in_walltile" => WallTile(), "in_panel" => WoodPanel(),
             _ => null,
         };
         if (px == null) return null;

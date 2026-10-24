@@ -221,7 +221,7 @@ public class PlayerRig : MonoBehaviour
             if (Mathf.Abs(mx) > 0.0001f || Mathf.Abs(my) > 0.0001f)
             {
                 _yaw += mx * Mathf.Deg2Rad;
-                _fpPitch = Mathf.Clamp(_fpPitch - my * Mathf.Deg2Rad, -1.1f, 1.1f);
+                _fpPitch = Mathf.Clamp(_fpPitch + my * Mathf.Deg2Rad, -1.1f, 1.1f);   // Mouse Y 向上为正 → 加
                 _alignPaused = false;
             }
             // 第一人称没拖拽，但保留 Esc 解锁（方便切窗口）
