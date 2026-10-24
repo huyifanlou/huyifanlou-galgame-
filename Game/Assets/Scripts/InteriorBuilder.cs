@@ -400,11 +400,11 @@ public static class InteriorBuilder
         WallZ(p, it, ZS, ZN, ox + XW, 0f, top, 0f, 0f, 2.3f, wall, BOTH, WALL_OUT);
         WallZ(p, it, ZS, ZN, ox + XE, 0f, top, 0f, 0f, 2.3f, wall, BOTH, WALL_OUT);
 
-        // ── 二层楼板（留楼梯洞 x 3.6..5.2 / z 1.0..4.8）──
-        Slab(p, ox + XW, ZS, ox + XE, 1.0f, y1, ceil, floor);
-        Slab(p, ox + XW, 1.0f, ox + 3.6f, 4.8f, y1, ceil, floor);
-        Slab(p, ox + 5.2f, 1.0f, ox + XE, 4.8f, y1, ceil, floor);
-        Slab(p, ox + XW, 4.8f, ox + XE, ZN, y1, ceil, floor);
+        // ── 二层楼板（留楼梯洞 x 3.6..5.2 / z 1.8..5.6）──
+        Slab(p, ox + XW, ZS, ox + XE, 1.8f, y1, ceil, floor);
+        Slab(p, ox + XW, 1.8f, ox + 3.6f, 5.6f, y1, ceil, floor);
+        Slab(p, ox + 5.2f, 1.8f, ox + XE, 5.6f, y1, ceil, floor);
+        Slab(p, ox + XW, 5.6f, ox + XE, ZN, y1, ceil, floor);
         Slab(p, ox + XW, ZS, ox + XE, ZN, top, ceil);     // 二层天花
 
         // ── 一层隔墙 ──
@@ -415,7 +415,7 @@ public static class InteriorBuilder
         // 南带北墙 z=0：客厅段实墙，餐厅段与厨房段各开门
         WallX(p, it, ox + XW, ox + XA, ZM, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
         WallX(p, it, ox + XA, ox + XB, ZM, 0.02f, h0, ox + 0.2f, ox + 1.4f, 2.2f, wall, F0);
-        WallX(p, it, ox + XB, ox + XE, ZM, 0.02f, h0, ox + 4.4f, ox + 5.6f, 2.2f, wall, F0);
+        WallX(p, it, ox + XB, ox + XE, ZM, 0.02f, h0, ox + 6.0f, ox + 7.2f, 2.2f, wall, F0);
         // 北带南墙 z=1.6：客卫 / 储藏 / 家务间各开门，楼梯间敞开
         WallX(p, it, ox + XW, ox - 5.4f, ZC, 0.02f, h0, ox - 7.4f, ox - 6.4f, 2.2f, wall, F0);
         WallX(p, it, ox - 5.4f, ox + XA, ZC, 0.02f, h0, ox - 4.6f, ox - 3.6f, 2.2f, wall, F0);
@@ -425,9 +425,10 @@ public static class InteriorBuilder
         WallZ(p, it, ZC, ZN, ox + XA, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
         WallZ(p, it, ZC, ZN, ox + XB, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
 
-        // ── 楼梯：x 3.6..5.2，z 1.0(低) → 4.8(高)，宽 1.6 长 3.8 升 3.4 ──
-        Stairs(p, it, ox + 3.6f, 1.0f, ox + 5.2f, 4.8f, 0, 1, false, woodDark);
-        WallZ(p, it, 1.0f, 4.8f, ox + 5.2f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);   // 楼梯东侧挡墙
+        // ── 楼梯：x 3.6..5.2，z 1.8(低) → 5.6(高)，宽 1.6 长 3.8 升 3.4 ──
+        //    低端退进楼梯间（z=1.8），走廊 z 0..1.6 保持完整，不被楼梯占掉一半
+        Stairs(p, it, ox + 3.6f, 1.8f, ox + 5.2f, 5.6f, 0, 1, false, woodDark);
+        WallZ(p, it, 1.8f, 5.6f, ox + 5.2f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);   // 楼梯东侧挡墙（走出楼梯区会掉层）
         Lamp(p, new Vector3(ox + 6.6f, 2.95f, 3.6f), 7f, 1.1f);
 
         // ── 二层隔墙 ──
@@ -522,7 +523,7 @@ public static class InteriorBuilder
         Part(p, new Vector3(ox - 3.0f, y1 + 0.68f, -0.40f), new Vector3(1.1f, 0.14f, 0.35f), C("#f2eee4"), 1f); // 枕
         Part(p, new Vector3(ox - 3.0f, y1 + 0.70f, -0.03f), new Vector3(1.8f, 0.9f, 0.1f), woodDark, 1f);    // 床头板
         Part(p, new Vector3(ox - 4.25f, y1 + 0.25f, -0.30f), new Vector3(0.45f, 0.5f, 0.45f), woodDark, 1f); // 床头柜
-        Part(p, new Vector3(ox - 1.85f, y1 + 0.25f, -0.30f), new Vector3(0.45f, 0.5f, 0.45f), woodDark, 1f);
+        Part(p, new Vector3(ox - 2.05f, y1 + 0.25f, -0.30f), new Vector3(0.45f, 0.5f, 0.45f), woodDark, 1f);
         Part(p, new Vector3(ox - 7.55f, y1 + 1.10f, -4.2f), new Vector3(0.6f, 2.2f, 2.4f), woodDark, 1f);   // 衣柜靠西墙
         Part(p, new Vector3(ox - 2.6f, y1 + 0.75f, -5.2f), new Vector3(1.2f, 0.06f, 0.5f), wood, 1f);       // 梳妆台
         Part(p, new Vector3(ox - 2.6f, y1 + 0.36f, -5.2f), new Vector3(1.1f, 0.72f, 0.45f), wood, 1f);
@@ -586,7 +587,7 @@ public static class InteriorBuilder
         Reg(it, ox + 0.4f, 2.3f, 0.6f, 0.6f, F0);
         Reg(it, ox - 3.0f, -1.05f, 1.8f, 2.0f, F1);     // 床
         Reg(it, ox - 4.25f, -0.30f, 0.45f, 0.45f, F1);
-        Reg(it, ox - 1.85f, -0.30f, 0.45f, 0.45f, F1);
+        Reg(it, ox - 2.05f, -0.30f, 0.45f, 0.45f, F1);
         Reg(it, ox - 7.55f, -4.2f, 0.6f, 2.4f, F1);     // 衣柜
         Reg(it, ox - 2.6f, -5.2f, 1.2f, 0.5f, F1);      // 梳妆台
         Reg(it, ox + 1.6f, -4.9f, 1.6f, 0.9f, F1);      // 起居厅沙发
@@ -654,16 +655,17 @@ public static class InteriorBuilder
         WallZ(p, it, -8f, 8f, ox + 17f, 0f, top, 0f, 0f, 2.7f, wall, BOTH, WALL_OUT);
 
         // ── 二层楼板（留楼梯洞 x -9.6..-4.2 / z 4.0..6.0）──
-        Slab(p, ox - 17f, -8f, ox + 17f, 4.0f, y1, ceil, floor);
-        Slab(p, ox - 17f, 4.0f, ox - 9.6f, 6.0f, y1, ceil, floor);
-        Slab(p, ox - 4.2f, 4.0f, ox + 17f, 6.0f, y1, ceil, floor);
-        Slab(p, ox - 9.6f, 6.0f, ox - 4.2f, 8f, y1, ceil, floor);
+        Slab(p, ox - 17f, -8f, ox + 17f, 2.6f, y1, ceil, floor);
+        Slab(p, ox - 17f, 2.6f, ox - 16.4f, 7.0f, y1, ceil, floor);
+        Slab(p, ox - 13.8f, 2.6f, ox + 17f, 7.0f, y1, ceil, floor);
+        Slab(p, ox - 17f, 7.0f, ox + 17f, 8f, y1, ceil, floor);
         Slab(p, ox - 17f, -8f, ox + 17f, 8f, top, ceil);
 
         // ── 走廊北墙（z=-0.6）：教室门 ──
         WallX(p, it, ox - 16.9f, ox - 12.2f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallX(p, it, ox - 10.8f, ox - 7.7f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
-        WallX(p, it, ox - 3.0f, ox + 1.3f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
+        WallX(p, it, ox - 7.7f, ox - 1.2f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // B 西段
+        WallX(p, it, ox + 0.0f, ox + 1.3f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // B 东段（门 -1.2..0.0）
         WallX(p, it, ox + 2.4f, ox + 10.5f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallX(p, it, ox + 11.6f, ox + 16.9f, ZC0, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         // 教室隔墙（贴到北外墙）
@@ -671,33 +673,37 @@ public static class InteriorBuilder
         WallZ(p, it, -7.9f, ZC0, ox + 1.4f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallZ(p, it, -7.9f, ZC0, ox + 10.6f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
 
-        // ── 走廊南墙（z=2.4）：门厅 / 办公室 / 楼梯间 / 图书角 ──
-        WallX(p, it, ox - 16.9f, ox - 10.0f, ZC1, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
+        // ── 走廊南墙（z=2.4）：楼梯间(西端) / 多功能教室 / 门厅 / 办公室 / 图书角 ──
+        WallX(p, it, ox - 16.9f, ox - 16.4f, ZC1, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
+        WallX(p, it, ox - 15.0f, ox - 9.0f, ZC1, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // 楼梯间门 -16.4..-15.0
+        WallX(p, it, ox - 7.8f, ox - 3.4f, ZC1, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);    // 多功能教室门 -9.0..-7.8
         WallX(p, it, ox - 3.4f, ox + 3.4f, ZC1, 0.02f, h0, ox - 3.0f, ox + 3.0f, 2.6f, wall, F0);  // 门厅敞开
         WallX(p, it, ox + 3.4f, ox + 9.4f, ZC1, 0.02f, h0, ox + 5.6f, ox + 6.8f, 2.3f, wall, F0);  // 办公室门
         WallX(p, it, ox + 9.4f, ox + 16.9f, ZC1, 0.02f, h0, ox + 12.0f, ox + 13.2f, 2.3f, wall, F0);
         // 南侧竖墙
-        WallZ(p, it, ZC1, 8f, ox - 10.0f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
-        WallZ(p, it, ZC1, 8f, ox - 3.4f, 0.02f, h0, 4.2f, 5.8f, 2.3f, wall, F0);                 // 楼梯间门
+        WallZ(p, it, ZC1, 8f, ox - 12.0f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // 楼梯间 / 多功能教室
+        WallZ(p, it, ZC1, 8f, ox - 3.4f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallZ(p, it, ZC1, 8f, ox + 3.4f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
         WallZ(p, it, ZC1, 8f, ox + 9.4f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
 
-        // ── 楼梯：楼梯间内，x -9.6(低) → -4.2(高)，宽 2.0（z 4.0..6.0）──
-        Stairs(p, it, ox - 4.2f, 6.0f, ox - 9.6f, 4.0f, 0, 1, true, woodDark);
-        WallX(p, it, ox - 9.6f, ox - 4.2f, 4.0f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // 楼梯南侧挡墙
-        Lamp(p, new Vector3(ox - 6.9f, 3.45f, 5.0f), 8f, 1.15f);
+        // ── 楼梯：西端楼梯间，x -16.4..-13.8（宽 2.6），z 2.6(低) → 7.0(高) ──
+        //    进门就在楼梯脚下，不再跟任何教室门隔着走廊对脸
+        Stairs(p, it, ox - 16.4f, 2.6f, ox - 13.8f, 7.0f, 0, 1, false, woodDark);
+        WallZ(p, it, 2.6f, 7.0f, ox - 13.8f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // 楼梯东侧挡墙
+        Lamp(p, new Vector3(ox - 15.1f, 3.45f, 4.6f), 8f, 1.15f);
 
         // ── 二层：走廊 + 教室 ──
         WallX(p, it, ox - 16.9f, ox - 12.2f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallX(p, it, ox - 10.8f, ox - 7.7f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
-        WallX(p, it, ox - 3.0f, ox + 1.3f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
+        WallX(p, it, ox - 7.7f, ox - 1.2f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
+        WallX(p, it, ox + 0.0f, ox + 1.3f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallX(p, it, ox + 2.4f, ox + 10.5f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallX(p, it, ox + 11.6f, ox + 16.9f, ZC0, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallZ(p, it, -7.9f, ZC0, ox - 7.8f, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallZ(p, it, -7.9f, ZC0, ox + 1.4f, y1, h1, 0f, 0f, 2.3f, wall, F1);
         WallZ(p, it, -7.9f, ZC0, ox + 10.6f, y1, h1, 0f, 0f, 2.3f, wall, F1);
         // 二层南墙（楼梯口以东）
-        WallX(p, it, ox - 4.2f, ox + 16.9f, ZC1, y1, h1, 0f, 0f, 2.3f, wall, F1);
+        WallX(p, it, ox - 12.0f, ox + 16.9f, ZC1, y1, h1, 0f, 0f, 2.3f, wall, F1);
 
         // ── 门厅：值班台 + 公告栏 ──
         Part(p, new Vector3(ox + 1.2f, 0.54f, 6.6f), new Vector3(2.4f, 1.08f, 0.6f), woodDark, 1f);
@@ -757,14 +763,14 @@ public static class InteriorBuilder
         Part(p, new Vector3(cx, fy + 0.40f, zBack + 0.75f), new Vector3(1.6f, 0.80f, 0.7f), wood, 1f);
         Part(p, new Vector3(cx, fy + 0.82f, zBack + 0.75f), new Vector3(1.7f, 0.05f, 0.76f), C("#d9d3c6"), 1f);
 
-        // 课桌：按开间算组数（每组 1.2m + 组间走道 0.55 → 中心距 1.75），居中摆
-        int groups = Mathf.Max(1, Mathf.FloorToInt((w - 0.5f - 1.2f) / 1.75f) + 1);
-        float g0 = (groups - 1) * 0.5f;
-        for (int r = 0; r < 4; r++)
+        // 课桌：3 组 × 2 排 × 2 人 = 12 座。教室进深 7.3，排满 4 排会像考场，后场留空
+        //   椅子 ry=180：靠背翻到远离桌子一侧，人面朝黑板（原来 ry=0 靠背朝黑板，坐反了）
+        const int groups = 3, rows = 2;
+        for (int r = 0; r < rows; r++)
             for (int g = 0; g < groups; g++)
             {
-                float gx = cx + (g - g0) * 1.75f;
-                float z = zBack + 2.2f + 0.2f + r * 0.9f;   // 前缘距黑板 2.2，桌深 0.4
+                float gx = cx + (g - 1) * 2.4f;
+                float z = zBack + 2.2f + 0.2f + r * 1.2f;
                 for (int k = 0; k < 2; k++)
                 {
                     float x = gx + (k == 0 ? -0.3f : 0.3f);
@@ -773,11 +779,12 @@ public static class InteriorBuilder
                         Part(p, new Vector3(x + (lg % 2 == 0 ? -0.26f : 0.26f), fy + 0.36f,
                                             z + (lg < 2 ? -0.16f : 0.16f)),
                              new Vector3(0.04f, 0.72f, 0.04f), C("#8d8d94"), 0.5f);
-                    Chair(p, it, new Vector3(x, fy, z + 0.55f), 0f, wood, mask, false);
+                    Chair(p, it, new Vector3(x, fy, z + 0.55f), 180f, wood, mask, false);
                 }
                 // 一组两张桌合并成一个碰撞盒（含椅）
-                it.Solids.Add(new Solid(gx - 0.62f, z - 0.2f, gx + 0.62f, z + 0.85f, mask));
+                it.Solids.Add(new Solid(gx - 0.62f, z - 0.2f, gx + 0.62f, z + 0.95f, mask));
             }
+
 
         // 侧墙板报
         Part(p, new Vector3(cx - w * 0.5f + 0.08f, fy + 1.65f, cz + 1.6f), new Vector3(0.05f, 1.2f, 3.6f), green, 3.6f);
