@@ -586,10 +586,10 @@ public static class InteriorBuilder
         Plant(p, new Vector3(ox + 3.0f, y1, 5.5f), 0.9f);                                            // 衣帽间 绿植
 
         // ── 一层窗（朝南外墙）──
-        Window(p, new Vector3(ox - 6.4f, 1.75f, -5.83f), 1.8f, 1.4f, 0f);
-        Window(p, new Vector3(ox - 4.0f, 1.75f, -5.83f), 1.8f, 1.4f, 0f);
-        Window(p, new Vector3(ox + 2.7f, 1.75f, -5.83f), 1.3f, 1.4f, 0f);
-        Window(p, new Vector3(ox + 5.9f, 1.75f, -5.83f), 1.4f, 1.2f, 0f);
+        Window(p, new Vector3(ox - 6.4f, 1.75f, -5.74f), 1.8f, 1.4f, 0f);
+        Window(p, new Vector3(ox - 4.0f, 1.75f, -5.74f), 1.8f, 1.4f, 0f);
+        Window(p, new Vector3(ox + 2.7f, 1.75f, -5.74f), 1.3f, 1.4f, 0f);
+        Window(p, new Vector3(ox + 5.9f, 1.75f, -5.74f), 1.4f, 1.2f, 0f);
 
         // ════════ 一层家具 ════════
         // 客厅 6.4×6.0：沙发靠西墙，电视柜靠东墙，中间地毯 + 茶几（沙发到电视 ≈3.4m）
@@ -652,10 +652,10 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 0.9f, 2.85f, 4.2f), 6f, 0.9f);
 
         // ── 二层窗 ──
-        Window(p, new Vector3(ox - 5.6f, y1 + 1.75f, -5.83f), 2.0f, 1.4f, 0f);
-        Window(p, new Vector3(ox - 4.6f, y1 + 1.75f, 5.83f), 2.0f, 1.4f, 180f);
-        Window(p, new Vector3(ox + 5.4f, y1 + 1.75f, -5.83f), 1.4f, 1.4f, 0f);
-        Window(p, new Vector3(ox + 1.6f, y1 + 1.75f, -5.83f), 1.4f, 1.4f, 0f);
+        Window(p, new Vector3(ox - 5.6f, y1 + 1.75f, -5.74f), 2.0f, 1.4f, 0f);
+        Window(p, new Vector3(ox - 4.6f, y1 + 1.75f, 5.74f), 2.0f, 1.4f, 180f);
+        Window(p, new Vector3(ox + 5.4f, y1 + 1.75f, -5.74f), 1.4f, 1.4f, 0f);
+        Window(p, new Vector3(ox + 1.6f, y1 + 1.75f, -5.74f), 1.4f, 1.4f, 0f);
 
         // ════════ 二层家具 ════════
         // 主卧 6.4×6.0：1.8×2.0 双人床靠北墙，两侧各留 0.6 通行
@@ -866,14 +866,14 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 13.2f, 3.35f, 5.2f), 9f, 1.05f);
 
         // ── 六间教室（三层教室 + 东端多功能）──
-        Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green);
-        Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green);
-        Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green);
-        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green);
-        Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green);
-        Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green);
-        Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green);
-        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, y1, F1, board, deskTop, woodDark, green);
+        Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox - 12.2f, ox - 10.8f);
+        Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox - 1.2f, ox + 0.0f);
+        Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox + 1.3f, ox + 2.4f);
+        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f);
+        Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox - 12.2f, ox - 10.8f);
+        Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox - 1.2f, ox + 0.0f);
+        Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox + 1.3f, ox + 2.4f);
+        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f);
 
         // ── 走廊灯 ──
         for (int i = -2; i <= 2; i++)
@@ -895,7 +895,8 @@ public static class InteriorBuilder
     // 一间教室：国标 9.0×7.2 —— 黑板宽 4.0 高 1.2（下沿离地 0.9），
     // 第一排课桌前缘距黑板 2.2m，排距 0.9m，课桌成对（1.2m 一组），组间走道 0.55m
     static void Classroom(Transform p, Interior it, float cx, float cz, float w, float d, float fy,
-                          int mask, Material board, Material desk, Material wood, Material green)
+                          int mask, Material board, Material desk, Material wood, Material green,
+                          float doorA = 0f, float doorB = 0f)
     {
         float zBack = cz - d * 0.5f;    // 黑板墙内表面
         float zFront = cz + d * 0.5f;   // 走廊侧内表面
@@ -905,7 +906,14 @@ public static class InteriorBuilder
         // 墙裙（上白下浅绿，学校教室惯例）+ 黑板上方的挂钟
         var skirt = C("#8fae98");
         Panel(p, cx - w * 0.5f + 0.05f, zBack + 0.03f, cx + w * 0.5f - 0.05f, zBack + 0.03f, fy, 1.0f, skirt);
-        Panel(p, cx - w * 0.5f + 0.05f, zFront - 0.03f, cx + w * 0.5f - 0.05f, zFront - 0.03f, fy, 1.0f, skirt);
+        float sx1 = cx - w * 0.5f + 0.05f, sx2 = cx + w * 0.5f - 0.05f;
+        if (doorB > doorA)   // 走廊那面墙有门，墙裙必须断开
+        {
+            float da = Mathf.Clamp(doorA, sx1, sx2), db = Mathf.Clamp(doorB, sx1, sx2);
+            Panel(p, sx1, zFront - 0.03f, da, zFront - 0.03f, fy, 1.0f, skirt);
+            Panel(p, db, zFront - 0.03f, sx2, zFront - 0.03f, fy, 1.0f, skirt);
+        }
+        else Panel(p, sx1, zFront - 0.03f, sx2, zFront - 0.03f, fy, 1.0f, skirt);
         Panel(p, cx - w * 0.5f + 0.03f, cz - d * 0.5f + 0.05f, cx - w * 0.5f + 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
         Panel(p, cx + w * 0.5f - 0.03f, cz - d * 0.5f + 0.05f, cx + w * 0.5f - 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
         WallClock(p, new Vector3(cx, fy + 2.60f, zBack + 0.18f), 0f);

@@ -381,13 +381,24 @@ public class PlayerRig : MonoBehaviour
             _camInit = false;   // 切回第三人称时重新吸附，避免从头部漫长插值
             return;
         }
-        float cx = p.x + Mathf.Sin(_yaw) * Mathf.Cos(_pitch) * _dist;
-        float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(_pitch) * _dist;
-        float cy = p.y + Mathf.Sin(_pitch) * _dist;
+        // 室内自适应俯仰：走廊只有 1.6m 宽，机位一贴墙就满屏墙纸。
+        // 先探一下当前俯仰下能退多远，太近就抬高机位改成俯视
+        float pitchUse = _pitch;
+        Vector3 head = new Vector3(p.x, p.y + 1.35f, p.z);
+        if (_indoor)
+        {
+            var probe = new Vector3(Mathf.Sin(_yaw) * Mathf.Cos(_pitch), Mathf.Sin(_pitch),
+                                    Mathf.Cos(_yaw) * Mathf.Cos(_pitch)) * _dist;
+            if (Physics.Raycast(head, probe.normalized, out var ph, probe.magnitude, ~(1 << 2), QueryTriggerInteraction.Ignore)
+                && ph.distance < 2.8f)
+                pitchUse = Mathf.Min(1.15f, _pitch + 0.45f);
+        }
+        float cx = p.x + Mathf.Sin(_yaw) * Mathf.Cos(pitchUse) * _dist;
+        float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(pitchUse) * _dist;
+        float cy = p.y + Mathf.Sin(pitchUse) * _dist;
         var cam = _cam.transform;
         // 相机避障：从头部向目标机位射线，撞到建筑/摊位就把相机拉到障碍前
         Vector3 desired = new Vector3(cx, cy, cz);
-        Vector3 head = new Vector3(p.x, p.y + 1.35f, p.z);
         Vector3 ray = desired - head;
         float rayLen = ray.magnitude;
         if (rayLen > 0.05f &&
