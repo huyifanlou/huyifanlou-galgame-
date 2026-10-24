@@ -5,6 +5,7 @@ using UnityEngine;
 public class PlayerRig : MonoBehaviour
 {
     const float MOVE_SPEED = 6f;
+    const float FP_LOOK_SENS = 1.4f;   // 第一人称鼠标灵敏度（度 / 轴单位），嫌快调小
     float _bound = 60f;
 
     WorldBuilder _w;
@@ -207,28 +208,50 @@ public class PlayerRig : MonoBehaviour
             if (Mathf.Abs(_yawTarget - _yaw) < 0.01f) { _yaw = _yawTarget; _yawTarget = float.NaN; }
         }
 
-        // 鼠标拖拽旋转 + 滚轮缩放（恢复原来的操作手感）
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
-        if (Input.GetMouseButtonDown(0))
+        // ── 视角操作 ──
+        // 第一人称：锁鼠标，直接按鼠标位移转视角（FPS 手感，灵敏度低）
+        // 第三人称：按住左键拖拽转视角（原来的手感）
+        if (_firstPerson)
         {
-            _dragging = true;
-            _alignPaused = true;
-            _dragLast = Input.mousePosition;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+            _dragging = false;
+            float mx = Input.GetAxis("Mouse X") * FP_LOOK_SENS;   // 度
+            float my = Input.GetAxis("Mouse Y") * FP_LOOK_SENS;
+            if (Mathf.Abs(mx) > 0.0001f || Mathf.Abs(my) > 0.0001f)
+            {
+                _yaw += mx * Mathf.Deg2Rad;
+                _fpPitch = Mathf.Clamp(_fpPitch - my * Mathf.Deg2Rad, -1.1f, 1.1f);
+                _alignPaused = false;
+            }
+            // 第一人称没拖拽，但保留 Esc 解锁（方便切窗口）
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
         }
-        if (Input.GetMouseButtonUp(0)) _dragging = false;
-        if (_dragging)
+        else
         {
-            var d = Input.mousePosition - _dragLast;
-            _dragLast = Input.mousePosition;
-            _yaw += d.x * 0.005f;
-            if (_firstPerson)
-                _fpPitch = Mathf.Clamp(_fpPitch + d.y * 0.004f, -1.1f, 1.1f);
-            else
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            if (Input.GetMouseButtonDown(0))
+            {
+                _dragging = true;
+                _alignPaused = true;
+                _dragLast = Input.mousePosition;
+            }
+            if (Input.GetMouseButtonUp(0)) _dragging = false;
+            if (_dragging)
+            {
+                var d = Input.mousePosition - _dragLast;
+                _dragLast = Input.mousePosition;
+                _yaw += d.x * 0.005f;
                 _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
+            }
+            float wheel = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, _distMin, 22f);
         }
-        float wheel = Input.mouseScrollDelta.y;
-        if (!_firstPerson && Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, _distMin, 22f);
 
         // F11：窗口 / 全屏切换（窗口可拖动边缘调整尺寸）
         if (Input.GetKeyDown(KeyCode.F11))
@@ -244,6 +267,7 @@ public class PlayerRig : MonoBehaviour
         {
             _firstPerson = !_firstPerson;
             ApplyViewVisibility();
+            if (!_firstPerson) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
             if (_time != null) _time.ShowToast(_firstPerson ? "第一人称视角（V 切回第三人称）" : "第三人称视角（V 切换）");
         }
 

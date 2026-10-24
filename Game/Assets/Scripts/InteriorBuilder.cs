@@ -414,7 +414,7 @@ public static class InteriorBuilder
         WallZ(p, it, ZS, ZM, ox + XB, 0.02f, h0, -2.2f, -1.0f, 2.2f, wall, F0);
         // 南带北墙 z=0：客厅段实墙，餐厅段与厨房段各开门
         WallX(p, it, ox + XW, ox + XA, ZM, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
-        WallX(p, it, ox + XA, ox + XB, ZM, 0.02f, h0, ox + 0.2f, ox + 1.4f, 2.2f, wall, F0);
+        WallX(p, it, ox + XA, ox + XB, ZM, 0.02f, h0, ox - 1.2f, ox + 0.0f, 2.2f, wall, F0);
         WallX(p, it, ox + XB, ox + XE, ZM, 0.02f, h0, ox + 6.0f, ox + 7.2f, 2.2f, wall, F0);
         // 北带南墙 z=1.6：客卫 / 储藏 / 家务间各开门，楼梯间敞开
         WallX(p, it, ox + XW, ox - 5.4f, ZC, 0.02f, h0, ox - 7.4f, ox - 6.4f, 2.2f, wall, F0);
@@ -471,11 +471,11 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 0.9f, 2.85f, -4.6f), 6f, 0.95f);
 
         // 餐厅 5.0×3.2：1.6×0.9 餐桌 + 4 椅（桌边留 0.9m 通行）
-        Table(p, new Vector3(ox + 0.9f, 0f, -1.6f), 1.6f, 0.9f, 0.75f, wood);
-        Chair(p, it, new Vector3(ox + 0.9f, 0f, -2.5f), 180f, wood, F0, true);
-        Chair(p, it, new Vector3(ox + 0.9f, 0f, -0.7f), 0f, wood, F0, true);
-        Chair(p, it, new Vector3(ox - 0.15f, 0f, -1.6f), 90f, wood, F0, true);
-        Chair(p, it, new Vector3(ox + 1.95f, 0f, -1.6f), -90f, wood, F0, true);
+        // 餐桌靠东墙摆，西半留出「大门 → 走廊」的直线通道（原来桌子居中，正好卡在动线上）
+        Table(p, new Vector3(ox + 2.4f, 0f, -1.6f), 1.6f, 0.9f, 0.75f, wood);
+        Chair(p, it, new Vector3(ox + 2.4f, 0f, -2.5f), 0f, wood, F0, true);    // 北侧：靠背朝北，人朝桌子
+        Chair(p, it, new Vector3(ox + 2.4f, 0f, -0.7f), 180f, wood, F0, true);  // 南侧：靠背朝南
+        Chair(p, it, new Vector3(ox + 1.25f, 0f, -1.6f), 90f, wood, F0, true);  // 西侧：靠背朝西
         Lamp(p, new Vector3(ox + 0.9f, 2.80f, -1.6f), 7f, 1.1f);
 
         // 厨房 4.6×6.0：L 型台面（深 0.6 高 0.85）沿北墙 + 东墙
@@ -574,7 +574,7 @@ public static class InteriorBuilder
         Reg(it, ox - 2.15f, -3.0f, 0.5f, 2.0f, F0);     // 电视柜
         Reg(it, ox - 6.4f, -0.28f, 2.0f, 0.35f, F0);    // 书架
         Reg(it, ox + 3.05f, -4.9f, 0.35f, 1.6f, F0);    // 鞋柜
-        Reg(it, ox + 0.9f, -1.6f, 1.6f, 0.9f, F0);      // 餐桌
+        Reg(it, ox + 2.4f, -1.6f, 1.6f, 0.9f, F0);      // 餐桌
         Reg(it, ox + 5.70f, -5.55f, 4.2f, 0.6f, F0);    // 北台面
         Reg(it, ox + 7.55f, -3.0f, 0.6f, 4.4f, F0);     // 东台面
         Reg(it, ox + 3.9f, -4.2f, 0.8f, 0.7f, F0);      // 冰箱
@@ -790,7 +790,7 @@ public static class InteriorBuilder
         Part(p, new Vector3(cx - w * 0.5f + 0.08f, fy + 1.65f, cz + 1.6f), new Vector3(0.05f, 1.2f, 3.6f), green, 3.6f);
 
         // 教室灯（两盏，挂在课桌区上方）
-        Lamp(p, new Vector3(cx - 2.2f, fy + 3.35f, cz), 9f, 1.05f);
-        Lamp(p, new Vector3(cx + 2.2f, fy + 3.35f, cz), 9f, 1.05f);
+        Lamp(p, new Vector3(cx - 2.2f, fy + 3.35f, cz), 8f, 0.55f);
+        Lamp(p, new Vector3(cx + 2.2f, fy + 3.35f, cz), 8f, 0.55f);
     }
 }
