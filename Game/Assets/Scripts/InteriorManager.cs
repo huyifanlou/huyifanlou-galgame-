@@ -33,7 +33,7 @@ public class InteriorManager : MonoBehaviour
         if (px.HasValue && pz.HasValue)
         {
             bool up = Args.Str("-floor") == "1";
-            float fy = up ? room.FloorY[1] : room.FloorAt(px.Value, pz.Value, room.FloorY[0]);
+            float fy = room.FloorY.Length > 1 && Args.Str("-floor") == "1" ? room.FloorY[1] : room.FloorY[0];
             _rig.SetIndoorView(true, new Vector2(px.Value, pz.Value), fy);
         }
     }
