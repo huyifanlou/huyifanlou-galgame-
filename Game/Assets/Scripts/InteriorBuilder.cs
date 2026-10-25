@@ -254,6 +254,10 @@ public static class InteriorBuilder
     static void Reg(Interior it, float cx, float cz, float w, float d, int mask)
         => it.Solids.Add(new Solid(cx - w * 0.5f, cz - d * 0.5f, cx + w * 0.5f, cz + d * 0.5f, mask));
 
+    static Material _doorLeaf, _doorFrame;   // 门扇/门框材质（Home/School 共用）
+    static Material DoorLeaf() { if (_doorLeaf == null) _doorLeaf = C("#8a6a4c"); return _doorLeaf; }
+    static Material DoorFrame() { if (_doorFrame == null) _doorFrame = C("#6f5540"); return _doorFrame; }
+
     static Material _glass;
     static Material Glass()
     {
@@ -277,12 +281,79 @@ public static class InteriorBuilder
         Part(g, new Vector3(0f, 0f, 0.02f), new Vector3(0.06f, h, 0.1f), fr, 1f);
     }
 
+    // 门：门框（三边）+ 门扇贴在墙内表面，几何完全贴合洞口
+    //   axis: 0=门洞沿 X（墙沿 X，即南/北墙） 1=门洞沿 Z（墙沿 Z，即西/东墙）
+    //   side: 门扇贴在哪一侧内表面（+1 = 墙法线正方向那面）
+    static void Doorway(Transform p, float cx, float cz, float w, float h, float y0,
+                        int axis, int side, Material frameMat, Material leafMat)
+    {
+        const float T = 0.16f;      // 门框料宽
+        const float D = 0.07f;      // 门扇厚
+        float y = y0 + h * 0.5f;
+        // 门框：两根竖料 + 一根横料（外缘与洞口对齐，往洞口内挑 0.04）
+        if (axis == 0)
+        {
+            Part(p, new Vector3(cx - w * 0.5f + T * 0.5f, y, cz + side * 0.05f), new Vector3(T, h + T * 0.5f, 0.12f), frameMat, 0.8f);
+            Part(p, new Vector3(cx + w * 0.5f - T * 0.5f, y, cz + side * 0.05f), new Vector3(T, h + T * 0.5f, 0.12f), frameMat, 0.8f);
+            Part(p, new Vector3(cx, y0 + h + T * 0.5f, cz + side * 0.05f), new Vector3(w, T, 0.12f), frameMat, 0.8f);
+            // 门扇：半开 35°，铰链在左侧
+            var leaf = new GameObject("leaf");
+            leaf.transform.SetParent(p, false);
+            leaf.transform.localPosition = new Vector3(cx - w * 0.5f, y, cz);
+            leaf.transform.localEulerAngles = new Vector3(0f, side * -40f, 0f);
+            Part(leaf.transform, new Vector3(w * 0.5f, 0f, 0f), new Vector3(w - T, h - T * 0.5f, D), leafMat, 1f);
+            Part(leaf.transform, new Vector3(w - T - 0.12f, 0f, D * 0.5f + 0.02f), new Vector3(0.07f, 0.16f, 0.05f), C("#c9a24a"), 0.5f);
+        }
+        else
+        {
+            Part(p, new Vector3(cx + side * 0.05f, y, cz - w * 0.5f + T * 0.5f), new Vector3(0.12f, h + T * 0.5f, T), frameMat, 0.8f);
+            Part(p, new Vector3(cx + side * 0.05f, y, cz + w * 0.5f - T * 0.5f), new Vector3(0.12f, h + T * 0.5f, T), frameMat, 0.8f);
+            Part(p, new Vector3(cx + side * 0.05f, y0 + h + T * 0.5f, cz), new Vector3(0.12f, T, w), frameMat, 0.8f);
+            var leaf = new GameObject("leaf");
+            leaf.transform.SetParent(p, false);
+            leaf.transform.localPosition = new Vector3(cx, y, cz - w * 0.5f);
+            leaf.transform.localEulerAngles = new Vector3(0f, side * 40f, 0f);
+            Part(leaf.transform, new Vector3(0f, 0f, w * 0.5f), new Vector3(D, h - T * 0.5f, w - T), leafMat, 1f);
+            Part(leaf.transform, new Vector3(D * 0.5f + 0.02f, 0f, w - T - 0.12f), new Vector3(0.05f, 0.16f, 0.07f), C("#c9a24a"), 0.5f);
+        }
+    }
+
     // 墙面板：贴在墙内表面的薄片，用来给每个房间换壁纸 / 做墙裙（纯视觉，不参与碰撞）
     static void Panel(Transform p, float x1, float z1, float x2, float z2, float y0, float h, Material mat)
     {
         float w = Mathf.Abs(x2 - x1), d = Mathf.Abs(z2 - z1);
         Part(p, new Vector3((x1 + x2) * 0.5f, y0 + h * 0.5f, (z1 + z2) * 0.5f),
              new Vector3(Mathf.Max(w, 0.05f), h, Mathf.Max(d, 0.05f)), mat, 1.1f);
+    }
+
+    // 墙面挂件（挂画/挂钟/黑板等）：沿墙展开，按洞口列表裁剪成多段
+    //   axis: 0=沿 X（南/北墙） 1=沿 Z（西/东墙）；constAxis = 墙的世界坐标（z 或 x）
+    //   holes: 每项 (洞起, 洞止)（沿展开轴）；y 范围与洞口重叠的整段被挖掉
+    static void WallDeco(Transform p, float a0, float a1, float constAxis, float y0, float y1,
+                         int axis, float thick, Material mat, float uvMeters,
+                         (float, float)[] holes = null, Vector3 euler = default)
+    {
+        float cur = a0;
+        if (holes != null)
+            foreach (var (ha, hb) in holes)
+            {
+                if (hb <= cur) continue;
+                if (ha > cur) Seg(cur, Mathf.Min(ha, a1));
+                cur = Mathf.Max(cur, hb);
+                if (cur >= a1) break;
+            }
+        if (cur < a1) Seg(cur, a1);
+
+        void Seg(float f, float t)
+        {
+            if (t - f < 0.03f) return;
+            if (axis == 0)
+                Part(p, new Vector3((f + t) * 0.5f, (y0 + y1) * 0.5f, constAxis),
+                     new Vector3(t - f, y1 - y0, thick), mat, uvMeters, euler);
+            else
+                Part(p, new Vector3(constAxis, (y0 + y1) * 0.5f, (f + t) * 0.5f),
+                     new Vector3(thick, y1 - y0, t - f), mat, uvMeters, euler);
+        }
     }
 
     // 给矩形房间的四面内墙整间贴皮（rect 用墙中心线）
@@ -520,8 +591,12 @@ public static class InteriorBuilder
 
         // ── 楼梯：x 3.6..5.2，z 1.8(低) → 5.6(高)，宽 1.6 长 3.8 升 3.4 ──
         //    低端退进楼梯间（z=1.8），走廊 z 0..1.6 保持完整，不被楼梯占掉一半
-        Stairs(p, it, ox + 3.6f, 1.8f, ox + 5.2f, 5.6f, 0, 1, false, woodDark);
-        WallZ(p, it, 1.8f, 5.6f, ox + 5.2f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);   // 楼梯东侧挡墙（走出楼梯区会掉层）
+        Stairs(p, it, ox + 3.6f, 1.75f, ox + 5.2f, 5.6f, 0, 1, false, woodDark);
+        // 楼梯东侧挡墙：一层只挡南段（z 1.75..3.2），北段敞开连走廊；二层通挡
+        WallZ(p, it, 1.75f, 3.2f, ox + 5.2f, 0.02f, h0, 0f, 0f, 2.2f, wall, F0);
+        WallZ(p, it, 1.75f, 5.6f, ox + 5.2f, y1, h1, 0f, 0f, 2.2f, wall, F1);
+        // 家楼梯西侧二层挡墙
+        WallZ(p, it, 3.2f, 5.6f, ox + 3.6f, y1, h1, 0f, 0f, 2.2f, wall, F1);
         Lamp(p, new Vector3(ox + 6.6f, 2.95f, 3.6f), 7f, 1.1f);
 
         // ── 二层隔墙 ──
@@ -581,6 +656,21 @@ public static class InteriorBuilder
         RoomSkin(p, ox + XA, ZC, ox + 1.4f, ZN, y1, 3.2f, wallT, 0, ox - 1.2f, ox + 0.0f);       // 卫生间
         RoomSkin(p, ox + 1.4f, ZC, ox + XB, ZN, y1, 3.2f, wallP, 0, ox + 1.9f, ox + 3.0f);       // 衣帽间
         RoomSkin(p, ox + XB, ZC, ox + XE, ZN, y1, 3.2f, wallB, 0, ox + 3.4f, ox + 8.0f);         // 楼梯厅
+        // 二层外墙内表面（之前整圈只有 RoomSkin 的内墙皮，西/东/南外墙的里侧裸着水泥底色）
+        WallDeco(p, ox + XW + 0.13f, ox + XE - 0.13f, ZS + 0.13f, y1, y1 + 3.2f, 0, 0.05f, wallB, 1.7f,
+                 new[] { (ox - 6.5f, ox - 4.7f), (ox + 0.9f, ox + 2.3f), (ox + 4.7f, ox + 6.1f) });   // 南外墙面（避开三扇窗）
+        WallDeco(p, ZS + 0.13f, ZN - 0.13f, ox + XW + 0.13f, y1, y1 + 3.2f, 1, 0.05f, wallB, 1.7f,
+                 new[] { (-5.2f, -3.4f) });                                                            // 西外墙面
+        WallDeco(p, ZS + 0.13f, ZN - 0.13f, ox + XE - 0.13f, y1, y1 + 3.2f, 1, 0.05f, wallB, 1.7f, null);  // 东外墙面
+        WallDeco(p, ox + XW + 0.13f, ox + XE - 0.13f, ZN - 0.13f, y1, y1 + 3.2f, 0, 0.05f, wallB, 1.7f, null); // 北外墙面
+        // 一层外墙内表面（南面除门窗外裸墙补齐）
+        WallDeco(p, ox + XW + 0.13f, ox - 1.2f, ZS + 0.13f, 0.02f, 3.22f, 0, 0.05f, wallA, 1.7f,
+                 new[] { (ox - 7.3f, ox - 5.5f), (ox - 4.9f, ox - 3.1f) });                            // 客厅/餐厅南墙（避窗+门）
+        WallDeco(p, ox + 1.0f, ox + XE - 0.13f, ZS + 0.13f, 0.02f, 3.22f, 0, 0.05f, wallT, 1.7f,
+                 new[] { (ox + 4.9f, ox + 6.3f) });                                                    // 厨房南墙（避窗）
+        WallDeco(p, ZS + 0.13f, ZN - 0.13f, ox + XW + 0.13f, 0.02f, 3.22f, 1, 0.05f, wallA, 1.7f,
+                 new[] { (1.8f, 3.2f), (3.4f, 4.8f) });                                                // 西外墙面（避客卫/储藏门所在内墙）
+        WallDeco(p, ZS + 0.13f, ZN - 0.13f, ox + XE - 0.13f, 0.02f, 3.22f, 1, 0.05f, wallT, 1.7f, null);   // 东外墙面（厨房）
         Skirt(p, ox + XW, ZS + 0.18f, ox + XA, ZS + 0.18f, y1);
 
         // ── 装饰 ──
@@ -602,8 +692,7 @@ public static class InteriorBuilder
         // ── 一层窗（朝南外墙）──
         Window(p, new Vector3(ox - 6.4f, 1.75f, -5.74f), 1.8f, 1.4f, 0f);
         Window(p, new Vector3(ox - 4.0f, 1.75f, -5.74f), 1.8f, 1.4f, 0f);
-        Window(p, new Vector3(ox + 2.7f, 1.75f, -5.74f), 1.3f, 1.4f, 0f);
-        Window(p, new Vector3(ox + 5.9f, 1.75f, -5.74f), 1.4f, 1.2f, 0f);
+        Window(p, new Vector3(ox + 5.6f, 1.75f, -5.74f), 1.4f, 1.2f, 0f);
 
         // ════════ 一层家具 ════════
         // 客厅 6.4×6.0：沙发靠西墙，电视柜靠东墙，中间地毯 + 茶几（沙发到电视 ≈3.4m）
@@ -723,6 +812,27 @@ public static class InteriorBuilder
         // 衣帽间 2.0×4.4
         Part(p, new Vector3(ox + 2.85f, y1 + 1.05f, 3.6f), new Vector3(0.55f, 2.1f, 3.4f), woodDark, 1f);
         Lamp(p, new Vector3(ox + 2.4f, y1 + 2.85f, 3.6f), 5f, 0.85f);
+
+
+        // ── 门扇（贴合洞口，不挡动线：全部半开 40°）──
+        var dLF = DoorLeaf(); var dFR = DoorFrame();
+        // 一层
+        Doorway(p, ox + XA, -0.8f, 1.2f, 2.2f, 0.02f, 1, 1, dFR, dLF);        // 客厅/玄关 (x=-1.6, z -1.4..-0.2)
+        Doorway(p, ox + XB, -1.6f, 1.2f, 2.2f, 0.02f, 1, 1, dFR, dLF);        // 餐厅/厨房 (x=3.4, z -2.2..-1.0)
+        Doorway(p, ox - 0.6f, ZM, 1.2f, 2.2f, 0.02f, 0, -1, dFR, dLF);        // 玄关→走廊 (z=0, x -1.2..0.0)
+        Doorway(p, ox + 6.6f, ZM, 1.2f, 2.2f, 0.02f, 0, -1, dFR, dLF);        // 厨房→走廊 (z=0, x 6.0..7.2)
+        Doorway(p, ox - 6.9f, ZC, 1.0f, 2.2f, 0.02f, 0, 1, dFR, dLF);         // 走廊→客卫 (z=1.6, x -7.4..-6.4)
+        Doorway(p, ox - 4.1f, ZC, 1.0f, 2.2f, 0.02f, 0, 1, dFR, dLF);         // 走廊→储藏 (z=1.6, x -4.6..-3.6)
+        Doorway(p, ox + 0.6f, ZC, 1.2f, 2.2f, 0.02f, 0, 1, dFR, dLF);         // 走廊→家务 (z=1.6, x 0.0..1.2)
+        Doorway(p, ox, ZS, 2.0f, 2.3f, 0f, 0, -1, dFR, C("#7a5a42"));           // 大门（外门，深木色）
+        Doorway(p, ox + 1.7f, ZN, 1.0f, 2.3f, 0f, 0, 1, dFR, C("#7a5a42"));     // 后门
+        // 二层
+        Doorway(p, ox - 6.1f, ZM, 1.2f, 2.2f, y1, 0, -1, dFR, dLF);           // 主卧 (z=0, x -6.7..-5.5)
+        Doorway(p, ox + 0.8f, ZM, 1.2f, 2.2f, y1, 0, -1, dFR, dLF);           // 起居厅 (z=0, x 0.2..1.4)
+        Doorway(p, ox + 6.6f, ZM, 1.2f, 2.2f, y1, 0, -1, dFR, dLF);           // 次卧 (z=0, x 6.0..7.2)
+        Doorway(p, ox - 2.4f, ZC, 1.2f, 2.2f, y1, 0, 1, dFR, dLF);            // 书房 (z=1.6, x -3.0..-1.8)
+        Doorway(p, ox - 0.6f, ZC, 1.2f, 2.2f, y1, 0, 1, dFR, dLF);            // 卫生间 (z=1.6, x -1.2..0.0)
+        Doorway(p, ox + 2.45f, ZC, 1.1f, 2.2f, y1, 0, 1, dFR, dLF);           // 衣帽间 (z=1.6, x 1.9..3.0)
 
         // ── 家具碰撞 ──
         Reg(it, ox - 7.35f, -3.0f, 0.95f, 2.6f, F0);    // 沙发
@@ -844,8 +954,12 @@ public static class InteriorBuilder
 
         // ── 楼梯：西端楼梯间，x -16.4..-13.8（宽 2.6），z 2.6(低) → 7.0(高) ──
         //    进门就在楼梯脚下，不再跟任何教室门隔着走廊对脸
-        Stairs(p, it, ox - 16.4f, 2.6f, ox - 13.8f, 7.0f, 0, 1, false, woodDark);
-        WallZ(p, it, 2.6f, 7.0f, ox - 13.8f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);   // 楼梯东侧挡墙
+        Stairs(p, it, ox - 16.4f, 2.55f, ox - 13.8f, 7.0f, 0, 1, false, woodDark);
+        // 楼梯东侧挡墙：只建到二层（一层是通往楼梯的走道，通高墙会把入口挡成一条缝）
+        WallZ(p, it, 3.4f, 7.0f, ox - 13.8f, 0.02f, h0, 0f, 0f, 2.3f, wall, F0);
+        WallZ(p, it, 2.55f, 7.0f, ox - 13.8f, y1, h1, 0f, 0f, 2.3f, wall, F1);
+        // 楼梯西侧挡墙（二层防掉落）
+        WallZ(p, it, 3.4f, 7.0f, ox - 16.4f, y1, h1, 0f, 0f, 2.3f, wall, F1);
         Lamp(p, new Vector3(ox - 15.1f, 3.45f, 4.6f), 8f, 1.15f);
 
         // ── 二层：走廊 + 教室 ──
@@ -886,11 +1000,11 @@ public static class InteriorBuilder
         Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox - 12.2f, ox - 10.8f);
         Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox - 1.2f, ox + 0.0f);
         Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox + 1.3f, ox + 2.4f);
-        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f);
+        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, 0.02f, F0, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f, 2);
         Classroom(p, it, ox - 12.4f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox - 12.2f, ox - 10.8f);
         Classroom(p, it, ox - 3.2f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox - 1.2f, ox + 0.0f);
         Classroom(p, it, ox + 6.0f, -4.3f, 9.0f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox + 1.3f, ox + 2.4f);
-        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f);
+        Classroom(p, it, ox + 13.8f, -4.3f, 6.2f, 7.3f, y1, F1, board, deskTop, woodDark, green, ox + 10.5f, ox + 11.6f, 2);
 
         // ── 走廊灯 ──
         for (int i = -2; i <= 2; i++)
@@ -898,6 +1012,7 @@ public static class InteriorBuilder
             Lamp(p, new Vector3(ox + i * 6.4f, 3.35f, 0.9f), 10f, 1.15f);
             Lamp(p, new Vector3(ox + i * 6.4f, y1 + 3.35f, 0.9f), 10f, 1.15f);
         }
+
 
         // ── 家具碰撞 ──
         Reg(it, ox + 1.2f, 6.6f, 2.4f, 0.6f, F0);
@@ -913,50 +1028,51 @@ public static class InteriorBuilder
     // 第一排课桌前缘距黑板 2.2m，排距 0.9m，课桌成对（1.2m 一组），组间走道 0.55m
     static void Classroom(Transform p, Interior it, float cx, float cz, float w, float d, float fy,
                           int mask, Material board, Material desk, Material wood, Material green,
-                          float doorA = 0f, float doorB = 0f)
+                          float doorA = 0f, float doorB = 0f, int groups = 3)
     {
         float zBack = cz - d * 0.5f;    // 黑板墙内表面
         float zFront = cz + d * 0.5f;   // 走廊侧内表面
 
         // 黑板（宽 4.0 × 高 1.2，下沿离地 0.9）+ 讲台
         Part(p, new Vector3(cx, fy + 1.50f, zBack + 0.06f), new Vector3(4.0f, 1.2f, 0.07f), board, 4.0f);
-        // 墙裙（上白下浅绿，学校教室惯例）+ 黑板上方的挂钟
+        // 墙裙（整圈四面，走廊侧绕开门洞）+ 黑板上方挂钟
         var skirt = C("#8fae98");
-        Panel(p, cx - w * 0.5f + 0.05f, zBack + 0.03f, cx + w * 0.5f - 0.05f, zBack + 0.03f, fy, 1.0f, skirt);
         float sx1 = cx - w * 0.5f + 0.05f, sx2 = cx + w * 0.5f - 0.05f;
-        if (doorB > doorA)   // 走廊那面墙有门，墙裙必须断开
-        {
-            float da = Mathf.Clamp(doorA, sx1, sx2), db = Mathf.Clamp(doorB, sx1, sx2);
-            Panel(p, sx1, zFront - 0.03f, da, zFront - 0.03f, fy, 1.0f, skirt);
-            Panel(p, db, zFront - 0.03f, sx2, zFront - 0.03f, fy, 1.0f, skirt);
-        }
-        else Panel(p, sx1, zFront - 0.03f, sx2, zFront - 0.03f, fy, 1.0f, skirt);
+        Panel(p, sx1, zBack + 0.03f, sx2, zBack + 0.03f, fy, 1.0f, skirt);
+        (float, float)[] doorHoles = doorB > doorA
+            ? new[] { (doorA - 0.09f, doorB + 0.09f) } : null;
+        WallDeco(p, sx1, sx2, zFront - 0.03f, fy, fy + 1.0f, 0, 0.05f, skirt, 1.1f, doorHoles);
         Panel(p, cx - w * 0.5f + 0.03f, cz - d * 0.5f + 0.05f, cx - w * 0.5f + 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
         Panel(p, cx + w * 0.5f - 0.03f, cz - d * 0.5f + 0.05f, cx + w * 0.5f - 0.03f, cz + d * 0.5f - 0.05f, fy, 1.0f, skirt);
+        // 走廊侧墙皮（RoomSkin 未覆盖教室南墙时补内层墙裙高度的裸墙）
+        WallDeco(p, sx1, sx2, zFront + 0.0f, fy + 1.0f, fy + 3.6f, 0, 0.05f, T("in_wall"), 1.7f, doorHoles);
         WallClock(p, new Vector3(cx, fy + 2.60f, zBack + 0.18f), 0f);
         Part(p, new Vector3(cx, fy + 0.40f, zBack + 0.75f), new Vector3(1.6f, 0.80f, 0.7f), wood, 1f);
         Part(p, new Vector3(cx, fy + 0.82f, zBack + 0.75f), new Vector3(1.7f, 0.05f, 0.76f), C("#d9d3c6"), 1f);
 
-        // 课桌：3 组 × 2 排 × 2 人 = 12 座。教室进深 7.3，排满 4 排会像考场，后场留空
-        //   椅子 ry=180：靠背翻到远离桌子一侧，人面朝黑板（原来 ry=0 靠背朝黑板，坐反了）
-        const int groups = 3, rows = 2;
+        // 课桌：3 列 × 4 排 × 2 人 = 24 座，均匀铺满教室（列距 2.6、排距 1.3，走道 ≥0.8m）
+        //   椅子 ry=180：靠背翻到远离桌子一侧，人面朝黑板
+        const int rows = 4;
+        int gcount = Mathf.Max(1, groups);
+        float colGap = gcount > 1 ? Mathf.Min(2.6f, (w - 1.6f) / (gcount - 1)) : 0f;
+        float rowGap = Mathf.Min(1.3f, (d - 3.0f) / (rows - 1));
         for (int r = 0; r < rows; r++)
-            for (int g = 0; g < groups; g++)
+            for (int g = 0; g < gcount; g++)
             {
-                float gx = cx + (g - 1) * 2.4f;
-                float z = zBack + 2.2f + 0.2f + r * 1.2f;
+                float gx = cx + (g - (gcount - 1) * 0.5f) * colGap;
+                float z = zBack + 2.4f + r * rowGap;
                 for (int k = 0; k < 2; k++)
                 {
-                    float x = gx + (k == 0 ? -0.3f : 0.3f);
+                    float x = gx + (k == 0 ? -0.34f : 0.34f);
                     Part(p, new Vector3(x, fy + 0.72f, z), new Vector3(0.6f, 0.05f, 0.4f), desk, 1.0f);
                     for (int lg = 0; lg < 4; lg++)
                         Part(p, new Vector3(x + (lg % 2 == 0 ? -0.26f : 0.26f), fy + 0.36f,
                                             z + (lg < 2 ? -0.16f : 0.16f)),
                              new Vector3(0.04f, 0.72f, 0.04f), C("#8d8d94"), 0.5f);
-                    Chair(p, it, new Vector3(x, fy, z + 0.55f), 180f, wood, mask, false);
+                    Chair(p, it, new Vector3(x, fy, z + 0.62f), 180f, wood, mask, false);
                 }
                 // 一组两张桌合并成一个碰撞盒（含椅）
-                it.Solids.Add(new Solid(gx - 0.62f, z - 0.2f, gx + 0.62f, z + 0.95f, mask));
+                it.Solids.Add(new Solid(gx - 0.66f, z - 0.2f, gx + 0.66f, z + 1.02f, mask));
             }
 
 

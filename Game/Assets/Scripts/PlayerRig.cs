@@ -20,12 +20,15 @@ public class PlayerRig : MonoBehaviour
     float _distMin = 6f;        // 室内收到 3.2，避免镜头穿墙
     bool _distForced, _pitchForced;   // 命令行显式给了 -dist / -pitch（截图验收），进出室内不覆盖
     InteriorManager _im;        // 室内（家/教学楼）进出与碰撞
+    Minimap _mm;                // 小地图（第一人称开图时让位鼠标）
+    InteriorManager Im => _im;
     bool _indoor;
     float _yawTarget = float.NaN;
     float _facing = Mathf.PI;   // 世界角：0=+z 南，π=北；默认背对镜头
     bool _alignPaused, _camInit, _dragging;
     bool _firstPerson;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
     float _fpPitch;             // 第一人称俯仰（上正下负）
+    float _lastMapClose;        // M 按下时刻，开图瞬间不抢回鼠标锁定
     float _groundY;             // 脚底高度（人行道/桥面）
     Renderer _spriteR;
     Mesh _spriteMesh;
@@ -96,6 +99,7 @@ public class PlayerRig : MonoBehaviour
     public float Yaw => _yaw;   // 相机朝向（小地图上的自己用）
 
     public void BindInterior(InteriorManager im) { _im = im; }
+    public void BindMinimap(Minimap mm) { _mm = mm; }
 
     // 进出室内：换机位距离 + 落点 + 脚底高度（室内是楼层函数，不是地形）
     public void SetIndoorView(bool on, Vector2 at, float floorY)
@@ -167,6 +171,14 @@ public class PlayerRig : MonoBehaviour
         return true;
     }
 
+    // 第一人称下打开 UI 时临时解锁鼠标（小地图调用）；关图后回锁
+    public void UnlockCursor()
+    {
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+        _lastMapClose = float.NegativeInfinity;   // 开图期间不抢回锁定
+    }
+
     // 第一人称隐藏角色精灵（影子保留，低头可见脚下）
     void ApplyViewVisibility()
     {
@@ -213,8 +225,12 @@ public class PlayerRig : MonoBehaviour
         // 第三人称：按住左键拖拽转视角（原来的手感）
         if (_firstPerson)
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            bool mapOpen = _mm != null && _mm.enabled && _mm.LargeOpen;   // 只在大地图打开时让位鼠标
+            if (!mapOpen && Time.unscaledTime - _lastMapClose > 0.4f)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
             _dragging = false;
             float mx = Input.GetAxis("Mouse X") * FP_LOOK_SENS;   // 度
             float my = Input.GetAxis("Mouse Y") * FP_LOOK_SENS;
@@ -261,6 +277,8 @@ public class PlayerRig : MonoBehaviour
             else
                 Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, FullScreenMode.FullScreenWindow);
         }
+
+        if (Input.GetKeyUp(KeyCode.M)) _lastMapClose = Time.unscaledTime;
 
         // V：第一 / 第三人称切换
         if (Input.GetKeyDown(KeyCode.V))

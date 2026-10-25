@@ -755,6 +755,7 @@ public class WorldBuilder : MonoBehaviour
         var mm = GetComponent<Minimap>();
         if (mm == null) mm = gameObject.AddComponent<Minimap>();
         mm.Init(this, rig);
+        if (rig != null) rig.BindMinimap(mm);
         var hud = GetComponent<Hud>();
         if (hud != null) hud.Init(tod);
         var shot = GetComponent<ShotMode>();
@@ -774,8 +775,8 @@ public class WorldBuilder : MonoBehaviour
         // 室内（家 / 教学楼）：一次建好并隐藏，走到门口按 F 进入
         var im = GetComponent<InteriorManager>();
         if (im == null) im = gameObject.AddComponent<InteriorManager>();
+        if (rig != null) rig.BindInterior(im);   // 先绑定：im.Init 里 -indoor 会直接进房
         im.Init(this, rig, tod, wth, mm);
-        if (rig != null) rig.BindInterior(im);
     }
 
     public WorldData BuildWorld()

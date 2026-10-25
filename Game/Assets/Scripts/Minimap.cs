@@ -14,6 +14,8 @@ public class Minimap : MonoBehaviour
         new List<(string name, float x, float z, Color col)>();
     readonly List<(string name, float x, float z)> _dest = new List<(string name, float x, float z)>();
     int _pending = -1;
+    public bool Indoor { get; set; }   // 室内：地图可看，传送禁用
+    public bool LargeOpen => _large;   // 大地图是否打开（第一人称让位鼠标用）
 
     public void Init(WorldBuilder w, PlayerRig rig)
     {
@@ -213,6 +215,8 @@ public class Minimap : MonoBehaviour
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.M)) _large = !_large;
+        // 第一人称锁定鼠标时按 M，先解锁鼠标再开图（否则点不了确认按钮）
+        if (Input.GetKeyDown(KeyCode.M) && _rig != null) _rig.UnlockCursor();
     }
 
     void OnGUI()
@@ -237,6 +241,13 @@ public class Minimap : MonoBehaviour
         GUI.DrawTexture(mapRect, _map, ScaleMode.StretchToFill);
         GUI.DrawTexture(mapRect, _ring, ScaleMode.StretchToFill);
         GUI.color = Color.white;
+
+        if (Indoor)
+        {
+            var tt = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
+            tt.normal.textColor = new Color(1f, 0.9f, 0.7f);
+            GUI.Label(new Rect(0, 40f, Screen.width, 24f), "室内 · 地图仅查看（出门后再传送）", tt);
+        }
 
         var title = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
         title.normal.textColor = new Color(1f, 0.95f, 0.85f);
@@ -278,6 +289,7 @@ public class Minimap : MonoBehaviour
         GUI.color = Color.white;
 
         var e = Event.current;
+        if (Indoor) return;   // 室内：禁用一切点击传送
         if (_pending >= 0)
         {
             // 二次确认框

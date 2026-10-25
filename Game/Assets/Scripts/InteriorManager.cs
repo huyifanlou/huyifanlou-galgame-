@@ -62,7 +62,7 @@ public class InteriorManager : MonoBehaviour
         _cur = room;
         room.Root.SetActive(true);
         _rig.SetIndoorView(true, room.Spawn, room.FloorY[0]);
-        if (_mm != null) _mm.enabled = false;
+        if (_mm != null) _mm.Indoor = true;   // 室内也可看地图（传送禁用），不再整体关掉
         if (_wth != null) _wth.Indoor = true;
         if (_tod != null) _tod.Indoor = true;
         if (_tod != null)
@@ -81,7 +81,7 @@ public class InteriorManager : MonoBehaviour
         var name = _cur.Name;
         _cur = null;
         _rig.SetIndoorView(false, new Vector2(back.x, back.z), 0f);
-        if (_mm != null) _mm.enabled = true;
+        if (_mm != null) _mm.Indoor = false;
         if (_wth != null) _wth.Indoor = false;
         if (_tod != null) _tod.Indoor = false;
         if (_tod != null)
