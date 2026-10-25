@@ -41,6 +41,27 @@ EDITOR="D:/AI/Unity/Editor/2022.3.62f3c1/Editor/Unity.exe"
 Game/Build/Win/Campus.exe -shot shots/x.png -time 18.5 -px 0 -pz 4 -at -21,7.5 -freeze 1
 ```
 
+## 室内系统速查（必读：`docs/35-交接说明.md`、`docs/34`）
+
+家和教学楼有可进入的室内（程序化建的封闭盒子，建在世界外 x≈900 / x≈1060）。
+改这块之前先看 docs/35，几个硬约定：
+
+- 碰撞是**自写 AABB + 楼层掩码**（不是物理引擎）；地面高度是函数 `FloorAt`。
+  **楼梯两侧必须有挡墙**，否则侧面走出去会瞬间跳层。
+- 墙面用 `RoomSkin(rect, 材质, 门洞...)` 贴 4cm 薄片（不参与碰撞）。
+  **门洞坐标规则**：墙号 0/1（沿 X）用世界 X；墙号 2/3（沿 Z）用世界 Z，**不要加 ox**。
+- 室内相机 `dist 5.2 / pitch 0.26`，贴墙时自动抬高俯视；第一人称 `V` 切换，鼠标直接转视角。
+
+验收（比截图可靠）：
+
+```bash
+Campus.exe -indoor home|school [-floor 1] [-px X -pz Z]     # 直接开在室内
+Campus.exe -indoor home -px 896 -pz -2.5 -at 890,-2.5 -fp 1 -pitch -0.15 -shot out.png
+Campus.exe -indoor home -px 899 -pz -4.6 -at 899,6 -sim w,200 -frames 240   # 模拟走，读 [Sim] 坐标
+```
+
+建完室内自动跑 `Validate()`，`Player.log` 里应看到「校验完成：N 个碰撞盒，问题 0 处」。
+
 ## 文档索引
 
 - `docs/00-立项与迁移说明.md` —— 引擎选择（含中国网络实测）、冻结策略、迁移策略
