@@ -676,8 +676,9 @@ public static class InteriorBuilder
         WallDeco(p, -14.86f, 14.86f, ox + 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.11f, 0.02f, W, 0, 0.05f, wall, 1.7f,
                  new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f), (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) });
+        // 门厅那段（x -27.86~+7.5）本来就没有墙，墙皮要挖空，否则从大门看进去是一面假墙
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
-                 new[] { (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) });
+                 new[] { (ox - 27.86f, ox + 7.5f), (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) });
         WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 7.41f, 0.02f, W, 1, 0.05f, wall, 1.7f);
         WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 7.59f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 16.41f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
@@ -727,7 +728,8 @@ public static class InteriorBuilder
         var corSkirt = C("#b6c0b2");
         var corRail = C("#8b968a");
         var corFoot = C("#5f4a38");
-        var cDoorS = new[] { (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) };          // 南墙门洞
+        var cDoorS = new[] { (ox - 27.86f, ox + 7.5f),                                          // 门厅敞开段
+                             (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) };             // 办公室 / 图书角门
         var cDoorN = new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f),
                              (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) };             // 北墙门洞
         // 南墙（z=2.5）
@@ -750,6 +752,18 @@ public static class InteriorBuilder
             Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.20f), new Vector3(1.1f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
         Skirt(p, ox - 27.86f, ZC1 - 0.20f, ox + 27.86f, ZC1 - 0.20f, 0.02f);
         Skirt(p, ox - 27.86f, ZC0 + 0.20f, ox + 27.86f, ZC0 + 0.20f, 0.02f);
+
+        // DEBUG 探针
+        foreach (var t in root.GetComponentsInChildren<Transform>())
+        {
+            var q = t.position;
+            var mf0 = t.GetComponent<MeshFilter>();
+            if (mf0 == null) continue;
+            var sz0 = mf0.sharedMesh.bounds.size;
+            if (sz0.x < 0.8f && sz0.y < 0.8f) continue;
+            if (q.x > 1050f && q.x < 1075f && q.z > -8f && q.z < 12f && q.y > 1.2f && q.y < 4.4f)
+                Debug.Log($"[Probe] {t.name} pos=({q.x:F2},{q.y:F2},{q.z:F2}) size=({sz0.x:F2},{sz0.y:F2},{sz0.z:F2})");
+        }
 
         // ── 走廊灯 ──
         for (int i = -3; i <= 3; i++)
