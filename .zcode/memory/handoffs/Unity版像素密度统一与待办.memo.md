@@ -1,8 +1,8 @@
 ---
 summary: Unity版像素密度统一与待办
 created: 2026-10-16
-updated: 2026-10-16
-status: active
+updated: 2026-10-25
+status: absorbed
 ---
 
 ## Summary
