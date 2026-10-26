@@ -290,6 +290,76 @@ public static class InteriorBuilder
                  new Vector3(0.08f, h - 0.08f, 0.08f), wood, 0.7f);
     }
 
+    // 靠东墙的书架：书脊朝 -x，两段书架之间正好夹住窗户
+    static void ShelfRun(Transform p, Interior it, float x, float z0, float z1,
+                         Material frame, Material[] books)
+    {
+        const float h = 2.10f, d = 0.50f;
+        float len = z1 - z0, cz = (z0 + z1) * 0.5f;
+        float face = x - d * 0.5f;
+        Part(p, new Vector3(x + d * 0.5f - 0.02f, h * 0.5f, cz), new Vector3(0.04f, h, len), frame, 1f);   // 背板
+        Part(p, new Vector3(x, 0.06f, z0 + 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.7f);
+        Part(p, new Vector3(x, 0.06f, z1 - 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.7f);
+        Part(p, new Vector3(x, h - 0.03f, cz), new Vector3(d, 0.06f, len), frame, 1f);                    // 顶板
+        Part(p, new Vector3(x, 0.06f, cz), new Vector3(d, 0.12f, len), frame, 1f);                        // 底板
+        for (int r = 1; r <= 3; r++)
+            Part(p, new Vector3(x, 0.12f + r * 0.48f, cz), new Vector3(d - 0.06f, 0.04f, len - 0.12f), frame, 1f);
+
+        int n = Mathf.FloorToInt((len - 0.24f) / 0.17f);
+        for (int r = 0; r < 4; r++)
+        {
+            float y = r == 0 ? 0.12f : 0.12f + r * 0.48f + 0.02f;
+            for (int i = 0; i < n; i++)
+            {
+                if ((i + r * 5) % 11 == 7) continue;          // 偶尔留个空档
+                float bw = 0.10f + ((i * 7 + r * 3) % 4) * 0.014f;
+                float bh = 0.28f + ((i * 5 + r) % 4) * 0.022f;
+                float bz = z1 - 0.14f - i * 0.17f - bw * 0.5f;
+                Part(p, new Vector3(face + 0.14f, y + bh * 0.5f + 0.002f, bz),
+                     new Vector3(0.24f, bh, bw), books[(i + r * 2) % books.Length], 0.5f);
+            }
+        }
+        Reg(it, x, cz, d, len);
+    }
+
+    static Font _signFont;
+    // 门牌文字：动态字体 + TextMesh（只用于室内门牌，不参与碰撞）
+    static void SignText(Transform p, Vector3 pos, float ry, string s, float h, Color color)
+    {
+        if (_signFont == null)
+            _signFont = Font.CreateDynamicFontFromOSFont(
+                new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "Arial" }, 72);
+        var go = new GameObject("signtext");
+        go.transform.SetParent(p, false);
+        go.transform.localPosition = pos;
+        go.transform.localEulerAngles = new Vector3(0f, ry, 0f);
+        var tm = go.AddComponent<TextMesh>();
+        tm.text = s;
+        tm.font = _signFont;
+        tm.fontSize = 72;
+        tm.characterSize = h;
+        tm.anchor = TextAnchor.MiddleCenter;
+        tm.alignment = TextAlignment.Center;
+        tm.color = color;
+        var mr = go.GetComponent<MeshRenderer>();
+        var signShader = Resources.Load<Shader>("Shaders/TextSign");
+        if (signShader == null) signShader = Shader.Find("Campus/TextSign");
+        if (signShader != null)
+        {
+            var mat = new Material(signShader);
+            mat.mainTexture = _signFont.material.mainTexture;
+            mat.SetFloat("_Cutoff", 0.42f);
+            if (mr != null) mr.sharedMaterial = mat;
+            go.AddComponent<SignAtlasSync>().font = _signFont;
+        }
+        else
+        {
+            // 兜底：着色器没进包时退回字体材质（可见，但会穿墙）
+            Debug.LogWarning("[InteriorBuilder] TextSign 着色器缺失，门牌会穿透墙体");
+            if (mr != null) mr.sharedMaterial = _signFont.material;
+        }
+    }
+
     static void Sofa(Transform p, Vector3 pos, float len, float ry, Material fabric)
     {
         var g = new GameObject("sofa").transform;
@@ -710,12 +780,31 @@ public static class InteriorBuilder
             WallDeco(p, da, db, ZC0 + 0.11f, 2.5f, W, 0, 0.05f, wall, 1.7f);
         }
 
-        // ── 南带：办公室 / 图书角墙（门厅开放）──
-        WallX(p, it, ox + 7.5f, ox + 12.4f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox + 13.6f, ox + 21.0f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox + 22.2f, ox + 28f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
+        // ── 南带：办公室 / 图书角墙（门厅开放；门洞 2.0m）──
+        WallX(p, it, ox + 7.5f, ox + 12.0f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox + 14.0f, ox + 20.6f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox + 22.6f, ox + 28f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
         WallZ(p, it, ZC1, 15f, ox + 7.5f, 0.02f, W, 0f, 0f, 2.5f, wall);
         WallZ(p, it, ZC1, 15f, ox + 16.5f, 0.02f, W, 0f, 0f, 2.5f, wall);
+        // 门楣 + 门套 + 门牌（门洞通到顶会缺门头，门牌也没地方挂）
+        foreach (var (da, db) in new[] { (ox + 12.0f, ox + 14.0f), (ox + 20.6f, ox + 22.6f) })
+        {
+            Part(p, new Vector3((da + db) * 0.5f, (2.5f + W) * 0.5f, ZC1),
+                 new Vector3(db - da, W - 2.5f, WALL_OUT), wall, 1.7f);
+            WallDeco(p, da, db, ZC1 - 0.11f, 2.5f, W, 0, 0.05f, wallB, 1.7f);
+        }
+        var doorFrame = C("#7a6248");
+        foreach (var (dc, label, plateMat) in new[] {
+                     (13.0f, "办公室", C("#2f4a3a")), (21.6f, "图书角", C("#4a6a52")) })
+        {
+            float wx = ox + dc;
+            Part(p, new Vector3(wx - 1.0f, 1.25f, ZC1), new Vector3(0.14f, 2.5f, 0.34f), doorFrame, 1f);
+            Part(p, new Vector3(wx + 1.0f, 1.25f, ZC1), new Vector3(0.14f, 2.5f, 0.34f), doorFrame, 1f);
+            Part(p, new Vector3(wx, 2.56f, ZC1), new Vector3(2.14f, 0.16f, 0.34f), doorFrame, 1f);
+            Part(p, new Vector3(wx, 2.81f, ZC1 - 0.19f), new Vector3(1.20f, 0.36f, 0.05f), plateMat, 1f);
+            Part(p, new Vector3(wx, 2.81f, ZC1 - 0.222f), new Vector3(0.98f, 0.24f, 0.012f), C("#dfe6dc"), 1f);
+            SignText(p, new Vector3(wx, 2.81f, ZC1 - 0.232f), 0f, label, 0.034f, MatLib.Hex("#1f3428"));
+        }
 
         // ── 窗 ──
         Window(p, new Vector3(ox - 24f, 2.1f, -14.80f), 3.0f, 1.7f, 180f);
@@ -745,12 +834,18 @@ public static class InteriorBuilder
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.11f, 0.02f, W, 0, 0.05f, wall, 1.7f,
                  new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f), (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) });
         // 门厅那段（x -27.86~+7.5）本来就没有墙，墙皮要挖空，否则从大门看进去是一面假墙
-        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
-                 new[] { (ox - 27.86f, ox + 7.5f), (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) });
-        WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 7.41f, 0.02f, W, 1, 0.05f, wall, 1.7f);
-        WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 7.59f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 16.41f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 16.59f, 0.02f, W, 1, 0.05f, wall, 1.7f);
+        // 0.09 会让墙皮整个埋进 0.24 厚的墙里（差 5mm）→ 走廊南墙一直是素墙，改回 0.11
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
+                 new[] { (ox - 27.86f, ox + 7.5f), (ox + 12.0f, ox + 14.0f), (ox + 20.6f, ox + 22.6f) });
+        // 房间侧也贴墙纸（原来只贴了走廊侧，办公室/图书角是素墙）
+        WallDeco(p, ox + 7.5f, ox + 16.5f, ZC1 + 0.11f, 0.02f, W, 0, 0.05f, wall, 1.7f,
+                 new[] { (ox + 12.0f, ox + 14.0f) });
+        WallDeco(p, ox + 16.5f, ox + 27.86f, ZC1 + 0.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
+                 new[] { (ox + 20.6f, ox + 22.6f) });
+        WallDeco(p, ZC1 + 0.11f, 14.86f, ox + 7.39f, 0.02f, W, 1, 0.05f, wall, 1.7f);
+        WallDeco(p, ZC1 + 0.11f, 14.86f, ox + 7.61f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+        WallDeco(p, ZC1 + 0.11f, 14.86f, ox + 16.39f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+        WallDeco(p, ZC1 + 0.11f, 14.86f, ox + 16.61f, 0.02f, W, 1, 0.05f, wall, 1.7f);
         foreach (var xx in new[] { -15.25f, -2.75f, 9.75f })
         {
             WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx - 0.11f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
@@ -776,14 +871,53 @@ public static class InteriorBuilder
         Table(p, new Vector3(ox + 9.8f, 0f, 6.2f), 1.8f, 0.9f, 0.76f, wood);
         Chair(p, it, new Vector3(ox + 9.8f, 0f, 7.1f), 180f, wood, true);
         Part(p, new Vector3(ox + 15.9f, 1.05f, 5.4f), new Vector3(0.5f, 2.1f, 1.7f), woodDark, 1f);
+        Part(p, new Vector3(ox + 15.9f, 1.05f, 8.7f), new Vector3(0.5f, 2.1f, 1.7f), woodDark, 1f);
+        Part(p, new Vector3(ox + 15.64f, 1.25f, 8.3f), new Vector3(0.04f, 0.30f, 0.05f), C("#9aa0a6"), 1f);
+        Part(p, new Vector3(ox + 15.64f, 1.25f, 9.1f), new Vector3(0.04f, 0.30f, 0.05f), C("#9aa0a6"), 1f);
+        // 西墙白板 + 托槽
+        Part(p, new Vector3(ox + 7.66f, 1.80f, 9.8f), new Vector3(0.06f, 1.15f, 3.0f), C("#e8ecea"), 1f);
+        Part(p, new Vector3(ox + 7.70f, 1.21f, 9.8f), new Vector3(0.14f, 0.05f, 2.9f), woodDark, 1f);
+        Part(p, new Vector3(ox + 7.697f, 2.00f, 9.2f), new Vector3(0.012f, 0.40f, 0.60f), C("#c9d2cf"), 1f);
+        Part(p, new Vector3(ox + 7.697f, 1.70f, 10.4f), new Vector3(0.012f, 0.30f, 0.45f), C("#d8cfc0"), 1f);
+        // 桌面文件
+        Part(p, new Vector3(ox + 12.5f, 0.79f, 12.3f), new Vector3(0.36f, 0.05f, 0.28f), C("#dfe6dc"), 0.6f);
+        Part(p, new Vector3(ox + 12.46f, 0.845f, 12.32f), new Vector3(0.34f, 0.04f, 0.26f), C("#c9d2cf"), 0.6f);
+        WallClock(p, new Vector3(ox + 12f, 2.95f, 14.83f), 180f);
+        Plant(p, new Vector3(ox + 8.6f, 0.02f, 13.6f), 0.95f);
         Lamp(p, new Vector3(ox + 12f, 3.9f, 9f), 10f, 1.05f);
 
-        // ── 图书角 ──
-        for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox + 26.2f, 1.05f, 4.6f + i * 1.9f), new Vector3(0.5f, 2.1f, 1.5f), woodDark, 1f);
+        // ── 图书角：书墙 + 阅读桌 ──
+        //  房间 11.5×12.5m 只放两张课桌太空；书架贴东墙两段，正好避开两扇窗
+        var shelfWood = C("#7b5a3f");
+        var bookCols = new[] { C("#8c4a3c"), C("#3f5c6b"), C("#6b7a4a"),
+                               C("#8a7440"), C("#5b4a6b"), C("#a9a08a") };
+        ShelfRun(p, it, ox + 27.60f, 4.95f, 7.05f, shelfWood, bookCols);
+        ShelfRun(p, it, ox + 27.60f, 9.95f, 14.30f, shelfWood, bookCols);
+        Rug(p, new Vector3(ox + 21.5f, 0.07f, 7.75f), 3.8f, 5.8f, C("#7d8a76"));
         Table(p, new Vector3(ox + 21.5f, 0f, 6.0f), 1.8f, 0.9f, 0.76f, wood);
         Table(p, new Vector3(ox + 21.5f, 0f, 9.5f), 1.8f, 0.9f, 0.76f, wood);
+        foreach (var (cx2, cz2, ry2) in new[] {
+                     (20.9f, 5.25f, 0f), (22.1f, 5.25f, 0f), (20.9f, 6.75f, 180f), (22.1f, 6.75f, 180f),
+                     (20.9f, 8.75f, 0f), (22.1f, 8.75f, 0f), (20.9f, 10.25f, 180f), (22.1f, 10.25f, 180f) })
+            Chair(p, it, new Vector3(ox + cx2, 0f, cz2), ry2, wood, true);
+        // 桌面：书堆 + 阅读灯
+        foreach (var (tx, tz) in new[] { (21.5f, 6.0f), (21.5f, 9.5f) })
+        {
+            Part(p, new Vector3(ox + tx - 0.45f, 0.79f, tz + 0.12f), new Vector3(0.34f, 0.06f, 0.24f), C("#8c4a3c"), 0.6f);
+            Part(p, new Vector3(ox + tx - 0.45f, 0.845f, tz + 0.12f), new Vector3(0.30f, 0.05f, 0.22f), C("#3f5c6b"), 0.6f);
+            Part(p, new Vector3(ox + tx - 0.45f, 0.895f, tz + 0.12f), new Vector3(0.26f, 0.04f, 0.20f), C("#8a7440"), 0.6f);
+            Part(p, new Vector3(ox + tx + 0.55f, 0.78f, tz + 0.15f), new Vector3(0.16f, 0.04f, 0.16f), woodDark, 0.5f);
+            Part(p, new Vector3(ox + tx + 0.55f, 0.93f, tz + 0.15f), new Vector3(0.04f, 0.26f, 0.04f), C("#9aa0a6"), 1f);
+            Part(p, new Vector3(ox + tx + 0.55f, 1.09f, tz + 0.15f), new Vector3(0.20f, 0.12f, 0.20f), C("#e3d3a8"), 1f);
+            Part(p, new Vector3(ox + tx + 0.55f, 1.025f, tz + 0.15f), new Vector3(0.22f, 0.02f, 0.22f), C("#8a7440"), 1f);
+        }
+        Plant(p, new Vector3(ox + 17.4f, 0.02f, 14.2f), 1.1f);
+        Plant(p, new Vector3(ox + 23.8f, 0.02f, 3.4f), 0.9f);
+        Picture(p, new Vector3(ox + 16.65f, 2.25f, 9.6f), 1.5f, 0.95f, 90f);
+        WallClock(p, new Vector3(ox + 16.65f, 3.25f, 6.2f), 90f);
+        Picture(p, new Vector3(ox + 24.6f, 2.35f, 14.83f), 1.8f, 1.05f, 180f);
         Lamp(p, new Vector3(ox + 22f, 3.9f, 8f), 10f, 1.05f);
+        Lamp(p, new Vector3(ox + 18.6f, 3.9f, 11.5f), 10f, 1.0f);
 
         // ── 教室 ──
         // 侧墙贴面按真实墙纸面定位（cx±w/2 只是家具网格宽度，不是墙面）
@@ -802,7 +936,7 @@ public static class InteriorBuilder
         var corRail = C("#8b968a");
         var corFoot = C("#5f4a38");
         var cDoorS = new[] { (ox - 27.86f, ox + 7.5f),                                          // 门厅敞开段
-                             (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) };             // 办公室 / 图书角门
+                             (ox + 12.0f, ox + 14.0f), (ox + 20.6f, ox + 22.6f) };             // 办公室 / 图书角门
         var cDoorN = new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f),
                              (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) };             // 北墙门洞
         // 南墙（z=2.5）
@@ -823,8 +957,12 @@ public static class InteriorBuilder
         }
         foreach (float dx in new[] { -18.6f, -10.4f, 0.2f, 14.6f })   // 教室门牌（门楣上）
             Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.17f), new Vector3(1.1f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
-        Skirt(p, ox - 27.86f, ZC1 - 0.20f, ox + 27.86f, ZC1 - 0.20f, 0.02f);
-        Skirt(p, ox - 27.86f, ZC0 + 0.20f, ox + 27.86f, ZC0 + 0.20f, 0.02f);
+        // 踢脚线按真实墙段断开（原来整条横穿门洞和敞开式门厅，像悬空的门槛）
+        foreach (var (sa, sb) in new[] { (ox + 7.5f, ox + 12.0f), (ox + 14.0f, ox + 20.6f), (ox + 22.6f, ox + 27.86f) })
+            Skirt(p, sa, ZC1 - 0.20f, sb, ZC1 - 0.20f, 0.02f);
+        foreach (var (sa, sb) in new[] { (ox - 27.86f, ox - 19.6f), (ox - 17.6f, ox - 11.4f),
+                                         (ox - 9.4f, ox - 0.8f), (ox + 1.2f, ox + 13.6f), (ox + 15.6f, ox + 27.86f) })
+            Skirt(p, sa, ZC0 + 0.20f, sb, ZC0 + 0.20f, 0.02f);
 
         // ── 走廊灯 ──
         for (int i = -3; i <= 3; i++)
@@ -836,7 +974,7 @@ public static class InteriorBuilder
         Reg(it, ox + 12f, 12.4f, 2.0f, 1.0f);
         Reg(it, ox + 9.8f, 6.2f, 1.8f, 0.9f);
         Reg(it, ox + 15.9f, 5.4f, 0.5f, 1.7f);
-        for (int i = 0; i < 4; i++) Reg(it, ox + 26.2f, 4.6f + i * 1.9f, 0.5f, 1.5f);
+        Reg(it, ox + 15.9f, 8.7f, 0.5f, 1.7f);
         Reg(it, ox + 21.5f, 6.0f, 1.8f, 0.9f);
         Reg(it, ox + 21.5f, 9.5f, 1.8f, 0.9f);
 
@@ -908,5 +1046,21 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(cx + w * 0.25f, 3.85f, cz - 2.5f), 10f, 0.85f);
         Lamp(p, new Vector3(cx - w * 0.25f, 3.85f, cz + 2.5f), 10f, 0.85f);
         Lamp(p, new Vector3(cx + w * 0.25f, 3.85f, cz + 2.5f), 10f, 0.85f);
+    }
+}
+
+// 动态字体新增字形会重建图集，自建门牌材质要跟着换贴图（否则新字缺 UV/贴图对不上）
+public class SignAtlasSync : MonoBehaviour
+{
+    public Font font;
+    Material _mat;
+
+    void Awake() => _mat = GetComponent<MeshRenderer>().sharedMaterial;
+
+    void LateUpdate()
+    {
+        if (font == null || _mat == null) return;
+        var tex = font.material.mainTexture;
+        if (tex != null && _mat.mainTexture != tex) _mat.mainTexture = tex;
     }
 }
