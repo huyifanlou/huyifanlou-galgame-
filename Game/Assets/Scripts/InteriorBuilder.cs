@@ -296,6 +296,7 @@ public static class InteriorBuilder
         g.SetParent(p, false);
         g.localPosition = pos;
         g.localEulerAngles = new Vector3(0f, ry, 0f);
+        Part(g, new Vector3(0f, 0.11f, 0f), new Vector3(len - 0.12f, 0.22f, 0.86f), C("#6f5540"), 1f);  // 底座（原来沙发悬空 20cm）
         Part(g, new Vector3(0f, 0.42f, 0f), new Vector3(len, 0.44f, 0.95f), fabric, 1.2f);
         Part(g, new Vector3(0f, 0.68f, -0.38f), new Vector3(len, 0.85f, 0.18f), fabric, 1.2f);
         Part(g, new Vector3(-len * 0.5f + 0.1f, 0.62f, 0f), new Vector3(0.2f, 0.62f, 0.95f), fabric, 1.2f);
@@ -442,22 +443,22 @@ public static class InteriorBuilder
         WallDeco(p, -9.86f, 9.86f, ox - 14.86f, 0.02f, W, 1, 0.05f, wallA, 1.7f);
         WallDeco(p, -9.86f, 9.86f, ox + 14.86f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
         WallDeco(p, ox - 14.86f, ox + 14.86f, 9.86f, 0.02f, W, 0, 0.05f, wallC, 1.7f);
-        WallDeco(p, ox - 14.86f, ox + 14.86f, 1.91f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
+        WallDeco(p, ox - 14.86f, ox + 14.86f, 1.89f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
                  new[] { (ox - 12.98f, ox - 11.42f), (ox - 6.58f, ox - 5.02f), (ox - 0.18f, ox + 1.38f), (ox + 5.22f, ox + 6.78f) });
-        WallDeco(p, ox - 14.86f, ox - 9.4f, 2.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
+        WallDeco(p, ox - 14.86f, ox - 9.4f, 2.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
                  new[] { (ox - 12.98f, ox - 11.42f) });
-        WallDeco(p, ox - 9.4f, ox - 2.2f, 2.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
+        WallDeco(p, ox - 9.4f, ox - 2.2f, 2.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
                  new[] { (ox - 6.58f, ox - 5.02f) });
-        WallDeco(p, ox - 2.2f, ox + 3.4f, 2.09f, 0.02f, W, 0, 0.05f, wallT, 1.7f,
+        WallDeco(p, ox - 2.2f, ox + 3.4f, 2.11f, 0.02f, W, 0, 0.05f, wallT, 1.7f,
                  new[] { (ox - 0.18f, ox + 1.38f) });
-        WallDeco(p, ox + 3.4f, ox + 14.86f, 2.09f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
+        WallDeco(p, ox + 3.4f, ox + 14.86f, 2.11f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
                  new[] { (ox + 5.22f, ox + 6.78f) });
-        WallDeco(p, 2.09f, 9.86f, ox - 9.49f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, 2.09f, 9.86f, ox - 9.31f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, 2.09f, 9.86f, ox - 2.29f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, 2.09f, 9.86f, ox - 2.11f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
-        WallDeco(p, 2.09f, 9.86f, ox + 3.31f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
-        WallDeco(p, 2.09f, 9.86f, ox + 3.49f, 0.02f, W, 1, 0.05f, wallA, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox - 9.51f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox - 9.29f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox - 2.31f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox - 2.09f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox + 3.33f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
+        WallDeco(p, 2.09f, 9.86f, ox + 3.51f, 0.02f, W, 1, 0.05f, wallA, 1.7f);
         Skirt(p, ox - 14.86f, -9.84f, ox + 14.86f, -9.84f, 0.02f);
         Skirt(p, ox - 14.86f, 9.84f, ox + 14.86f, 9.84f, 0.02f);
         Skirt(p, ox - 14.84f, -9.84f, ox - 14.84f, 9.84f, 0.02f);
@@ -495,12 +496,10 @@ public static class InteriorBuilder
 
         // 餐厅（中）
         Table(p, new Vector3(ox, 0f, -4.2f), 2.4f, 1.1f, 0.76f, wood);
-        Chair(p, it, new Vector3(ox, 0f, -5.6f), 0f, wood, true);
-        Chair(p, it, new Vector3(ox, 0f, -2.8f), 180f, wood, true);
-        Chair(p, it, new Vector3(ox - 1.9f, 0f, -4.2f), 90f, wood, true);
-        Chair(p, it, new Vector3(ox + 1.9f, 0f, -4.2f), 270f, wood, true);
-        Chair(p, it, new Vector3(ox - 1.9f, 0f, -5.6f), 90f, wood, true);
-        Chair(p, it, new Vector3(ox + 1.9f, 0f, -5.6f), 270f, wood, true);
+        Chair(p, it, new Vector3(ox, 0f, -5.05f), 0f, wood, true);      // 南侧，人朝北
+        Chair(p, it, new Vector3(ox, 0f, -3.35f), 180f, wood, true);    // 北侧，人朝南
+        Chair(p, it, new Vector3(ox - 1.55f, 0f, -4.2f), 90f, wood, true);   // 西侧，人朝东
+        Chair(p, it, new Vector3(ox + 1.55f, 0f, -4.2f), 270f, wood, true);  // 东侧，人朝西
         Lamp(p, new Vector3(ox, 3.5f, -4.2f), 9f, 1.1f);
 
         // 厨房（东，x 4..15）：L 台面 + 中岛
@@ -675,7 +674,7 @@ public static class InteriorBuilder
         WallDeco(p, ox - 27.86f, ox + 27.86f, 14.86f, 0.02f, W, 0, 0.05f, wall, 1.7f);
         WallDeco(p, -14.86f, 14.86f, ox - 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, -14.86f, 14.86f, ox + 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.09f, 0.02f, W, 0, 0.05f, wall, 1.7f,
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.11f, 0.02f, W, 0, 0.05f, wall, 1.7f,
                  new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f), (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) });
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
                  new[] { (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) });
@@ -685,8 +684,8 @@ public static class InteriorBuilder
         WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 16.59f, 0.02f, W, 1, 0.05f, wall, 1.7f);
         foreach (var xx in new[] { -15.25f, -2.75f, 9.75f })
         {
-            WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx - 0.09f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
-            WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx + 0.09f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+            WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx - 0.11f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
+            WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx + 0.11f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         }
         Skirt(p, ox - 27.86f, -14.84f, ox + 27.86f, -14.84f, 0.02f);
         Skirt(p, ox - 27.86f, 14.84f, ox + 27.86f, 14.84f, 0.02f);
@@ -762,8 +761,9 @@ public static class InteriorBuilder
         }
         else Panel(p, sx1, zFront - 0.04f, sx2, zFront - 0.04f, 0.02f, 1.1f, skirt);
         Panel(p, sx1, zBack + 0.03f, sx2, zBack + 0.03f, 0.02f, 1.1f, skirt);
-        Panel(p, cx - w * 0.5f + 0.03f, zBack + 0.05f, cx - w * 0.5f + 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
-        Panel(p, cx + w * 0.5f - 0.03f, zBack + 0.05f, cx + w * 0.5f - 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
+        // 侧墙墙裙要让到墙皮（±0.11）外面，否则被墙皮盖住看不见
+        Panel(p, cx - w * 0.5f + 0.19f, zBack + 0.05f, cx - w * 0.5f + 0.19f, zFront - 0.05f, 0.02f, 1.1f, skirt);
+        Panel(p, cx + w * 0.5f - 0.19f, zBack + 0.05f, cx + w * 0.5f - 0.19f, zFront - 0.05f, 0.02f, 1.1f, skirt);
         WallClock(p, new Vector3(bx, 2.9f, zFront - 0.18f), 0f);
         Part(p, new Vector3(bx, 0.45f, zFront - 0.85f), new Vector3(2.2f, 0.9f, 0.8f), wood, 1f);
         Part(p, new Vector3(bx, 0.93f, zFront - 0.85f), new Vector3(2.3f, 0.05f, 0.86f), C("#d9d3c6"), 1f);
@@ -792,8 +792,9 @@ public static class InteriorBuilder
                     Part(p, new Vector3(gx + (lg % 2 == 0 ? -0.27f : 0.27f), 0.37f,
                                         z + (lg < 2 ? -0.17f : 0.17f)),
                          new Vector3(0.04f, 0.74f, 0.04f), C("#8d8d94"), 0.5f);
-                Chair(p, it, new Vector3(gx, 0f, z + 0.66f), 180f, wood, false);
-                it.Solids.Add(new Solid(gx - 0.34f, z - 0.21f, gx + 0.34f, z + 0.98f));
+                // 椅子放在桌子**远离黑板**的一侧（z 更小），人朝 +z 正好面向桌子与黑板
+                Chair(p, it, new Vector3(gx, 0f, z - 0.62f), 0f, wood, false);
+                it.Solids.Add(new Solid(gx - 0.34f, z - 0.92f, gx + 0.34f, z + 0.22f));
             }
 
         Part(p, new Vector3(cx - w * 0.5f + 0.08f, 1.85f, cz + 2.0f), new Vector3(0.05f, 1.3f, 4.2f), green, 4.2f);
