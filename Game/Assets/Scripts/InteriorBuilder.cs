@@ -637,11 +637,11 @@ public static class InteriorBuilder
         WallZ(p, it, -15f, ZC0, ox + 9.75f, 0.02f, W, 0f, 0f, 2.5f, wall);
 
         // ── 走廊北墙（z=-2.5）：教室门 ──
-        WallX(p, it, ox - 28f, ox - 19.2f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox - 18.0f, ox - 11.0f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox - 9.8f, ox - 0.4f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox + 0.8f, ox + 14.0f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
-        WallX(p, it, ox + 15.2f, ox + 28f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox - 28f, ox - 19.6f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox - 17.6f, ox - 11.4f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox - 9.4f, ox - 0.8f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox + 1.2f, ox + 13.6f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        WallX(p, it, ox + 15.6f, ox + 28f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
 
         // ── 南带：办公室 / 图书角墙（门厅开放）──
         WallX(p, it, ox + 7.5f, ox + 12.4f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
@@ -676,7 +676,7 @@ public static class InteriorBuilder
         WallDeco(p, -14.86f, 14.86f, ox - 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, -14.86f, 14.86f, ox + 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.09f, 0.02f, W, 0, 0.05f, wall, 1.7f,
-                 new[] { (ox - 19.2f, ox - 18.0f), (ox - 11.0f, ox - 9.8f), (ox - 0.4f, ox + 0.8f), (ox + 14.0f, ox + 15.2f) });
+                 new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f), (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) });
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.09f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
                  new[] { (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) });
         WallDeco(p, ZC1 + 0.09f, 14.86f, ox + 7.41f, 0.02f, W, 1, 0.05f, wall, 1.7f);
@@ -718,10 +718,10 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 22f, 3.9f, 8f), 10f, 1.05f);
 
         // ── 教室 ──
-        Classroom(p, it, ox - 21.4f, 12.3f, board, deskTop, wood, green, ox - 19.2f, ox - 18.0f, -0.6f);
-        Classroom(p, it, ox - 9.0f, 12.3f, board, deskTop, wood, green, ox - 11.0f, ox - 9.8f, 2.5f);
-        Classroom(p, it, ox + 3.6f, 12.3f, board, deskTop, wood, green, ox - 0.4f, ox + 0.8f);
-        Classroom(p, it, ox + 18.75f, 17.3f, board, deskTop, wood, green, ox + 14.0f, ox + 15.2f);
+        Classroom(p, it, ox - 21.4f, 12.3f, board, deskTop, wood, green, ox - 19.6f, ox - 17.6f, -1.0f);
+        Classroom(p, it, ox - 9.0f, 12.3f, board, deskTop, wood, green, ox - 11.4f, ox - 9.4f, 2.5f);
+        Classroom(p, it, ox + 3.6f, 12.3f, board, deskTop, wood, green, ox - 0.8f, ox + 1.2f, 0.6f);
+        Classroom(p, it, ox + 18.75f, 17.3f, board, deskTop, wood, green, ox + 13.6f, ox + 15.6f);
 
         // ── 走廊灯 ──
         for (int i = -3; i <= 3; i++)
@@ -753,7 +753,14 @@ public static class InteriorBuilder
         Part(p, new Vector3(bx, 1.7f, zFront - 0.07f), new Vector3(5.0f, 1.3f, 0.07f), board, 5.0f);
         var skirt = C("#8fae98");
         float sx1 = cx - w * 0.5f + 0.05f, sx2 = cx + w * 0.5f - 0.05f;
-        Panel(p, sx1, zFront - 0.04f, sx2, zFront - 0.04f, 0.02f, 1.1f, skirt);
+        // 走廊那面墙的墙裙必须按门洞断开：否则一条 1.1m 高的绿带横在门口，进门像被挡住
+        if (doorB > doorA)
+        {
+            float da = Mathf.Clamp(doorA - 0.12f, sx1, sx2), db = Mathf.Clamp(doorB + 0.12f, sx1, sx2);
+            Panel(p, sx1, zFront - 0.04f, da, zFront - 0.04f, 0.02f, 1.1f, skirt);
+            Panel(p, db, zFront - 0.04f, sx2, zFront - 0.04f, 0.02f, 1.1f, skirt);
+        }
+        else Panel(p, sx1, zFront - 0.04f, sx2, zFront - 0.04f, 0.02f, 1.1f, skirt);
         Panel(p, sx1, zBack + 0.03f, sx2, zBack + 0.03f, 0.02f, 1.1f, skirt);
         Panel(p, cx - w * 0.5f + 0.03f, zBack + 0.05f, cx - w * 0.5f + 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
         Panel(p, cx + w * 0.5f - 0.03f, zBack + 0.05f, cx + w * 0.5f - 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
@@ -761,26 +768,32 @@ public static class InteriorBuilder
         Part(p, new Vector3(bx, 0.45f, zFront - 0.85f), new Vector3(2.2f, 0.9f, 0.8f), wood, 1f);
         Part(p, new Vector3(bx, 0.93f, zFront - 0.85f), new Vector3(2.3f, 0.05f, 0.86f), C("#d9d3c6"), 1f);
 
-        const int rows = 2;
-        int gcount = 3;   // 3 列 × 2 排 × 2 人 = 12 座
-        float colGap = Mathf.Min(2.3f, (w - 2.4f) / (gcount - 1));
-        float rowGap = 1.9f;
+        // 12 座均匀铺满：宽教室 4 列×3 排，标准教室 3 列×4 排；行列按房间尺寸拉伸
+        int cols = w > 15f ? 4 : 3;
+        int rows = 12 / cols;
+        float colGap = Mathf.Min(3.2f, (w - 2.6f) / Mathf.Max(1, cols - 1));
+        // 让门口正对两条列之间的过道，否则进门第一眼就是一张桌子
+        float gridShift = 0f;
+        if (doorB > doorA)
+        {
+            float rel = (doorA + doorB) * 0.5f - cx;
+            int k = Mathf.RoundToInt(rel / colGap + (cols - 1) * 0.5f - 0.5f);
+            float aisle = (-(cols - 1) * 0.5f + 0.5f + k) * colGap;
+            gridShift = Mathf.Clamp(rel - aisle, -1.8f, 1.8f);
+        }
+        float zTop = zFront - 3.0f, zBot = zBack + 2.6f;
         for (int r = 0; r < rows; r++)
-            for (int g = 0; g < gcount; g++)
+            for (int g = 0; g < cols; g++)
             {
-                float gx = cx + (g - (gcount - 1) * 0.5f) * colGap;
-                float z = zFront - 2.9f - r * rowGap;
-                for (int k = 0; k < 2; k++)
-                {
-                    float x = gx + (k == 0 ? -0.34f : 0.34f);
-                    Part(p, new Vector3(x, 0.74f, z), new Vector3(0.62f, 0.05f, 0.42f), desk, 1.0f);
-                    for (int lg = 0; lg < 4; lg++)
-                        Part(p, new Vector3(x + (lg % 2 == 0 ? -0.27f : 0.27f), 0.37f,
-                                            z + (lg < 2 ? -0.17f : 0.17f)),
-                             new Vector3(0.04f, 0.74f, 0.04f), C("#8d8d94"), 0.5f);
-                    Chair(p, it, new Vector3(x, 0f, z + 0.66f), 180f, wood, false);
-                }
-                it.Solids.Add(new Solid(gx - 0.68f, z - 0.21f, gx + 0.68f, z + 1.06f));
+                float gx = cx + gridShift + (g - (cols - 1) * 0.5f) * colGap;
+                float z = Mathf.Lerp(zTop, zBot, rows > 1 ? (float)r / (rows - 1) : 0.5f);
+                Part(p, new Vector3(gx, 0.74f, z), new Vector3(0.62f, 0.05f, 0.42f), desk, 1.0f);
+                for (int lg = 0; lg < 4; lg++)
+                    Part(p, new Vector3(gx + (lg % 2 == 0 ? -0.27f : 0.27f), 0.37f,
+                                        z + (lg < 2 ? -0.17f : 0.17f)),
+                         new Vector3(0.04f, 0.74f, 0.04f), C("#8d8d94"), 0.5f);
+                Chair(p, it, new Vector3(gx, 0f, z + 0.66f), 180f, wood, false);
+                it.Solids.Add(new Solid(gx - 0.34f, z - 0.21f, gx + 0.34f, z + 0.98f));
             }
 
         Part(p, new Vector3(cx - w * 0.5f + 0.08f, 1.85f, cz + 2.0f), new Vector3(0.05f, 1.3f, 4.2f), green, 4.2f);
