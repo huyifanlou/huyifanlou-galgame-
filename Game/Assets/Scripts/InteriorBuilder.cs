@@ -490,7 +490,9 @@ public static class InteriorBuilder
         // 玄关
         Part(p, new Vector3(ox + 2.9f, 0.55f, -9.0f), new Vector3(0.45f, 1.1f, 1.6f), woodDark, 1f);
         Part(p, new Vector3(ox - 2.6f, 0.22f, -9.25f), new Vector3(0.9f, 0.44f, 0.4f), wood, 1f);
-        Part(p, new Vector3(ox + 3.62f, 1.0f, -6.8f), new Vector3(0.06f, 1.4f, 0.8f), C("#b8c6cc"), 1f);
+        // 玄关镜：单层开放布局拆掉了原来的玄关隔墙，镜子不能留在原地悬空 → 改贴北墙（鞋柜台面上方）
+        Part(p, new Vector3(ox + 2.9f, 1.95f, -9.82f), new Vector3(1.0f, 1.5f, 0.04f), woodDark, 1f);
+        Part(p, new Vector3(ox + 2.9f, 1.95f, -9.78f), new Vector3(0.86f, 1.36f, 0.03f), C("#b8c6cc"), 1f);
         Rug(p, new Vector3(ox, 0.06f, -8.9f), 1.8f, 1.2f, C("#8d9aa6"));
         Lamp(p, new Vector3(ox, 3.55f, -8.6f), 8f, 1.0f);
 
@@ -641,6 +643,14 @@ public static class InteriorBuilder
         WallX(p, it, ox - 9.4f, ox - 0.8f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
         WallX(p, it, ox + 1.2f, ox + 13.6f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
         WallX(p, it, ox + 15.6f, ox + 28f, ZC0, 0.02f, W, 0f, 0f, 2.5f, wall);
+        // 教室门洞补门楣：北墙是分五段建的，门洞通到顶，门牌会悬在半空
+        foreach (var (da, db) in new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f),
+                                          (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) })
+        {
+            Part(p, new Vector3((da + db) * 0.5f, (2.5f + W) * 0.5f, ZC0),
+                 new Vector3(db - da, W - 2.5f, WALL_OUT), wall, 1.7f);
+            WallDeco(p, da, db, ZC0 + 0.11f, 2.5f, W, 0, 0.05f, wall, 1.7f);
+        }
 
         // ── 南带：办公室 / 图书角墙（门厅开放）──
         WallX(p, it, ox + 7.5f, ox + 12.4f, ZC1, 0.02f, W, 0f, 0f, 2.5f, wall);
@@ -694,7 +704,7 @@ public static class InteriorBuilder
         // ── 门厅 ──
         Part(p, new Vector3(ox + 4.5f, 0.6f, 12.8f), new Vector3(3.0f, 1.2f, 0.7f), woodDark, 1f);
         Part(p, new Vector3(ox + 4.5f, 1.23f, 12.8f), new Vector3(3.1f, 0.07f, 0.76f), C("#d9d3c6"), 1f);
-        Part(p, new Vector3(ox - 8f, 1.75f, 14.65f), new Vector3(3.2f, 1.5f, 0.08f), green, 1f);
+        Part(p, new Vector3(ox - 8f, 1.75f, 14.79f), new Vector3(3.2f, 1.5f, 0.08f), green, 1f);
         Plant(p, new Vector3(ox - 19.2f, 0.02f, 13.8f), 1.2f);
         Plant(p, new Vector3(ox - 5.5f, 0.02f, 13.5f), 1.0f);
         Rug(p, new Vector3(ox, 0.06f, 13.9f), 3.4f, 1.6f, C("#8d9aa6"));
@@ -718,10 +728,15 @@ public static class InteriorBuilder
         Lamp(p, new Vector3(ox + 22f, 3.9f, 8f), 10f, 1.05f);
 
         // ── 教室 ──
-        Classroom(p, it, ox - 21.4f, 12.3f, board, deskTop, wood, green, ox - 19.6f, ox - 17.6f, -1.0f);
-        Classroom(p, it, ox - 9.0f, 12.3f, board, deskTop, wood, green, ox - 11.4f, ox - 9.4f, 2.5f);
-        Classroom(p, it, ox + 3.6f, 12.3f, board, deskTop, wood, green, ox - 0.8f, ox + 1.2f, 0.6f);
-        Classroom(p, it, ox + 18.75f, 17.3f, board, deskTop, wood, green, ox + 13.6f, ox + 15.6f);
+        // 侧墙贴面按真实墙纸面定位（cx±w/2 只是家具网格宽度，不是墙面）
+        Classroom(p, it, ox - 21.4f, 12.3f, board, deskTop, wood, green,
+                  ox - 27.835f, ox - 15.385f, ox - 19.6f, ox - 17.6f, -1.0f);
+        Classroom(p, it, ox - 9.0f, 12.3f, board, deskTop, wood, green,
+                  ox - 15.115f, ox - 2.885f, ox - 11.4f, ox - 9.4f, 2.5f);
+        Classroom(p, it, ox + 3.6f, 12.3f, board, deskTop, wood, green,
+                  ox - 2.615f, ox + 9.615f, ox - 0.8f, ox + 1.2f, 0.6f);
+        Classroom(p, it, ox + 18.75f, 17.3f, board, deskTop, wood, green,
+                  ox + 9.885f, ox + 27.835f, ox + 13.6f, ox + 15.6f);
 
         // ── 走廊墙面：1.2m 墙裙 + 压条 + 踢脚线 + 公告栏 ──
         //   56m 长、4.2m 高的空白大墙远看像挂了块布，加个墙裙立刻有"墙"的感觉
@@ -740,30 +755,18 @@ public static class InteriorBuilder
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.17f, 0.02f, 1.20f, 0, 0.04f, corSkirt, 1.2f, cDoorN);
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.18f, 1.20f, 1.27f, 0, 0.05f, corRail, 1.2f, cDoorN);
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.19f, 0.02f, 0.14f, 0, 0.06f, corFoot, 1.2f, cDoorN);
-        // 墙面挂饰：公告栏 + 班级门牌（打断大片空白）
+        // 南墙 x<+7.5 是敞开的门厅、根本没有墙 → 公告栏统一挂到连续的北墙，位置避开四个门洞
         var notice = C("#4a6a52");
-        for (int i = 0; i < 7; i++)
+        foreach (float dx in new[] { -24f, -15.6f, -7.2f, 3.0f, 9.6f, 18f, 26.4f })
         {
-            float bx = ox - 24f + i * 8.4f;
-            Part(p, new Vector3(bx, 2.20f, ZC1 - 0.20f), new Vector3(1.7f, 0.95f, 0.05f), notice, 1.7f);
-            Part(p, new Vector3(bx, 2.20f, ZC1 - 0.22f), new Vector3(1.5f, 0.75f, 0.02f), C("#dfe6dc"), 1.5f);
+            float bx = ox + dx;
+            Part(p, new Vector3(bx, 2.20f, ZC0 + 0.17f), new Vector3(1.7f, 0.95f, 0.05f), notice, 1.7f);
+            Part(p, new Vector3(bx, 2.20f, ZC0 + 0.19f), new Vector3(1.5f, 0.75f, 0.02f), C("#dfe6dc"), 1.5f);
         }
-        foreach (float dx in new[] { -18.6f, -10.4f, 0.2f, 14.6f })   // 教室门牌（门上方）
-            Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.20f), new Vector3(1.1f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
+        foreach (float dx in new[] { -18.6f, -10.4f, 0.2f, 14.6f })   // 教室门牌（门楣上）
+            Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.17f), new Vector3(1.1f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
         Skirt(p, ox - 27.86f, ZC1 - 0.20f, ox + 27.86f, ZC1 - 0.20f, 0.02f);
         Skirt(p, ox - 27.86f, ZC0 + 0.20f, ox + 27.86f, ZC0 + 0.20f, 0.02f);
-
-        // DEBUG 探针
-        foreach (var t in root.GetComponentsInChildren<Transform>())
-        {
-            var q = t.position;
-            var mf0 = t.GetComponent<MeshFilter>();
-            if (mf0 == null) continue;
-            var sz0 = mf0.sharedMesh.bounds.size;
-            if (sz0.x < 0.8f && sz0.y < 0.8f) continue;
-            if (q.x > 1050f && q.x < 1075f && q.z > -8f && q.z < 12f && q.y > 1.2f && q.y < 4.4f)
-                Debug.Log($"[Probe] {t.name} pos=({q.x:F2},{q.y:F2},{q.z:F2}) size=({sz0.x:F2},{sz0.y:F2},{sz0.z:F2})");
-        }
 
         // ── 走廊灯 ──
         for (int i = -3; i <= 3; i++)
@@ -785,6 +788,7 @@ public static class InteriorBuilder
     // 一间教室：黑板在走廊侧内墙（避开北窗眩光），40/60 座
     static void Classroom(Transform p, Interior it, float cx, float w, Material board,
                           Material desk, Material wood, Material green,
+                          float westFaceX, float eastFaceX,
                           float doorA = 0f, float doorB = 0f, float boardShift = 0f)
     {
         float zFront = -2.5f - 0.13f;   // 走廊墙教室侧表面（墙半厚 0.12 + 0.01）
@@ -794,7 +798,7 @@ public static class InteriorBuilder
 
         Part(p, new Vector3(bx, 1.7f, zFront - 0.07f), new Vector3(5.0f, 1.3f, 0.07f), board, 5.0f);
         var skirt = C("#8fae98");
-        float sx1 = cx - w * 0.5f + 0.05f, sx2 = cx + w * 0.5f - 0.05f;
+        float sx1 = westFaceX + 0.03f, sx2 = eastFaceX - 0.03f;
         // 走廊那面墙的墙裙必须按门洞断开：否则一条 1.1m 高的绿带横在门口，进门像被挡住
         if (doorB > doorA)
         {
@@ -804,9 +808,9 @@ public static class InteriorBuilder
         }
         else Panel(p, sx1, zFront - 0.04f, sx2, zFront - 0.04f, 0.02f, 1.1f, skirt);
         Panel(p, sx1, zBack + 0.03f, sx2, zBack + 0.03f, 0.02f, 1.1f, skirt);
-        // 侧墙墙裙要让到墙皮（±0.11）外面，否则被墙皮盖住看不见
-        Panel(p, cx - w * 0.5f + 0.19f, zBack + 0.05f, cx - w * 0.5f + 0.19f, zFront - 0.05f, 0.02f, 1.1f, skirt);
-        Panel(p, cx + w * 0.5f - 0.19f, zBack + 0.05f, cx + w * 0.5f - 0.19f, zFront - 0.05f, 0.02f, 1.1f, skirt);
+        // 侧墙墙裙贴在真实墙纸面上（与墙纸留 5mm，既不埋进去也不悬空）
+        Panel(p, westFaceX + 0.03f, zBack + 0.05f, westFaceX + 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
+        Panel(p, eastFaceX - 0.03f, zBack + 0.05f, eastFaceX - 0.03f, zFront - 0.05f, 0.02f, 1.1f, skirt);
         WallClock(p, new Vector3(bx, 2.9f, zFront - 0.18f), 0f);
         Part(p, new Vector3(bx, 0.45f, zFront - 0.85f), new Vector3(2.2f, 0.9f, 0.8f), wood, 1f);
         Part(p, new Vector3(bx, 0.93f, zFront - 0.85f), new Vector3(2.3f, 0.05f, 0.86f), C("#d9d3c6"), 1f);
@@ -840,7 +844,7 @@ public static class InteriorBuilder
                 it.Solids.Add(new Solid(gx - 0.34f, z - 0.92f, gx + 0.34f, z + 0.22f));
             }
 
-        Part(p, new Vector3(cx - w * 0.5f + 0.08f, 1.85f, cz + 2.0f), new Vector3(0.05f, 1.3f, 4.2f), green, 4.2f);
+        Part(p, new Vector3(westFaceX + 0.03f, 1.85f, cz + 2.0f), new Vector3(0.05f, 1.3f, 4.2f), green, 4.2f);
 
         Lamp(p, new Vector3(cx - w * 0.25f, 3.85f, cz - 2.5f), 10f, 0.85f);
         Lamp(p, new Vector3(cx + w * 0.25f, 3.85f, cz - 2.5f), 10f, 0.85f);
