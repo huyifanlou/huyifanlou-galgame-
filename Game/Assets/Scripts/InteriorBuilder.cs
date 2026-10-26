@@ -722,6 +722,35 @@ public static class InteriorBuilder
         Classroom(p, it, ox + 3.6f, 12.3f, board, deskTop, wood, green, ox - 0.8f, ox + 1.2f, 0.6f);
         Classroom(p, it, ox + 18.75f, 17.3f, board, deskTop, wood, green, ox + 13.6f, ox + 15.6f);
 
+        // ── 走廊墙面：1.2m 墙裙 + 压条 + 踢脚线 + 公告栏 ──
+        //   56m 长、4.2m 高的空白大墙远看像挂了块布，加个墙裙立刻有"墙"的感觉
+        var corSkirt = C("#b6c0b2");
+        var corRail = C("#8b968a");
+        var corFoot = C("#5f4a38");
+        var cDoorS = new[] { (ox + 12.4f, ox + 13.6f), (ox + 21.0f, ox + 22.2f) };          // 南墙门洞
+        var cDoorN = new[] { (ox - 19.6f, ox - 17.6f), (ox - 11.4f, ox - 9.4f),
+                             (ox - 0.8f, ox + 1.2f), (ox + 13.6f, ox + 15.6f) };             // 北墙门洞
+        // 南墙（z=2.5）
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.17f, 0.02f, 1.20f, 0, 0.04f, corSkirt, 1.2f, cDoorS);
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.18f, 1.20f, 1.27f, 0, 0.05f, corRail, 1.2f, cDoorS);
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC1 - 0.19f, 0.02f, 0.14f, 0, 0.06f, corFoot, 1.2f, cDoorS);
+        // 北墙（z=-2.5）
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.17f, 0.02f, 1.20f, 0, 0.04f, corSkirt, 1.2f, cDoorN);
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.18f, 1.20f, 1.27f, 0, 0.05f, corRail, 1.2f, cDoorN);
+        WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.19f, 0.02f, 0.14f, 0, 0.06f, corFoot, 1.2f, cDoorN);
+        // 墙面挂饰：公告栏 + 班级门牌（打断大片空白）
+        var notice = C("#4a6a52");
+        for (int i = 0; i < 7; i++)
+        {
+            float bx = ox - 24f + i * 8.4f;
+            Part(p, new Vector3(bx, 2.20f, ZC1 - 0.20f), new Vector3(1.7f, 0.95f, 0.05f), notice, 1.7f);
+            Part(p, new Vector3(bx, 2.20f, ZC1 - 0.22f), new Vector3(1.5f, 0.75f, 0.02f), C("#dfe6dc"), 1.5f);
+        }
+        foreach (float dx in new[] { -18.6f, -10.4f, 0.2f, 14.6f })   // 教室门牌（门上方）
+            Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.20f), new Vector3(1.1f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
+        Skirt(p, ox - 27.86f, ZC1 - 0.20f, ox + 27.86f, ZC1 - 0.20f, 0.02f);
+        Skirt(p, ox - 27.86f, ZC0 + 0.20f, ox + 27.86f, ZC0 + 0.20f, 0.02f);
+
         // ── 走廊灯 ──
         for (int i = -3; i <= 3; i++)
             Lamp(p, new Vector3(ox + i * 8.5f, 3.9f, 0f), 11f, 1.15f);

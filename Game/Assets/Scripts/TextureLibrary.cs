@@ -1134,10 +1134,10 @@ public static class TextureLibrary
     {
         var p = new Px(256, 256);
         p.FillRect(0, 0, 256, 256, C("#ddd6c8"));
-        for (int x = 0; x < 256; x += 12)
+        for (int x = 0; x < 256; x += 48)   // 原来是 12px，太密像布纹
         {
-            p.FillRect(x, 0, 1, 256, C("rgba(178,168,150,0.30)"));
-            p.FillRect(x + 1, 0, 1, 256, C("rgba(255,252,244,0.22)"));
+            p.FillRect(x, 0, 2, 256, C("rgba(178,168,150,0.16)"));
+            p.FillRect(x + 2, 0, 2, 256, C("rgba(255,252,244,0.12)"));
         }
         for (int i = 0; i < 90; i++)
             p.FillRect(R.Int(256), R.Int(256), 1, 1, C("rgba(150,140,124,0.12)"));
@@ -1187,10 +1187,10 @@ public static class TextureLibrary
     {
         var p = new Px(256, 256);
         p.FillRect(0, 0, 256, 256, C("#b3c8d6"));
-        for (int x = 0; x < 256; x += 10)
+        for (int x = 0; x < 256; x += 56)   // 原来是 10px，太密像布纹
         {
-            p.FillRect(x, 0, 1, 256, C("rgba(150,172,184,0.30)"));
-            p.FillRect(x + 1, 0, 1, 256, C("rgba(255,255,255,0.22)"));
+            p.FillRect(x, 0, 2, 256, C("rgba(150,172,184,0.15)"));
+            p.FillRect(x + 2, 0, 2, 256, C("rgba(255,255,255,0.11)"));
         }
         for (int i = 0; i < 70; i++)
             p.FillRect(R.Int(256), R.Int(256), 1, 1, C("rgba(255,255,255,0.20)"));
