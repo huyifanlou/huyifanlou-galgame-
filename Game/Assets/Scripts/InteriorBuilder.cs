@@ -403,6 +403,7 @@ public static class InteriorBuilder
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(30f, 0.04f, 20f), floor, 2f, default, true);
         Part(p, new Vector3(ox + 9.5f, 0.05f, -5f), new Vector3(11f, 0.02f, 10f), tile, 1.4f);
         Part(p, new Vector3(ox + 0.6f, 0.05f, 6f), new Vector3(5.4f, 0.02f, 8f), tile, 1.4f);
+        Part(p, new Vector3(ox + 9.2f, 0.05f, 6f), new Vector3(11.6f, 0.02f, 8f), tile, 1.4f);
 
         // ── 天花 ──
         Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(30f, 0.06f, 20f), ceil, 2f);
@@ -413,12 +414,12 @@ public static class InteriorBuilder
         WallZ(p, it, -10f, 10f, ox - 15f, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -10f, 10f, ox + 15f, 0f, W, 0f, 0f, 2.6f, wall);
 
-        // ── 内墙（仅 4 道）──
-        WallX(p, it, ox - 15f, ox - 12.8f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
-        WallX(p, it, ox - 11.6f, ox - 6.4f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
-        WallX(p, it, ox - 5.2f, ox + 0.0f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
-        WallX(p, it, ox + 1.2f, ox + 5.4f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
-        WallX(p, it, ox + 6.6f, ox + 15f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
+        // ── 内墙（仅 4 道；门洞 1.8m，1.2m 在 4m 层高下像一条缝）──
+        WallX(p, it, ox - 15f, ox - 13.1f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
+        WallX(p, it, ox - 11.3f, ox - 6.7f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
+        WallX(p, it, ox - 4.9f, ox - 0.3f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
+        WallX(p, it, ox + 1.5f, ox + 5.1f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
+        WallX(p, it, ox + 6.9f, ox + 15f, 2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
         WallZ(p, it, 2f, 10f, ox - 9.4f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
         WallZ(p, it, 2f, 10f, ox - 2.2f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
         WallZ(p, it, 2f, 10f, ox + 3.4f, 0.02f, W, 0f, 0f, 2.4f, wall, WALL_IN);
@@ -444,15 +445,15 @@ public static class InteriorBuilder
         WallDeco(p, -9.86f, 9.86f, ox + 14.86f, 0.02f, W, 1, 0.05f, wallT, 1.7f);
         WallDeco(p, ox - 14.86f, ox + 14.86f, 9.86f, 0.02f, W, 0, 0.05f, wallC, 1.7f);
         WallDeco(p, ox - 14.86f, ox + 14.86f, 1.89f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
-                 new[] { (ox - 12.98f, ox - 11.42f), (ox - 6.58f, ox - 5.02f), (ox - 0.18f, ox + 1.38f), (ox + 5.22f, ox + 6.78f) });
+                 new[] { (ox - 13.28f, ox - 11.12f), (ox - 6.88f, ox - 4.72f), (ox - 0.48f, ox + 1.68f), (ox + 4.92f, ox + 7.08f) });
         WallDeco(p, ox - 14.86f, ox - 9.4f, 2.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
-                 new[] { (ox - 12.98f, ox - 11.42f) });
+                 new[] { (ox - 13.28f, ox - 11.12f) });
         WallDeco(p, ox - 9.4f, ox - 2.2f, 2.11f, 0.02f, W, 0, 0.05f, wallB, 1.7f,
-                 new[] { (ox - 6.58f, ox - 5.02f) });
+                 new[] { (ox - 6.88f, ox - 4.72f) });
         WallDeco(p, ox - 2.2f, ox + 3.4f, 2.11f, 0.02f, W, 0, 0.05f, wallT, 1.7f,
-                 new[] { (ox - 0.18f, ox + 1.38f) });
+                 new[] { (ox - 0.48f, ox + 1.68f) });
         WallDeco(p, ox + 3.4f, ox + 14.86f, 2.11f, 0.02f, W, 0, 0.05f, wallA, 1.7f,
-                 new[] { (ox + 5.22f, ox + 6.78f) });
+                 new[] { (ox + 4.92f, ox + 7.08f) });
         WallDeco(p, 2.09f, 9.86f, ox - 9.51f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, 2.09f, 9.86f, ox - 9.29f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, 2.09f, 9.86f, ox - 2.31f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
@@ -549,14 +550,64 @@ public static class InteriorBuilder
         Part(p, new Vector3(ox + 2.8f, 0.88f, 4.5f), new Vector3(0.55f, 0.07f, 0.8f), C("#d9d3c6"), 1f);
         Lamp(p, new Vector3(ox + 0.6f, 3.55f, 6.5f), 7f, 0.95f);
 
-        // 家务间（x 3.4..15）
-        Part(p, new Vector3(ox + 4.4f, 0.49f, 3.5f), new Vector3(0.72f, 0.98f, 0.72f), white, 1f);
-        Part(p, new Vector3(ox + 4.4f, 1.0f, 3.5f), new Vector3(0.74f, 0.05f, 0.74f), C("#c9ced3"), 1f);
-        Part(p, new Vector3(ox + 5.5f, 0.49f, 3.5f), new Vector3(0.72f, 0.98f, 0.72f), white, 1f);
-        Part(p, new Vector3(ox + 7.4f, 0.49f, 3.5f), new Vector3(1.6f, 0.98f, 0.72f), white, 1f);
+        // 家务间 / 洗衣房（x 3.4..15）
+        // 洗衣机与洗衣池贴北墙一字排开、进门正对；原来摆在 z=3.5 房间中央，从门口看像一间空房
+        foreach (float dx in new[] { 4.35f, 5.25f })
+        {
+            Part(p, new Vector3(ox + dx, 0.55f, 9.45f), new Vector3(0.72f, 0.98f, 0.72f), white, 1f);
+            Part(p, new Vector3(ox + dx, 0.55f, 9.08f), new Vector3(0.46f, 0.46f, 0.03f), C("#5a6068"), 1f);
+            Part(p, new Vector3(ox + dx, 0.88f, 9.08f), new Vector3(0.6f, 0.12f, 0.03f), C("#c9ced3"), 1f);
+            Part(p, new Vector3(ox + dx, 1.2f, 9.3f), new Vector3(0.1f, 0.28f, 0.1f), C("#7fa6b8"), 1f);
+        }
+        Part(p, new Vector3(ox + 6.7f, 0.55f, 9.45f), new Vector3(1.6f, 0.98f, 0.72f), white, 1f);
+        Part(p, new Vector3(ox + 6.7f, 1.04f, 9.45f), new Vector3(1.64f, 0.06f, 0.76f), C("#d9d3c6"), 1f);
+        Part(p, new Vector3(ox + 6.7f, 1.08f, 9.45f), new Vector3(1.1f, 0.03f, 0.5f), C("#8d949c"), 1f);
+        Part(p, new Vector3(ox + 6.7f, 1.22f, 9.7f), new Vector3(0.06f, 0.3f, 0.06f), metal, 1f);
+        Part(p, new Vector3(ox + 6.7f, 1.36f, 9.63f), new Vector3(0.06f, 0.06f, 0.2f), metal, 1f);
+        Part(p, new Vector3(ox + 4.8f, 2.55f, 9.66f), new Vector3(2.1f, 0.7f, 0.35f), white, 1f);
+        Part(p, new Vector3(ox + 4.8f, 2.55f, 9.47f), new Vector3(2.14f, 0.74f, 0.02f), C("#d9d3c6"), 1f);
+        Part(p, new Vector3(ox + 4.8f, 2.55f, 9.455f), new Vector3(0.02f, 0.7f, 0.01f), C("#a8a69c"), 1f);
+        Part(p, new Vector3(ox + 4.15f, 2.48f, 9.44f), new Vector3(0.05f, 0.12f, 0.03f), metal, 1f);
+        Part(p, new Vector3(ox + 5.45f, 2.48f, 9.44f), new Vector3(0.05f, 0.12f, 0.03f), metal, 1f);
+        Part(p, new Vector3(ox + 6.7f, 2.1f, 9.67f), new Vector3(1.4f, 0.06f, 0.3f), wood, 1f);
+        Part(p, new Vector3(ox + 6.25f, 2.24f, 9.67f), new Vector3(0.16f, 0.22f, 0.14f), C("#7fa6b8"), 1f);
+        Part(p, new Vector3(ox + 6.7f, 2.24f, 9.67f), new Vector3(0.16f, 0.22f, 0.14f), C("#b98d5e"), 1f);
+        Part(p, new Vector3(ox + 7.15f, 2.24f, 9.67f), new Vector3(0.16f, 0.22f, 0.14f), C("#8fae98"), 1f);
+        // 晾衣架 + 衣服
+        Part(p, new Vector3(ox + 11.4f, 1.95f, 6.4f), new Vector3(2.0f, 0.05f, 0.05f), metal, 1f);
+        Part(p, new Vector3(ox + 10.5f, 1.0f, 6.4f), new Vector3(0.06f, 1.9f, 0.06f), metal, 1f);
+        Part(p, new Vector3(ox + 12.3f, 1.0f, 6.4f), new Vector3(0.06f, 1.9f, 0.06f), metal, 1f);
+        Part(p, new Vector3(ox + 10.5f, 0.05f, 6.4f), new Vector3(0.1f, 0.06f, 0.7f), metal, 1f);
+        Part(p, new Vector3(ox + 12.3f, 0.05f, 6.4f), new Vector3(0.1f, 0.06f, 0.7f), metal, 1f);
+        Part(p, new Vector3(ox + 10.75f, 1.47f, 6.4f), new Vector3(0.36f, 0.9f, 0.03f), C("#7d8a76"), 1f);
+        Part(p, new Vector3(ox + 11.2f, 1.47f, 6.4f), new Vector3(0.36f, 0.9f, 0.03f), C("#b98d5e"), 1f);
+        Part(p, new Vector3(ox + 11.65f, 1.47f, 6.4f), new Vector3(0.36f, 0.9f, 0.03f), C("#8d9aa6"), 1f);
+        Part(p, new Vector3(ox + 12.1f, 1.47f, 6.4f), new Vector3(0.36f, 0.9f, 0.03f), C("#c9b79c"), 1f);
+        // 熨衣板 + 熨斗
+        Part(p, new Vector3(ox + 4.15f, 0.82f, 6.6f), new Vector3(0.45f, 0.06f, 1.4f), C("#cfe3e8"), 1f);
+        Part(p, new Vector3(ox + 4.15f, 0.42f, 6.15f), new Vector3(0.05f, 0.8f, 0.05f), metal, 1f);
+        Part(p, new Vector3(ox + 4.15f, 0.42f, 7.05f), new Vector3(0.05f, 0.8f, 0.05f), metal, 1f);
+        Part(p, new Vector3(ox + 4.15f, 0.9f, 6.2f), new Vector3(0.16f, 0.1f, 0.28f), C("#9aa0a6"), 1f);
+        // 洗衣篮、热水器、拖把桶、储物箱
+        Part(p, new Vector3(ox + 8.15f, 0.27f, 9.3f), new Vector3(0.55f, 0.46f, 0.45f), C("#b98d5e"), 1f);
+        Part(p, new Vector3(ox + 8.15f, 0.52f, 9.3f), new Vector3(0.46f, 0.08f, 0.36f), C("#c9b79c"), 1f);
+        Part(p, new Vector3(ox + 14.5f, 0.86f, 3.2f), new Vector3(0.5f, 1.6f, 0.5f), white, 1f);
+        Part(p, new Vector3(ox + 14.5f, 1.7f, 3.2f), new Vector3(0.34f, 0.08f, 0.34f), C("#c9ced3"), 1f);
+        Part(p, new Vector3(ox + 14.5f, 2.6f, 3.2f), new Vector3(0.06f, 1.8f, 0.06f), metal, 1f);
+        Part(p, new Vector3(ox + 3.95f, 0.2f, 3.9f), new Vector3(0.36f, 0.4f, 0.36f), C("#7fa6b8"), 1f);
+        Part(p, new Vector3(ox + 3.85f, 0.75f, 3.4f), new Vector3(0.04f, 1.4f, 0.04f), C("#8d6e4f"), 1f);
+        Part(p, new Vector3(ox + 3.85f, 0.1f, 3.4f), new Vector3(0.14f, 0.2f, 0.3f), C("#c9b79c"), 1f);
+        Part(p, new Vector3(ox + 13.1f, 0.34f, 9.4f), new Vector3(0.62f, 0.55f, 0.6f), C("#b98d5e"), 1f);
+        Part(p, new Vector3(ox + 13.1f, 0.8f, 9.4f), new Vector3(0.46f, 0.38f, 0.44f), C("#c9b79c"), 1f);
+        // 靠南墙的折叠整理台（门东侧，叠衣服/放洗衣篮）
+        Part(p, new Vector3(ox + 9.3f, 0.74f, 2.5f), new Vector3(1.6f, 0.06f, 0.65f), wood, 1f);
+        Part(p, new Vector3(ox + 8.6f, 0.37f, 2.5f), new Vector3(0.08f, 0.74f, 0.08f), metal, 1f);
+        Part(p, new Vector3(ox + 10.0f, 0.37f, 2.5f), new Vector3(0.08f, 0.74f, 0.08f), metal, 1f);
+        Part(p, new Vector3(ox + 9.3f, 0.82f, 2.5f), new Vector3(0.5f, 0.1f, 0.42f), C("#c9b79c"), 1f);
         for (int i = 0; i < 3; i++)
             Part(p, new Vector3(ox + 14.1f, 1.1f, 5.0f + i * 1.55f), new Vector3(1.4f, 2.2f, 0.5f), woodDark, 1f);
         Lamp(p, new Vector3(ox + 9f, 3.55f, 6.5f), 10f, 0.9f);
+        Lamp(p, new Vector3(ox + 5.2f, 3.55f, 8.2f), 7f, 0.85f);
 
         // ── 家具碰撞 ──
         Reg(it, ox - 14.5f, -4.0f, 0.5f, 2.8f);
@@ -567,7 +618,7 @@ public static class InteriorBuilder
         Reg(it, ox + 2.9f, -9.0f, 0.45f, 1.6f);
         Reg(it, ox - 2.6f, -9.25f, 0.9f, 0.4f);
         Reg(it, ox, -4.2f, 2.4f, 1.1f);
-        foreach (var (cx2, cz2) in new[] { (0f, -5.6f), (0f, -2.8f), (-1.9f, -4.2f), (1.9f, -4.2f), (-1.9f, -5.6f), (1.9f, -5.6f) })
+        foreach (var (cx2, cz2) in new[] { (0f, -5.05f), (0f, -3.35f), (-1.55f, -4.2f), (1.55f, -4.2f) })
             Reg(it, ox + cx2, cz2, 0.56f, 0.56f);
         Reg(it, ox + 9.5f, -9.35f, 9.0f, 0.66f);
         Reg(it, ox + 14.45f, -5.2f, 0.66f, 6.4f);
@@ -583,9 +634,16 @@ public static class InteriorBuilder
         Reg(it, ox + 0.6f, 9.2f, 2.2f, 1.0f);
         Reg(it, ox - 1.65f, 4.5f, 0.65f, 1.2f);
         Reg(it, ox + 2.8f, 4.5f, 0.55f, 0.8f);
-        Reg(it, ox + 4.4f, 3.5f, 0.74f, 0.74f);
-        Reg(it, ox + 5.5f, 3.5f, 0.74f, 0.74f);
-        Reg(it, ox + 7.4f, 3.5f, 1.6f, 0.74f);
+        Reg(it, ox + 4.35f, 9.45f, 0.74f, 0.74f);
+        Reg(it, ox + 5.25f, 9.45f, 0.74f, 0.74f);
+        Reg(it, ox + 6.7f, 9.45f, 1.6f, 0.74f);
+        Reg(it, ox + 8.15f, 9.3f, 0.6f, 0.5f);
+        Reg(it, ox + 11.4f, 6.4f, 2.1f, 0.75f);
+        Reg(it, ox + 4.15f, 6.6f, 0.55f, 1.5f);
+        Reg(it, ox + 14.5f, 3.2f, 0.55f, 0.55f);
+        Reg(it, ox + 3.95f, 3.9f, 0.4f, 0.4f);
+        Reg(it, ox + 13.1f, 9.4f, 0.65f, 0.65f);
+        Reg(it, ox + 9.3f, 2.5f, 1.65f, 0.7f);
         for (int i = 0; i < 3; i++) Reg(it, ox + 14.1f, 5.0f + i * 1.55f, 1.4f, 0.5f);
 
         return it;
