@@ -155,7 +155,7 @@ public class PlayerAvatar : MonoBehaviour
         float bob = Mathf.Abs(Mathf.Sin(_phase)) * 1.0f * PX * 0.7f * _blend;
         float breath = Mathf.Sin(Time.time * 2.1f) * 0.15f * PX * (1f - _blend);
         _body.localPosition = new Vector3(0f, 12f * PX + bob + breath, 0f);
-        _head.localRotation = Quaternion.Euler(idle * 1.5f, 0f, 0f);
+        _head.localRotation = Quaternion.Euler(2.5f + idle * 1.5f, 0f, 0f);
     }
 
     public void SetVisible(bool v)
@@ -216,10 +216,10 @@ public class PlayerAvatar : MonoBehaviour
         return m;
     }
 
-    // 32×32 程序化发丝纹理：细竖纹，平铺后不会出现竹篮格
+    // 64×64 程序化发丝纹理：细竖纹，平铺后不会出现竹篮格
     static Texture2D HairTexture()
     {
-        const int S = 32;
+        const int S = 64;
         var t = new Texture2D(S, S, TextureFormat.RGBA32, false)
         { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
         var px = new Color32[S * S];
@@ -253,18 +253,21 @@ public class PlayerAvatar : MonoBehaviour
         go.AddComponent<MeshRenderer>().sharedMaterial = mat;
     }
 
-    // 8×8 经典 MC 脸：短金发、2×2 蓝眼、直线眉、2px 嘴
+    // 64×64 男版忧郁脸：短金发、低垂蓝眼、内高外低的眉、下弯嘴角
     static Texture2D FaceTexture()
     {
-        const int S = 8;
+        const int S = 64;
         var t = new Texture2D(S, S, TextureFormat.RGBA32, false)
         { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         var px = new Color32[S * S];
-        Color skin = MatLib.Hex("#f8dfb9"), skinS = MatLib.Hex("#efd0a9");
-        Color hair = MatLib.Hex("#eccb5a");
-        Color brow = MatLib.Hex("#6f5128");
-        Color eyeW = MatLib.Hex("#f8fbfd"), iris = MatLib.Hex("#2a5f96"), irisL = MatLib.Hex("#4f9ac2");
-        Color lip = MatLib.Hex("#b98274");
+        Color skin = MatLib.Hex("#f4dcc0"), skinS = MatLib.Hex("#e7c8a7");
+        Color skinD = MatLib.Hex("#d6b28e"), skinL = MatLib.Hex("#fbe9d1");
+        Color hair = MatLib.Hex("#eccb5a"), hairD = MatLib.Hex("#c9a234"), hairL = MatLib.Hex("#f7e28a");
+        Color brow = MatLib.Hex("#6f5128"), lash = MatLib.Hex("#3f322a");
+        Color eyeW = MatLib.Hex("#eef3f6"), iris = MatLib.Hex("#2a5f96");
+        Color irisD = MatLib.Hex("#173e66"), irisL = MatLib.Hex("#3f86b4");
+        Color pupil = MatLib.Hex("#0a1622");
+        Color lip = MatLib.Hex("#b0786d"), lipD = MatLib.Hex("#97625a");
 
         void R(int x, int y, int w, int h, Color c)
         {
@@ -280,24 +283,101 @@ public class PlayerAvatar : MonoBehaviour
         void P(int x, int y, Color c) => R(x, y, 1, 1, c);
 
         R(0, 0, S, S, skin);
-        // 短金发：顶部两行，右侧露一点额头做斜分
-        R(0, 7, 8, 1, hair);
-        R(0, 6, 6, 1, hair);
-        P(6, 6, skin); P(7, 6, skin);
-        // 鬓角
-        P(0, 5, hair); P(7, 5, hair);
+        // 侧光/下颌：大块平涂，不做细渐变
+        R(0, 0, 4, S, skinD); R(S - 4, 0, 4, S, skinD);
+        R(4, 0, 3, S, skinS); R(S - 7, 0, 3, S, skinS);
+        R(0, 0, S, 2, skinS);
+        R(7, 4, 5, 18, skinS); R(S - 12, 4, 5, 18, skinS);
+        R(26, 2, 12, 2, skinS);
+        P(31, 2, skinD); P(33, 2, skinD);
 
-        // 直线眉
-        R(1, 5, 2, 1, brow); R(5, 5, 2, 1, brow);
-        // 2×2 眼：外侧眼白、内侧蓝虹膜（参考皮的画法）
-        P(1, 4, eyeW); P(2, 4, iris);
-        P(1, 3, eyeW); P(2, 3, irisL);
-        P(5, 4, iris); P(6, 4, eyeW);
-        P(5, 3, irisL); P(6, 3, eyeW);
-        // 鼻影（很淡）
-        P(3, 2, skinS);
-        // 2px 嘴
-        R(3, 1, 2, 1, lip);
+        // 短金发：高发际线 + 侧分，短碎发
+        for (int x = 0; x < S; x++)
+        {
+            int yb = x < 32 ? 52 - x / 14 : 50 + (x - 32) / 18;
+            R(x, yb, 1, S - yb, hair);
+            P(x, yb, hairD);
+            P(x, yb - 1, skinS);
+            if (x % 11 == 3) P(x, yb + 4, hairL);
+            if (x % 9 == 0) P(x, yb, hairD);
+        }
+        // 短刘海/鬓角
+        void Lock(int x0, int w, int tip)
+        {
+            int mid = w / 2;
+            for (int i = 0; i < w; i++)
+            {
+                int x = x0 + i;
+                int y = tip + Mathf.Abs(i - mid) * 2;
+                R(x, y, 1, S - y, hair);
+                P(x, y, hairD);
+                P(x, y - 1, skinS);
+                if (i == mid) P(x, y + 6, hairL);
+            }
+        }
+        Lock(4, 9, 48);
+        Lock(17, 8, 50);
+        Lock(36, 8, 49);
+        Lock(51, 9, 48);
+        R(0, 34, 2, 34, hair); R(S - 2, 34, 2, 34, hair);
+        P(1, 34, hairD); P(S - 2, 34, hairD);
+
+        // 忧郁眉：内端高、外端低
+        for (int i = 0; i < 17; i++)
+        {
+            int by = 38 + (i * 4) / 16;
+            R(10 + i, by, 1, 2, brow);
+            R(53 - i, by, 1, 2, brow);
+        }
+        // 眉间淡纹
+        R(31, 43, 1, 3, skinS); R(32, 43, 1, 3, skinS);
+
+        void Eye(int x0, bool right)
+        {
+            // 眼白/眼睑：外眼角低、内眼角高
+            for (int i = 0; i < 14; i++)
+            {
+                int x = x0 + i;
+                int top = right ? 35 - (i * 2) / 13 : 33 + (i * 2) / 13;
+                R(x, 26, 1, top - 26, eyeW);
+                R(x, top, 1, 1, lash);
+                P(x, top + 2, skinS);
+                P(x, 25, skinS);
+            }
+            int outer = right ? x0 + 13 : x0;
+            R(outer, 31, 1, 3, lash);
+
+            // 低垂虹膜：下缘贴眼睑，上缘被眼睑压住
+            R(x0 + 3, 26, 8, 1, eyeW);
+            R(x0 + 3, 27, 8, 6, iris);
+            R(x0 + 3, 27, 8, 1, irisL);
+            R(x0 + 3, 31, 8, 2, irisD);
+            P(x0 + 3, 29, irisD); P(x0 + 10, 29, irisD);
+            P(x0 + 3, 30, irisD); P(x0 + 10, 30, irisD);
+            R(x0 + 6, 28, 3, 4, pupil);
+            R(x0 + 4, 30, 2, 2, Color.white);
+            P(x0 + 10, 28, eyeW);
+            P(x0 + 7, 29, irisL);
+
+            // 眼下淡影
+            R(x0 + 2, 23, 10, 1, skinS);
+        }
+        Eye(11, false);
+        Eye(39, true);
+
+        // 鼻影/鼻梁（2px 宽，平涂）
+        R(31, 18, 2, 5, skinS);
+        P(31, 18, skinD); P(32, 22, skinD);
+        R(30, 22, 1, 5, skinL);
+
+        // 下弯的嘴
+        R(28, 16, 8, 1, lip);
+        P(27, 17, lipD); P(36, 17, lipD);
+        R(30, 15, 4, 1, skinS);
+
+        // 面颊/下巴的少量平涂高光
+        R(9, 21, 3, 1, skinL); R(52, 21, 3, 1, skinL);
+        P(32, 3, skinL);
 
         t.SetPixels32(px);
         t.Apply();
