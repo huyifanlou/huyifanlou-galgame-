@@ -11,7 +11,7 @@ public class PlayerAvatar : MonoBehaviour
     Transform _model, _body, _head, _legL, _legR, _armL, _armR;
     Material _skin, _hair, _hairD, _coat, _coatD, _shirt, _shirtD;
     Material _tie, _tieD, _pants, _shoe, _sole, _belt, _silver, _badgeBlue;
-    float _phase, _blend;
+    float _phase, _blend, _runBlend;
 
     public static PlayerAvatar Create(Transform parent)
     {
@@ -142,24 +142,28 @@ public class PlayerAvatar : MonoBehaviour
     }
 
     // ── 动画 ─────────────────────────────────────────────
-    public void Tick(bool moving, float facing, float dt)
+    public void Tick(bool moving, bool running, float facing, float dt)
     {
         if (_model == null) return;
         transform.localRotation = Quaternion.Euler(0f, facing * Mathf.Rad2Deg, 0f);
-        _phase += dt * (moving ? 9.5f : 2.0f);
         _blend = Mathf.MoveTowards(_blend, moving ? 1f : 0f, dt * 6f);
+        _runBlend = Mathf.MoveTowards(_runBlend, moving && running ? 1f : 0f, dt * 5f);
+        _phase += dt * (moving ? Mathf.Lerp(9.5f, 13.5f, _runBlend) : 2.0f);
 
         float sw = Mathf.Sin(_phase) * _blend;
         float idle = Mathf.Sin(Time.time * 1.6f) * (1f - _blend);
-        _legL.localRotation = Quaternion.Euler(sw * 42f, 0f, 0f);
-        _legR.localRotation = Quaternion.Euler(-sw * 42f, 0f, 0f);
-        _armL.localRotation = Quaternion.Euler(-sw * 36f + idle * 2.5f, 0f, 0f);
-        _armR.localRotation = Quaternion.Euler(sw * 36f - idle * 2.5f, 0f, 0f);
+        float stride = 42f + 14f * _runBlend;
+        float armSwing = 36f + 16f * _runBlend;
+        _legL.localRotation = Quaternion.Euler(sw * stride, 0f, 0f);
+        _legR.localRotation = Quaternion.Euler(-sw * stride, 0f, 0f);
+        _armL.localRotation = Quaternion.Euler(-sw * armSwing + idle * 2.5f, 0f, 0f);
+        _armR.localRotation = Quaternion.Euler(sw * armSwing - idle * 2.5f, 0f, 0f);
 
-        float bob = Mathf.Abs(Mathf.Sin(_phase)) * 1.0f * PX * 0.7f * _blend;
+        float bob = Mathf.Abs(Mathf.Sin(_phase)) * (1f + 0.7f * _runBlend) * PX * 0.7f * _blend;
         float breath = Mathf.Sin(Time.time * 2.1f) * 0.15f * PX * (1f - _blend);
         _body.localPosition = new Vector3(0f, 12f * PX + bob + breath, 0f);
-        _head.localRotation = Quaternion.Euler(2.5f + idle * 1.5f, 0f, 0f);
+        _body.localRotation = Quaternion.Euler(7f * _runBlend, 0f, 0f);
+        _head.localRotation = Quaternion.Euler(2.5f + idle * 1.5f - 2f * _runBlend, 0f, 0f);
     }
 
     public void SetVisible(bool v)

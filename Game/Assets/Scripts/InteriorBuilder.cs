@@ -517,9 +517,9 @@ public static partial class InteriorBuilder
         Window(p, new Vector3(ox + 2.7f, 2.6f, 9.80f), 1.0f, 1.0f, 180f);
         Window(p, new Vector3(ox + 11.7f, 2.0f, 9.80f), 1.4f, 1.5f, 180f);
 
-        // ── 出口：玻璃门扇（带框）+ 门廊 ──
-        Window(p, new Vector3(ox, 1.35f, -9.81f), 2.2f, 2.5f, 0f);
+        // ── 出口：门扇 + 门廊 ──
         Porch(p, ox, -10f, 3.6f, -1f, 2.9f);
+        DoorFrame(p, it, ox, -10f, 1.2f, 2.6f, 1);
 
         // ── 墙纸（外墙内表面全贴；内墙两面按房间贴）──
         WallDeco(p, ox - 14.86f, ox - 1.2f, -9.86f, 0.02f, W, 0, 0.05f, wallA, 1.7f);
@@ -835,9 +835,9 @@ public static partial class InteriorBuilder
         Window(p, new Vector3(ox + 27.80f, 2.1f, 3.5f), 2.4f, 1.7f, -90f);
         Window(p, new Vector3(ox + 27.80f, 2.1f, 8.5f), 2.4f, 1.7f, -90f);
 
-        // ── 出口：玻璃门扇 + 门廊 ──
-        Window(p, new Vector3(ox, 1.45f, 14.81f), 4.4f, 2.7f, 0f);
+        // ── 出口：门扇 + 门廊 ──
         Porch(p, ox, 15f, 6.0f, 1f, 3.1f);
+        DoorFrame(p, it, ox, 15f, 2.5f, 2.8f, -1);
 
         // ── 墙纸 ──
         WallDeco(p, ox - 27.86f, ox + 27.86f, -14.86f, 0.02f, W, 0, 0.05f, wallB, 1.7f);

@@ -85,7 +85,7 @@ public static partial class InteriorBuilder
         WallX(p, it, ox - X, ox + X, Z, 0f, W, ox - 1.3f, ox + 1.3f, 2.7f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.7f, wall);
         WallZ(p, it, -Z, Z, ox + X, 0f, W, 0f, 0f, 2.7f, wall);
-        DoorFrame(p, ox, Z, 1.3f, 2.7f, -1);
+        DoorFrame(p, it, ox, Z, 1.3f, 2.7f, -1);
         WallSign(p, ox, 3.55f, Z, -1, "图书馆", 2.8f, 0.66f, C("#2f4a3a"), 0.040f);
         PaperRoom(p, ox - X, ox + X, -Z, Z, W, wall, 1, ox - 1.3f, ox + 1.3f);
 
@@ -243,7 +243,7 @@ public static partial class InteriorBuilder
         WallX(p, it, ox - X, ox + X, Z, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox + X, 0f, W, 0f, 0f, 2.6f, wall);
-        DoorFrame(p, ox, -Z, 1.2f, 2.6f, 1);
+        DoorFrame(p, it, ox, -Z, 1.2f, 2.6f, 1);
         WallSign(p, ox, 3.35f, -Z, 1, "餐厅", 2.3f, 0.62f, C("#5a3a30"), 0.038f);
         PaperRoom(p, ox - X, ox + X, -Z, Z, W, wall, 0, ox - 1.2f, ox + 1.2f);
 
@@ -401,7 +401,7 @@ public static partial class InteriorBuilder
         WallX(p, it, ox - X, ox + X, Z, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox + X, 0f, W, 0f, 0f, 2.6f, wall);
-        DoorFrame(p, ox, -Z, 1.3f, 2.6f, 1);
+        DoorFrame(p, it, ox, -Z, 1.3f, 2.6f, 1);
         WallSign(p, ox, 3.30f, -Z, 1, "超市", 2.3f, 0.62f, C("#2f4a3a"), 0.040f);
         PaperRoom(p, ox - X, ox + X, -Z, Z, W, wall, 0, ox - 1.3f, ox + 1.3f);
 
@@ -526,7 +526,7 @@ public static partial class InteriorBuilder
         WallX(p, it, ox - X, ox + X, Z, 0f, W, ox - 1.3f, ox + 1.3f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox + X, 0f, W, 0f, 0f, 2.6f, wall);
-        DoorFrame(p, ox, Z, 1.3f, 2.6f, -1);
+        DoorFrame(p, it, ox, Z, 1.3f, 2.6f, -1);
         WallSign(p, ox, 3.30f, Z, -1, "食堂", 2.2f, 0.62f, C("#2f4a3a"), 0.040f);
         PaperRoom(p, ox - X, ox + X, -Z, Z, W, wall, 1, ox - 1.3f, ox + 1.3f);
 

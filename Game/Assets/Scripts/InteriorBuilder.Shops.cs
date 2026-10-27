@@ -183,7 +183,7 @@ public static partial class InteriorBuilder
         RunZ(z1 + 0.16f, z2 - 0.16f, x2 - 0.16f, doorSide == 3);
     }
 
-    static void DoorFrame(Transform p, float x, float z, float halfW, float h, int face)
+    static void DoorFrame(Transform p, Interior it, float x, float z, float halfW, float h, int face)
     {
         var fr = C("#6f5540");
         Part(p, new Vector3(x - halfW - 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 1f);
@@ -191,6 +191,60 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(x, h + 0.09f, z), new Vector3(halfW * 2f + 0.36f, 0.18f, 0.34f), fr, 1f);
         Part(p, new Vector3(x, 0.06f, z + face * 0.55f),
              new Vector3(halfW * 2f - 0.1f, 0.04f, 0.9f), C("#8d9aa6"), 1f);
+
+        // 门内侧小灯：门口不发黑
+        var dl = new GameObject("doorlight");
+        dl.transform.SetParent(p, false);
+        dl.transform.localPosition = new Vector3(x, h - 0.25f, z + face * 0.55f);
+        var li = dl.AddComponent<Light>();
+        li.type = LightType.Point;
+        li.range = 5f;
+        li.intensity = 0.85f;
+        li.color = MatLib.Hex("#ffe3b0");
+        li.shadows = LightShadows.None;
+        Part(p, new Vector3(x, h - 0.33f, z + face * 0.55f),
+             new Vector3(0.34f, 0.12f, 0.34f), C("#ffe9bf"), 1f);
+
+        // 门扇盖满门洞：宽度压住两侧门框，高度压住门楣
+        if (halfW > 2f)
+        {
+            DoorLeaf(p, it, x - halfW * 0.5f, z, halfW + 0.02f, h + 0.02f, face, +1);
+            DoorLeaf(p, it, x + halfW * 0.5f, z, halfW + 0.02f, h + 0.02f, face, -1);
+            // 双开门中缝压条：盖住两扇重叠处的亮缝
+            Part(p, new Vector3(x, h * 0.5f, z + face * 0.21f),
+                 new Vector3(0.10f, h, 0.03f), C("#8f6d50"), 1f);
+        }
+        else
+        {
+            DoorLeaf(p, it, x, z, halfW * 2f + 0.04f, h + 0.02f, face, +1);
+        }
+    }
+
+    // 门扇：盖满门洞，碰撞按墙处理，出口仍由 F 触发
+    static void DoorLeaf(Transform p, Interior it, float cx, float z, float w, float h, int face, int handleSide)
+    {
+        const float t = 0.07f;
+        float zLeaf = z + face * 0.16f;
+        var leaf = C("#8f6d50");
+        var panel = C("#73573f");
+        var trim = C("#5a4432");
+        var brass = C("#d3b97a");
+
+        SolidPart(p, it, new Vector3(cx, h * 0.5f, zLeaf), new Vector3(w, h, t), leaf, 1f, true);
+
+        float zFace = z + face * 0.20f;
+        Part(p, new Vector3(cx, h * 0.68f, zFace), new Vector3(w * 0.58f, h * 0.30f, 0.02f), panel, 1f);
+        Part(p, new Vector3(cx, h * 0.34f, zFace), new Vector3(w * 0.58f, h * 0.30f, 0.02f), panel, 1f);
+        Part(p, new Vector3(cx, h * 0.52f, zFace + face * 0.005f), new Vector3(w * 0.9f, 0.05f, 0.015f), trim, 1f);
+        Part(p, new Vector3(cx, 0.18f, zFace + face * 0.005f), new Vector3(w * 0.9f, 0.12f, 0.015f), trim, 1f);
+
+        float hx = cx + handleSide * (w * 0.5f - 0.14f);
+        Part(p, new Vector3(hx, 1.05f, zFace + face * 0.02f), new Vector3(0.12f, 0.22f, 0.03f), brass, 1f);
+        Part(p, new Vector3(hx, 1.05f, zFace + face * 0.06f), new Vector3(0.05f, 0.05f, 0.10f), brass, 1f);
+
+        float hgx = cx - handleSide * (w * 0.5f - 0.07f);
+        foreach (float hy in new[] { 0.45f, 1.95f })
+            Part(p, new Vector3(hgx, hy, zFace + face * 0.015f), new Vector3(0.07f, 0.16f, 0.06f), trim, 1f);
     }
 
     // 收银台（长轴沿 X；face=+1 顾客在 +z 侧）

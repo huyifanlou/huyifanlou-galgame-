@@ -5,6 +5,7 @@ using UnityEngine;
 public class PlayerRig : MonoBehaviour
 {
     const float MOVE_SPEED = 6f;
+    const float RUN_SPEED = 9.5f;
     const float FP_LOOK_SENS = 1.4f;   // 第一人称鼠标灵敏度（度 / 轴单位），嫌快调小
     float _bound = 60f;
 
@@ -33,6 +34,7 @@ public class PlayerRig : MonoBehaviour
     Vector3 _dragLast;
     string _simKey;
     int _simFrames = -1;
+    bool _forceRun;
 
     public void Init(WorldBuilder w)
     {
@@ -74,6 +76,8 @@ public class PlayerRig : MonoBehaviour
             var fpp = Args.F("-pitch");                     // 第一人称俯仰（负=往下看，室内看家具用）
             if (fpp.HasValue) _fpPitch = Mathf.Clamp(fpp.Value, -1.1f, 1.1f);
         }
+
+        _forceRun = Args.Str("-run") == "1";   // 验收：-sim 时强制跑步动画
 
         // 验收：-sim d,40 → 前 40 帧模拟按住 D
         var sim = Args.Str("-sim");
@@ -305,6 +309,7 @@ public class PlayerRig : MonoBehaviour
         float f = (holdW ? 1f : 0f) - (holdS ? 1f : 0f);
         float r = (holdD ? 1f : 0f) - (holdA ? 1f : 0f);
         bool moving = f != 0f || r != 0f;
+        bool running = moving && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || _forceRun);
         float dirX = 0f, dirZ = 0f;
         if (moving)
         {
@@ -313,7 +318,8 @@ public class PlayerRig : MonoBehaviour
             float len = Mathf.Sqrt(dirX * dirX + dirZ * dirZ);
             dirX /= len;
             dirZ /= len;
-            var cand = NextPoint(p.x + dirX * MOVE_SPEED * dt, p.z + dirZ * MOVE_SPEED * dt);
+            float speed = running ? RUN_SPEED : MOVE_SPEED;
+            var cand = NextPoint(p.x + dirX * speed * dt, p.z + dirZ * speed * dt);
             if (!Collides(cand.x, p.z)) p.x = cand.x;
             if (!Collides(p.x, cand.y)) p.z = cand.y;
         }
@@ -321,7 +327,9 @@ public class PlayerRig : MonoBehaviour
         float gy = _indoor && _im != null ? _im.FloorAt(p.x, p.z, p.y)
                  : (_w != null ? _w.GroundY(p.x, p.z) : 0f);
         _groundY = Mathf.Lerp(_groundY, gy, Mathf.Min(1f, dt * 12f));
-        p.y = _groundY + (moving ? Mathf.Abs(Mathf.Sin(Time.time * 10f)) * 0.05f : 0f);
+        float stepFreq = running ? 13.5f : 10f;
+        float stepAmp = running ? 0.075f : 0.05f;
+        p.y = _groundY + (moving ? Mathf.Abs(Mathf.Sin(Time.time * stepFreq)) * stepAmp : 0f);
         _player.position = p;
         // 验收：-sim 模拟行走时每 30 帧打一次坐标，便于确认楼梯/门能不能过去
         if (_simFrames > 0 && Time.frameCount % 30 == 0)
@@ -343,7 +351,7 @@ public class PlayerRig : MonoBehaviour
             align = Mathf.Atan2(Mathf.Sin(align), Mathf.Cos(align));
             _facing += align * Mathf.Min(1f, dt * 4f);
         }
-        if (_avatar != null) _avatar.Tick(moving, _facing, dt);
+        if (_avatar != null) _avatar.Tick(moving, running, _facing, dt);
 
         // 可交互地点检测（建筑正门 / 操场 / 池塘 / 家）
         // 取**最近**的那个：门前交互圈会互相重叠，按数组顺序取第一个会挑错门
