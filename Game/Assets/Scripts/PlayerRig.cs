@@ -11,8 +11,8 @@ public class PlayerRig : MonoBehaviour
     WorldBuilder _w;
     TimeOfDay _time;
     Camera _cam;
-    Transform _player, _sprite;
-    Material _spriteMat;
+    Transform _player;
+    PlayerAvatar _avatar;
 
     float _yaw;
     float _pitch = 0.38f;
@@ -30,8 +30,6 @@ public class PlayerRig : MonoBehaviour
     float _fpPitch;             // 第一人称俯仰（上正下负）
     float _lastMapClose;        // M 按下时刻，开图瞬间不抢回鼠标锁定
     float _groundY;             // 脚底高度（人行道/桥面）
-    Renderer _spriteR;
-    Mesh _spriteMesh;
     Vector3 _dragLast;
     string _simKey;
     int _simFrames = -1;
@@ -43,11 +41,7 @@ public class PlayerRig : MonoBehaviour
         _time = GetComponent<TimeOfDay>();
         _cam = Camera.main;
         _player = w.Player;
-        _sprite = w.PlayerSprite.transform;
-        _spriteR = w.PlayerSprite;
-        _spriteMat = w.PlayerSprite.material;   // 实例化，供帧动画改 UV
-        var mf = w.PlayerSprite.GetComponent<MeshFilter>();
-        _spriteMesh = mf != null ? mf.sharedMesh : null;
+        _avatar = w.Player != null ? w.Player.GetComponentInChildren<PlayerAvatar>() : null;
 
         _cam.clearFlags = CameraClearFlags.SolidColor;
         _cam.backgroundColor = MatLib.Hex("#10141c");
@@ -179,10 +173,10 @@ public class PlayerRig : MonoBehaviour
         _lastMapClose = float.NegativeInfinity;   // 开图期间不抢回锁定
     }
 
-    // 第一人称隐藏角色精灵（影子保留，低头可见脚下）
+    // 第一人称隐藏角色模型（影子保留，低头可见脚下）
     void ApplyViewVisibility()
     {
-        if (_spriteR != null) _spriteR.enabled = !_firstPerson;
+        if (_avatar != null) _avatar.SetVisible(!_firstPerson);
     }
 
     void SnapCamera()
@@ -332,7 +326,7 @@ public class PlayerRig : MonoBehaviour
         if (_simFrames > 0 && Time.frameCount % 30 == 0)
             Debug.Log($"[Sim] f={Time.frameCount} pos=({p.x:F2},{p.y:F2},{p.z:F2}) moving={moving}");
 
-        // 精灵朝向与帧（背对镜头=站立姿态；移动朝移动方向；拖拽时冻结）
+        // 角色朝向与 3D 骨骼动画（移动朝移动方向；站立时缓缓转向镜头后方）
         var camPos = _cam.transform.position;
         float toCam = Mathf.Atan2(camPos.x - p.x, camPos.z - p.z);
         if (moving)
@@ -348,26 +342,7 @@ public class PlayerRig : MonoBehaviour
             align = Mathf.Atan2(Mathf.Sin(align), Mathf.Cos(align));
             _facing += align * Mathf.Min(1f, dt * 4f);
         }
-        _sprite.rotation = Quaternion.Euler(0f, toCam * Mathf.Rad2Deg, 0f);
-        float d2 = _facing - (toCam + Mathf.PI);
-        d2 = Mathf.Atan2(Mathf.Sin(d2), Mathf.Cos(d2));
-        int row;
-        if (Mathf.Abs(d2) < Mathf.PI / 4f) row = 1;                 // 背面朝镜头
-        else if (Mathf.Abs(d2) > 3f * Mathf.PI / 4f) row = 0;       // 正面
-        // 行映射：精灵表 QuadZ 做过 U 轴镜像（修招牌文字），左右两行需交换才能朝向正确
-        else row = d2 < 0f ? 2 : 3;                                 // 左侧面 / 右侧面
-        int frame = moving ? 1 + (int)(Time.time * 8f) % 3 : 0;   // 0 站立 + 3 帧行走周期
-        // 帧 UV 直接写进四边形顶点：4×4 精灵表，逐帧取格（含 1/4 像素内缩防跨格采样）
-        if (_spriteMesh != null)
-        {
-            float u0 = frame / 4f, v0 = (3 - row) / 4f;
-            const float ix = 0.25f / 416f, iy = 0.25f / 608f;   // 精灵表 416×608（4× 精度）
-            float ua = u0 + ix, ub = u0 + 0.25f - ix, va = v0 + iy, vb = v0 + 0.25f - iy;
-            _spriteMesh.uv = new[]
-            {
-                new Vector2(ub, va), new Vector2(ua, va), new Vector2(ua, vb), new Vector2(ub, vb),
-            };
-        }
+        if (_avatar != null) _avatar.Tick(moving, _facing, dt);
 
         // 可交互地点检测（建筑正门 / 操场 / 池塘 / 家）
         // 取**最近**的那个：门前交互圈会互相重叠，按数组顺序取第一个会挑错门
@@ -449,9 +424,9 @@ public class PlayerRig : MonoBehaviour
         _camInit = true;
         cam.LookAt(new Vector3(p.x, p.y + (_indoor ? 1.5f : 1.1f), p.z));
 
-        // 镜头被墙挤到脸上时藏掉角色精灵，否则整个屏幕都是后脑勺
-        if (_spriteR != null)
-            _spriteR.enabled = !_firstPerson && (cam.position - head).sqrMagnitude > 4f;
+        // 镜头被墙挤到脸上时藏掉角色模型，否则整个屏幕都是后脑勺
+        if (_avatar != null)
+            _avatar.SetVisible(!_firstPerson && (cam.position - head).sqrMagnitude > 4f);
     }
 
     // 碰撞：建筑 AABB + 树干 + 栅栏 + 路灯 + 主角家（与 web 版逐条一致；边界 ±30 在移动处 clamp）

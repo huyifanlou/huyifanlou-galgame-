@@ -8,7 +8,6 @@ public class WorldBuilder : MonoBehaviour
     public WorldData W { get; private set; }
     public Transform Root { get; private set; }
     public Transform Player { get; private set; }
-    public Renderer PlayerSprite { get; private set; }
     public Renderer PlayerShadow { get; private set; }
     public Material LampGlass { get; private set; }
     public Material LampPool { get; private set; }
@@ -2427,7 +2426,7 @@ public class WorldBuilder : MonoBehaviour
         }
     }
 
-    // ── 角色（像素小人 + 脚下圆影；位置由 PlayerRig 驱动）──
+    // ── 角色（程序化 3D 低模 + 脚下圆影；位置由 PlayerRig 驱动）──
     void PlayerRigObjects()
     {
         var grp = NewGo("Player", Root).transform;
@@ -2442,15 +2441,11 @@ public class WorldBuilder : MonoBehaviour
         pcap.height = 1.8f;
         pcap.radius = 0.32f;
 
-        var sprite = NewGo("sprite", grp).transform;
-        sprite.localPosition = new Vector3(0f, 0.58f, 0f);
-        var sm = MatLib.Sprite("player", 0f, 0.16f);
-        // 精灵帧 UV 由 PlayerRig 逐帧写入四边形顶点（不依赖材质 ST，避免被覆盖导致采样跨格）
-        MeshObj(sprite, MeshFactory.QuadZ(1.12f, 1.64f), Vector3.zero, sm, default, false, false);
-        PlayerSprite = sprite.GetComponentInChildren<Renderer>();
+        PlayerAvatar.Create(grp);
 
         var sh = NewGo("shadow", grp).transform;
         sh.localPosition = new Vector3(0f, 0.03f, 0f);
+        sh.gameObject.layer = 2;
         MeshObj(sh, MeshFactory.Quad(0.84f, 0.84f), Vector3.zero, MatLib.Shadow(new Color(0f, 0f, 0f, 0.22f)), default, false, false);
         PlayerShadow = sh.GetComponentInChildren<Renderer>();
     }

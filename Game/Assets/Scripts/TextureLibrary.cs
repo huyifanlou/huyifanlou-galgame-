@@ -730,151 +730,6 @@ public static class TextureLibrary
         return p;
     }
 
-    static Px Character()
-    {
-        const int CW = 104, CH = 152;   // 4× 精度（逻辑格 26×38 的 4 倍像素密度）
-        var p = new Px(CW * 4, CH * 4);   // 4 列：站立 + 3 帧行走周期
-        string hair = "#eccb5a", hairD = "#c9a234", hairL = "#f6dd82", skin = "#f6dcae", skinD = "#e0c193";
-        string eyeW = "#f8f6ee", eye = "#2b3a58", coat = "#46567f", coatD = "#333f5e", coatL = "#55668f";
-        string shirt = "#f4f1e6", tie = "#b23a44", tieD = "#8c2c34", btn = "#d8d4c8", belt = "#2a2d3a", buckle = "#c9c2ae";
-        string pants = "#2e3550", pantsD = "#232838", shoe = "#23262e", shoeD = "#3a3f4a", line = "#262031";
-
-        var ops = new List<(int x, int y, int w, int h, string col)>();
-        void r(int x, int y, int w, int h, string col) => ops.Add((x * 4, y * 4, w * 4, h * 4, col));   // 逻辑格坐标（自动 ×4）
-        void r2(int x, int y, int w, int h, string col) => ops.Add((x * 2, y * 2, w * 2, h * 2, col));  // 2× 细节坐标（现为 ×2 到 4× 空间）
-
-        int bodyStart = 0, bobY = 0, bobX = 0;   // 躯干起点 + 行走起伏/前倾
-
-        void Paint(bool side, bool up, int frame)
-        {
-            ops.Clear();
-            // 起伏先算：腿根随身体上下，脚掌始终贴地（逻辑格单位；施加到 op 时换算 2×）
-            int bobL = frame == 2 ? -1 : (frame == 1 || frame == 3) ? 2 : 0;
-            bobY = bobL * 4;
-            bobX = frame >= 1 && side ? 4 : 0;
-            int legTop = 21 + bobL;
-            int baseH = 8 - bobL;
-            if (side)
-            {
-                // 侧身：腿以髋部为轴摆动——上段贴髋（始终在外套轮廓内）、下段前/后错位、鞋跟下段
-                // （此前整条腿平移导致迈步时脱离身体轮廓，看起来"腿和身体分离"）
-                int fwd = frame == 1 ? 4 : frame == 2 ? 2 : 0;
-                int bwd = frame == 3 ? 4 : frame == 2 ? 2 : 0;
-                r(12, legTop, 4, 4, pants);                          // 前腿上段（贴髋）
-                r(12 + fwd / 2, legTop + 4, 4, baseH - 4, pants);    // 前腿下段（错位）
-                r(14 + fwd - 2, 29, 6, 2, shoe);
-                r(8, legTop, 4, 4, pantsD);                          // 后腿上段（贴髋）
-                r(8 - bwd / 2, legTop + 4, 4, baseH - 4, pantsD);    // 后腿下段（错位）
-                r(6 - bwd, 29, 6, 2, shoeD);
-            }
-            else
-            {
-                bool liftA = frame == 1, liftB = frame == 3;
-                r(7, legTop, 4, liftA ? baseH - 2 : baseH, pants);
-                r(12, legTop, 4, liftB ? baseH - 2 : baseH, pants);
-                r(10, legTop, 1, baseH, pantsD);
-                r(5, liftA ? 27 : 29, 6, 2, shoe); r(11, liftB ? 27 : 29, 6, 2, shoe);
-            }
-            bodyStart = ops.Count;
-            if (side)
-            {
-                // 侧身手臂随步伐前后摆动（0 站立 / 1 前迈 / 2 并步 / 3 后摆）
-                int sw = frame == 1 ? 3 : frame == 3 ? 0 : 1;
-                r(8, 9, 8, 4, coat); r(8, 13, 7, 5, coat); r(8, 18, 6, 3, coat);
-                r(8, 9, 1, 12, coatD); r(14, 10 + sw, 3, 8, coat); r(14, 18 + sw, 3, 2, coatD);
-                r(14, 20 + sw, 3, 2, skin); r(8, 19, 6, 2, belt);
-            }
-            else
-            {
-                r(5, 9, 13, 4, coat); r(6, 13, 11, 5, coat); r(7, 18, 9, 3, coat);
-                r(5, 9, 1, 4, coatD); r(6, 13, 1, 5, coatD); r(7, 18, 1, 3, coatD);
-                r(17, 9, 1, 4, coatL); r(16, 13, 1, 5, coatL);
-                if (up) r(11, 9, 1, 10, coatD);
-                else
-                {
-                    r(10, 9, 4, 5, shirt); r(11, 9, 2, 2, tie); r(11, 11, 2, 5, tie); r(11, 12, 1, 4, tieD);
-                    r(9, 9, 1, 3, coatD); r(14, 9, 1, 3, coatD); r(11, 17, 1, 1, btn);
-                }
-                r(7, 19, 9, 2, belt); r(11, 19, 2, 2, buckle);
-                r(3, 9, 2, 8, coat); r(18, 9, 2, 8, coat);
-                r(3, 17, 2, 2, coatD); r(18, 17, 2, 2, coatD);
-                r(3, 19, 2, 2, skin); r(18, 19, 2, 2, skin);
-            }
-            r(11, 8, 2, 1, skinD);
-            if (up)
-            {
-                r(8, 0, 8, 2, hair); r(7, 1, 10, 3, hair); r(6, 2, 12, 6, hair); r(6, 8, 12, 1, hairD); r(9, 1, 4, 1, hairL);
-            }
-            else if (side)
-            {
-                r(6, 0, 8, 2, hair); r(5, 1, 8, 5, hair); r(4, 3, 4, 5, hair);
-                r(11, 3, 6, 5, skin); r(11, 3, 6, 1, hair);
-                r(13, 5, 1, 1, eyeW); r(13, 6, 1, 1, eye); r(16, 6, 1, 1, skinD); r(13, 7, 2, 1, skinD);
-                r(6, 1, 3, 1, hairL);
-            }
-            else
-            {
-                r(8, 0, 8, 2, hair); r(7, 1, 10, 2, hair); r(6, 2, 12, 4, hair);
-                r(6, 5, 2, 3, hair); r(16, 5, 2, 3, hair); r(9, 1, 4, 1, hairL);
-                r(8, 4, 8, 5, skin); r(8, 4, 8, 1, hair);
-                r(9, 4, 1, 1, hairD); r(11, 4, 1, 1, hairD); r(13, 4, 1, 1, hairD); r(15, 4, 1, 1, hairD);
-                r(9, 5, 2, 1, hairD); r(13, 5, 2, 1, hairD);
-                r(9, 6, 2, 2, eyeW); r(13, 6, 2, 2, eyeW);
-                r(10, 6, 1, 2, eye); r(13, 6, 1, 2, eye);
-                r(11, 7, 2, 1, skinD); r(11, 8, 2, 1, skinD);
-            }
-            // —— 2× 精度细节：眼神高光 / 发丝 / 衣缝纽扣 / 嘴 / 鞋底 ——
-            if (up) { }
-            else if (side)
-            {
-                r2(26, 12, 1, 1, "#ffffff");
-                r2(12, 4, 1, 6, hairD); r2(8, 2, 4, 1, hairL);
-                r2(30, 26, 1, 8, coatD);
-            }
-            else
-            {
-                r2(20, 12, 1, 1, "#ffffff"); r2(26, 12, 1, 1, "#ffffff");
-                r2(18, 4, 1, 6, hairD); r2(28, 3, 1, 7, hairD); r2(20, 2, 3, 1, hairL);
-                r2(23, 26, 1, 8, coatD); r2(23, 34, 1, 1, btn);
-                r2(22, 17, 3, 1, "#c0906f");
-                r2(10, frame == 1 ? 55 : 61, 12, 1, "#14161c");
-                r2(22, frame == 3 ? 55 : 61, 12, 1, "#14161c");
-            }
-        }
-
-        var rows = new[] { "down", "up", "left", "right" };
-        for (int ri = 0; ri < 4; ri++)
-        {
-            for (int f = 0; f < 4; f++)
-            {
-                int ox = f * CW, oy = ri * CH;
-                string dir = rows[ri];
-                bool side = dir == "left" || dir == "right";
-                bool isUp = dir == "up";
-                Paint(side, isUp, f);
-                // 描边层（躯干/头按起伏偏移，腿不动）
-                for (int oi = 0; oi < ops.Count; oi++)
-                {
-                    var (x, y, w, h, _) = ops[oi];
-                    int dy = oi >= bodyStart ? bobY : 0;
-                    int dx = oi >= bodyStart ? bobX : 0;
-                    int px = dir == "left" ? ox + CW - 2 - x - w : ox + x;
-                    p.FillRect(px + dx, oy + y + dy, w + 2, h + 2, C(line));
-                }
-                // 颜色层
-                for (int oi = 0; oi < ops.Count; oi++)
-                {
-                    var (x, y, w, h, col) = ops[oi];
-                    int dy = oi >= bodyStart ? bobY : 0;
-                    int dx = oi >= bodyStart ? bobX : 0;
-                    int px = dir == "left" ? ox + CW - 1 - x - w : ox + x + 1;
-                    p.FillRect(px + dx, oy + y + 1 + dy, w, h, C(col));
-                }
-            }
-        }
-        return p;
-    }
-
     static Px Court(string kind)
     {
         var p = new Px(512, 320, 4);   // 物理 2048×1280（撞 2048 上限）：15m 宽 → 136.5px/米；再高需分块
@@ -1254,7 +1109,7 @@ public static class TextureLibrary
             "water" => Water(), "bridge_stone" => BridgeStone(), "wood" => Wood(), "clock" => ClockFace(),
             "track" => Track(), "pond" => Pond(), "sky_day" => SkyDay(), "sky_night" => SkyNight(),
             "lamp_glow" => LampGlow(), "roof_villa" => Roof("#3a434e"), "villa" => Villa(),
-            "player" => Character(), "door" => Door(), "awning" => Stripes(),
+            "door" => Door(), "awning" => Stripes(),
             "court_basket" => Court("basket"), "court_tennis" => Court("tennis"),
             "road_mainstone" => Road("mainstone"), "road_cobble" => Road("cobble"),
             "roadband_v" => RoadBand(true), "roadband_h" => RoadBand(false),
@@ -1368,7 +1223,7 @@ public static class TextureLibrary
     public static void DumpAll(string dir)
     {
         Directory.CreateDirectory(dir);
-        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "rain_streak", "snow_flake", "snow_ground", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "player", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h", "water", "bridge_stone", "wood", "clock" })
+        foreach (var n in new[] { "grass", "path", "flower", "dirt", "leaves", "bark", "concrete", "rain_streak", "snow_flake", "snow_ground", "track", "pond", "sky_day", "sky_night", "lamp_glow", "villa", "door", "awning", "court_basket", "court_tennis", "road_mainstone", "road_cobble", "roadband_v", "roadband_h", "water", "bridge_stone", "wood", "clock" })
         {
             var t = Get(n, true, true);
             File.WriteAllBytes(Path.Combine(dir, n + ".png"), t.EncodeToPNG());
