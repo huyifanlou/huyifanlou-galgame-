@@ -223,22 +223,25 @@ public class PlayerRig : MonoBehaviour
         // ── 视角操作 ──
         // 第一人称：锁鼠标，直接按鼠标位移转视角（FPS 手感，灵敏度低）
         // 第三人称：按住左键拖拽转视角（原来的手感）
+        bool mapOpen = _mm != null && _mm.enabled && _mm.LargeOpen;   // 大地图打开时鼠标交给地图
         if (_firstPerson)
         {
-            bool mapOpen = _mm != null && _mm.enabled && _mm.LargeOpen;   // 只在大地图打开时让位鼠标
             if (!mapOpen && Time.unscaledTime - _lastMapClose > 0.4f)
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
             _dragging = false;
-            float mx = Input.GetAxis("Mouse X") * FP_LOOK_SENS;   // 度
-            float my = Input.GetAxis("Mouse Y") * FP_LOOK_SENS;
-            if (Mathf.Abs(mx) > 0.0001f || Mathf.Abs(my) > 0.0001f)
+            if (!mapOpen)
             {
-                _yaw += mx * Mathf.Deg2Rad;
-                _fpPitch = Mathf.Clamp(_fpPitch + my * Mathf.Deg2Rad, -1.1f, 1.1f);   // Mouse Y 向上为正 → 加
-                _alignPaused = false;
+                float mx = Input.GetAxis("Mouse X") * FP_LOOK_SENS;   // 度
+                float my = Input.GetAxis("Mouse Y") * FP_LOOK_SENS;
+                if (Mathf.Abs(mx) > 0.0001f || Mathf.Abs(my) > 0.0001f)
+                {
+                    _yaw += mx * Mathf.Deg2Rad;
+                    _fpPitch = Mathf.Clamp(_fpPitch + my * Mathf.Deg2Rad, -1.1f, 1.1f);   // Mouse Y 向上为正 → 加
+                    _alignPaused = false;
+                }
             }
             // 第一人称没拖拽，但保留 Esc 解锁（方便切窗口）
             if (Input.GetKeyDown(KeyCode.Escape))
@@ -251,22 +254,29 @@ public class PlayerRig : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-            if (Input.GetMouseButtonDown(0))
+            if (mapOpen)
             {
-                _dragging = true;
-                _alignPaused = true;
-                _dragLast = Input.mousePosition;
+                _dragging = false;
             }
-            if (Input.GetMouseButtonUp(0)) _dragging = false;
-            if (_dragging)
+            else
             {
-                var d = Input.mousePosition - _dragLast;
-                _dragLast = Input.mousePosition;
-                _yaw += d.x * 0.005f;
-                _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
+                if (Input.GetMouseButtonDown(0))
+                {
+                    _dragging = true;
+                    _alignPaused = true;
+                    _dragLast = Input.mousePosition;
+                }
+                if (Input.GetMouseButtonUp(0)) _dragging = false;
+                if (_dragging)
+                {
+                    var d = Input.mousePosition - _dragLast;
+                    _dragLast = Input.mousePosition;
+                    _yaw += d.x * 0.005f;
+                    _pitch = Mathf.Clamp(_pitch - d.y * 0.004f, 0.3f, 1.2f);
+                }
+                float wheel = Input.mouseScrollDelta.y;
+                if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, _distMin, 22f);
             }
-            float wheel = Input.mouseScrollDelta.y;
-            if (Mathf.Abs(wheel) > 0.01f) _dist = Mathf.Clamp(_dist + wheel, _distMin, 22f);
         }
 
         // F11：窗口 / 全屏切换（窗口可拖动边缘调整尺寸）

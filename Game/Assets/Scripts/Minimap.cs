@@ -2,49 +2,68 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // 右上角圆形小地图：按世界数据绘制俯视图；点击传送；M 放大/缩小
+// 大地图：鼠标拖拽平移、滚轮缩放；空白处单击不传送，双击才传送
 public class Minimap : MonoBehaviour
 {
     WorldBuilder _w;
     PlayerRig _rig;
-    Texture2D _map, _disc, _ring, _me;
-    const int Res = 512;
+    Texture2D _mapBase, _map, _disc, _ring, _me;
+    Color32[] _basePixels;
+    Color[] _viewBuf;
+    const int Res = 512;        // 屏幕显示用视图
+    const int BaseRes = 1024;   // 完整小镇底图（缩放时从中采样）
     float _min, _max;
     bool _large;
-    readonly List<(string name, float x, float z, Color col)> _marks =
-        new List<(string name, float x, float z, Color col)>();
-    readonly List<(string name, float x, float z)> _dest = new List<(string name, float x, float z)>();
+    readonly List<(string name, float x, float z, bool major)> _dest =
+        new List<(string name, float x, float z, bool major)>();
     int _pending = -1;
     public bool Indoor { get; set; }   // 室内：地图可看，传送禁用
     public bool LargeOpen => _large;   // 大地图是否打开（第一人称让位鼠标用）
+
+    float _zoom = 1f, _viewCx, _viewCz;
+    bool _dragging;
+    Vector2 _dragLast, _lastClickPos;
+    float _dragMoved, _lastClickTime = -99f;
+    float _rectX, _rectTop, _rectSize;
 
     public void Init(WorldBuilder w, PlayerRig rig)
     {
         _w = w;
         _rig = rig;
         if (Args.Str("-map") == "1") _large = true;
-        BuildMap();
+        BuildBaseMap();
         MakeCircleTextures();
         MakeMeTexture();
         BuildDestinations();
+        ResetView();
+        // 验收参数：直接看放大后的地图（-mapzoom 2.5 -mapx X -mapz Z）
+        if (Args.F("-mapzoom") is float z0)
+        {
+            _zoom = Mathf.Clamp(z0, 1f, 4f);
+            if (Args.F("-mapx") is float mx) _viewCx = mx;
+            if (Args.F("-mapz") is float mz) _viewCz = mz;
+            RefreshView();
+        }
     }
 
     static Color Hex(string h) { ColorUtility.TryParseHtmlString(h, out var c); return c; }
     static Color White => new Color(1f, 1f, 1f, 1f);
 
-    void BuildMap()
+    // 完整小镇底图：不烘焙圆形遮罩（遮罩在 RefreshView 里按视图加）
+    void BuildBaseMap()
     {
         float b = _w.W.BOUND + 25f;   // 圆形地图留边，让神社/车站等边角地标落在圆内
         _min = -b;
         _max = b;
-        var buf = new Color[Res * Res];
+        var buf = new Color[BaseRes * BaseRes];
         var grass = Hex("#4a6b3d");
         for (int i = 0; i < buf.Length; i++) buf[i] = grass;
 
-        int PX(float x) => Mathf.Clamp(Mathf.RoundToInt((x - _min) / (_max - _min) * (Res - 1)), 0, Res - 1);
-        int PZ(float z) => Mathf.Clamp(Mathf.RoundToInt((z - _min) / (_max - _min) * (Res - 1)), 0, Res - 1);
+        int PX(float x) => Mathf.Clamp(Mathf.RoundToInt((x - _min) / (_max - _min) * (BaseRes - 1)), 0, BaseRes - 1);
+        int PZ(float z) => Mathf.Clamp(Mathf.RoundToInt((z - _min) / (_max - _min) * (BaseRes - 1)), 0, BaseRes - 1);
         void SetPx(int x, int y, Color c)
         {
-            if (x >= 0 && y >= 0 && x < Res && y < Res) buf[(Res - 1 - y) * Res + x] = c;
+            if (x >= 0 && y >= 0 && x < BaseRes && y < BaseRes) buf[(BaseRes - 1 - y) * BaseRes + x] = c;
         }
         void Rect(float x0, float z0, float x1, float z1, Color c)
         {
@@ -58,9 +77,9 @@ public class Minimap : MonoBehaviour
         if (river != null)
         {
             var water = Hex("#4d7f8e");
-            for (int px = 0; px < Res; px++)
+            for (int px = 0; px < BaseRes; px++)
             {
-                float wx = Mathf.Lerp(_min, _max, px / (float)(Res - 1));
+                float wx = Mathf.Lerp(_min, _max, px / (float)(BaseRes - 1));
                 float zc = river.amp * Mathf.Sin((wx + river.phase) / river.freq) + river.offset;
                 int y0 = PZ(zc - river.width / 2f), y1 = PZ(zc + river.width / 2f);
                 for (int y = y0; y <= y1; y++) SetPx(px, y, water);
@@ -77,11 +96,11 @@ public class Minimap : MonoBehaviour
             var p = _w.W.POND;
             float rx = p.r, rz = p.r * 0.7f;
             var water = Hex("#4d7f8e");
-            for (int y = 0; y < Res; y++)
-                for (int x = 0; x < Res; x++)
+            for (int y = 0; y < BaseRes; y++)
+                for (int x = 0; x < BaseRes; x++)
                 {
-                    float wx = Mathf.Lerp(_min, _max, x / (float)(Res - 1));
-                    float wz = Mathf.Lerp(_min, _max, y / (float)(Res - 1));
+                    float wx = Mathf.Lerp(_min, _max, x / (float)(BaseRes - 1));
+                    float wz = Mathf.Lerp(_min, _max, y / (float)(BaseRes - 1));
                     float dx = (wx - p.pos[0]) / rx, dz = (wz - p.pos[1]) / rz;
                     if (dx * dx + dz * dz <= 1f) SetPx(x, y, water);
                 }
@@ -110,53 +129,108 @@ public class Minimap : MonoBehaviour
                 Rect(p.x - 0.9f, p.z - 0.9f, p.x + 0.9f, p.z + 0.9f, stall);
         }
 
-        // 圆形遮罩：圆外透明
-        float c0x = Res / 2f, c0y = Res / 2f, r0 = Res / 2f - 2f;
+        _mapBase = new Texture2D(BaseRes, BaseRes, TextureFormat.RGBA32, false);
+        _mapBase.wrapMode = TextureWrapMode.Clamp;
+        _mapBase.filterMode = FilterMode.Bilinear;
+        _mapBase.SetPixels(buf);
+        _mapBase.Apply();
+        _basePixels = _mapBase.GetPixels32();
+    }
+
+    void ResetView()
+    {
+        _zoom = 1f;
+        _viewCx = _viewCz = 0f;
+        RefreshView();
+    }
+
+    void ClampView()
+    {
+        float half = (_max - _min) / _zoom * 0.5f;
+        _viewCx = Mathf.Clamp(_viewCx, _min + half, _max - half);
+        _viewCz = Mathf.Clamp(_viewCz, _min + half, _max - half);
+    }
+
+    // 从 1024 底图采样当前视图，再套圆形遮罩（保持圆形地图边缘不随缩放移动）
+    void RefreshView()
+    {
+        ClampView();
+        float full = _max - _min;
+        float span = full / _zoom;
+        if (_map == null)
+        {
+            _map = new Texture2D(Res, Res, TextureFormat.RGBA32, false);
+            _map.wrapMode = TextureWrapMode.Clamp;
+            _map.filterMode = FilterMode.Bilinear;
+        }
+        if (_viewBuf == null || _viewBuf.Length != Res * Res) _viewBuf = new Color[Res * Res];
+        float c0 = (Res - 1) * 0.5f, r0 = Res * 0.5f - 2f;
         for (int y = 0; y < Res; y++)
+        {
+            float wz = _viewCz + (y / (float)(Res - 1) - 0.5f) * span;
+            float v = Mathf.Clamp01((_max - wz) / full) * (BaseRes - 1);
+            int y0 = Mathf.FloorToInt(v), y1 = Mathf.Min(y0 + 1, BaseRes - 1);
+            float ty = v - y0;
             for (int x = 0; x < Res; x++)
             {
-                float d = Mathf.Sqrt((x - c0x) * (x - c0x) + (y - c0y) * (y - c0y));
-                if (d <= r0) continue;
-                float a = Mathf.Clamp01((r0 + 2f - d) / 2f);
-                int i = (Res - 1 - y) * Res + x;
-                var c = buf[i];
-                buf[i] = new Color(c.r, c.g, c.b, c.a * a);
+                float wx = _viewCx + (x / (float)(Res - 1) - 0.5f) * span;
+                float u = Mathf.Clamp01((wx - _min) / full) * (BaseRes - 1);
+                int x0 = Mathf.FloorToInt(u), x1 = Mathf.Min(x0 + 1, BaseRes - 1);
+                float tx = u - x0;
+                int r0i = y0 * BaseRes, r1i = y1 * BaseRes;
+                Color c00 = _basePixels[r0i + x0], c10 = _basePixels[r0i + x1];
+                Color c01 = _basePixels[r1i + x0], c11 = _basePixels[r1i + x1];
+                Color c = Color.Lerp(Color.Lerp(c00, c10, tx), Color.Lerp(c01, c11, tx), ty);
+                float d = Mathf.Sqrt((x - c0) * (x - c0) + (y - c0) * (y - c0));
+                c.a *= Mathf.Clamp01((r0 + 2f - d) / 2f);
+                _viewBuf[(Res - 1 - y) * Res + x] = c;
             }
-
-        _map = new Texture2D(Res, Res, TextureFormat.RGBA32, false);
-        _map.wrapMode = TextureWrapMode.Clamp;
-        _map.filterMode = FilterMode.Bilinear;
-        _map.SetPixels(buf);
-        _map.Apply();
-
-        _marks.Clear();
-        _marks.Add(("学校", -31, -58, Hex("#d8c8a8")));
-        _marks.Add(("钟楼", -14, -12, Hex("#e8c46a")));
-        _marks.Add(("老街", -52, 27, Hex("#e0a070")));
-        _marks.Add(("公园", 34, -40, Hex("#7ab0a0")));
-        _marks.Add(("神社", 79, -78, Hex("#d08070")));
-        _marks.Add(("游乐场", 50, 38, Hex("#c080c0")));
-        _marks.Add(("车站", 76, 86, Hex("#c8b090")));
-        _marks.Add(("家", -35.5f, 66, Hex("#f0d0a0")));
+        }
+        _map.SetPixels(_viewBuf);
+        _map.Apply(false);
     }
 
     void BuildDestinations()
     {
         var w = _w.W;
         BuildingDef Find(string id) => System.Array.Find(w.BUILDINGS, b => b.id == id);
-        void AddB(string label, string id)
+        void AddB(string label, string id, bool major = false)
         {
             var b = Find(id);
-            if (b != null) _dest.Add((label, b.pos[0], b.pos[1] + b.face * (b.size[2] / 2f + 1.7f)));
+            if (b != null) _dest.Add((label, b.pos[0], b.pos[1] + b.face * (b.size[2] / 2f + 1.7f), major));
         }
-        _dest.Add(("家", w.VILLA.x, w.VILLA.z + w.VILLA.d / 2f + 1.7f));
-        AddB("学校", "s_teach");
-        AddB("神社", "k_haiden");
-        AddB("车站", "st_hall");
-        AddB("游乐场", "f_ticket");
-        _dest.Add(("钟楼", -14f, -4f));
-        _dest.Add(("公园", 34f, -24f));
-        _dest.Add(("老街", -52f, 29f));
+        if (w.VILLA != null)
+            _dest.Add(("家", w.VILLA.x, w.VILLA.z + w.VILLA.d / 2f + 1.7f, true));
+
+        // 建筑级传送点：把学校/老街/商店街拆成具体建筑门口
+        AddB("教学楼", "s_teach", true);
+        AddB("图书馆", "s_lib", true);
+        AddB("食堂", "s_canteen");
+        AddB("实验楼", "s_lab");
+        AddB("礼堂", "s_hall");
+        AddB("宿舍楼", "s_dorm");
+        AddB("餐厅", "r_rest", true);
+        AddB("超市", "r_market", true);
+        AddB("奶茶店", "r_milktea");
+        AddB("照相馆", "r_photo");
+        AddB("书店", "r_book");
+        AddB("便利店", "r_conv");
+        AddB("绸缎庄", "o_silk");
+        AddB("茶楼", "o_tea");
+        AddB("杂货铺", "o_grocery");
+        AddB("药铺", "o_pharm");
+        AddB("戏院", "o_theater");
+        AddB("邮局", "o_post");
+        AddB("神社", "k_haiden", true);
+        AddB("车站", "st_hall", true);
+        AddB("游乐场", "f_ticket", true);
+        AddB("鬼屋", "f_haunted");
+        AddB("茶座", "f_teahouse");
+        AddB("音乐亭", "p_pav");
+
+        // 非建筑地标保留（方便去公园/钟楼）
+        _dest.Add(("钟楼", -14f, -6f, true));
+        _dest.Add(("公园", 34f, -24f, true));
     }
 
     void MakeCircleTextures()
@@ -214,9 +288,100 @@ public class Minimap : MonoBehaviour
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.M)) _large = !_large;
-        // 第一人称锁定鼠标时按 M，先解锁鼠标再开图（否则点不了确认按钮）
-        if (Input.GetKeyDown(KeyCode.M) && _rig != null) _rig.UnlockCursor();
+        if (Input.GetKeyDown(KeyCode.M))
+        {
+            _large = !_large;
+            ResetView();
+            if (_rig != null) _rig.UnlockCursor();
+        }
+    }
+
+    float ViewSpan => (_max - _min) / _zoom;
+
+    void Project(float wx, float wz, out float px, out float py)
+    {
+        float span = ViewSpan;
+        px = _rectX + (wx - (_viewCx - span * 0.5f)) / span * _rectSize;
+        py = _rectTop + (wz - (_viewCz - span * 0.5f)) / span * _rectSize;
+    }
+
+    void ZoomAt(Vector2 m, float wheel)
+    {
+        float oldSpan = ViewSpan;
+        float nx = Mathf.Clamp01((m.x - _rectX) / _rectSize);
+        float nz = Mathf.Clamp01((m.y - _rectTop) / _rectSize);
+        float wx = _viewCx + (nx - 0.5f) * oldSpan;
+        float wz = _viewCz + (nz - 0.5f) * oldSpan;
+        float z = Mathf.Clamp(_zoom * Mathf.Pow(1.18f, wheel), 1f, 4f);
+        if (Mathf.Abs(z - _zoom) < 0.0001f) return;
+        _zoom = z;
+        float span = ViewSpan;
+        _viewCx = wx - (nx - 0.5f) * span;
+        _viewCz = wz - (nz - 0.5f) * span;
+        RefreshView();
+    }
+
+    int HitDest(Vector2 m)
+    {
+        int hit = -1;
+        float best = _large ? 15f : 11f;
+        for (int i = 0; i < _dest.Count; i++)
+        {
+            Project(_dest[i].x, _dest[i].z, out float dx, out float dy);
+            float dd = (new Vector2(dx, dy) - m).magnitude;
+            if (dd < best) { best = dd; hit = i; }
+        }
+        return hit;
+    }
+
+    // 空白处：第一次单击只记录，第二次（0.36s 内且位置相近）才传送
+    void HandleClick(Vector2 m)
+    {
+        if (Indoor) return;
+        int hit = HitDest(m);
+        if (hit >= 0)
+        {
+            _pending = hit;
+            _lastClickTime = -99f;
+            return;
+        }
+        if (!_large) return;
+        float now = Time.unscaledTime;
+        bool dbl = now - _lastClickTime < 0.36f &&
+                   (m - _lastClickPos).sqrMagnitude < 144f;
+        if (!dbl)
+        {
+            _lastClickTime = now;
+            _lastClickPos = m;
+            return;
+        }
+        _lastClickTime = -99f;
+        float span = ViewSpan;
+        float wx = _viewCx + ((m.x - _rectX) / _rectSize - 0.5f) * span;
+        float wz = _viewCz + ((m.y - _rectTop) / _rectSize - 0.5f) * span;
+        _rig.Teleport(wx, wz);
+    }
+
+    void DrawPending()
+    {
+        float pw = 360f, ph = 150f;
+        var pr = new Rect((Screen.width - pw) / 2f, (Screen.height - ph) / 2f, pw, ph);
+        GUI.color = new Color(0.04f, 0.05f, 0.06f, 0.96f);
+        GUI.DrawTexture(pr, Texture2D.whiteTexture);
+        GUI.color = Color.white;
+        var st = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+        st.normal.textColor = new Color(1f, 0.95f, 0.85f);
+        GUI.Label(new Rect(pr.x, pr.y + 18f, pw, 30f), $"传送到「{_dest[_pending].name}」？", st);
+        var sst = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
+        sst.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
+        GUI.Label(new Rect(pr.x, pr.y + 50f, pw, 20f), "会传送到该建筑门前", sst);
+        if (GUI.Button(new Rect(pr.x + 60f, pr.y + 92f, 100f, 36f), "确认"))
+        {
+            var d = _dest[_pending];
+            _rig.Teleport(d.x, d.z);
+            _pending = -1;
+        }
+        if (GUI.Button(new Rect(pr.x + 200f, pr.y + 92f, 100f, 36f), "取消")) _pending = -1;
     }
 
     void OnGUI()
@@ -227,8 +392,10 @@ public class Minimap : MonoBehaviour
         float y = _large ? (Screen.height - size) / 2f - 6f : 70f;
         float top = y + 20f;
         var mapRect = new Rect(x, top, size, size);
+        _rectX = x; _rectTop = top; _rectSize = size;
         Vector2 center = new Vector2(x + size / 2f, top + size / 2f);
         float radius = size / 2f;
+        Vector2 mousePos = Event.current.mousePosition;
 
         if (_large)
         {
@@ -252,85 +419,109 @@ public class Minimap : MonoBehaviour
         var title = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
         title.normal.textColor = new Color(1f, 0.95f, 0.85f);
         GUI.Label(new Rect(x, y, size, 18f),
-            _large ? "M 缩小 · 点地标二次确认 · 空白处直接传送" : "小镇地图（M 放大 · 地标确认传送）", title);
+            _large ? "拖拽平移 · 滚轮缩放 · 单击地标确认 · 双击空白传送"
+                   : "小镇地图（M 放大 · 地标确认传送）", title);
 
         var small = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
+        var usedLabels = new List<Rect>();
 
-        // 具名传送点
         for (int i = 0; i < _dest.Count; i++)
         {
             var d = _dest[i];
-            float dx = x + (d.x - _min) / (_max - _min) * size;
-            float dy = top + (d.z - _min) / (_max - _min) * size;
+            Project(d.x, d.z, out float dx, out float dy);
             if ((new Vector2(dx, dy) - center).sqrMagnitude > (radius * 0.96f) * (radius * 0.96f)) continue;
-            GUI.color = new Color(1f, 0.95f, 0.8f);
-            GUI.DrawTexture(new Rect(dx - 5f, dy - 5f, 10f, 10f), Texture2D.whiteTexture);
-            GUI.color = new Color(0.15f, 0.35f, 0.55f);
-            GUI.DrawTexture(new Rect(dx - 3f, dy - 3f, 6f, 6f), Texture2D.whiteTexture);
+            if (dx < mapRect.xMin || dx > mapRect.xMax || dy < mapRect.yMin || dy > mapRect.yMax) continue;
+            GUI.color = d.major ? new Color(1f, 0.95f, 0.8f) : new Color(0.72f, 0.88f, 1f);
+            float ms = d.major ? 10f : 8f;
+            GUI.DrawTexture(new Rect(dx - ms * 0.5f, dy - ms * 0.5f, ms, ms), Texture2D.whiteTexture);
+            GUI.color = d.major ? new Color(0.15f, 0.35f, 0.55f) : new Color(0.12f, 0.28f, 0.36f);
+            GUI.DrawTexture(new Rect(dx - ms * 0.3f, dy - ms * 0.3f, ms * 0.6f, ms * 0.6f), Texture2D.whiteTexture);
             GUI.color = Color.white;
-            if (_large)
-            {
-                var dl = new GUIStyle(small);
-                dl.normal.textColor = new Color(0.8f, 0.95f, 1f, 1f);
-                GUI.Label(new Rect(dx + 7f, dy - 8f, 60f, 14f), "▸" + d.name, dl);
-            }
+
+            if (!_large) continue;
+            bool hover = (new Vector2(dx, dy) - mousePos).sqrMagnitude < 100f;
+            if (!d.major && _zoom < 2.0f && !hover) continue;
+            var dl = new GUIStyle(small);
+            dl.normal.textColor = d.major ? new Color(0.9f, 0.97f, 1f, 1f) : new Color(0.92f, 0.88f, 0.74f, 1f);
+            // 上下交替，避免住宅街一排建筑的标签叠在一起
+            float ly = i % 2 == 0 ? dy - 18f : dy + 3f;
+            float lw = 78f;
+            var lr = new Rect(dx + 7f, ly, lw, 16f);
+            bool overlap = false;
+            foreach (var u in usedLabels)
+                if (lr.Overlaps(u)) { overlap = true; break; }
+            if (overlap && !hover) continue;
+            GUI.color = new Color(0.04f, 0.05f, 0.06f, 0.72f);
+            GUI.DrawTexture(new Rect(lr.x - 2f, lr.y, lr.width + 4f, lr.height), Texture2D.whiteTexture);
+            GUI.color = Color.white;
+            GUI.Label(lr, "▸" + d.name, dl);
+            usedLabels.Add(lr);
         }
 
         // 玩家自己：随相机朝向旋转的箭头（始终压在地标之上）
         var pp = _rig.Position;
-        float mx = x + (pp.x - _min) / (_max - _min) * size;
-        float mz = top + (pp.z - _min) / (_max - _min) * size;
-        float asz = Mathf.Clamp(size * 0.085f, 15f, 44f);
-        var savedMtx = GUI.matrix;
-        GUIUtility.RotateAroundPivot(-_rig.Yaw * Mathf.Rad2Deg, new Vector2(mx, mz));
-        GUI.color = Color.white;
-        GUI.DrawTexture(new Rect(mx - asz / 2f, mz - asz / 2f, asz, asz), _me);
-        GUI.matrix = savedMtx;
-        GUI.color = Color.white;
+        Project(pp.x, pp.z, out float mx, out float mz);
+        if ((new Vector2(mx, mz) - center).sqrMagnitude <= radius * radius)
+        {
+            float asz = Mathf.Clamp(size * 0.085f, 15f, 44f);
+            var savedMtx = GUI.matrix;
+            GUIUtility.RotateAroundPivot(-_rig.Yaw * Mathf.Rad2Deg, new Vector2(mx, mz));
+            GUI.color = Color.white;
+            GUI.DrawTexture(new Rect(mx - asz / 2f, mz - asz / 2f, asz, asz), _me);
+            GUI.matrix = savedMtx;
+            GUI.color = Color.white;
+        }
 
         var e = Event.current;
-        if (Indoor) return;   // 室内：禁用一切点击传送
-        if (_pending >= 0)
+        bool inside = mapRect.Contains(mousePos) &&
+                      (mousePos - center).sqrMagnitude <= radius * radius;
+
+        // 滚轮缩放（大地图、圆内）
+        if (_large && e.type == EventType.ScrollWheel && inside)
         {
-            // 二次确认框
-            float pw = 360f, ph = 150f;
-            var pr = new Rect((Screen.width - pw) / 2f, (Screen.height - ph) / 2f, pw, ph);
-            GUI.color = new Color(0.04f, 0.05f, 0.06f, 0.96f);
-            GUI.DrawTexture(pr, Texture2D.whiteTexture);
-            GUI.color = Color.white;
-            var st = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
-            st.normal.textColor = new Color(1f, 0.95f, 0.85f);
-            GUI.Label(new Rect(pr.x, pr.y + 18f, pw, 30f), $"传送到「{_dest[_pending].name}」？", st);
-            var sst = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
-            sst.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
-            GUI.Label(new Rect(pr.x, pr.y + 50f, pw, 20f), "会传送到该建筑/区域的门前", sst);
-            if (GUI.Button(new Rect(pr.x + 60f, pr.y + 92f, 100f, 36f), "确认"))
-            {
-                var d = _dest[_pending];
-                _rig.Teleport(d.x, d.z);
-                _pending = -1;
-            }
-            if (GUI.Button(new Rect(pr.x + 200f, pr.y + 92f, 100f, 36f), "取消")) _pending = -1;
+            float wheel = Input.mouseScrollDelta.y;
+            if (Mathf.Abs(wheel) < 0.01f) wheel = -e.delta.y * 0.1f;
+            if (Mathf.Abs(wheel) > 0.01f) ZoomAt(mousePos, wheel);
+            e.Use();
             return;
         }
 
-        if (e.type == EventType.MouseDown && e.button == 0 && mapRect.Contains(e.mousePosition) &&
-            (e.mousePosition - center).sqrMagnitude <= radius * radius)
+        if (_pending >= 0)
         {
-            // 先判定是否点在具名传送点上
-            int hit = -1;
-            float best = _large ? 18f : 12f;
-            for (int i = 0; i < _dest.Count; i++)
-            {
-                float dx = x + (_dest[i].x - _min) / (_max - _min) * size;
-                float dy = top + (_dest[i].z - _min) / (_max - _min) * size;
-                float dd = (new Vector2(dx, dy) - e.mousePosition).magnitude;
-                if (dd < best) { best = dd; hit = i; }
-            }
-            if (hit >= 0) { _pending = hit; e.Use(); return; }
-            float wx = Mathf.Lerp(_min, _max, (e.mousePosition.x - x) / size);
-            float wz = Mathf.Lerp(_min, _max, (e.mousePosition.y - top) / size);
-            if (_rig.Teleport(wx, wz)) e.Use();
+            DrawPending();
+            return;
         }
+
+        if (_large && e.type == EventType.MouseDown && e.button == 0 && inside)
+        {
+            _dragging = true;
+            _dragMoved = 0f;
+            _dragLast = mousePos;
+            e.Use();
+        }
+        if (_large && _dragging && e.type == EventType.MouseDrag)
+        {
+            var d = mousePos - _dragLast;
+            _dragLast = mousePos;
+            _dragMoved += d.magnitude;
+            float span = ViewSpan;
+            _viewCx -= d.x / size * span;
+            _viewCz -= d.y / size * span;
+            RefreshView();
+            e.Use();
+        }
+        if (_large && _dragging && e.type == EventType.MouseUp && e.button == 0)
+        {
+            _dragging = false;
+            if (!Indoor && _dragMoved < 4f && inside) HandleClick(mousePos);
+            e.Use();
+        }
+        if (!Indoor && !_large && e.type == EventType.MouseDown && e.button == 0 && inside)
+        {
+            int hit = HitDest(mousePos);
+            if (hit >= 0) { _pending = hit; e.Use(); }
+        }
+
+        if (Indoor) return;
     }
 }

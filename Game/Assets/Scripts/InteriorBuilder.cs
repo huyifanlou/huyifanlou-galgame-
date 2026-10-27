@@ -59,7 +59,7 @@ public struct Solid
 }
 
 // ─────────────────────────────────────────────────────────────
-public static class InteriorBuilder
+public static partial class InteriorBuilder
 {
     const float HOME_X = 900f, SCHOOL_X = 1060f;
     const float WALL_OUT = 0.24f;
@@ -398,7 +398,7 @@ public static class InteriorBuilder
     public static List<Interior> Build(Transform parent)
     {
         _cache.Clear();
-        var list = new List<Interior> { Home(parent), School(parent) };
+        var list = new List<Interior> { Home(parent), School(parent), Library(parent), Restaurant(parent), Supermarket(parent) };
         foreach (var it in list) Validate(it);
         return list;
     }

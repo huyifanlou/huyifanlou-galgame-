@@ -41,8 +41,15 @@ public class InteriorManager : MonoBehaviour
     public Interior Find(string id) => _rooms == null ? null : _rooms.Find(r => r.Id == id);
 
     // 交互点名字 → 室内 id；没有内部的建筑返回 null
-    static string ToId(string spotName)
-        => spotName == "家" ? "home" : spotName == "教学楼" ? "school" : null;
+    static string ToId(string spotName) => spotName switch
+    {
+        "家" => "home",
+        "教学楼" => "school",
+        "图书馆" => "library",
+        "餐厅" or "餐馆" => "restaurant",
+        "超市" => "supermarket",
+        _ => null,
+    };
 
     public bool CanEnter(string spotName) => ToId(spotName) != null && Find(ToId(spotName)) != null;
 
