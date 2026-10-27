@@ -64,7 +64,7 @@ public class PlayerRig : MonoBehaviour
         }
         var yaw = Args.F("-yaw"); if (yaw.HasValue) _yaw = yaw.Value;
         var pitch = Args.F("-pitch"); if (pitch.HasValue) _pitch = Mathf.Clamp(pitch.Value, 0.3f, 1.35f);
-        var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 6f, 140f);   // 验收俯视可放远（交互滚轮仍限 6-22）
+        var dist = Args.F("-dist"); if (dist.HasValue) _dist = Mathf.Clamp(dist.Value, 2.2f, 140f);   // 验收可拉近拍脸；交互滚轮仍限 6-22
         if (dist.HasValue && dist.Value > 22f && !pitch.HasValue) _pitch = Mathf.Max(_pitch, 1.0f);  // 远机位默认俯视（显式 -pitch 时尊重调用方）
         _distForced = dist.HasValue; _pitchForced = pitch.HasValue;
         if (Args.Str("-freeze") == "1") _alignPaused = true;
@@ -84,7 +84,8 @@ public class PlayerRig : MonoBehaviour
         }
 
         _player.position = new Vector3(spawn.x, 0f, spawn.y);
-        _facing = Mathf.PI;
+        var faceArg = Args.F("-facing");   // 验收：指定朝向（度，0=+z 南），配合 -freeze 拍正面受光
+        _facing = faceArg.HasValue ? faceArg.Value * Mathf.Deg2Rad : Mathf.PI;
         ApplyViewVisibility();
         SnapCamera();
     }
