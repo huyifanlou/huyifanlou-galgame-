@@ -205,7 +205,7 @@ public class Minimap : MonoBehaviour
         // 建筑级传送点：把学校/老街/商店街拆成具体建筑门口
         AddB("教学楼", "s_teach", true);
         AddB("图书馆", "s_lib", true);
-        AddB("食堂", "s_canteen");
+        AddB("食堂", "s_canteen", true);
         AddB("实验楼", "s_lab");
         AddB("礼堂", "s_hall");
         AddB("宿舍楼", "s_dorm");

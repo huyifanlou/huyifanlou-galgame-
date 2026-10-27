@@ -48,6 +48,7 @@ public class InteriorManager : MonoBehaviour
         "图书馆" => "library",
         "餐厅" or "餐馆" => "restaurant",
         "超市" => "supermarket",
+        "食堂" => "canteen",
         _ => null,
     };
 
