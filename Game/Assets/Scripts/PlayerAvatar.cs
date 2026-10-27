@@ -25,28 +25,16 @@ public class PlayerAvatar : MonoBehaviour
 
     void Build()
     {
-        _skin = MatLib.LitColor(MatLib.Hex("#f3d9bf"));
-        _skin.EnableKeyword("_EMISSION");
-        _skin.SetColor("_EmissionColor", new Color(0.55f, 0.45f, 0.36f) * 0.10f);
-        _skin.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        _skin = MatLib.LitColor(MatLib.Hex("#f7e0c9"));
         var hairTex = HairTexture();
-        _hair = HairMat(hairTex, Color.white, 0.08f);
-        _hairD = HairMat(hairTex, new Color(0.86f, 0.78f, 0.60f), 0.04f);
+        _hair = HairMat(hairTex, Color.white);
+        _hairD = HairMat(hairTex, new Color(0.86f, 0.78f, 0.60f));
         _coat = MatLib.LitColor(MatLib.Hex("#46577f"));
         _coatD = MatLib.LitColor(MatLib.Hex("#333f5e"));
-        _shirt = MatLib.LitColor(MatLib.Hex("#f8faf4"));
-        _shirtD = MatLib.LitColor(MatLib.Hex("#dfe2d8"));
-        _shirt.EnableKeyword("_EMISSION");
-        _shirt.SetColor("_EmissionColor", new Color(0.9f, 0.9f, 0.85f) * 0.26f);
-        _shirt.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-        _shirtD.EnableKeyword("_EMISSION");
-        _shirtD.SetColor("_EmissionColor", new Color(0.9f, 0.9f, 0.85f) * 0.08f);
-        _shirtD.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        _shirt = MatLib.LitColor(MatLib.Hex("#ffffff"));
+        _shirtD = MatLib.LitColor(MatLib.Hex("#e8eae2"));
         _tie = MatLib.LitColor(MatLib.Hex("#c84450"));
         _tieD = MatLib.LitColor(MatLib.Hex("#9a2f3b"));
-        _tie.EnableKeyword("_EMISSION");
-        _tie.SetColor("_EmissionColor", new Color(0.55f, 0.16f, 0.18f) * 0.10f);
-        _tie.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
         _pants = MatLib.LitColor(MatLib.Hex("#26304a"));
         _shoe = MatLib.LitColor(MatLib.Hex("#20232b"));
         _sole = MatLib.LitColor(MatLib.Hex("#14161c"));
@@ -102,35 +90,21 @@ public class PlayerAvatar : MonoBehaviour
             System.IO.File.WriteAllBytes(dumpPath, faceTex.EncodeToPNG());
             Debug.Log("[Avatar] face dumped: " + dumpPath);
         }
-        var faceMat = new Material(Shader.Find("Unlit/Texture"));
-        faceMat.mainTexture = faceTex;
+        var faceMat = MatLib.LitTexture(faceTex, 1f, 1f, 0f);
         FacePlate(_head, V(0f, 0f, 4.03f), S(8f, 8f, 0.10f), faceMat);
 
-        // 金色短发：锥形发盖 + 前后错层发顶 + 侧发/鬓角/短后颈（无猫耳）
-        HairVolume(_head, "hairCap", V(0f, 3.4f, -0.05f), 8.3f, 8.3f, 6.8f, 6.8f, 1.5f, new Vector3(-3f, 0f, 0f), _hair);
-        HairVolume(_head, "crownBack", V(0f, 4.4f, -0.8f), 6.8f, 5.2f, 5.0f, 4.0f, 1.4f, new Vector3(-6f, 0f, 0f), _hair);
-        HairVolume(_head, "crownFront", V(0f, 4.3f, 1.0f), 6.2f, 3.0f, 4.8f, 2.2f, 0.9f, new Vector3(10f, 0f, 0f), _hair);
+        // 金色短发：完整发壳包住头顶、两侧和后脑，不留稀疏发束
+        HairVolume(_head, "hairCap", V(0f, 3.4f, -0.05f), 8.5f, 8.5f, 7.0f, 7.0f, 1.5f, new Vector3(-3f, 0f, 0f), _hair);
+        HairVolume(_head, "hairCrown", V(0f, 4.5f, -0.5f), 7.0f, 5.6f, 5.4f, 4.4f, 1.2f, new Vector3(-6f, 0f, 0f), _hair);
+        Block(_head, "hairBrim", V(0f, 4.05f, 3.85f), S(8.3f, 0.5f, 0.55f), _hair);
+        HairVolume(_head, "sideShellL", V(-4.05f, -3.4f, -0.2f), 0.6f, 6.2f, 0.95f, 6.8f, 7.4f, Vector3.zero, _hair);
+        HairVolume(_head, "sideShellR", V(4.05f, -3.4f, -0.2f), 0.6f, 6.2f, 0.95f, 6.8f, 7.4f, Vector3.zero, _hair);
+        HairVolume(_head, "backShell", V(0f, -3.4f, -4.1f), 7.4f, 0.9f, 8.3f, 0.9f, 7.4f, Vector3.zero, _hair);
 
-        // 侧发：三束错落尖尾 + 鬓角
-        HairLock(_head, "sideL1", -4.02f, -2.8f, 1.6f, 1.0f, 1.2f, 6.9f, 4f, _hair);
-        HairLock(_head, "sideL2", -4.02f, -3.1f, 0.2f, 1.1f, 1.2f, 7.1f, 0f, _hairD);
-        HairLock(_head, "sideL3", -4.02f, -2.5f, -1.2f, 0.9f, 1.2f, 6.6f, -3f, _hair);
-        HairLock(_head, "sideR1", 4.02f, -2.8f, 1.6f, 1.0f, 1.2f, 6.9f, -4f, _hair);
-        HairLock(_head, "sideR2", 4.02f, -3.1f, 0.2f, 1.1f, 1.2f, 7.1f, 0f, _hairD);
-        HairLock(_head, "sideR3", 4.02f, -2.5f, -1.2f, 0.9f, 1.2f, 6.6f, 3f, _hair);
-        HairLock(_head, "sideburnL", -4.1f, -3.4f, 2.2f, 0.8f, 1.0f, 2.6f, 8f, _hairD);
-        HairLock(_head, "sideburnR", 4.1f, -3.4f, 2.2f, 0.8f, 1.0f, 2.6f, -8f, _hairD);
-
-        // 额前发际碎发：只在发际线上方，不压脸
-        Taper(_head, "frontLockL", V(-3.1f, 4.05f, 3.95f), 1.3f, 0.6f, 0.3f, 0.35f, 1.3f, new Vector3(-16f, 0f, 14f), _hair);
-        Taper(_head, "frontLockM", V(0.2f, 4.05f, 4.0f), 1.2f, 0.6f, 0.25f, 0.35f, 0.9f, new Vector3(-12f, 0f, -4f), _hair);
-        Taper(_head, "frontLockR", V(3.0f, 4.05f, 3.95f), 1.3f, 0.6f, 0.3f, 0.35f, 1.3f, new Vector3(-16f, 0f, -14f), _hair);
-
-        // 后脑短发：整块锥形后发 + 三束短尖尾（不做满头发排，避免木箱感）
-        HairVolume(_head, "backMass", V(0f, -2.4f, -4.2f), 7.0f, 1.0f, 7.8f, 1.0f, 6.4f, Vector3.zero, _hair);
-        Taper(_head, "napeTipL", V(-2.2f, -3.4f, -4.6f), 0.4f, 0.55f, 1.6f, 0.8f, 1.8f, new Vector3(0f, 0f, 8f), _hair);
-        Taper(_head, "napeTipM", V(0f, -3.2f, -4.65f), 0.4f, 0.55f, 1.6f, 0.8f, 1.6f, Vector3.zero, _hairD);
-        Taper(_head, "napeTipR", V(2.2f, -3.4f, -4.6f), 0.4f, 0.55f, 1.6f, 0.8f, 1.8f, new Vector3(0f, 0f, -8f), _hair);
+        // 发壳底边：一条深色收边，保持完整轮廓
+        Block(_head, "backHem", V(0f, -3.45f, -4.5f), S(7.5f, 0.3f, 0.18f), _hairD);
+        Block(_head, "sideHemL", V(-4.05f, -3.45f, -0.2f), S(0.9f, 0.3f, 6.3f), _hairD);
+        Block(_head, "sideHemR", V(4.05f, -3.45f, -0.2f), S(0.9f, 0.3f, 6.3f), _hairD);
 
         // 手臂 4×12×4：西装袖 9px + 白袖口 + 手
         _armL = Node(_body, "armL", V(-6f, 12f, 0f));
@@ -239,17 +213,11 @@ public class PlayerAvatar : MonoBehaviour
     static void HairVolume(Transform p, string name, Vector3 basePos, float bw, float bd, float tw, float td, float hPx, Vector3 euler, Material mat)
         => Taper(p, name, basePos, bw, bd, tw, td, hPx, euler, mat);
 
-    // 尖尾发束：下窄上宽，底部收成发尖
-    static void HairLock(Transform p, string name, float x, float yBase, float z, float w, float d, float h, float tilt, Material mat)
-        => Taper(p, name, V(x, yBase, z), w * 0.35f, d * 0.6f, w, d * 0.85f, h, new Vector3(0f, 0f, tilt), mat);
 
-    static Material HairMat(Texture2D tex, Color tint, float glow)
+    static Material HairMat(Texture2D tex, Color tint)
     {
         var m = MatLib.LitTexture(tex, 1f, 1f, 0f);
         m.color = tint;
-        m.EnableKeyword("_EMISSION");
-        m.SetColor("_EmissionColor", new Color(0.95f, 0.78f, 0.42f) * glow);
-        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
         return m;
     }
 
@@ -260,7 +228,7 @@ public class PlayerAvatar : MonoBehaviour
         var t = new Texture2D(S, S, TextureFormat.RGBA32, false)
         { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
         var px = new Color32[S * S];
-        Color b = MatLib.Hex("#ddb04f"), d = MatLib.Hex("#c99a3e"), l = MatLib.Hex("#efd58e");
+        Color b = MatLib.Hex("#e7bc55"), d = MatLib.Hex("#c99a3e"), l = MatLib.Hex("#f7dfa0");
         // 16 格一组的宽窄发丝，64 格正好平铺；不加横向纹理
         Color[] cols = new Color[S];
         for (int x = 0; x < S; x++)
@@ -299,8 +267,8 @@ public class PlayerAvatar : MonoBehaviour
         var t = new Texture2D(S, S, TextureFormat.RGBA32, false)
         { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Clamp };
         var px = new Color32[S * S];
-        Color skin = MatLib.Hex("#f3d9bf"), skinD = MatLib.Hex("#e2c1a2");
-        Color hair = MatLib.Hex("#ddb04f"), hairL = MatLib.Hex("#efd58e"), hairD = MatLib.Hex("#c99a3e");
+        Color skin = MatLib.Hex("#ffead8"), skinD = MatLib.Hex("#f0d2b8");
+        Color hair = MatLib.Hex("#e7bc55"), hairL = MatLib.Hex("#f7dfa0"), hairD = MatLib.Hex("#c99a3e");
         Color dark = MatLib.Hex("#5a4326");
         Color eyeW = MatLib.Hex("#f4f2ec");
         Color iris = MatLib.Hex("#2f5f92"), irisL = MatLib.Hex("#6aa0c8"), irisHi = MatLib.Hex("#b8dcec");
