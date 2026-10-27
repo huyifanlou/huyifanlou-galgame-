@@ -26,8 +26,9 @@ public class PlayerAvatar : MonoBehaviour
     void Build()
     {
         _skin = MatLib.LitColor(MatLib.Hex("#f8dfb9"));
-        _hair = LitGlow("#eccb5a", 0.14f);
-        _hairD = LitGlow("#c9a234", 0.08f);
+        var hairTex = HairTexture();
+        _hair = HairMat(hairTex, Color.white, 0.14f);
+        _hairD = HairMat(hairTex, new Color(0.78f, 0.72f, 0.55f), 0.08f);
         _coat = MatLib.LitColor(MatLib.Hex("#46567f"));
         _coatD = MatLib.LitColor(MatLib.Hex("#333f5e"));
         _shirt = MatLib.LitColor(MatLib.Hex("#f4f1e6"));
@@ -89,14 +90,23 @@ public class PlayerAvatar : MonoBehaviour
         faceMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
         FacePlate(_head, V(0f, 0f, 4.03f), S(8f, 8f, 0.10f), faceMat);
 
-        // 短金发：方块头 + 简单发盖/短后发/鬓角，前刘海画进 8×8 脸贴图
-        Block(_head, "hairTop", V(0f, 4.3f, 0f), S(8.6f, 1.5f, 8.6f), _hair);
-        Block(_head, "hairBack", V(0f, 0f, -4.3f), S(8.2f, 8.8f, 1.2f), _hair);
-        Block(_head, "nape", V(0f, -5.0f, -4.2f), S(6.8f, 1.8f, 1.0f), _hairD);
-        Block(_head, "sideHairL", V(-4.2f, 0.3f, -0.4f), S(0.9f, 7f, 7f), _hair);
-        Block(_head, "sideHairR", V(4.2f, 0.3f, -0.4f), S(0.9f, 7f, 7f), _hair);
-        Block(_head, "sideburnL", V(-4.15f, -2.2f, 1.9f), S(0.9f, 3.8f, 1.2f), _hairD);
-        Block(_head, "sideburnR", V(4.15f, -2.2f, 1.9f), S(0.9f, 3.8f, 1.2f), _hairD);
+        // 短金发：锥形发盖 + 错层头顶 + 侧扫刘海 + 收窄鬓角/后颈
+        HairVolume(_head, "hairCap", V(0f, 3.4f, -0.05f), 8.3f, 8.3f, 6.8f, 6.8f, 1.5f, new Vector3(-3f, 0f, 0f), _hair);
+        BlockR(_head, "hairCrown", V(-0.3f, 4.9f, -0.7f), S(5.8f, 0.5f, 5.4f), new Vector3(0f, 0f, -4f), _hair);
+        HairVolume(_head, "crownTuft", V(-0.8f, 4.7f, -1.0f), 0.6f, 0.7f, 0.15f, 0.35f, 0.8f, new Vector3(18f, 0f, -8f), _hairD);
+
+        Block(_head, "fringeLip", V(0f, 3.55f, 3.70f), S(7.8f, 0.2f, 0.8f), _hair);
+        // 两把斜扫锥形刘海：根部在侧分线，尖端扫向两鬓
+        HairVolume(_head, "fringeLeft", V(0.8f, 3.55f, 3.90f), 1.2f, 0.5f, 0.2f, 0.35f, 4.5f, new Vector3(0f, 0f, 105f), _hair);
+        HairVolume(_head, "fringeRight", V(2.0f, 3.55f, 3.90f), 1.0f, 0.5f, 0.2f, 0.35f, 2.0f, new Vector3(0f, 0f, -100f), _hairD);
+        HairVolume(_head, "sideHairL", V(-4.15f, -0.9f, -0.5f), 0.6f, 5.2f, 0.9f, 5.8f, 4.8f, Vector3.zero, _hair);
+        HairVolume(_head, "sideHairR", V(4.15f, -0.9f, -0.5f), 0.6f, 5.2f, 0.9f, 5.8f, 4.8f, Vector3.zero, _hair);
+        HairVolume(_head, "sideburnL", V(-4.1f, -3.7f, 1.8f), 0.35f, 1.0f, 0.8f, 1.1f, 2.7f, Vector3.zero, _hairD);
+        HairVolume(_head, "sideburnR", V(4.1f, -3.7f, 1.8f), 0.35f, 1.0f, 0.8f, 1.1f, 2.7f, Vector3.zero, _hairD);
+
+        Block(_head, "backHair", V(0f, 0.85f, -4.25f), S(7.8f, 7.1f, 1.0f), _hair);
+        HairVolume(_head, "backLower", V(0f, -5.4f, -4.1f), 4.8f, 0.9f, 6.4f, 0.95f, 2.8f, Vector3.zero, _hairD);
+        Block(_head, "napeCap", V(0f, -5.45f, -4.09f), S(4.8f, 0.2f, 0.88f), _hairD);
 
         // 手臂 4×12×4：西装袖 9px + 白袖口 + 手
         _armL = Node(_body, "armL", V(-6f, 12f, 0f));
@@ -157,15 +167,6 @@ public class PlayerAvatar : MonoBehaviour
     static Vector3 V(float x, float y, float z) => new Vector3(x, y, z) * PX;
     static Vector3 S(float x, float y, float z) => new Vector3(x, y, z) * PX;
 
-    static Material LitGlow(string hex, float glow)
-    {
-        var m = MatLib.LitColor(MatLib.Hex(hex));
-        m.EnableKeyword("_EMISSION");
-        m.SetColor("_EmissionColor", MatLib.Hex(hex) * glow);
-        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-        return m;
-    }
-
     static Transform Node(Transform parent, string name, Vector3 pos)
     {
         var t = new GameObject(name).transform;
@@ -189,6 +190,55 @@ public class PlayerAvatar : MonoBehaviour
     {
         var t = Block(p, name, pos, size, mat);
         t.localRotation = Quaternion.Euler(euler);
+        return t;
+    }
+
+    // 锥形发块：pivot 在下端，向上变宽/变窄，用来做有坡度的发盖、鬓角、后颈
+    static void HairVolume(Transform p, string name, Vector3 basePos, float bw, float bd, float tw, float td, float hPx, Vector3 euler, Material mat)
+    {
+        var go = new GameObject(name);
+        go.layer = 2;
+        go.transform.SetParent(p, false);
+        go.transform.localPosition = basePos;
+        go.transform.localRotation = Quaternion.Euler(euler);
+        go.AddComponent<MeshFilter>().sharedMesh =
+            MeshFactory.TaperedBox(bw * PX, bd * PX, tw * PX, td * PX, hPx * PX, 0.25f);
+        go.AddComponent<MeshRenderer>().sharedMaterial = mat;
+    }
+
+    static Material HairMat(Texture2D tex, Color tint, float glow)
+    {
+        var m = MatLib.LitTexture(tex, 1f, 1f, 0f);
+        m.color = tint;
+        m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", new Color(0.93f, 0.80f, 0.35f) * glow);
+        m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        return m;
+    }
+
+    // 32×32 程序化发丝纹理：细竖纹，平铺后不会出现竹篮格
+    static Texture2D HairTexture()
+    {
+        const int S = 32;
+        var t = new Texture2D(S, S, TextureFormat.RGBA32, false)
+        { filterMode = FilterMode.Point, wrapMode = TextureWrapMode.Repeat };
+        var px = new Color32[S * S];
+        Color b = MatLib.Hex("#eccb5a"), d = MatLib.Hex("#c9a234"), l = MatLib.Hex("#f7e28a");
+        // 8 格一组的宽窄发丝，32 格正好平铺；不加横向纹理
+        Color[] cols = new Color[S];
+        for (int x = 0; x < S; x++)
+        {
+            int m = x % 8;
+            if (m == 0 || m == 1) cols[x] = d;
+            else if (m == 3) cols[x] = l;
+            else if (m == 6) cols[x] = Color.Lerp(b, l, 0.35f);
+            else cols[x] = b;
+        }
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+                px[y * S + x] = cols[x];
+        t.SetPixels32(px);
+        t.Apply();
         return t;
     }
 
