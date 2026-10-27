@@ -19,6 +19,9 @@ public class Interior
     public float ExitRadius = 1.7f;
     public float[] FloorY;
     public GameObject Root;
+    // 出口净空区（门内侧 4~5m、门宽范围）：家具不得压这条动线
+    public float ClearX1, ClearX2, ClearZ1, ClearZ2;
+    public bool HasClear => ClearX2 > ClearX1 && ClearZ2 > ClearZ1;
 
     public readonly List<Solid> Solids = new List<Solid>();
 
@@ -416,6 +419,16 @@ public static partial class InteriorBuilder
                 Debug.LogWarning($"[Interior:{it.Id}] 越界 x[{s.X1:F2},{s.X2:F2}] z[{s.Z1:F2},{s.Z2:F2}]");
                 bad++;
                 continue;
+            }
+            if (it.HasClear)
+            {
+                float ox2 = Mathf.Min(s.X2, it.ClearX2) - Mathf.Max(s.X1, it.ClearX1);
+                float oz2 = Mathf.Min(s.Z2, it.ClearZ2) - Mathf.Max(s.Z1, it.ClearZ1);
+                if (ox2 > 0.01f && oz2 > 0.01f)
+                {
+                    Debug.LogWarning($"[Interior:{it.Id}] 出口遮挡 x[{s.X1:F2},{s.X2:F2}] z[{s.Z1:F2},{s.Z2:F2}]");
+                    bad++;
+                }
             }
             foreach (var w in it.Solids)
             {

@@ -63,6 +63,7 @@ public static partial class InteriorBuilder
             X1 = ox - X, X2 = ox + X, Z1 = -Z, Z2 = Z,
             Spawn = new Vector2(ox, 8.4f), Exit = new Vector2(ox, 9.4f),
             FloorY = new[] { 0.02f },
+            ClearX1 = ox - 1.6f, ClearX2 = ox + 1.6f, ClearZ1 = 5.0f, ClearZ2 = 10f,
         };
         var root = new GameObject("Interior_library");
         root.transform.SetParent(parent, false);
@@ -111,11 +112,11 @@ public static partial class InteriorBuilder
 
         // 中央阅读大厅：四张长桌 + 24 椅；入口正中补一张新书展示台，避免进门只看到空毯
         Rug(p, new Vector3(ox, 0.06f, 0.1f), 14.5f, 10.0f, sage);
-        Table(p, new Vector3(ox, 0f, 5.4f), 4.2f, 1.0f, 0.90f, wood);
-        Reg(it, ox, 5.4f, 4.2f, 1.0f);
-        BookStack(p, new Vector3(ox - 1.2f, 0.93f, 5.4f), 3);
-        BookStack(p, new Vector3(ox + 0.2f, 0.93f, 5.45f), 4);
-        BookStack(p, new Vector3(ox + 1.4f, 0.93f, 5.35f), 2);
+        Table(p, new Vector3(ox - 4.5f, 0f, 5.4f), 3.2f, 1.0f, 0.90f, wood);
+        Reg(it, ox - 4.5f, 5.4f, 3.2f, 1.0f);
+        BookStack(p, new Vector3(ox - 5.3f, 0.93f, 5.4f), 3);
+        BookStack(p, new Vector3(ox - 4.5f, 0.93f, 5.45f), 4);
+        BookStack(p, new Vector3(ox - 3.7f, 0.93f, 5.35f), 2);
         foreach (float tx in new[] { -6f, 6f })
             foreach (float tz in new[] { -2.2f, 2.4f })
             {
@@ -219,6 +220,7 @@ public static partial class InteriorBuilder
             X1 = ox - X, X2 = ox + X, Z1 = -Z, Z2 = Z,
             Spawn = new Vector2(ox, -8.2f), Exit = new Vector2(ox, -9.2f),
             FloorY = new[] { 0.02f },
+            ClearX1 = ox - 1.6f, ClearX2 = ox + 1.6f, ClearZ1 = -10f, ClearZ2 = -5f,
         };
         var root = new GameObject("Interior_restaurant");
         root.transform.SetParent(parent, false);
@@ -373,6 +375,7 @@ public static partial class InteriorBuilder
             X1 = ox - X, X2 = ox + X, Z1 = -Z, Z2 = Z,
             Spawn = new Vector2(ox, -6.8f), Exit = new Vector2(ox, -7.8f),
             FloorY = new[] { 0.02f },
+            ClearX1 = ox - 1.6f, ClearX2 = ox + 1.6f, ClearZ1 = -8.5f, ClearZ2 = -2.5f,
         };
         var root = new GameObject("Interior_supermarket");
         root.transform.SetParent(parent, false);
@@ -413,21 +416,21 @@ public static partial class InteriorBuilder
         Checkout(p, it, ox + 8.7f, -5.6f, 1);
         HangingSign(p, ox - 8.7f, 2.95f, -4.7f, -1, "收银", 1.3f, 0.40f, C("#2f4a3a"), 0.027f);
         HangingSign(p, ox + 8.7f, 2.95f, -4.7f, -1, "收银", 1.3f, 0.40f, C("#2f4a3a"), 0.027f);
-        foreach (float bx in new[] { -2.2f, 2.2f })
+        foreach (float bx in new[] { -3.3f, 3.3f })
             for (int i = 0; i < 3; i++)
                 Part(p, new Vector3(ox + bx, 0.16f + i * 0.14f, -6.6f),
                      new Vector3(0.44f, 0.12f, 0.32f), i % 2 == 0 ? C("#c85a42") : C("#d0a848"), 0.5f);
-        foreach (float cx in new[] { 3.0f, 3.6f })
+        foreach (float cx in new[] { 4.2f, 4.8f })
         {
             Part(p, new Vector3(ox + cx, 0.55f, -6.7f), new Vector3(0.42f, 0.55f, 0.62f), metal, 1f);
             Part(p, new Vector3(ox + cx, 0.55f, -6.7f), new Vector3(0.34f, 0.42f, 0.52f), C("#d8d8d2"), 1f);
             Part(p, new Vector3(ox + cx, 0.20f, -6.7f), new Vector3(0.46f, 0.06f, 0.66f), dark, 1f);
         }
 
-        // 生鲜：中央岛 + 西侧台
-        ProduceTable(p, it, ox - 2.0f, -2.8f, 6.0f, 1.5f);
+        // 生鲜：入口左侧岛台（不压出口中线）+ 西侧台
+        ProduceTable(p, it, ox - 4.8f, -2.8f, 6.0f, 1.5f);
         ProduceTable(p, it, ox - 10.0f, -0.3f, 2.6f, 1.2f);
-        HangingSign(p, ox - 2.0f, 2.95f, -1.7f, -1, "生鲜", 1.4f, 0.40f, C("#4a6a52"), 0.027f);
+        HangingSign(p, ox - 4.8f, 2.95f, -1.7f, -1, "生鲜", 1.4f, 0.40f, C("#4a6a52"), 0.027f);
 
         // 西墙：熟食柜 + 烘焙柜 + 后架
         Part(p, new Vector3(ox - 11.4f, 0.55f, -2.8f), new Vector3(1.8f, 1.10f, 3.0f), wood, 1f);
@@ -500,6 +503,7 @@ public static partial class InteriorBuilder
             X1 = ox - X, X2 = ox + X, Z1 = -Z, Z2 = Z,
             Spawn = new Vector2(ox, 7.3f), Exit = new Vector2(ox, 8.3f),
             FloorY = new[] { 0.02f },
+            ClearX1 = ox - 1.6f, ClearX2 = ox + 1.6f, ClearZ1 = 4.0f, ClearZ2 = 9f,
         };
         var root = new GameObject("Interior_canteen");
         root.transform.SetParent(parent, false);
@@ -567,11 +571,11 @@ public static partial class InteriorBuilder
         Reg(it, ox + 7.2f, 7.0f, 2.4f, 1.0f);
         HangingSign(p, ox + 7.2f, 2.95f, 6.1f, 1, "餐具回收", 1.7f, 0.40f, C("#8a5a3c"), 0.025f);
 
-        Part(p, new Vector3(ox - 2.2f, 0.50f, 6.2f), new Vector3(2.6f, 1.0f, 0.8f), wood, 1f);
-        Part(p, new Vector3(ox - 2.2f, 1.02f, 6.2f), new Vector3(2.7f, 0.06f, 0.86f), cream, 1f);
-        Part(p, new Vector3(ox - 2.2f, 1.16f, 6.2f), new Vector3(0.18f, 0.22f, 0.18f), C("#7fa6b8"), 0.4f);
-        Reg(it, ox - 2.2f, 6.2f, 2.6f, 0.8f);
-        HangingSign(p, ox - 2.2f, 2.95f, 5.3f, 1, "调料 · 水", 1.6f, 0.40f, C("#3f5c6b"), 0.025f);
+        Part(p, new Vector3(ox - 4.8f, 0.50f, 6.2f), new Vector3(2.6f, 1.0f, 0.8f), wood, 1f);
+        Part(p, new Vector3(ox - 4.8f, 1.02f, 6.2f), new Vector3(2.7f, 0.06f, 0.86f), cream, 1f);
+        Part(p, new Vector3(ox - 4.8f, 1.16f, 6.2f), new Vector3(0.18f, 0.22f, 0.18f), C("#7fa6b8"), 0.4f);
+        Reg(it, ox - 4.8f, 6.2f, 2.6f, 0.8f);
+        HangingSign(p, ox - 4.8f, 2.95f, 5.3f, 1, "调料 · 水", 1.6f, 0.40f, C("#3f5c6b"), 0.025f);
 
         // 西墙卡座 ×3
         foreach (float tz in new[] { -4.5f, 0f, 4.5f })
@@ -597,7 +601,7 @@ public static partial class InteriorBuilder
 
         // 四人桌 ×4 + 东侧窗边吧台
         Table4(p, it, ox - 8.0f, 3.2f, 1.4f, 1.0f, wood);
-        Table4(p, it, ox - 2.5f, 4.4f, 1.4f, 1.0f, wood);
+        Table4(p, it, ox - 5.0f, 4.4f, 1.4f, 1.0f, wood);
         Table4(p, it, ox + 2.5f, 4.2f, 1.4f, 1.0f, wood);
         Table4(p, it, ox + 8.0f, 4.2f, 1.4f, 1.0f, wood);
         Part(p, new Vector3(ox + 13.25f, 0.55f, -1.5f), new Vector3(0.5f, 1.10f, 5.5f), wood, 1f);
@@ -614,7 +618,7 @@ public static partial class InteriorBuilder
         WallClock(p, new Vector3(ox + 4.5f, 3.05f, 8.82f), 0f);
         Plant(p, new Vector3(ox - 13.0f, 0.02f, -8.1f), 1.2f);
         Plant(p, new Vector3(ox + 13.0f, 0.02f, -8.1f), 1.0f);
-        Plant(p, new Vector3(ox + 0.4f, 0.02f, 8.2f), 1.0f);
+        Plant(p, new Vector3(ox + 13.2f, 0.02f, 8.0f), 1.0f);
         Lamp(p, new Vector3(ox - 8f, 3.95f, 2.0f), 12f, 1.10f);
         Lamp(p, new Vector3(ox + 8f, 3.95f, 2.0f), 12f, 1.10f);
         Lamp(p, new Vector3(ox - 3f, 3.95f, -4.0f), 12f, 1.10f);
