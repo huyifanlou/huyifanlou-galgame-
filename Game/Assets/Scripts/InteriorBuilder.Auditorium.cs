@@ -97,20 +97,41 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(cx, 0.036f, (z0 + z1) * 0.5f),
              new Vector3(x1 - x0 - 0.2f, 0.012f, z1 - z0 - 0.2f), tile, 1.6f);
 
-        // 4 个隔间贴外侧墙
+        // 4 个独立厕所隔间：外墙 + 5 道侧板 + 前板留 1.1m 门洞
+        const float stallW = 1.45f, stallDepth = 1.55f;
+        float frontX = outerX + innerDir * stallDepth;
         for (int i = 0; i < 4; i++)
         {
-            float zc = z0 + 1.1f + i * 1.35f;
-            Part(p, new Vector3(outerX + innerDir * 1.45f, 1.0f, zc),
-                 new Vector3(0.05f, 2.0f, 1.30f), C("#8a929a"), 1f);
-            Part(p, new Vector3(outerX + innerDir * 0.50f, 0.22f, zc),
-                 new Vector3(0.62f, 0.42f, 0.70f), C("#eef2f2"), 1f);
-            Part(p, new Vector3(outerX + innerDir * 0.50f, 0.62f, zc - 0.32f),
-                 new Vector3(0.58f, 0.40f, 0.11f), C("#dfe6e6"), 1f);
-            Reg(it, outerX + innerDir * 0.50f, zc, 0.64f, 0.72f);
+            float zc = z0 + 0.55f + stallW * (i + 0.5f);
+            float side = i % 2 == 0 ? 1f : -1f;
+            float panelZ = zc + side * (stallW * 0.5f - 0.175f);
+            Part(p, new Vector3(frontX, 1.0f, panelZ), new Vector3(0.05f, 2.0f, 0.35f), C("#8a929a"), 1f);
+            Part(p, new Vector3(frontX, 2.02f, zc), new Vector3(0.07f, 0.06f, stallW), C("#7a828a"), 1f);
+            Part(p, new Vector3(frontX + innerDir * 0.03f, 1.10f, zc + side * 0.55f),
+                 new Vector3(0.08f, 0.24f, 0.12f), C(i % 2 == 0 ? "#5a9a6a" : "#9a5a5a"), 1f);
+            Reg(it, frontX, panelZ, 0.06f, 0.36f);
+            // 半开的隔间门（贴侧板收进隔间）
+            Part(p, new Vector3(frontX - innerDir * 0.325f, 0.96f, zc + side * 0.375f),
+                 new Vector3(0.65f, 1.90f, 0.04f), C("#9aa4ae"), 1f);
+            Part(p, new Vector3(frontX - innerDir * 0.55f, 1.02f, zc + side * 0.395f),
+                 new Vector3(0.05f, 0.06f, 0.10f), C("#c8a05a"), 1f);
+            // 马桶：水箱贴外墙，座体朝室内
+            Part(p, new Vector3(outerX + innerDir * 0.22f, 0.62f, zc),
+                 new Vector3(0.20f, 0.45f, 0.55f), C("#eef2f2"), 1f);
+            Part(p, new Vector3(outerX + innerDir * 0.62f, 0.22f, zc),
+                 new Vector3(0.55f, 0.42f, 0.50f), C("#eef2f2"), 1f);
+            Part(p, new Vector3(outerX + innerDir * 0.72f, 0.44f, zc),
+                 new Vector3(0.48f, 0.05f, 0.44f), C("#dfe6e6"), 1f);
+            Reg(it, outerX + innerDir * 0.55f, zc, 0.90f, 0.56f);
         }
-        Part(p, new Vector3(outerX + innerDir * 1.45f, 1.0f, z0 + 3.8f),
-             new Vector3(0.05f, 2.0f, 5.4f), C("#8a929a"), 1f);
+        // 5 道侧隔板（含两端）
+        for (int i = 0; i <= 4; i++)
+        {
+            float zb = z0 + 0.55f + i * stallW;
+            Part(p, new Vector3(outerX + innerDir * (stallDepth * 0.5f), 1.0f, zb),
+                 new Vector3(stallDepth - 0.06f, 2.0f, 0.05f), C("#8a929a"), 1f);
+            Reg(it, outerX + innerDir * (stallDepth * 0.5f), zb, stallDepth - 0.04f, 0.06f);
+        }
 
         // 洗手台贴南墙 + 镜子
         float counterX = westSide ? x1 - 2.6f : x0 + 2.6f;
@@ -326,23 +347,29 @@ public static partial class InteriorBuilder
         Lamp(p, new Vector3(ox - 20f, 3.25f, -28f), 14f, 1.1f);
         Lamp(p, new Vector3(ox + 20f, 3.25f, -28f), 14f, 1.1f);
 
-        // ── 门厅：售票/寄存/沙发/海报/吊灯/卫生间 ──
-        Table(p, new Vector3(ox - 22f, 0f, 26.6f), 4.6f, 1.0f, 0.95f, darkWood);
-        Reg(it, ox - 22f, 26.6f, 4.6f, 1.0f);
-        Part(p, new Vector3(ox - 22f, 1.00f, 26.6f), new Vector3(4.7f, 0.08f, 1.06f), C("#dfe6dc"), 1f);
-        Part(p, new Vector3(ox - 22f, 1.12f, 27.11f), new Vector3(2.2f, 0.38f, 0.04f), C("#4a2a28"), 1f);
-        SignText(p, new Vector3(ox - 22f, 1.12f, 27.14f), 180f, "售 票 处", 0.032f, MatLib.Hex("#f3e9d2"));
-        Chair(p, it, new Vector3(ox - 22f, 0f, 27.5f), 180f, darkWood, true);
+        // 门厅：售票/寄存/沙发/海报/吊灯/卫生间
+        // 售票台：长边沿 Z，牌面朝中央通道（+X），离侧墙/南墙更远
+        Table(p, new Vector3(ox - 18f, 0f, 23.5f), 1.0f, 4.0f, 0.95f, darkWood);
+        Reg(it, ox - 18f, 23.5f, 1.0f, 4.0f);
+        Part(p, new Vector3(ox - 18f, 1.00f, 23.5f), new Vector3(1.06f, 0.08f, 4.1f), C("#dfe6dc"), 1f);
+        Part(p, new Vector3(ox - 17.47f, 1.12f, 23.5f), new Vector3(0.04f, 0.38f, 2.6f), C("#4a2a28"), 1f);
+        SignText(p, new Vector3(ox - 17.44f, 1.12f, 23.5f), 270f, "售 票 处", 0.032f, MatLib.Hex("#f3e9d2"));
+        Chair(p, it, new Vector3(ox - 19.3f, 0f, 23.5f), 90f, darkWood, true);
 
-        Table(p, new Vector3(ox + 21f, 0f, 26.6f), 4.0f, 1.0f, 0.95f, darkWood);
-        Reg(it, ox + 21f, 26.6f, 4.0f, 1.0f);
-        Part(p, new Vector3(ox + 21f, 1.00f, 26.6f), new Vector3(4.1f, 0.08f, 1.06f), C("#dfe6dc"), 1f);
-        Part(p, new Vector3(ox + 21f, 1.12f, 27.11f), new Vector3(2.0f, 0.38f, 0.04f), C("#4a2a28"), 1f);
-        SignText(p, new Vector3(ox + 21f, 1.12f, 27.14f), 180f, "衣帽寄存", 0.032f, MatLib.Hex("#f3e9d2"));
-        Part(p, new Vector3(ox + 21f, 0.90f, 28.6f), new Vector3(4.0f, 0.05f, 0.05f), C("#8d99a6"), 1f);
+        // 衣帽寄存：长边沿 Z，牌面朝中央通道（-X）；衣架在桌后
+        Table(p, new Vector3(ox + 18f, 0f, 23.5f), 1.0f, 4.0f, 0.95f, darkWood);
+        Reg(it, ox + 18f, 23.5f, 1.0f, 4.0f);
+        Part(p, new Vector3(ox + 18f, 1.00f, 23.5f), new Vector3(1.06f, 0.08f, 4.1f), C("#dfe6dc"), 1f);
+        Part(p, new Vector3(ox + 17.47f, 1.12f, 23.5f), new Vector3(0.04f, 0.38f, 2.6f), C("#4a2a28"), 1f);
+        SignText(p, new Vector3(ox + 17.44f, 1.12f, 23.5f), 90f, "衣帽寄存", 0.032f, MatLib.Hex("#f3e9d2"));
+        Chair(p, it, new Vector3(ox + 19.3f, 0f, 23.5f), 270f, darkWood, true);
+        Part(p, new Vector3(ox + 20.0f, 1.80f, 23.5f), new Vector3(0.06f, 0.06f, 3.4f), C("#8d99a6"), 1f);
+        foreach (float sz in new[] { -1.6f, 1.6f })
+            Part(p, new Vector3(ox + 20.0f, 0.90f, 23.5f + sz), new Vector3(0.06f, 1.8f, 0.06f), C("#8d99a6"), 1f);
         for (int i = 0; i < 8; i++)
-            Part(p, new Vector3(ox + 19.2f + i * 0.5f, 1.12f, 28.6f),
-                 new Vector3(0.16f, 0.85f, 0.30f), C(i % 2 == 0 ? "#5a4a3a" : "#3f5c6b"), 1f);
+            Part(p, new Vector3(ox + 20.0f, 1.12f, 22.4f + i * 0.32f),
+                 new Vector3(0.30f, 0.85f, 0.16f), C(i % 2 == 0 ? "#5a4a3a" : "#3f5c6b"), 1f);
+        Reg(it, ox + 20.0f, 23.5f, 0.36f, 3.4f);
 
         Sofa(p, new Vector3(ox - 13f, 0f, 21.5f), 2.4f, 90f, C("#7a5a5a"));
         Reg(it, ox - 13f, 21.5f, 1.0f, 2.4f);
