@@ -401,7 +401,7 @@ public static partial class InteriorBuilder
     public static List<Interior> Build(Transform parent)
     {
         _cache.Clear();
-        var list = new List<Interior> { Home(parent), School(parent), Library(parent), Restaurant(parent), Supermarket(parent), Canteen(parent) };
+        var list = new List<Interior> { Home(parent), School(parent), Library(parent), Restaurant(parent), Supermarket(parent), Canteen(parent), Dorm(parent), Dorm2(parent), Kiosk(parent), Guard(parent), Gym(parent), Labs(parent), Center(parent), Arts(parent), Service(parent) };
         foreach (var it in list) Validate(it);
         return list;
     }

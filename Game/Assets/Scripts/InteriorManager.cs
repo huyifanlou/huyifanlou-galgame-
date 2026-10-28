@@ -49,6 +49,15 @@ public class InteriorManager : MonoBehaviour
         "餐厅" or "餐馆" => "restaurant",
         "超市" => "supermarket",
         "食堂" => "canteen",
+        "宿舍楼" => "dorm",
+        "二号宿舍" => "dorm2",
+        "小卖部" => "kiosk",
+        "值班室" => "guard",
+        "体育馆" => "gym",
+        "实验楼" => "labs",
+        "活动中心" => "center",
+        "艺术楼" => "arts",
+        "生活服务楼" => "service",
         _ => null,
     };
 
