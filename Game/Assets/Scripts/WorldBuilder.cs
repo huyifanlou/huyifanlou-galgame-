@@ -2180,13 +2180,13 @@ public class WorldBuilder : MonoBehaviour
                 transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, hh, rad))
             });
         }
-        void Ball(int slot, float x, float y, float z, float rad, float sy = 0.9f)
+        void Blob(int slot, float x, float y, float z, float rx, float ry, float rz)
         {
             float rot = (float)rnd.NextDouble() * 360f;   // 每个冠随机转一圈，同一个网格也有不同轮廓
             lists[slot].Add(new CombineInstance
             {
                 mesh = rnd.Next(2) == 0 ? canopy : canopy2,
-                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0f, rot, 0f), new Vector3(rad, rad * sy, rad))
+                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0f, rot, 0f), new Vector3(rx, ry, rz))
             });
         }
 
@@ -2197,47 +2197,56 @@ public class WorldBuilder : MonoBehaviour
             float aDeg = Mathf.Atan2(z, x) * Mathf.Rad2Deg;
             bool shrineSide = Mathf.Abs(Mathf.DeltaAngle(aDeg, -38f)) < 26f;   // 神社一带多种樱
             float roll = (float)rnd.NextDouble();
-            if (shrineSide) roll = roll * 0.72f;                                // 神社一带樱的比例翻倍
-            int sp = roll < 0.30f ? 0 : roll < 0.54f ? 1 : roll < 0.74f ? 2
-                   : roll < 0.80f ? 3 : roll < 0.88f ? 4 : 6;
+            int sp = roll < 0.18f ? 0 : roll < 0.38f ? 1 : roll < 0.52f ? 2
+                   : roll < 0.57f ? 3 : roll < 0.68f ? 4 : roll < 0.78f ? 5 : 6;
+            if (shrineSide && rnd.NextDouble() < 0.35) sp = 3;                  // 神社一带 35% 樱
             int slot = sp * VAR + rnd.Next(VAR);
             int tk = rnd.Next(2);
-            if (sp == 0)                                                        // 0 松
+            if (sp == 0)                                                        // 0 松：三层锥
             {
                 Trunk(tk, x, y, z, h, 0.34f);
                 Cone(slot, x, y + h * 0.16f, z, h * 0.27f, h * 0.52f);
                 Cone(slot, x, y + h * 0.40f, z, h * 0.20f, h * 0.44f);
                 Cone(slot, x, y + h * 0.60f, z, h * 0.13f, h * 0.38f);
             }
-            else if (sp == 1)                                                   // 1 阔叶
+            else if (sp == 1)                                                   // 1 阔叶：三球不对称
             {
-                Trunk(tk, x, y, z, h, 0.50f);
-                Ball(slot, x, y + h * 0.58f, z, h * 0.33f, 0.95f);
-                Ball(slot, x + h * 0.13f, y + h * 0.73f, z - h * 0.08f, h * 0.20f, 0.95f);
+                Trunk(tk, x, y, z, h, 0.48f);
+                Blob(slot, x, y + h * 0.56f, z, h * 0.31f, h * 0.29f, h * 0.30f);
+                Blob(slot, x + h * 0.17f, y + h * 0.70f, z - h * 0.07f, h * 0.19f, h * 0.18f, h * 0.20f);
+                Blob(slot, x - h * 0.15f, y + h * 0.63f, z + h * 0.10f, h * 0.16f, h * 0.16f, h * 0.17f);
             }
-            else if (sp == 2)                                                   // 2 杉（窄高）
+            else if (sp == 2)                                                   // 2 杉：窄高双锥
             {
                 Trunk(tk, x, y, z, h, 0.22f);
                 Cone(slot, x, y + h * 0.12f, z, h * 0.17f, h * 0.80f);
                 Cone(slot, x, y + h * 0.66f, z, h * 0.10f, h * 0.34f);
             }
-            else if (sp == 3)                                                   // 3 樱
+            else if (sp == 3)                                                   // 3 樱：宽扁冠 + 低侧球
             {
                 Trunk(tk, x, y, z, h, 0.44f);
-                Ball(slot, x, y + h * 0.58f, z, h * 0.30f, 0.84f);
-                Ball(slot, x - h * 0.14f, y + h * 0.72f, z + h * 0.07f, h * 0.18f, 0.84f);
+                Blob(slot, x, y + h * 0.55f, z, h * 0.35f, h * 0.26f, h * 0.35f);
+                Blob(slot, x - h * 0.16f, y + h * 0.67f, z + h * 0.08f, h * 0.18f, h * 0.15f, h * 0.19f);
             }
-            else if (sp == 4)                                                   // 4 落叶乔木（细高、冠小）
+            else if (sp == 4)                                                   // 4 细高落叶：竖椭圆
             {
-                Trunk(tk, x, y, z, h, 0.60f);
-                Ball(slot, x, y + h * 0.70f, z, h * 0.25f, 1.05f);
-                Ball(slot, x + h * 0.10f, y + h * 0.84f, z, h * 0.14f, 1.0f);
+                Trunk(tk, x, y, z, h, 0.50f);
+                Blob(slot, x, y + h * 0.62f, z, h * 0.20f, h * 0.34f, h * 0.20f);
+                Blob(slot, x + h * 0.04f, y + h * 0.87f, z, h * 0.12f, h * 0.19f, h * 0.12f);
             }
-            else                                                                // 6 秋色阔叶（橙黄，打散一片绿）
+            else if (sp == 5)                                                   // 5 伞松：高干 + 两层厚冠（太扁会像桌板，半径收小、厚度加大）
             {
-                Trunk(tk, x, y, z, h, 0.48f);
-                Ball(slot, x, y + h * 0.58f, z, h * 0.32f, 0.92f);
-                Ball(slot, x - h * 0.12f, y + h * 0.72f, z + h * 0.09f, h * 0.19f, 0.92f);
+                Trunk(tk, x, y, z, h, 0.50f);
+                Blob(slot, x, y + h * 0.54f, z, h * 0.28f, h * 0.21f, h * 0.27f);
+                Blob(slot, x + h * 0.08f, y + h * 0.68f, z - h * 0.05f, h * 0.19f, h * 0.17f, h * 0.19f);
+                Blob(slot, x - h * 0.02f, y + h * 0.80f, z + h * 0.03f, h * 0.12f, h * 0.13f, h * 0.12f);
+            }
+            else                                                                // 6 秋色阔叶：三球
+            {
+                Trunk(tk, x, y, z, h, 0.46f);
+                Blob(slot, x, y + h * 0.55f, z, h * 0.30f, h * 0.28f, h * 0.31f);
+                Blob(slot, x + h * 0.15f, y + h * 0.68f, z + h * 0.06f, h * 0.18f, h * 0.17f, h * 0.18f);
+                Blob(slot, x - h * 0.12f, y + h * 0.62f, z - h * 0.07f, h * 0.14f, h * 0.14f, h * 0.15f);
             }
         }
 
@@ -2307,18 +2316,27 @@ public class WorldBuilder : MonoBehaviour
                 float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
                 if (Mathf.Abs(z - RZ(x)) < 12f) continue;
                 if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
-                float y = FootMinH(x, z, 1.2f);
                 float rad = 0.55f + (float)rnd.NextDouble() * 0.85f;
-                float sy = 0.58f + (float)rnd.NextDouble() * 0.26f;
                 int bslot = 5 * VAR + rnd.Next(VAR);
-                Ball(bslot, x, y + rad * 0.52f * sy, z, rad, sy);
-                Ball(bslot, x + rad * 0.9f, y + rad * 0.36f * sy, z + rad * 0.5f, rad * 0.66f, sy);
-                Ball(bslot, x - rad * 0.7f, y + rad * 0.30f * sy, z + rad * 0.8f, rad * 0.55f, sy);
+                int lobes = 4 + rnd.Next(2);
+                for (int j = 0; j < lobes; j++)
+                {
+                    float oa = j * 1.7f + (float)rnd.NextDouble() * 1.0f;
+                    float od = j == 0 ? 0f : rad * (0.55f + (float)rnd.NextDouble() * 0.6f);
+                    float rj = j == 0 ? rad : rad * (0.45f + (float)rnd.NextDouble() * 0.4f);
+                    float px = x + Mathf.Cos(oa) * od, pz = z + Mathf.Sin(oa) * od;
+                    float gy = FootMinH(px, pz, rj);
+                    float ry = rj * (0.36f + (float)rnd.NextDouble() * 0.15f)
+                               * (j == 2 && rnd.NextDouble() < 0.3 ? 1.3f : 1f);
+                    Blob(bslot, px, gy + ry * 0.62f, pz,
+                        rj * (1.05f + (float)rnd.NextDouble() * 0.45f), ry,
+                        rj * (1.0f + (float)rnd.NextDouble() * 0.4f));
+                }
             }
         }
 
         var cols = new[] { "#3d6b44", "#4f7d52", "#355f3c", "#b58a9a", "#517a55", "#4a7050", "#a88a4f" };
-        var names = new[] { "pine", "broad", "fir", "cherry", "decid", "bush", "autumn" };
+        var names = new[] { "pine", "broad", "fir", "cherry", "decid", "umbra", "autumn" };
         var shades = new[] { 0.86f, 1f, 1.14f };
         for (int sp = 0; sp < SP; sp++)
             for (int v = 0; v < VAR; v++)
@@ -2361,6 +2379,8 @@ public class WorldBuilder : MonoBehaviour
         var canopy2 = MeshFactory.Canopy(1f, 9, 6, 0.40f, 3.7f);   // 轮廓更碎：混用打散重复感
         var cone = MeshFactory.Cone(1f, 1f, 8, false, 0f);          // 远山针叶树：竖向轮廓打散"叠盘子"
         var rock = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
+        var trunk = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
+        var trunks = new List<CombineInstance>();
         // 偏灰的深绿：远山受空气透视影响，比近处林带更冷、更灰
         var cols = new[] { "#3f5c42", "#4a6648", "#556e4d", "#5f6f50", "#42583f", "#6f6a46" };
         var lists = new List<CombineInstance>[cols.Length];
@@ -2385,14 +2405,50 @@ public class WorldBuilder : MonoBehaviour
                 if (h > 10f) continue;
                 if (rnd.NextDouble() > 0.85f * SparseKeep(x, z)) continue;
                 float rad = 1.2f + (float)rnd.NextDouble() * 1.8f;
+                float sy = 0.32f + (float)rnd.NextDouble() * 0.18f;   // 低矮横展：灌木不是球
                 int ci = rnd.Next(cols.Length);
-                lists[ci].Add(new CombineInstance
+                float gy = FootMinH(x, z, rad * 1.05f);
+                if (rnd.NextDouble() < 0.28)   // 丛生：主球 + 侧球
                 {
-                    mesh = canopy,
-                    transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, rad * 0.9f) + rad * 0.22f, z),
-                        Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
-                        new Vector3(rad, rad * (0.45f + (float)rnd.NextDouble() * 0.25f), rad))
-                });
+                    lists[ci].Add(new CombineInstance
+                    {
+                        mesh = canopy2,
+                        transform = Matrix4x4.TRS(new Vector3(x, gy + rad * sy * 0.6f, z),
+                            Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
+                            new Vector3(rad * 1.15f, rad * sy, rad))
+                    });
+                    float oa = (float)rnd.NextDouble() * Mathf.PI * 2f;
+                    float r2 = rad * 0.62f;
+                    float px = x + Mathf.Cos(oa) * rad * 0.85f, pz2 = z + Mathf.Sin(oa) * rad * 0.85f;
+                    float gy2 = FootMinH(px, pz2, r2);
+                    lists[ci].Add(new CombineInstance
+                    {
+                        mesh = canopy2,
+                        transform = Matrix4x4.TRS(new Vector3(px, gy2 + r2 * sy * 0.6f, pz2),
+                            Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
+                            new Vector3(r2 * 1.2f, r2 * sy, r2))
+                    });
+                }
+                else if (rnd.NextDouble() < 0.18)   // 竖椭圆灌木
+                {
+                    lists[ci].Add(new CombineInstance
+                    {
+                        mesh = canopy2,
+                        transform = Matrix4x4.TRS(new Vector3(x, gy + rad * sy * 1.6f * 0.55f, z),
+                            Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
+                            new Vector3(rad * 0.7f, rad * sy * 1.6f, rad * 0.7f))
+                    });
+                }
+                else
+                {
+                    lists[ci].Add(new CombineInstance
+                    {
+                        mesh = rnd.Next(3) > 0 ? canopy2 : canopy,
+                        transform = Matrix4x4.TRS(new Vector3(x, gy + rad * sy * 0.6f, z),
+                            Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
+                            new Vector3(rad * (1.05f + (float)rnd.NextDouble() * 0.4f), rad * sy, rad * (0.95f + (float)rnd.NextDouble() * 0.35f)))
+                    });
+                }
             }
         }
         for (float r0 = 126.5f; r0 < 140f; r0 += 1.6f)
@@ -2443,11 +2499,11 @@ public class WorldBuilder : MonoBehaviour
                 float far = Mathf.Clamp01((r0 - 130f) / 110f);
                 float rad = Mathf.Lerp(2.0f, 7.2f, far) + (float)rnd.NextDouble() * 1.8f;
                 if (bush) rad = Mathf.Min(rad, h < 20f ? 3.6f : 5.2f);
-                float sy = bush ? 0.5f + (float)rnd.NextDouble() * 0.18f
-                                : 0.38f + (float)rnd.NextDouble() * 0.12f;
+                float sy = bush ? 0.40f + (float)rnd.NextDouble() * 0.16f
+                                : 0.55f + (float)rnd.NextDouble() * 0.20f;
                 float yJit = bush ? 0f : ((float)rnd.NextDouble() - 0.5f) * 0.6f;
                 int ci = rnd.Next(cols.Length);
-                if (rnd.NextDouble() < (bush ? 0.12f : 0.22f))
+                if (rnd.NextDouble() < (bush ? 0.14f : 0.26f))
                 {
                     float ch = (bush ? 3.5f : 4.5f) + (float)rnd.NextDouble() * (bush ? 3.5f : 4.5f);
                     float cr = (bush ? 1.3f : 1.6f) + (float)rnd.NextDouble() * 1.3f;
@@ -2459,14 +2515,119 @@ public class WorldBuilder : MonoBehaviour
                     });
                     continue;
                 }
-                lists[ci].Add(new CombineInstance
+                float gy = FootMinH(x, z, rad * 0.75f);
+                float rotY = (float)rnd.NextDouble() * 360f;
+                if (bush)
                 {
-                    mesh = bush && rnd.Next(2) == 0 ? canopy2 : canopy,
-                    transform = Matrix4x4.TRS(
-                        new Vector3(x, FootMinH(x, z, rad * 0.8f) + rad * sy * 0.55f + yJit, z),
-                        Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
-                        new Vector3(rad, rad * sy, rad))
-                });
+                    if (rnd.NextDouble() < 0.30)   // 双球丛
+                    {
+                        float ry = rad * sy;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + ry * 0.62f, z),
+                                Quaternion.Euler(0f, rotY, 0f), new Vector3(rad * 1.12f, ry, rad))
+                        });
+                        float oa = (float)rnd.NextDouble() * Mathf.PI * 2f;
+                        float r2 = rad * 0.62f;
+                        float px = x + Mathf.Cos(oa) * rad * 0.8f, pz2 = z + Mathf.Sin(oa) * rad * 0.8f;
+                        float gy2 = FootMinH(px, pz2, r2);
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(px, gy2 + r2 * sy * 0.62f, pz2),
+                                Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f), new Vector3(r2 * 1.2f, r2 * sy, r2))
+                        });
+                    }
+                    else if (rnd.NextDouble() < 0.16)   // 竖椭圆灌
+                    {
+                        float ry = rad * sy * 1.55f;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + ry * 0.55f, z),
+                                Quaternion.Euler(0f, rotY, 0f), new Vector3(rad * 0.72f, ry, rad * 0.72f))
+                        });
+                    }
+                    else   // 单球灌：压扁横展
+                    {
+                        float ry = rad * sy;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = rnd.Next(3) > 0 ? canopy2 : canopy,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + ry * 0.62f, z),
+                                Quaternion.Euler(0f, rotY, 0f),
+                                new Vector3(rad * (1.0f + (float)rnd.NextDouble() * 0.3f), ry, rad * (0.95f + (float)rnd.NextDouble() * 0.25f)))
+                        });
+                    }
+                }
+                else
+                {
+                    // 有树干的乔木：冠抬到树干上，伞状/竖椭圆/普通冠轮换
+                    float trunkH = 1.1f + rad * 0.32f;
+                    float tw = Mathf.Max(0.18f, rad * 0.05f);
+                    trunks.Add(new CombineInstance
+                    {
+                        mesh = trunk,
+                        transform = Matrix4x4.TRS(new Vector3(x, gy + trunkH * 0.5f - 0.2f, z),
+                            Quaternion.identity, new Vector3(tw, trunkH + 0.4f, tw))
+                    });
+                    int form = rnd.Next(10);
+                    if (form < 2)   // 伞状冠：只占 20%，且做得厚，避免远处一排排"飞碟"
+                    {
+                        float ry = rad * 0.46f;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + trunkH + ry * 0.45f, z),
+                                Quaternion.Euler(0f, rotY, 0f), new Vector3(rad * 1.02f, ry, rad * 0.95f))
+                        });
+                        if (rnd.NextDouble() < 0.6)
+                        {
+                            float r2 = rad * 0.55f;
+                            float oa = (float)rnd.NextDouble() * Mathf.PI * 2f;
+                            lists[ci].Add(new CombineInstance
+                            {
+                                mesh = canopy,
+                                transform = Matrix4x4.TRS(new Vector3(x + Mathf.Cos(oa) * rad * 0.55f, gy + trunkH + ry * 0.30f, z + Mathf.Sin(oa) * rad * 0.55f),
+                                    Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f), new Vector3(r2, r2 * 0.55f, r2))
+                            });
+                        }
+                    }
+                    else if (form < 6)   // 竖椭圆
+                    {
+                        float ry = rad * sy * 1.6f;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + trunkH + ry * 0.45f, z),
+                                Quaternion.Euler(0f, rotY, 0f), new Vector3(rad * 0.66f, ry, rad * 0.66f))
+                        });
+                    }
+                    else   // 普通冠：云团状，半个冠再挂一颗侧球
+                    {
+                        float ry = rad * sy;
+                        lists[ci].Add(new CombineInstance
+                        {
+                            mesh = rnd.Next(2) == 0 ? canopy : canopy2,
+                            transform = Matrix4x4.TRS(new Vector3(x, gy + trunkH + ry * 0.5f + yJit * 0.3f, z),
+                                Quaternion.Euler(0f, rotY, 0f),
+                                new Vector3(rad, ry, rad * (0.9f + (float)rnd.NextDouble() * 0.2f)))
+                        });
+                        if (rnd.NextDouble() < 0.55)
+                        {
+                            float r2 = rad * 0.55f;
+                            float oa = (float)rnd.NextDouble() * Mathf.PI * 2f;
+                            lists[ci].Add(new CombineInstance
+                            {
+                                mesh = canopy2,
+                                transform = Matrix4x4.TRS(
+                                    new Vector3(x + Mathf.Cos(oa) * rad * 0.55f, gy + trunkH + ry * 0.5f + rad * 0.20f, z + Mathf.Sin(oa) * rad * 0.55f),
+                                    Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f), new Vector3(r2, r2 * 0.9f, r2))
+                            });
+                        }
+                    }
+                }
             }
         }
         // 裸岩成组出现（山顶/陡坡的石带），散点会像撒了一地石子
@@ -2564,6 +2725,18 @@ public class WorldBuilder : MonoBehaviour
             mr.sharedMaterial = LitTinted("leaves", cols[i], 3f, 3f);
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
+        if (trunks.Count > 0)
+        {
+            var m = new Mesh();
+            m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
+            m.CombineMeshes(trunks.ToArray(), true, true);
+            m.RecalculateBounds();
+            var go = NewGo("mt0", g);
+            go.AddComponent<MeshFilter>().sharedMesh = m;
+            var mr = go.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = LitTinted("bark", "#5b4a38", 2f, 2f);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
         for (int i = 0; i < rocks.Length; i++)
         {
             if (rocks[i].Count == 0) continue;
@@ -2645,12 +2818,14 @@ public class WorldBuilder : MonoBehaviour
     void Trees()
     {
         var g = NewGo("Trees", Root).transform;
-        foreach (var t in W.TREES) Tree(g, t.x, t.z, t.v);
+        var canopyA = MeshFactory.Canopy(1f, 12, 8, 0.24f);
+        var canopyB = MeshFactory.Canopy(1f, 12, 8, 0.36f, 5.1f);
+        foreach (var t in W.TREES) Tree(g, t.x, t.z, t.v, canopyA, canopyB);
         // 小镇的边界树改由 ForestBelt 统一生成（更密、合并网格）；校园世界仍用数据里的环带
-        if (W.RIVER == null) foreach (var t in W.BORDER_TREES) Tree(g, t.x, t.z, t.v);
+        if (W.RIVER == null) foreach (var t in W.BORDER_TREES) Tree(g, t.x, t.z, t.v, canopyA, canopyB);
     }
 
-    void Tree(Transform parent, float x, float z, int v)
+    void Tree(Transform parent, float x, float z, int v, Mesh canopyA, Mesh canopyB)
     {
         // 硬排除：神社前庭/参道口、河面与桥面，避免任何来源的树卡在建筑或水里
         if (Mathf.Abs(x - 79f) < 13f && Mathf.Abs(z + 57f) < 16f) return;
@@ -2662,6 +2837,7 @@ public class WorldBuilder : MonoBehaviour
         trunkCol.center = new Vector3(0f, 1.6f, 0f);
         trunkCol.height = 3.2f;
         trunkCol.radius = 0.34f;
+        float rot = Mathf.Repeat(x * 37.7f + z * 19.3f, 360f);   // 冠形朝向由位置决定，同一棵树每次一样
         if (v == 6)
         {
             BarkBox(grp, new Vector3(0, 0.4f, 0), new Vector3(0.36f, 0.8f, 0.36f), "#6b4a2f");
@@ -2676,42 +2852,42 @@ public class WorldBuilder : MonoBehaviour
         }
         else if (v == 8)
         {
-            BarkBox(grp, new Vector3(0, 0.8f, 0), new Vector3(0.44f, 1.6f, 0.44f), "#6d4a2f");
-            LeafBox(grp, new Vector3(0, 2.1f, 0), new Vector3(2.4f, 1.5f, 2.4f), "#4f9448");
-            LeafBox(grp, new Vector3(0, 3.05f, 0), new Vector3(1.6f, 0.9f, 1.6f), "#5da04f");
+            BarkBox(grp, new Vector3(0, 0.9f, 0), new Vector3(0.44f, 1.8f, 0.44f), "#6d4a2f");
+            LeafCanopy(grp, canopyB, new Vector3(0f, 2.2f, 0f), new Vector3(1.15f, 0.85f, 1.15f), "#4f9448", rot);
+            LeafCanopy(grp, canopyA, new Vector3(0.4f, 2.75f, -0.15f), new Vector3(0.7f, 0.6f, 0.7f), "#5da04f", rot + 55f);
         }
         else if (v == 9)
         {
-            // 柳树：高干 + 三层浅绿垂冠（池畔）
+            // 柳树：高干 + 三层浅绿垂冠（池畔），冠层压扁叠放，保留垂坠感
             BarkBox(grp, new Vector3(0, 1.5f, 0), new Vector3(0.4f, 3f, 0.4f), "#7a6a45");
-            LeafBox(grp, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 0.7f, 2.4f), "#7fa84f");
-            LeafBox(grp, new Vector3(0, 3.4f, 0), new Vector3(2.8f, 0.6f, 2.8f), "#8fb35a");
-            LeafBox(grp, new Vector3(0, 4.05f, 0), new Vector3(1.9f, 0.6f, 1.9f), "#9cc06a");
+            LeafCanopy(grp, canopyB, new Vector3(0f, 2.75f, 0f), new Vector3(1.25f, 0.5f, 1.25f), "#7fa84f", rot);
+            LeafCanopy(grp, canopyA, new Vector3(0f, 3.4f, 0f), new Vector3(1.0f, 0.45f, 1.0f), "#8fb35a", rot + 35f);
+            LeafCanopy(grp, canopyB, new Vector3(0f, 4.0f, 0f), new Vector3(0.68f, 0.4f, 0.68f), "#9cc06a", rot + 70f);
         }
         else if (v == 10)
         {
             // 桃花：中干 + 粉色团冠（花园）
             BarkBox(grp, new Vector3(0, 0.9f, 0), new Vector3(0.36f, 1.8f, 0.36f), "#6d4a2f");
-            LeafBox(grp, new Vector3(0, 2.3f, 0), new Vector3(2f, 1.7f, 2f), "#e8a8bd");
-            LeafBox(grp, new Vector3(0, 3.25f, 0), new Vector3(1.3f, 0.8f, 1.3f), "#f0bccd");
+            LeafCanopy(grp, canopyB, new Vector3(0f, 2.35f, 0f), new Vector3(1.0f, 0.8f, 1.0f), "#e8a8bd", rot);
+            LeafCanopy(grp, canopyA, new Vector3(0.35f, 2.85f, 0.1f), new Vector3(0.6f, 0.55f, 0.6f), "#f0bccd", rot + 50f);
         }
         else
         {
             bool tall = v == 1, wide = v == 2;
-            float trunkH = tall ? 1.5f : 1f;
-            Vector3 crown = wide ? new Vector3(2f, 1.4f, 2f) : tall ? new Vector3(1.4f, 1.8f, 1.4f) : new Vector3(1.5f, 1.3f, 1.5f);
+            float trunkH = tall ? 1.5f : 1.0f;
+            float cw = wide ? 1.1f : tall ? 0.78f : 0.92f;   // 冠半径
+            float ch = wide ? 0.95f : tall ? 1.35f : 1.08f;  // 冠半高
             BarkBox(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.36f, trunkH, 0.36f), "#6d4a2f");
-            // 双色调树冠：暗底 + 主色 + 亮顶（立体受光感）+ 叶簇纹理
             string baseHex = TREE_CROWNS[v % TREE_CROWNS.Length];
-            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.3f - 0.1f, 0), new Vector3(crown.x * 0.98f, crown.y * 0.6f, crown.z * 0.98f), MatLib.Shade(baseHex, 0.78f));
-            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.74f - 0.1f, 0), new Vector3(crown.x * 0.92f, crown.y * 0.5f, crown.z * 0.92f), baseHex);
-            LeafBox(grp, new Vector3(0, trunkH + crown.y - 0.18f, 0), new Vector3(crown.x * 0.6f, crown.y * 0.28f, crown.z * 0.6f), MatLib.Shade(baseHex, 1.2f));
+            // 主冠 + 亮色侧冠：不再是叠起来的三个方块
+            LeafCanopy(grp, canopyB, new Vector3(0f, trunkH + ch * 0.33f, 0f), new Vector3(cw, ch, cw), baseHex, rot);
+            LeafCanopy(grp, canopyA, new Vector3(cw * 0.38f, trunkH + ch * 0.62f, -cw * 0.2f), new Vector3(cw * 0.58f, ch * 0.55f, cw * 0.58f), MatLib.Shade(baseHex, 1.18f), rot + 65f);
         }
     }
 
-    // 树冠块：世界尺度 UV（每面密度恒定 160px/米）+ 叶簇贴图 × 颜色
-    GameObject LeafBox(Transform p, Vector3 pos, Vector3 size, string hex)
-        => MeshObj(p, MeshFactory.BoxUV(size, TexScale.LeafMeters), pos, LitTinted("leaves", hex));
+    // 冠形块：与林带同款的低多边形树冠，UV 铺 2.5 次保持叶簇密度
+    GameObject LeafCanopy(Transform p, Mesh mesh, Vector3 pos, Vector3 scale, string hex, float rot)
+        => MeshObj(p, mesh, pos, LitTinted("leaves", hex, 2.5f, 2.5f), new Vector3(0f, rot, 0f));
 
     // 树干块：树皮贴图 × 树色
     GameObject BarkBox(Transform p, Vector3 pos, Vector3 size, string hex)
