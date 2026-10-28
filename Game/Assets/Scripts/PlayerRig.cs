@@ -45,7 +45,8 @@ public class PlayerRig : MonoBehaviour
         _player = w.Player;
         _avatar = w.Player != null ? w.Player.GetComponentInChildren<PlayerAvatar>() : null;
 
-        _cam.clearFlags = CameraClearFlags.SolidColor;
+        // TimeOfDay 已启用程序化天空时保留 Skybox；否则退回原来的纯色背景
+        _cam.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
         _cam.backgroundColor = MatLib.Hex("#10141c");
         _cam.fieldOfView = 46f;
         _cam.nearClipPlane = 0.5f;

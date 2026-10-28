@@ -16,6 +16,7 @@ public class TimeOfDay : MonoBehaviour
     bool _winNight;
     float _cullTimer;
     PostFX _post;
+    Material _skybox;
 
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
@@ -40,8 +41,8 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
     // 写实向（2026-10-18 第二版）：压低整体曝光 + 保住「直射 : 环境」比 → 不再晃眼、层次更厚
     // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
-    const float DAY_AMB = 0.175f, DAY_HEMI = 0.11f, DAY_DIR_I = 0.72f;
-    const float NIGHT_AMB = 0.40f, NIGHT_HEMI = 0.26f, NIGHT_DIR_I = 0.72f;
+    const float DAY_AMB = 0.28f, DAY_HEMI = 0.16f, DAY_DIR_I = 0.95f;
+    const float NIGHT_AMB = 0.22f, NIGHT_HEMI = 0.16f, NIGHT_DIR_I = 0.40f;
     const float DAY_FOG_NEAR = 70f, DAY_FOG_FAR = 300f;
     const float NIGHT_FOG_NEAR = 60f, NIGHT_FOG_FAR = 230f;
 
@@ -91,7 +92,7 @@ public class TimeOfDay : MonoBehaviour
         _dir.shadowStrength = 0.95f;
         _dir.shadowBias = 0.02f;
         _dir.shadowNormalBias = 0.4f;
-        _dir.shadowCustomResolution = 2048;
+        _dir.shadowCustomResolution = 4096;
 
         // 半球光（web: hemisphereLight 天空/地面双色）替代：反向弱平行光承载天空色
         var up = new GameObject("SkyFill");
@@ -115,9 +116,26 @@ public class TimeOfDay : MonoBehaviour
         _fill.intensity = 0.22f;
         _fill.shadows = LightShadows.None;
 
-        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
+
+        // 写实天空：内置程序化天空盒（太阳盘 + 大气渐变），替换原来的平涂昼穹；
+        // 夜穹保留为透明星空层叠在天空盒上。
+        _skybox = Resources.Load<Material>("mat_holder/Skybox_Procedural");
+        if (_skybox != null)
+        {
+            RenderSettings.skybox = _skybox;
+            RenderSettings.sun = _dir;
+            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
+            RenderSettings.defaultReflectionResolution = 256;
+            RenderSettings.reflectionIntensity = 1f;
+            var cam = Camera.main;
+            if (cam != null) cam.clearFlags = CameraClearFlags.Skybox;
+            if (_w != null && _w.SkyDayGo != null) _w.SkyDayGo.SetActive(false);
+            Debug.Log("[TimeOfDay] 程序化天空启用");
+        }
+        else Debug.LogWarning("[TimeOfDay] 程序化天空材质未找到，保留昼穹");
 
         Apply();
     }
@@ -185,20 +203,33 @@ public class TimeOfDay : MonoBehaviour
         Color sky = Color.Lerp(DAY_HEMI_SKY, NIGHT_HEMI_SKY, m);
         Color amb = Color.Lerp(sky, gnd, 0.28f);
         float ambI = Mathf.Lerp(DAY_AMB, NIGHT_AMB, m) * wAmb;
-        // 室内：没有天光直射，靠环境光撑亮度，并偏暖（室内灯多为暖白）
+        // 三色环境光（天空/地平/地面）：阴影偏冷蓝，比平环境光更有体积
+        Color ambSky, ambEq, ambGnd;
         if (Indoor)
         {
-            amb = Color.Lerp(amb, new Color(0.96f, 0.96f, 0.95f), 0.35f);   // 轻微中性化，别把墙纸都染成米黄
-            ambI *= 2.3f;
+            // 室内：中性化、整体抬亮（室内灯多为暖白）
+            Color n = Color.Lerp(amb, new Color(0.96f, 0.96f, 0.95f), 0.35f);
+            float k = ambI * 2.1f;
+            ambSky = n * k;
+            ambEq = n * (k * 0.92f);
+            ambGnd = n * (k * 0.84f);
         }
-        RenderSettings.ambientLight = new Color(amb.r * ambI, amb.g * ambI, amb.b * ambI, 1f);
+        else
+        {
+            ambSky = sky * ambI;
+            ambEq = Color.Lerp(sky, gnd, 0.45f) * (ambI * 0.85f);
+            ambGnd = gnd * (ambI * 0.90f);
+        }
+        RenderSettings.ambientSkyColor = new Color(ambSky.r, ambSky.g, ambSky.b, 1f);
+        RenderSettings.ambientEquatorColor = new Color(ambEq.r, ambEq.g, ambEq.b, 1f);
+        RenderSettings.ambientGroundColor = new Color(ambGnd.r, ambGnd.g, ambGnd.b, 1f);
 
         if (_dir != null)
         {
             _dir.intensity = Mathf.Lerp(DAY_DIR_I, NIGHT_DIR_I, m) * wSun;
             var baseDir = Color.Lerp(Color.Lerp(DAY_DIR, NIGHT_DIR, m), WARM_DIR, warm * 0.75f);
             _dir.color = _wth != null && wFog > 0.001f ? Color.Lerp(baseDir, _wth.SunTint, wFog * 0.75f) : baseDir;
-            _dir.shadowStrength = Mathf.Lerp(0.95f, 0.22f, wFog) * Mathf.Lerp(1f, 0.85f, m);
+            _dir.shadowStrength = Mathf.Lerp(0.85f, 0.22f, wFog) * Mathf.Lerp(1f, 0.85f, m);
         }
         if (_up != null)
         {
@@ -227,6 +258,18 @@ public class TimeOfDay : MonoBehaviour
         float fogFarMul = _wth != null ? _wth.FogFarMul : 1f;
         RenderSettings.fogStartDistance = Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m) * fogNearMul;
         RenderSettings.fogEndDistance = Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m) * fogFarMul;
+
+        // 程序化天空：太阳盘只在白天出现，晨昏染暖，夜晚低曝光
+        if (_skybox != null)
+        {
+            _skybox.SetFloat("_SunDisk", m > 0.55f ? 0f : 2f);
+            _skybox.SetFloat("_SunSize", 0.035f);
+            _skybox.SetFloat("_SunSizeConvergence", 5f);
+            _skybox.SetFloat("_AtmosphereThickness", Mathf.Lerp(0.90f, 0.40f, m));
+            _skybox.SetColor("_SkyTint", Color.Lerp(new Color(0.42f, 0.62f, 0.95f), WARM_SKY, warm * 0.65f));
+            _skybox.SetColor("_GroundColor", Color.Lerp(RenderSettings.fogColor, gnd, 0.25f));
+            _skybox.SetFloat("_Exposure", Mathf.Lerp(1.0f, 0.10f, m));
+        }
 
         // 天空双穹：夜穹淡入 + 白天穹晨昏染暖；星空缓转、云缓漂
         if (_w != null)

@@ -12,6 +12,7 @@ public class WorldBuilder : MonoBehaviour
     public Material LampGlass { get; private set; }
     public Material LampPool { get; private set; }
     public Material SkyDayMat { get; private set; }
+    public GameObject SkyDayGo { get; private set; }
     public Material SkyNightMat { get; private set; }
     public Transform SkyNightTr { get; private set; }
     // 昼夜双窗户：{material, 白天贴图名, 夜晚贴图名}——由 TimeOfDay 在夜里切换
@@ -739,7 +740,7 @@ public class WorldBuilder : MonoBehaviour
         QualitySettings.vSyncCount = 1;
         if (string.IsNullOrEmpty(Args.Str("-shot")))
             Screen.SetResolution(1600, 900, FullScreenMode.Windowed);   // 默认窗口，可拖动边缘调整；F11 切全屏
-        QualitySettings.shadowDistance = 90f;
+        QualitySettings.shadowDistance = 140f;
 
         var w = BuildWorld();
         if (w == null) return;
@@ -819,6 +820,7 @@ public class WorldBuilder : MonoBehaviour
     void Sky()
     {
         var day = NewGo("SkyDay", Root);
+        SkyDayGo = day;
         day.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Dome(420f, 32, 20);
         var dr = day.AddComponent<MeshRenderer>();
         SkyDayMat = MatLib.Fade("sky_day", new Color(0.5f, 0.5f, 0.5f, 1f));   // Legacy 粒子着色器自带 ×2 色彩倍增，0.5 抵消

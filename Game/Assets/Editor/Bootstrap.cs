@@ -30,6 +30,7 @@ public static class Bootstrap
             "Legacy Shaders/Transparent/Diffuse",
             "Campus/PostFX",
             "Campus/Water",
+            "Skybox/Procedural",
         };
         foreach (var sn in shaderNames)
         {
@@ -82,9 +83,9 @@ public static class Bootstrap
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;
         PlayerSettings.runInBackground = true;
-        PlayerSettings.colorSpace = ColorSpace.Gamma;   // 与 web 版 sRGB 直出观感一致（首屏后按截图校准）
+        PlayerSettings.colorSpace = ColorSpace.Linear;   // 写实光照：线性空间 + HDR + ACES
         QualitySettings.antiAliasing = 4;
-        QualitySettings.shadowDistance = 130f;
+        QualitySettings.shadowDistance = 140f;
         QualitySettings.shadowResolution = ShadowResolution.High;
         QualitySettings.vSyncCount = 0;
 
@@ -183,6 +184,7 @@ public static class Bootstrap
         PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
         PlayerSettings.defaultScreenWidth = 1600;
         PlayerSettings.defaultScreenHeight = 900;
+        PlayerSettings.colorSpace = ColorSpace.Linear;   // 每次构建都确保线性空间（写实光照）
         AssetDatabase.SaveAssets();
     }
 
