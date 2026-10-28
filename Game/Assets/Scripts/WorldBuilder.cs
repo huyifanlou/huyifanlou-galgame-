@@ -882,7 +882,14 @@ public class WorldBuilder : MonoBehaviour
             // 小镇：地形在河道处断开（下沉河床），UV 由网格按世界坐标给出
             GrassMat = LitTinted("grass", "#aebd8f");
             var groundMesh = TerrainHoleMesh(TexScale.GrassPeriod, 0f);
+            ApplyMountainTint(groundMesh);
             var groundGo = MeshObj(Root, groundMesh, Vector3.zero, GrassMat);
+            groundGo.GetComponent<MeshRenderer>().sharedMaterials = new[]
+            {
+                GrassMat,
+                LitTinted("grass", "#98a883"),   // 山地深草
+                LitTinted("grass", "#b6ae82"),   // 山地干草
+            };
             var groundCol = groundGo.AddComponent<MeshCollider>();
             groundCol.sharedMesh = groundMesh;
         }
@@ -1084,6 +1091,10 @@ public class WorldBuilder : MonoBehaviour
             }
             h *= 0.82f + 0.36f * Mathf.PerlinNoise(x * 0.011f + 11.3f, z * 0.011f + 5.7f);
             h *= 0.90f + 0.20f * Mathf.PerlinNoise(x * 0.031f + 31.7f, z * 0.031f + 17.3f);   // 第二层起伏，避免山包太规整
+            // 山脊皱褶：树量降到 1/4 后山体自己要撑住画面，150m 起渐入中高频起伏
+            float wr = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 150f) / 60f));
+            h += (Mathf.PerlinNoise(x * 0.032f + 57.1f, z * 0.032f + 23.9f) - 0.5f) * 5f * wr;
+            h += (Mathf.PerlinNoise(x * 0.075f + 3.7f, z * 0.075f + 61.3f) - 0.5f) * 1.8f * wr;
             // 界外 30m 山体渐入：否则镇界处会冒出一道 3~4m 的陡坎，坡上的灌木被坡面自身挡光
             h *= Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((r - 128f) / 30f));
             if (W.RIVER != null)
@@ -1106,14 +1117,32 @@ public class WorldBuilder : MonoBehaviour
         return h;
     }
 
+    // 足迹最低地面：坡面上按中心点落位会让下坡侧悬空，植被/岩石一律取足迹内最低点
+    float FootMinH(float x, float z, float rad)
+    {
+        float m = RimH(x, z);
+        for (int i = 0; i < 6; i++)
+        {
+            float a = i * Mathf.PI / 3f;
+            float hh = RimH(x + Mathf.Cos(a) * rad, z + Mathf.Sin(a) * rad);
+            if (hh < m) m = hh;
+        }
+        return m;
+    }
+
+    // 树丛遮罩：剩下的 1/4 树按噪声聚成片，避免均匀撒点
+    float Grove(float x, float z) => Mathf.PerlinNoise(x * 0.021f + 5.3f, z * 0.021f + 9.1f);
+    // 采样保留率：均值 25%，树丛中心更密、草坡留白
+    float SparseKeep(float x, float z) => 0.25f * (0.30f + 1.40f * Grove(x, z));
+
     // 河道处断开的地形（北片 + 南片合成一张网格；边界处抬升为缓丘）
     Mesh TerrainHoleMesh(float period, float y)
     {
         float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
         float half = W.RIVER.width / 2f;
-        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 340, 120, period,
+        var north = MeshFactory.StripH(x => -gs / 2f, x => RZ(x) - half, -gs / 2f, gs / 2f, 400, 260, period,
             (x, z) => y + RimH(x, z));
-        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 340, 120, period,
+        var south = MeshFactory.StripH(x => RZ(x) + half, x => gs / 2f, -gs / 2f, gs / 2f, 400, 260, period,
             (x, z) => y + RimH(x, z));
         var ci = new CombineInstance[2];
         ci[0].mesh = north; ci[0].transform = Matrix4x4.identity;
@@ -2163,7 +2192,8 @@ public class WorldBuilder : MonoBehaviour
 
         void Add(float x, float z, float h)
         {
-            float y = RimH(x, z);
+            // 树干埋进坡面：按足迹最低地面落位，下坡侧不再露空
+            float y = FootMinH(x, z, Mathf.Max(0.6f, h * 0.16f)) - 0.3f;
             float aDeg = Mathf.Atan2(z, x) * Mathf.Rad2Deg;
             bool shrineSide = Mathf.Abs(Mathf.DeltaAngle(aDeg, -38f)) < 26f;   // 神社一带多种樱
             float roll = (float)rnd.NextDouble();
@@ -2227,6 +2257,8 @@ public class WorldBuilder : MonoBehaviour
                 if (inner && Mathf.PerlinNoise(a * 2.6f + 3.1f, 0.7f) < 0.34f) continue;
                 // 林线：18m 等高线以上不长树，山顶留空，山形才露得出来
                 if (RimH(x, z) > 18f) continue;
+                // 树量降到 1/4：成片留林、草坡留白，山体本身露出来
+                if (rnd.NextDouble() > SparseKeep(x, z)) continue;
                 float h = inner ? 5.5f + (float)rnd.NextDouble() * 5.5f : 8f + (float)rnd.NextDouble() * 7f;
                 Add(x, z, h);
             }
@@ -2275,7 +2307,7 @@ public class WorldBuilder : MonoBehaviour
                 float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
                 if (Mathf.Abs(z - RZ(x)) < 12f) continue;
                 if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
-                float y = RimH(x, z);
+                float y = FootMinH(x, z, 1.2f);
                 float rad = 0.55f + (float)rnd.NextDouble() * 0.85f;
                 float sy = 0.58f + (float)rnd.NextDouble() * 0.26f;
                 int bslot = 5 * VAR + rnd.Next(VAR);
@@ -2351,13 +2383,13 @@ public class WorldBuilder : MonoBehaviour
                 if (Mathf.Abs(x) < 122f && Mathf.Abs(z - 104f) < 6.5f) continue;
                 float h = RimH(x, z);
                 if (h > 10f) continue;
-                if (rnd.NextDouble() > 0.85) continue;
+                if (rnd.NextDouble() > 0.85f * SparseKeep(x, z)) continue;
                 float rad = 1.2f + (float)rnd.NextDouble() * 1.8f;
                 int ci = rnd.Next(cols.Length);
                 lists[ci].Add(new CombineInstance
                 {
                     mesh = canopy,
-                    transform = Matrix4x4.TRS(new Vector3(x, h + rad * 0.22f, z),
+                    transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, rad * 0.9f) + rad * 0.22f, z),
                         Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
                         new Vector3(rad, rad * (0.45f + (float)rnd.NextDouble() * 0.25f), rad))
                 });
@@ -2380,7 +2412,7 @@ public class WorldBuilder : MonoBehaviour
                 rocks[rnd.Next(2)].Add(new CombineInstance
                 {
                     mesh = rock,
-                    transform = Matrix4x4.TRS(new Vector3(x, h + s * 0.2f, z),
+                    transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, s * 0.7f) + s * 0.15f, z),
                         Quaternion.Euler((float)rnd.NextDouble() * 16f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 16f),
                         new Vector3(s, s * 0.7f, s * 0.85f))
                 });
@@ -2400,9 +2432,11 @@ public class WorldBuilder : MonoBehaviour
                 if (Mathf.Abs(x) < 124f && Mathf.Abs(z - 104f) < 7f) continue;
                 float h = RimH(x, z);
                 if (h < 8f) continue;   // 山脚低谷已由贴坡小灌丛铺满
+                if (h > 34f && rnd.NextDouble() < 0.7f) continue;   // 峰顶留白：裸岩与山形露出来
                 // 山脚到山腰都成片、接近山顶逐渐变稀（远看就是连续山林）
                 float chance = h < 22f ? 0.80f : h < 32f ? 0.68f : h < 42f ? 0.56f : 0.40f;
-                if (rnd.NextDouble() > chance) continue;
+                // 树量降到 1/4：只保留成片树丛
+                if (rnd.NextDouble() > chance * SparseKeep(x, z)) continue;
                 // 低处/陡坡用立体的灌/矮树形；缓坡高处才用扁林毯（扁球在陡面上侧面会连成暗墙）
                 float slopeProbe = Mathf.Abs(RimH(x + 2.5f, z) - h) + Mathf.Abs(RimH(x, z + 2.5f) - h);
                 bool bush = h < 32f || slopeProbe > 2.2f || rnd.NextDouble() < 0.35f;
@@ -2420,7 +2454,7 @@ public class WorldBuilder : MonoBehaviour
                     lists[ci].Add(new CombineInstance
                     {
                         mesh = cone,
-                        transform = Matrix4x4.TRS(new Vector3(x, h + ch * 0.5f - 0.3f, z),
+                        transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, cr * 0.9f) + ch * 0.5f - 0.45f, z),
                             Quaternion.identity, new Vector3(cr, ch, cr))
                     });
                     continue;
@@ -2429,14 +2463,14 @@ public class WorldBuilder : MonoBehaviour
                 {
                     mesh = bush && rnd.Next(2) == 0 ? canopy2 : canopy,
                     transform = Matrix4x4.TRS(
-                        new Vector3(x, h + rad * (bush ? 0.18f : 0.06f) + yJit, z),
+                        new Vector3(x, FootMinH(x, z, rad * 0.8f) + rad * sy * 0.55f + yJit, z),
                         Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f),
                         new Vector3(rad, rad * sy, rad))
                 });
             }
         }
         // 裸岩成组出现（山顶/陡坡的石带），散点会像撒了一地石子
-        for (int c = 0; c < 30; c++)
+        for (int c = 0; c < 50; c++)
         {
             float a = (float)rnd.NextDouble() * Mathf.PI * 2f;
             float rr = 160f + (float)rnd.NextDouble() * 135f;
@@ -2454,9 +2488,65 @@ public class WorldBuilder : MonoBehaviour
                 rocks[rnd.Next(2)].Add(new CombineInstance
                 {
                     mesh = rock,
-                    transform = Matrix4x4.TRS(new Vector3(x, h + s * 0.26f, z),
+                    transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, s * 0.7f) + s * 0.12f, z),
                         Quaternion.Euler((float)rnd.NextDouble() * 14f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 14f),
                         new Vector3(s, s * (0.5f + (float)rnd.NextDouble() * 0.5f), s * (0.7f + (float)rnd.NextDouble() * 0.3f)))
+                });
+            }
+        }
+        // 陡坡岩带：树少以后靠裸岩撑住坡面（沿坡面找坡度大的位置成组出石）
+        for (float r0 = 150f; r0 < 300f; r0 += 4f)
+        {
+            int n = Mathf.Max(20, Mathf.RoundToInt(2f * Mathf.PI * r0 / 4.5f));
+            for (int k = 0; k < n; k++)
+            {
+                float a = (k + (float)rnd.NextDouble() * 0.9f) / n * Mathf.PI * 2f;
+                float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 4f;
+                float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
+                if (Mathf.Abs(z - RZ(x)) < 14f) continue;
+                if (Mathf.Abs(x) < 124f && Mathf.Abs(z - 104f) < 7f) continue;
+                float h = RimH(x, z);
+                if (h < 10f) continue;
+                float slopeProbe = Mathf.Abs(RimH(x + 2.5f, z) - h) + Mathf.Abs(RimH(x, z + 2.5f) - h);
+                if (slopeProbe < 1.9f) continue;
+                if (rnd.NextDouble() > 0.26) continue;
+                int cnt = 1 + rnd.Next(3);
+                for (int j = 0; j < cnt; j++)
+                {
+                    float rx = x + ((float)rnd.NextDouble() - 0.5f) * 5f;
+                    float rz = z + ((float)rnd.NextDouble() - 0.5f) * 5f;
+                    if (RimH(rx, rz) < 8f) continue;
+                    float s = 0.8f + (float)rnd.NextDouble() * 2.2f;
+                    rocks[rnd.Next(2)].Add(new CombineInstance
+                    {
+                        mesh = rock,
+                        transform = Matrix4x4.TRS(new Vector3(rx, FootMinH(rx, rz, s * 0.7f) + s * 0.1f, rz),
+                            Quaternion.Euler((float)rnd.NextDouble() * 20f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 20f),
+                            new Vector3(s, s * (0.5f + (float)rnd.NextDouble() * 0.5f), s * (0.7f + (float)rnd.NextDouble() * 0.35f)))
+                    });
+                }
+            }
+        }
+        // 峰顶裸岩：树少了以后峰顶要有石头，否则是一颗光秃的绿馒头
+        for (int i = 0; i < PEAKS.GetLength(0); i++)
+        {
+            if (PEAKS[i, 2] < 24f) continue;
+            float a = PEAKS[i, 0] * Mathf.Deg2Rad;
+            float cx = Mathf.Cos(a) * PEAKS[i, 1], cz = Mathf.Sin(a) * PEAKS[i, 1];
+            if (Mathf.Abs(cz - RZ(cx)) < 15f) continue;
+            int cnt = 5 + rnd.Next(5);
+            for (int j = 0; j < cnt; j++)
+            {
+                float x = cx + ((float)rnd.NextDouble() - 0.5f) * 14f;
+                float z = cz + ((float)rnd.NextDouble() - 0.5f) * 14f;
+                if (RimH(x, z) < 26f) continue;
+                float s = 1.6f + (float)rnd.NextDouble() * 2.6f;
+                rocks[rnd.Next(2)].Add(new CombineInstance
+                {
+                    mesh = rock,
+                    transform = Matrix4x4.TRS(new Vector3(x, FootMinH(x, z, s * 0.7f) + s * 0.12f, z),
+                        Quaternion.Euler((float)rnd.NextDouble() * 14f, (float)rnd.NextDouble() * 360f, (float)rnd.NextDouble() * 14f),
+                        new Vector3(s, s * (0.45f + (float)rnd.NextDouble() * 0.4f), s * (0.7f + (float)rnd.NextDouble() * 0.3f)))
                 });
             }
         }
@@ -2484,9 +2574,37 @@ public class WorldBuilder : MonoBehaviour
             var go = NewGo("mr" + i, g);
             go.AddComponent<MeshFilter>().sharedMesh = m;
             var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = LitTinted("concrete", i == 0 ? "#9a9aa0" : "#82828a", 1.2f, 1.2f);
+            mr.sharedMaterial = LitTinted("concrete", i == 0 ? "#8f8b82" : "#77736c", 1.2f, 1.2f);
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
+    }
+
+    // ── 山地草甸色斑：把山体地形三角形按噪声分到 3 个材质子网格（同网格零穿插），整面一个草色太塑料 ──
+    void ApplyMountainTint(Mesh m)
+    {
+        var all = m.GetTriangles(0);
+        var v = m.vertices;
+        var t0 = new List<int>(all.Length);
+        var t1 = new List<int>();
+        var t2 = new List<int>();
+        for (int i = 0; i < all.Length; i += 3)
+        {
+            Vector3 c = (v[all[i]] + v[all[i + 1]] + v[all[i + 2]]) / 3f;
+            int slot = 0;
+            if (Mathf.Sqrt(c.x * c.x + c.z * c.z) > 134f)
+            {
+                float n1 = Mathf.PerlinNoise(c.x * 0.022f + 71.3f, c.z * 0.022f + 43.1f);
+                float n2 = Mathf.PerlinNoise(c.x * 0.047f + 13.7f, c.z * 0.047f + 87.9f);
+                if (n1 > 0.60f) slot = 1;
+                else if (n2 > 0.63f) slot = 2;
+            }
+            var tl = slot == 0 ? t0 : slot == 1 ? t1 : t2;
+            tl.Add(all[i]); tl.Add(all[i + 1]); tl.Add(all[i + 2]);
+        }
+        m.subMeshCount = 3;
+        m.SetTriangles(t0, 0);
+        m.SetTriangles(t1, 1);
+        m.SetTriangles(t2, 2);
     }
 
     // ── 铁路收口：两端石砌洞门 + 洞内暗腔，铁轨不再通向世界外 ──
