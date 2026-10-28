@@ -2181,9 +2181,9 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (sp == 1)                                                   // 1 阔叶
             {
-                Trunk(tk, x, y, z, h, 0.56f);
-                Ball(slot, x, y + h * 0.62f, z, h * 0.29f, 0.95f);
-                Ball(slot, x + h * 0.12f, y + h * 0.75f, z - h * 0.08f, h * 0.18f, 0.95f);
+                Trunk(tk, x, y, z, h, 0.50f);
+                Ball(slot, x, y + h * 0.58f, z, h * 0.33f, 0.95f);
+                Ball(slot, x + h * 0.13f, y + h * 0.73f, z - h * 0.08f, h * 0.20f, 0.95f);
             }
             else if (sp == 2)                                                   // 2 杉（窄高）
             {
@@ -2193,28 +2193,28 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (sp == 3)                                                   // 3 樱
             {
-                Trunk(tk, x, y, z, h, 0.50f);
-                Ball(slot, x, y + h * 0.62f, z, h * 0.26f, 0.84f);
-                Ball(slot, x - h * 0.13f, y + h * 0.74f, z + h * 0.07f, h * 0.16f, 0.84f);
+                Trunk(tk, x, y, z, h, 0.44f);
+                Ball(slot, x, y + h * 0.58f, z, h * 0.30f, 0.84f);
+                Ball(slot, x - h * 0.14f, y + h * 0.72f, z + h * 0.07f, h * 0.18f, 0.84f);
             }
             else if (sp == 4)                                                   // 4 落叶乔木（细高、冠小）
             {
-                Trunk(tk, x, y, z, h, 0.68f);
-                Ball(slot, x, y + h * 0.76f, z, h * 0.20f, 1.05f);
-                Ball(slot, x + h * 0.09f, y + h * 0.87f, z, h * 0.12f, 1.0f);
+                Trunk(tk, x, y, z, h, 0.60f);
+                Ball(slot, x, y + h * 0.70f, z, h * 0.25f, 1.05f);
+                Ball(slot, x + h * 0.10f, y + h * 0.84f, z, h * 0.14f, 1.0f);
             }
             else                                                                // 6 秋色阔叶（橙黄，打散一片绿）
             {
-                Trunk(tk, x, y, z, h, 0.54f);
-                Ball(slot, x, y + h * 0.62f, z, h * 0.28f, 0.92f);
-                Ball(slot, x - h * 0.11f, y + h * 0.74f, z + h * 0.09f, h * 0.17f, 0.92f);
+                Trunk(tk, x, y, z, h, 0.48f);
+                Ball(slot, x, y + h * 0.58f, z, h * 0.32f, 0.92f);
+                Ball(slot, x - h * 0.12f, y + h * 0.72f, z + h * 0.09f, h * 0.19f, 0.92f);
             }
         }
 
         for (float r0 = 134f; r0 < 262f; r0 += 6.5f)
         {
             bool inner = r0 < 166f;
-            float gap = inner ? 9.4f : (r0 < 216f ? 8.2f : 12f);
+            float gap = inner ? 8.4f : (r0 < 216f ? 7.6f : 11f);
             int n = Mathf.Max(12, Mathf.RoundToInt(2f * Mathf.PI * r0 / gap));
             for (int k = 0; k < n; k++)
             {
@@ -2227,7 +2227,7 @@ public class WorldBuilder : MonoBehaviour
                 if (inner && Mathf.PerlinNoise(a * 2.6f + 3.1f, 0.7f) < 0.34f) continue;
                 // 林线：18m 等高线以上不长树，山顶留空，山形才露得出来
                 if (RimH(x, z) > 18f) continue;
-                float h = inner ? 6.5f + (float)rnd.NextDouble() * 7f : 9f + (float)rnd.NextDouble() * 8f;
+                float h = inner ? 5.5f + (float)rnd.NextDouble() * 5.5f : 8f + (float)rnd.NextDouble() * 7f;
                 Add(x, z, h);
             }
         }
@@ -2259,7 +2259,7 @@ public class WorldBuilder : MonoBehaviour
                 float y = RimH(x, z);
                 if (y < 0.25f || y > 5.5f) continue;
                 if (rnd.NextDouble() > 0.5) continue;
-                Add(x, z, 5f + (float)rnd.NextDouble() * 3.5f);
+                Add(x, z, 4.5f + (float)rnd.NextDouble() * 3f);
             }
         }
 
@@ -2276,11 +2276,12 @@ public class WorldBuilder : MonoBehaviour
                 if (Mathf.Abs(z - RZ(x)) < 12f) continue;
                 if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
                 float y = RimH(x, z);
-                float rad = 0.62f + (float)rnd.NextDouble() * 0.45f;
+                float rad = 0.55f + (float)rnd.NextDouble() * 0.85f;
+                float sy = 0.58f + (float)rnd.NextDouble() * 0.26f;
                 int bslot = 5 * VAR + rnd.Next(VAR);
-                Ball(bslot, x, y + rad * 0.52f, z, rad, 0.66f);
-                Ball(bslot, x + rad * 0.9f, y + rad * 0.36f, z + rad * 0.5f, rad * 0.66f, 0.66f);
-                Ball(bslot, x - rad * 0.7f, y + rad * 0.30f, z + rad * 0.8f, rad * 0.55f, 0.66f);
+                Ball(bslot, x, y + rad * 0.52f * sy, z, rad, sy);
+                Ball(bslot, x + rad * 0.9f, y + rad * 0.36f * sy, z + rad * 0.5f, rad * 0.66f, sy);
+                Ball(bslot, x - rad * 0.7f, y + rad * 0.30f * sy, z + rad * 0.8f, rad * 0.55f, sy);
             }
         }
 
@@ -2326,6 +2327,7 @@ public class WorldBuilder : MonoBehaviour
         var g = NewGo("MountainDetail", Root).transform;
         var canopy = MeshFactory.Canopy(1f, 10, 6, 0.30f, 7.1f);
         var canopy2 = MeshFactory.Canopy(1f, 9, 6, 0.40f, 3.7f);   // 轮廓更碎：混用打散重复感
+        var cone = MeshFactory.Cone(1f, 1f, 8, false, 0f);          // 远山针叶树：竖向轮廓打散"叠盘子"
         var rock = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
         // 偏灰的深绿：远山受空气透视影响，比近处林带更冷、更灰
         var cols = new[] { "#3f5c42", "#4a6648", "#556e4d", "#5f6f50", "#42583f", "#6f6a46" };
@@ -2405,12 +2407,24 @@ public class WorldBuilder : MonoBehaviour
                 float slopeProbe = Mathf.Abs(RimH(x + 2.5f, z) - h) + Mathf.Abs(RimH(x, z + 2.5f) - h);
                 bool bush = h < 32f || slopeProbe > 2.2f || rnd.NextDouble() < 0.35f;
                 float far = Mathf.Clamp01((r0 - 130f) / 110f);
-                float rad = Mathf.Lerp(2.0f, 7.6f, far) + (float)rnd.NextDouble() * 1.8f;
+                float rad = Mathf.Lerp(2.0f, 7.2f, far) + (float)rnd.NextDouble() * 1.8f;
                 if (bush) rad = Mathf.Min(rad, h < 20f ? 3.6f : 5.2f);
                 float sy = bush ? 0.5f + (float)rnd.NextDouble() * 0.18f
-                                : 0.34f + (float)rnd.NextDouble() * 0.12f;
+                                : 0.38f + (float)rnd.NextDouble() * 0.12f;
                 float yJit = bush ? 0f : ((float)rnd.NextDouble() - 0.5f) * 0.6f;
                 int ci = rnd.Next(cols.Length);
+                if (rnd.NextDouble() < (bush ? 0.12f : 0.22f))
+                {
+                    float ch = (bush ? 3.5f : 4.5f) + (float)rnd.NextDouble() * (bush ? 3.5f : 4.5f);
+                    float cr = (bush ? 1.3f : 1.6f) + (float)rnd.NextDouble() * 1.3f;
+                    lists[ci].Add(new CombineInstance
+                    {
+                        mesh = cone,
+                        transform = Matrix4x4.TRS(new Vector3(x, h + ch * 0.5f - 0.3f, z),
+                            Quaternion.identity, new Vector3(cr, ch, cr))
+                    });
+                    continue;
+                }
                 lists[ci].Add(new CombineInstance
                 {
                     mesh = bush && rnd.Next(2) == 0 ? canopy2 : canopy,
