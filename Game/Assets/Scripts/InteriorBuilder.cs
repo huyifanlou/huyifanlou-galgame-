@@ -268,12 +268,9 @@ public static partial class InteriorBuilder
     static void Plant(Transform p, Vector3 pos, float s = 1f)
     {
         Part(p, pos + new Vector3(0f, 0.22f * s, 0f), new Vector3(0.34f * s, 0.44f * s, 0.34f * s), C("#8a5a3c"), 1f);
-        var go = new GameObject("leaf");
-        go.transform.SetParent(p, false);
-        go.transform.localPosition = pos + new Vector3(0f, 0.60f * s, 0f);
-        go.transform.localScale = Vector3.one * s;
-        go.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Canopy(0.40f, 10, 6, 0.34f, 3.1f);
-        go.AddComponent<MeshRenderer>().sharedMaterial = C("#3f7a3f");
+        // 方块盆栽：两层方形叶团，和外面的方块树统一
+        Part(p, pos + new Vector3(0f, 0.58f * s, 0f), new Vector3(0.62f * s, 0.34f * s, 0.62f * s), C("#3f7a3f"), 1f);
+        Part(p, pos + new Vector3(0.06f * s, 0.82f * s, 0.04f * s), new Vector3(0.4f * s, 0.24f * s, 0.4f * s), C("#4a8a44"), 1f);
     }
 
     static void Curtain(Transform p, float cx, float y, float cz, float w, float h, Material cloth)
