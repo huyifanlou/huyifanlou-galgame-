@@ -25,7 +25,24 @@ public class Interior
 
     public readonly List<Solid> Solids = new List<Solid>();
 
-    public float FloorAt(float x, float z, float curY) => FloorY[0];
+    // 可上人的台面（礼堂舞台）：StageY>0 时台面矩形内取台面高度；
+    // RampZ2 是坡道低端、RampZ1 是坡道高端（通常朝 -Z 上台）。
+    public float StageY, StageX1, StageX2, StageZ1, StageZ2;
+    public float RampX1, RampX2, RampZ1, RampZ2;
+
+    public float FloorAt(float x, float z, float curY)
+    {
+        if (StageY > 0f)
+        {
+            if (x > StageX1 && x < StageX2 && z > StageZ1 && z < StageZ2) return StageY;
+            if (x > RampX1 && x < RampX2 && z > RampZ1 && z < RampZ2)
+            {
+                float t = Mathf.InverseLerp(RampZ2, RampZ1, z);
+                return Mathf.Lerp(FloorY[0], StageY, t);
+            }
+        }
+        return FloorY[0];
+    }
 
     public bool Collides(float x, float z, float curY)
     {

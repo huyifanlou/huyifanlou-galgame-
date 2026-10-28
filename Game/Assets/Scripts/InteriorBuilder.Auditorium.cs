@@ -124,9 +124,24 @@ public static partial class InteriorBuilder
             Part(p, new Vector3(sx, 1.58f, z1 - 0.10f), new Vector3(0.62f, 0.92f, 0.03f), Glass(), 1f);
         }
 
-        WallSign(p, doorX, 2.5f, zDoor, 1, label, 1.1f, 0.36f, C("#2f4a3a"), 0.026f);
+        WallSign(p, doorX, 3.0f, zDoor, 1, label, 1.1f, 0.36f, C("#2f4a3a"), 0.026f);
         Lamp(p, new Vector3(cx, 3.05f, (z0 + z1) * 0.5f), 12f, 1.1f);
         Lamp(p, new Vector3(counterX, 3.05f, z1 - 1.6f), 9f, 0.9f);
+    }
+
+    // 双面吊牌：门厅侧（+Z）和观众厅侧（-Z）都能读，避免只能看背面镜像
+    static void TwoWayHangingSign(Transform p, float x, float y, float z, string label,
+                                  float w, float h, Material plate, float textH)
+    {
+        Part(p, new Vector3(x, y, z), new Vector3(w, h, 0.06f), plate, 1f);
+        foreach (float f in new[] { -1f, 1f })
+        {
+            Part(p, new Vector3(x, y, z + f * 0.039f), new Vector3(w - 0.16f, h - 0.12f, 0.012f), C("#dfe6dc"), 1f);
+            SignText(p, new Vector3(x, y, z + f * 0.061f), f > 0 ? 180f : 0f, label, textH, MatLib.Hex("#1f3428"));
+        }
+        foreach (float sx in new[] { -1f, 1f })
+            Part(p, new Vector3(x + sx * w * 0.35f, y + h * 0.5f + 0.35f, z),
+                 new Vector3(0.02f, 0.7f, 0.02f), C("#6a7078"), 1f);
     }
 
     static Interior Auditorium(Transform parent)
@@ -146,6 +161,16 @@ public static partial class InteriorBuilder
                        wall, T("in_floor"), T("in_ceil"), wall, C("#6a3a32"), 0.66f);
         var p = it.Root.transform;
         float ox = AUD_X;
+
+        // 舞台可上人：台面 0.99m；台前三步台阶用隐形坡道衔接；台口两侧补挡墙
+        it.StageY = 0.99f;
+        it.StageX1 = ox - 12.9f; it.StageX2 = ox + 12.9f;
+        it.StageZ1 = -25.9f; it.StageZ2 = -15.9f;
+        it.RampX1 = ox - 3.0f; it.RampX2 = ox + 3.0f;
+        it.RampZ1 = -15.9f; it.RampZ2 = -14.4f;
+
+        // 门外侧门牌（Shell 的门牌在门内，外侧补一块，避免看到镜像）
+        WallSign(p, ox, 3.95f, 30f, 1, "礼堂", 2.6f, 0.68f, C("#6a3a32"), 0.040f);
 
         // ── 地面：观众厅红毯 + 通道 / 门厅地毯 ──
         Part(p, new Vector3(ox, 0.050f, -1.0f), new Vector3(68f, 0.014f, 29.0f), C("#5a2a2c"), 2f);
@@ -167,12 +192,14 @@ public static partial class InteriorBuilder
                  new Vector3(b - a + 0.3f, 0.14f, 0.34f), gold, 1f);
         }
         foreach (var (a, b) in new[] { (-28f, -24f), (24f, 28f) })
-            HangingSign(p, ox + (a + b) * 0.5f, 3.7f, 14f, -1, "出口", 1.2f, 0.34f, C("#2f4a3a"), 0.026f);
-        HangingSign(p, ox, 4.15f, 14f, -1, "观众厅", 2.0f, 0.44f, C("#6a3a32"), 0.034f);
+            TwoWayHangingSign(p, ox + (a + b) * 0.5f, 3.7f, 14f, "出口", 1.2f, 0.34f, C("#2f4a3a"), 0.026f);
+        TwoWayHangingSign(p, ox, 3.75f, 14f, "观众厅", 2.0f, 0.44f, C("#6a3a32"), 0.034f);
 
         // ── 舞台：台面/台口/红幕/背景幕/台阶/讲台/钢琴 ──
         Part(p, new Vector3(ox, 0.48f, -21f), new Vector3(26f, 0.92f, 10f), wood, 2f);
-        Reg(it, ox, -21f, 25.8f, 9.8f);
+        // 台口两侧挡墙：只留中央 6m 楼梯口，玩家从台阶坡道走上舞台
+        Wall(p, it, ox - 12.9f, -16f, ox - 3f, -16f, 0.02f, 0.97f, darkWood);
+        Wall(p, it, ox + 3f, -16f, ox + 12.9f, -16f, 0.02f, 0.97f, darkWood);
         Part(p, new Vector3(ox, 0.955f, -21f), new Vector3(25.8f, 0.06f, 9.8f), C("#c89a62"), 2f);
         for (int i = 0; i < 3; i++)
             Part(p, new Vector3(ox, 0.45f - i * 0.15f, -15.72f + i * 0.42f),
@@ -303,13 +330,15 @@ public static partial class InteriorBuilder
         Table(p, new Vector3(ox - 22f, 0f, 26.6f), 4.6f, 1.0f, 0.95f, darkWood);
         Reg(it, ox - 22f, 26.6f, 4.6f, 1.0f);
         Part(p, new Vector3(ox - 22f, 1.00f, 26.6f), new Vector3(4.7f, 0.08f, 1.06f), C("#dfe6dc"), 1f);
-        SignText(p, new Vector3(ox - 22f, 1.45f, 26.10f), 0f, "售 票 处", 0.040f, MatLib.Hex("#f3e9d2"));
+        Part(p, new Vector3(ox - 22f, 1.12f, 27.11f), new Vector3(2.2f, 0.38f, 0.04f), C("#4a2a28"), 1f);
+        SignText(p, new Vector3(ox - 22f, 1.12f, 27.14f), 180f, "售 票 处", 0.032f, MatLib.Hex("#f3e9d2"));
         Chair(p, it, new Vector3(ox - 22f, 0f, 27.5f), 180f, darkWood, true);
 
         Table(p, new Vector3(ox + 21f, 0f, 26.6f), 4.0f, 1.0f, 0.95f, darkWood);
         Reg(it, ox + 21f, 26.6f, 4.0f, 1.0f);
         Part(p, new Vector3(ox + 21f, 1.00f, 26.6f), new Vector3(4.1f, 0.08f, 1.06f), C("#dfe6dc"), 1f);
-        SignText(p, new Vector3(ox + 21f, 1.45f, 26.10f), 0f, "衣帽寄存", 0.040f, MatLib.Hex("#f3e9d2"));
+        Part(p, new Vector3(ox + 21f, 1.12f, 27.11f), new Vector3(2.0f, 0.38f, 0.04f), C("#4a2a28"), 1f);
+        SignText(p, new Vector3(ox + 21f, 1.12f, 27.14f), 180f, "衣帽寄存", 0.032f, MatLib.Hex("#f3e9d2"));
         Part(p, new Vector3(ox + 21f, 0.90f, 28.6f), new Vector3(4.0f, 0.05f, 0.05f), C("#8d99a6"), 1f);
         for (int i = 0; i < 8; i++)
             Part(p, new Vector3(ox + 19.2f + i * 0.5f, 1.12f, 28.6f),
@@ -334,7 +363,7 @@ public static partial class InteriorBuilder
         }
         WallClock(p, new Vector3(ox + 6.5f, 3.0f, 29.80f), 180f);
         Part(p, new Vector3(ox - 4.6f, 2.15f, 29.80f), new Vector3(2.6f, 1.4f, 0.05f), C("#6f5540"), 1f);
-        SignText(p, new Vector3(ox - 4.6f, 2.15f, 29.76f), 180f, "观 众 须 知", 0.032f, MatLib.Hex("#f3e9d2"));
+        SignText(p, new Vector3(ox - 4.6f, 2.15f, 29.76f), 0f, "观 众 须 知", 0.032f, MatLib.Hex("#f3e9d2"));
 
         // 门厅吊灯 / 卫生间
         for (int i = 0; i < 3; i++)
