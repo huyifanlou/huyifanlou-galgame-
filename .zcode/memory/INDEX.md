@@ -24,7 +24,7 @@
 
 ## 分层文件
 
-- [project.md](project.md) — 项目状态与关键约定（2026-10-28 更新，docs/65）
+- [project.md](project.md) — 项目状态与关键约定（2026-10-28 更新，docs/66；docs/63~65 已回退）
 - [decisions.md](decisions.md) — 关键决策（引擎/密度铁律/小镇/室内流程）
 - [lessons.md](lessons.md) — 坑与经验（渲染/屋顶/室内 z-fight/坐标系）
 

@@ -57,64 +57,38 @@ public static class MeshFactory
     // texU/texV：贴图在 U/V 方向上覆盖的世界米数（方形贴图传同一个值）
     public static Mesh BoxUV(Vector3 size, float texU, float texV)
     {
-        var b = new BoxMeshBuilder(texU, texV);
-        b.Add(Vector3.zero, size);
-        return b.Build();
-    }
+        float hx = size.x * 0.5f, hy = size.y * 0.5f, hz = size.z * 0.5f;
+        float ux = size.x / texU, uy = size.y / texV, uz = size.z / texU;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
 
-    // 批量箱体：一次拼出成百上千个世界尺度 UV 的方块（方块树/灌木），只用 1 个 Mesh、1 次 draw call。
-    // 每个面 4 个独立顶点 → RecalculateNormals 得到硬边，正是方块造型要的效果。
-    public class BoxMeshBuilder
-    {
-        readonly List<Vector3> verts = new List<Vector3>();
-        readonly List<Vector2> uvs = new List<Vector2>();
-        readonly List<int> tris = new List<int>();
-        readonly float texU, texV;
-
-        public int Count { get; private set; }
-
-        public BoxMeshBuilder(float texMeters) : this(texMeters, texMeters) { }
-
-        public BoxMeshBuilder(float texU, float texV)
+        void Face(Vector3[] v, float uw, float uh, bool quadOrder)
         {
-            this.texU = texU; this.texV = texV;
+            int i = verts.Count;
+            verts.AddRange(v);
+            uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(uw, 0)); uvs.Add(new Vector2(uw, uh)); uvs.Add(new Vector2(0, uh));
+            if (quadOrder) { tris.Add(i); tris.Add(i + 2); tris.Add(i + 1); tris.Add(i); tris.Add(i + 3); tris.Add(i + 2); }
+            else { tris.Add(i); tris.Add(i + 1); tris.Add(i + 2); tris.Add(i); tris.Add(i + 2); tris.Add(i + 3); }
         }
 
-        public void Add(Vector3 center, Vector3 size, float yawDeg = 0f)
-        {
-            Count++;
-            float hx = size.x * 0.5f, hy = size.y * 0.5f, hz = size.z * 0.5f;
-            float ux = size.x / texU, uy = size.y / texV, uz = size.z / texU;
-            Quaternion q = yawDeg == 0f ? Quaternion.identity : Quaternion.Euler(0f, yawDeg, 0f);
+        // 顶 / 底（Quad 模板：0,2,1 / 0,3,2；底面镜像后反转）
+        Face(new[] { new Vector3(-hx, hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uz, true);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, -hy, hz), new Vector3(-hx, -hy, hz) }, ux, uz, false);
+        // 前 / 后（QuadZ 模板：0,1,2 / 0,2,3；后面镜像后反转）
+        Face(new[] { new Vector3(-hx, -hy, hz), new Vector3(hx, -hy, hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uy, false);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(-hx, hy, -hz) }, ux, uy, true);
+        // 右 / 左（QuadZ 绕 Y 轴 ±90°，保绕序；宽度沿 z）
+        Face(new[] { new Vector3(hx, -hy, hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz) }, uz, uy, false);
+        Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(-hx, -hy, hz), new Vector3(-hx, hy, hz), new Vector3(-hx, hy, -hz) }, uz, uy, false);
 
-            void Face(Vector3[] v, float uw, float uh, bool quadOrder)
-            {
-                int i = verts.Count;
-                for (int k = 0; k < 4; k++) verts.Add(center + q * v[k]);
-                uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(uw, 0)); uvs.Add(new Vector2(uw, uh)); uvs.Add(new Vector2(0, uh));
-                if (quadOrder) { tris.Add(i); tris.Add(i + 2); tris.Add(i + 1); tris.Add(i); tris.Add(i + 3); tris.Add(i + 2); }
-                else { tris.Add(i); tris.Add(i + 1); tris.Add(i + 2); tris.Add(i); tris.Add(i + 2); tris.Add(i + 3); }
-            }
-
-            Face(new[] { new Vector3(-hx, hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uz, true);
-            Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, -hy, hz), new Vector3(-hx, -hy, hz) }, ux, uz, false);
-            Face(new[] { new Vector3(-hx, -hy, hz), new Vector3(hx, -hy, hz), new Vector3(hx, hy, hz), new Vector3(-hx, hy, hz) }, ux, uy, false);
-            Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(-hx, hy, -hz) }, ux, uy, true);
-            Face(new[] { new Vector3(hx, -hy, hz), new Vector3(hx, -hy, -hz), new Vector3(hx, hy, -hz), new Vector3(hx, hy, hz) }, uz, uy, false);
-            Face(new[] { new Vector3(-hx, -hy, -hz), new Vector3(-hx, -hy, hz), new Vector3(-hx, hy, hz), new Vector3(-hx, hy, -hz) }, uz, uy, false);
-        }
-
-        public Mesh Build()
-        {
-            var m = new Mesh();
-            if (verts.Count > 65535) m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            m.SetVertices(verts);
-            m.SetUVs(0, uvs);
-            m.SetTriangles(tris, 0);
-            m.RecalculateNormals();
-            m.RecalculateBounds();
-            return m;
-        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
     }
 
     // 方形贴图（树冠/树皮）的简写
@@ -190,6 +164,48 @@ public static class MeshFactory
                 int a = i * row + j, b = (i + 1) * row + j, c = (i + 1) * row + j + 1, d = i * row + j + 1;
                 tris.Add(a); tris.Add(c); tris.Add(b);          // 朝外
                 tris.Add(a); tris.Add(d); tris.Add(c);
+            }
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 树冠：球体按方向做低频噪声径向位移 + 平底，读起来是一团树而不是几个球
+    public static Mesh Canopy(float radius, int sectors = 12, int rings = 8, float lump = 0.22f, float seed = 0f)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= rings; i++)
+        {
+            float theta = i * Mathf.PI / rings;
+            float sinT = Mathf.Sin(theta), cosT = Mathf.Cos(theta);
+            for (int j = 0; j <= sectors; j++)
+            {
+                float phi = j * Mathf.PI * 2f / sectors;
+                var d = new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi));
+                float n1 = Mathf.PerlinNoise(d.x * 1.9f + seed, d.z * 1.9f + seed * 1.7f) - 0.5f;
+                float n2 = Mathf.PerlinNoise(d.y * 2.9f + seed * 0.6f, d.x * 2.9f + 13.1f) - 0.5f;
+                float rr = radius * (1f + lump * n1 * 2f + lump * 0.7f * n2 * 2f);
+                var p = d * rr;
+                p.y = Mathf.Max(p.y, -radius * 0.42f);      // 平底：树冠不会是个完整球
+                verts.Add(p);
+                uvs.Add(new Vector2((float)j / sectors, 1f - (float)i / rings));
+            }
+        }
+        int row = sectors + 1;
+        for (int i = 0; i < rings; i++)
+        {
+            for (int j = 0; j < sectors; j++)
+            {
+                int a = i * row + j, b = (i + 1) * row + j, c = (i + 1) * row + j + 1, d2 = i * row + j + 1;
+                tris.Add(a); tris.Add(c); tris.Add(b);
+                tris.Add(a); tris.Add(d2); tris.Add(c);
             }
         }
         var m = new Mesh();
