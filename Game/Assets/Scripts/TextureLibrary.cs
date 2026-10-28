@@ -183,15 +183,15 @@ public static class TextureLibrary
     {
         var p = new Px(256, 256);   // 密度翻倍（256px 覆盖 1.67m ≈ 153px/米）
         for (int y = 0; y < 256; y += 8) for (int x = 0; x < 256; x += 8)
-            p.FillRect(x, y, 8, 8, C((x + y) % 16 == 0 ? "#54904b" : "#4a8743"));
-        var cols = new[] { "#3f7239", "#5da054", "#437c3c", "#61a85a" };
+            p.FillRect(x, y, 8, 8, C((x + y) % 16 == 0 ? "#657a4b" : "#5d7245"));
+        var cols = new[] { "#54703f", "#6d8450", "#597344", "#788e58" };
         for (int i = 0; i < 260; i++)
         {
             var c = C(cols[R.Int(4)]);
             int rx = R.Int(244), ry = R.Int(244), w = R.Int(2) == 1 ? 8 : 12, h = R.Int(2) == 1 ? 12 : 8;
             p.FillRect(rx, ry, w, h, c);
         }
-        var pcols = new[] { "#48853f", "#5c9c53", "#437c3c" };
+        var pcols = new[] { "#556f45", "#6a8454", "#4f6a41" };
         for (int i = 0; i < 36; i++)
         {
             float a = 0.35f + (float)R.Next() * 0.2f;
@@ -199,22 +199,22 @@ public static class TextureLibrary
             p.FillRect(R.Int(224), R.Int(224), 16 + R.Int(14), 16 + R.Int(14), c);
         }
         // 细颗粒碎草与小石子（随密度翻倍，颗粒 1-2px ≈ 0.7-1.3cm）
-        var fine = new[] { "#3f7239", "#5da054", "#61a85a", "#437c3c" };
+        var fine = new[] { "#54703f", "#6d8450", "#788e58", "#597344" };
         for (int i = 0; i < 900; i++)
             p.FillRect(R.Int(250), R.Int(250), 2, R.Int(2) == 0 ? 4 : 2, C(fine[R.Int(4)]));
         for (int i = 0; i < 90; i++)
-            p.FillRect(R.Int(248), R.Int(248), 2, 2, C(R.Int(2) == 0 ? "#6fae4b" : "#356e37"));
+            p.FillRect(R.Int(248), R.Int(248), 2, 2, C(R.Int(2) == 0 ? "#82905c" : "#49603c"));
         for (int i = 0; i < 40; i++)
             p.FillRect(R.Int(248), R.Int(248), R.Int(2) + 1, 2, C("rgba(210,205,190,0.35)"));
         // 写实化：草叶丝（1px 竖向短线）+ 团簇阴影（暗团 + 亮顶）+ 少量枯黄点
-        var blades = new[] { "#5aa24f", "#3c6d36", "#67ae58", "#48853f" };
+        var blades = new[] { "#6f8450", "#4d6539", "#7f9459", "#5d7245" };
         for (int i = 0; i < 420; i++)
             p.FillRect(R.Int(252), R.Int(250), 1, 3 + R.Int(3), C(blades[R.Int(4)]));
         for (int i = 0; i < 26; i++)
         {
             int bx = R.Int(226), by = R.Int(226), bw = 10 + R.Int(14), bh = 8 + R.Int(10);
-            p.FillRect(bx, by, bw, bh, C("rgba(18,38,16,0.16)"));
-            p.FillRect(bx, by, bw, 3, C("rgba(122,182,92,0.20)"));
+            p.FillRect(bx, by, bw, bh, C("rgba(24,36,18,0.16)"));
+            p.FillRect(bx, by, bw, 3, C("rgba(150,168,110,0.20)"));
         }
         for (int i = 0; i < 70; i++)
             p.FillRect(R.Int(252), R.Int(252), 2, 2, C("rgba(196,176,96,0.30)"));
@@ -283,14 +283,20 @@ public static class TextureLibrary
             int kind = R.Int(10);
             float wx = c2 * cell + 56, wy = r * cell + 80;
             Draw(wx - 24, wy - 24, 208, 208, C(trim));
-            Draw(wx, wy, 160, 160, C(isLit ? "#ffd98a" : "#2c3548"));
+            Draw(wx, wy, 160, 160, C(isLit ? "#ffd98a" : "#5d7286"));
             if (isLit) Draw(wx, wy, 160, 24, C("#ffe9b8"));
             else
             {
+                // 日间玻璃：上亮下暗的天空反射渐变 + 斜向高光（线性空间里纯深蓝会读成死黑）
+                Draw(wx, wy, 160, 36, C("rgba(198,216,230,0.30)"));
+                Draw(wx, wy + 36, 160, 28, C("rgba(180,200,218,0.16)"));
+                Draw(wx, wy + 120, 160, 40, C("rgba(16,24,34,0.20)"));
+                Draw(wx + 20, wy + 12, 30, 110, C("rgba(220,234,244,0.18)"));
+                Draw(wx + 58, wy + 26, 12, 96, C("rgba(220,234,244,0.10)"));
                 if (R.Next() < 0.35)
                 {
-                    Draw(wx + 16, wy + 16, 56, 24, C("rgba(170,195,225,0.30)"));
-                    Draw(wx + 32, wy + 40, 40, 24, C("rgba(170,195,225,0.30)"));
+                    Draw(wx + 16, wy + 16, 56, 24, C("rgba(180,205,230,0.22)"));
+                    Draw(wx + 32, wy + 40, 40, 24, C("rgba(180,205,230,0.18)"));
                 }
                 Draw(wx + 76, wy, 8, 160, C(trim));
                 Draw(wx, wy + 76, 160, 8, C(trim));

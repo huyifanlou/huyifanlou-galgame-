@@ -22,12 +22,19 @@ public class WorldBuilder : MonoBehaviour
     public readonly List<Light> LampLights = new List<Light>();       // 路灯点光源（夜里由 TimeOfDay 点亮）
     public Material WindowGlowMat;                                    // 亮窗发光片的共享材质
     public readonly List<Renderer> WindowGlowRenders = new List<Renderer>();
+    public Material WindowGlassMat;                                   // 店铺橱窗玻璃（夜里透暖光）
+    public readonly List<Material> SignMatRefs = new List<Material>(); // 店铺招牌（夜里开自发光）
+    public Material DoorLampMat;                                      // 门灯共享材质
+    public Material LanternMat;                                       // 骑楼红灯笼（夜里发光）
+    public readonly List<Renderer> SignGlowRenders = new List<Renderer>(); // 夜间招牌自发光片
+    public readonly List<float> LampLightPower = new List<float>();         // 点光源夜间功率（骑楼灯比路灯亮）
+    public Transform WindowFXRoot;                                    // 窗玻璃/亮窗单独根，避免被建筑静态合批
     public Material GrassMat;                                        // 草地材质（天气：雨天变暗）
     public Vector3 Spawn = new Vector3(0f, 0f, 4f);
 
     readonly Dictionary<string, Material> _cache = new Dictionary<string, Material>();
-    static readonly string[] TREE_CROWNS = { "#3f7a3f", "#4f9448", "#5da04f", "#6fae4b", "#d98fb0", "#c9a24a" };
-    static readonly string[] BUSH_GREENS = { "#3d7a3f", "#356e37", "#4a8a48", "#2f6231" };
+    static readonly string[] TREE_CROWNS = { "#3b6b3a", "#457a42", "#4f8044", "#5a8845", "#c08fa5", "#ad9155" };
+    static readonly string[] BUSH_GREENS = { "#3a6a3a", "#345f34", "#427a40", "#2e5a2f" };
     static readonly string[] ROCK_COLS = { "#8d8d94", "#7b7b82", "#9aa0a6", "#6f6f76", "#84848b" };
     static readonly string[] REED_COLS = { "#7a8a4a", "#6a7a42", "#85925a" };
     static readonly string[] REED_COLS2 = { "#85925a", "#7a8a4a", "#6a7a42" };
@@ -747,6 +754,8 @@ public class WorldBuilder : MonoBehaviour
         // 后处理栈（泛光/移轴景深/色彩分级/暗角）——挂到主相机
         var cam = Camera.main;
         if (cam != null && cam.GetComponent<PostFX>() == null) cam.gameObject.AddComponent<PostFX>();
+        if (cam != null && Args.Has("-noao")) cam.GetComponent<PostFX>().AOSStrength = 0f;
+        if (cam != null && Args.Has("-nofx")) cam.GetComponent<PostFX>().enabled = false;
 
         var tod = GetComponent<TimeOfDay>();
         if (tod != null) tod.Init(this);
@@ -790,6 +799,11 @@ public class WorldBuilder : MonoBehaviour
         Root = NewGo("World", transform).transform;
 
         WindowGlowMat = MatLib.UnlitColor(MatLib.Hex("#ffcf8a"));
+        // 店铺橱窗玻璃（立面窗格由贴图渐变表现，这块只给橱窗用）
+        WindowGlassMat = MatLib.LitColor(MatLib.Hex("#6f8798"), 0.50f);
+        DoorLampMat = MatLib.LitColor(MatLib.Hex("#ffdf9a"), 0.40f);
+        LanternMat = MatLib.LitColor(MatLib.Hex("#b8352f"), 0.20f);
+        WindowFXRoot = NewGo("WindowFX", Root).transform;
         Sky();
         GroundAndPaths();
         River();
@@ -802,6 +816,7 @@ public class WorldBuilder : MonoBehaviour
         Lamps();
         Props();
         Buildings();
+        Debug.Log($"[Exterior] 亮窗 {WindowGlowRenders.Count} / 招牌 {SignGlowRenders.Count} / 静态合批已启用");
         Villa();
         Trees();
         ForestBelt();
@@ -813,6 +828,17 @@ public class WorldBuilder : MonoBehaviour
         Bushes();
         Reeds();
         PlayerRigObjects();
+        if (Args.Has("-fps"))
+        {
+            var mrs = FindObjectsOfType<MeshRenderer>(true);
+            long verts = 0;
+            foreach (var mf in FindObjectsOfType<MeshFilter>(true))
+                if (mf.sharedMesh != null) verts += mf.sharedMesh.vertexCount;
+            var lights = FindObjectsOfType<Light>(true);
+            int en = 0;
+            foreach (var l in lights) if (l.enabled && l.gameObject.activeInHierarchy) en++;
+            Debug.Log($"[Perf] 渲染器 {mrs.Length} / 顶点 {verts} / 灯光 {lights.Length}（启用 {en}）");
+        }
         return W;
     }
 
@@ -846,7 +872,7 @@ public class WorldBuilder : MonoBehaviour
         if (W.RIVER != null)
         {
             // 小镇：地形在河道处断开（下沉河床），UV 由网格按世界坐标给出
-            GrassMat = LitTex("grass");
+            GrassMat = LitTinted("grass", "#aebd8f");
             var groundMesh = TerrainHoleMesh(TexScale.GrassPeriod, 0f);
             var groundGo = MeshObj(Root, groundMesh, Vector3.zero, GrassMat);
             var groundCol = groundGo.AddComponent<MeshCollider>();
@@ -855,7 +881,7 @@ public class WorldBuilder : MonoBehaviour
         else
         {
             var greps = TexScale.Repeat(gs, gs, TexScale.GrassPeriod);
-            GrassMat = LitTex("grass", greps.x, greps.y);
+            GrassMat = LitTinted("grass", "#aebd8f", greps.x, greps.y);
             Flat(Root, gs, gs, 0f, GrassMat, greps.x, greps.y);
         }
         // 路网：路面 + 路缘石 + 抬高人行道（12cm，人物可站上去）
@@ -1443,6 +1469,7 @@ public class WorldBuilder : MonoBehaviour
             // 花坛：cutout 材质（边缘抖动透明，与地形草自然过渡）
             MeshObj(go.transform, MeshFactory.Quad(1.7f, 1.7f), Vector3.zero, MatCutout("flower"));
         }
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     void DirtPatches()
@@ -1496,6 +1523,7 @@ public class WorldBuilder : MonoBehaviour
                     pos + new Vector3(0f, 0.485f, 0f), ColMatGloss("#e9e3d6", 0.20f));
             }
         }
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     void Lamps()
@@ -1531,12 +1559,15 @@ public class WorldBuilder : MonoBehaviour
             li.shadows = LightShadows.None;
             li.renderMode = LightRenderMode.Auto;
             LampLights.Add(li);
+            LampLightPower.Add(1f);
         }
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     // ── 四栋建筑（平顶/坡顶/公共；含屋顶设备/侧翼/雨棚/招牌/大门等全部附加件）──
     void Buildings()
     {
+        if (WindowFXRoot == null) WindowFXRoot = NewGo("WindowFX", Root).transform;
         var g = NewGo("Buildings", Root).transform;
         foreach (var b in W.BUILDINGS)
         {
@@ -1699,11 +1730,15 @@ public class WorldBuilder : MonoBehaviour
             if (plain) continue;
             var signTex = TextureLibrary.ByName("sign_" + b.id, false, false);
             if (signTex != null)
-                Face(grp, 3.3f, 0.83f, new Vector3(0, h * 0.28f, d / 2f + 0.04f), MatLib.LitTexture(signTex, 1f, 1f, 0.12f));
+            {
+                var signMat = MatLib.LitTexture(signTex, 1f, 1f, 0.12f);
+                Face(grp, 3.3f, 0.83f, new Vector3(0, h * 0.28f, d / 2f + 0.04f), signMat);
+                SignMatRefs.Add(signMat);
+            }
             Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f, d / 2f + 0.035f), LitTex("door"));
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, d / 2f + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
-            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
-            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), ColMatGloss("#ffdf9a", 0.4f), default, false);
+            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
+            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, d / 2f + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
             Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             // 店铺：雨棚 + 悬挂小招牌；骑楼店铺用横匾
@@ -1747,7 +1782,7 @@ public class WorldBuilder : MonoBehaviour
                     {
                         Face(grp, Mathf.Max(1.4f, w * 0.26f), 1.7f,
                             new Vector3(sx * w * 0.3f, -h / 2f + 1.75f, d / 2f + 0.045f),
-                            MatLib.LitColor(MatLib.Hex("#33414c"), 0.25f));
+                            WindowGlassMat);
                         for (int gi = 0; gi < 4; gi++)
                             Box(grp, new Vector3(sx * w * 0.3f - w * 0.11f + gi * w * 0.073f, -h / 2f + 1.75f, d / 2f + 0.09f),
                                 new Vector3(0.05f, 1.7f, 0.05f), ColMat(b.trim));
@@ -1767,11 +1802,13 @@ public class WorldBuilder : MonoBehaviour
                 float hedgeW = Mathf.Max(1.6f, w * 0.32f);
                 foreach (int sgn in new[] { -1, 1 })
                     MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
-                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#3d7a37"));
+                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#356b33"));
             }
             if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
             if (b.style != "shrine") BuildWindowGlow(grp, b, w, h, d);
         }
+        // 建筑静态合批（窗玻璃/亮窗已移到 WindowFX，不参与）
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     // ── 夜间亮窗：按立面窗格生成一层发光片（不依赖贴图/变体，稳定可见）──
@@ -1815,13 +1852,36 @@ public class WorldBuilder : MonoBehaviour
         mesh.SetUVs(0, uvs);
         mesh.SetTriangles(tris, 0);
         mesh.RecalculateNormals();
-        var go = NewGo("win_glow", grp);
+        // 窗片挂到独立 FX 根：建筑本体可以静态合批，窗玻璃/亮窗夜里要单独开关
+        var fx = NewGo("fx_" + b.id, WindowFXRoot).transform;
+        fx.localPosition = grp.localPosition;
+        fx.localEulerAngles = grp.localEulerAngles;
+
+        var go = NewGo("win_glow", fx);
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var mr = go.AddComponent<MeshRenderer>();
         mr.sharedMaterial = WindowGlowMat;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         mr.receiveShadows = false;
         WindowGlowRenders.Add(mr);
+
+        // 夜间招牌：用招牌贴图本身做一块 Unlit 发光片（比材质 Emission 更稳）
+        var signTex = TextureLibrary.ByName("sign_" + b.id, false, false);
+        if (signTex != null)
+        {
+            var sgMat = new Material(Shader.Find("Unlit/Texture"));
+            sgMat.mainTexture = signTex;
+            var sgGo = MeshObj(fx, MeshFactory.QuadZ(3.3f, 0.83f),
+                new Vector3(0f, h * 0.28f, d / 2f + 0.07f), sgMat, default, false, false);
+            SignGlowRenders.Add(sgGo.GetComponent<MeshRenderer>());
+        }
+        else if (ShopIds.Contains(b.id) && ArcadeIds.Contains(b.id))
+        {
+            // 小镇骑楼横匾没有招牌贴图：夜里用暖色发光条代替，撑起店面亮度
+            var stripGo = MeshObj(fx, MeshFactory.QuadZ(w * 0.55f, 0.22f),
+                new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.26f), WindowGlowMat, default, false, false);
+            SignGlowRenders.Add(stripGo.GetComponent<MeshRenderer>());
+        }
     }
 
     // ── 神社本殿/拜殿：基坛 + 柱网 + 深出檐双坡屋顶 + 斗栱/椽头 + 注连绳 ──
@@ -1920,10 +1980,13 @@ public class WorldBuilder : MonoBehaviour
         float zf = d / 2f + depth / 2f;
         var stone = LitTex("concrete");
 
-        // 一层柱列
+        // 一层柱列（中间留出入口开间，避免柱子挡住店门）
         for (float x = -w / 2f + 0.5f; x <= w / 2f - 0.4f; x += 2.2f)
+        {
+            if (Mathf.Abs(x) < 1.15f) continue;
             MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.34f, 3.2f, 0.34f), 2f),
                 new Vector3(x, baseY + 1.6f, d / 2f + depth - 0.25f), stone);
+        }
         // 二层挑廊板 + 檐口小瓦顶
         MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 0.3f, 0.26f, depth), 2.4f),
             new Vector3(0f, baseY + 3.32f, zf), stone);
@@ -1937,10 +2000,25 @@ public class WorldBuilder : MonoBehaviour
         // 灯笼 + 悬挂招牌
         for (float x = -w / 2f + 1.2f; x <= w / 2f - 1.0f; x += 3.1f)
         {
-            Cylinder(grp, new Vector3(x, baseY + 2.8f, d / 2f + depth - 0.55f), 0.16f, 0.42f, ColMat("#b8352f"));
+            Cylinder(grp, new Vector3(x, baseY + 2.8f, d / 2f + depth - 0.55f), 0.16f, 0.42f, LanternMat);
             Box(grp, new Vector3(x, baseY + 3.06f, d / 2f + depth - 0.55f), new Vector3(0.05f, 0.5f, 0.05f), ColMat("#3a2f28"));
             Box(grp, new Vector3(x + 1.4f, baseY + 2.35f, d / 2f + depth - 0.18f), new Vector3(0.06f, 0.7f, 0.06f), ColMat("#3a2f28"));
             Face(grp, 0.7f, 0.5f, new Vector3(x + 1.4f, baseY + 2.85f, d / 2f + depth - 0.14f), ColMat("#d8cbb4"), 90f);
+        }
+        // 骑楼檐下左右各一盏暖光，夜里把柱廊/店面抬起来（无阴影，避免额外阴影 pass）
+        foreach (int ls in new[] { -1, 1 })
+        {
+            var lg = new GameObject("arcade_light");
+            lg.transform.SetParent(grp, false);
+            lg.transform.localPosition = new Vector3(ls * w * 0.26f, baseY + 2.75f, d / 2f + depth - 0.7f);
+            var li = lg.AddComponent<Light>();
+            li.type = LightType.Point;
+            li.color = MatLib.Hex("#ffb878");
+            li.range = 8.5f;
+            li.intensity = 0f;
+            li.shadows = LightShadows.None;
+            LampLights.Add(li);
+            LampLightPower.Add(1.4f);
         }
     }
 
@@ -2170,7 +2248,7 @@ public class WorldBuilder : MonoBehaviour
             }
         }
 
-        var cols = new[] { "#4a8250", "#5f9c63", "#3a6a44", "#cf94ad", "#6aa06a", "#5a9159", "#c08a45" };
+        var cols = new[] { "#3d6b44", "#4f7d52", "#355f3c", "#b58a9a", "#517a55", "#4a7050", "#a88a4f" };
         var names = new[] { "pine", "broad", "fir", "cherry", "decid", "bush", "autumn" };
         for (int i = 0; i < SP; i++)
         {
@@ -2337,6 +2415,7 @@ public class WorldBuilder : MonoBehaviour
                 Box(grp, new Vector3(0, b.h / 2f + 0.52f, 0), new Vector3(b.w + 0.85f, 0.24f, b.d + 0.85f), ColMat(b.plinth));
             }
         }
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     // ── 假山（三变体 + 灌木点缀）──
@@ -2401,6 +2480,7 @@ public class WorldBuilder : MonoBehaviour
         var g = NewGo("Bushes", Root).transform;
         for (int i = 0; i < W.BUSHES.Length; i++) Bush(g, W.BUSHES[i].x, W.BUSHES[i].z, i);
         for (int i = 0; i < W.BORDER_BUSHES.Length; i++) Bush(g, W.BORDER_BUSHES[i].x, W.BORDER_BUSHES[i].z, i);
+        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     void Bush(Transform parent, float x, float z, int i)

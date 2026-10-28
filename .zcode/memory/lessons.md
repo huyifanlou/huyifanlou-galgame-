@@ -101,3 +101,7 @@
 - [2026-10-28] 所有后处理 uniform 必须在最终 Graphics.Blit 之前设置；SSAO 需 Camera.depthTextureMode = Depth
 - [2026-10-28] 程序化天空盒要用 Resources 占位材质防 shader 剥离；相机 clearFlags 会被 PlayerRig.Init 覆盖，必须按 RenderSettings.skybox 决定
 - [2026-10-28] 平环境光改三色（天空/地平/地面）后，阴影不再是死黑；日光 4096/140m 是性能与写实的折中
+- [2026-10-28] Linear+ACES 下窗格发黑是立面贴图颜色问题（#2c3548 线性值≈0.03）；改贴图源头，别叠覆盖 45% 的玻璃片（docs/62）
+- [2026-10-28] 依赖相机位置的剔除/吸附必须在 LateUpdate：Update 首帧相机还在原点，会把整街灯按“太远”全部关掉（docs/62）
+- [2026-10-28] 窗口失焦/被遮挡时 DWM 会把游戏压到 ~6 FPS：测帧率必须 AppActivate 到前台，同机位 340+ FPS（docs/62）
+- [2026-10-28] 没有招牌贴图的建筑夜景可用暖色 Unlit 发光条代替匾额；点光源功率用平行数组区分路灯 1.0 / 骑楼 1.4

@@ -20,12 +20,13 @@
 - 大地图：建筑级传送点 27 个；拖拽平移、滚轮 1–4× 缩放；空白处单击不传送、双击才传送；室内禁传送（docs/43）
 - 系统：PhysX 碰撞与浮力、水面（默认静止，WaterSim.Animate 可恢复流动）、昼夜/天气、程序化贴图（160px/米）；主角 Shift 跑步 9.5m/s + 跑步动画（步频/摆幅/前倾，docs/56）
 - 渲染（docs/61）：**Linear 色彩空间 + HDR + ACES 色调映射 + 半分辨率 SSAO + 程序化天空（SunDisk/大气，夜穹星空保留）**；三色环境光；日光阴影 4096/140m/0.85；移轴景深关闭；相机 clearFlags 由 PlayerRig 保留 Skybox
-- 性能：锁 60 帧、路灯 38m 距离裁剪、ProximityHide、树渲染级硬排除
+- 外部适配（docs/62）：**日间窗格改在立面贴图里画天空反射渐变**（删除玻璃补片）；草地贴图压向橄榄绿；小镇骑楼横匾夜间发光 + 左右各一盏暖灯（1.4×）；骑楼柱列让开店门；灯光 38m 剔除移到 LateUpdate（修掉启动首帧整街灯全灭）
+- 性能：锁 60 帧、路灯 38m 距离裁剪、ProximityHide、树渲染级硬排除；静态合批覆盖建筑/花/栏/灯/远景/灌木；**焦点窗口 1600×900 实测 340~356 FPS**（后台被 DWM 压到 ~6 FPS，不可当性能数据）；诊断参数 `-fps/-noshadow/-noao/-nofx`
 - 校验：`WorldValidator.TownBatch`（小镇四规则）+ `[Interior:*]` 日志均零问题
 
 ## 关键约定
 
-- 一切改动留痕（git 中文 conventional 提交走 `COMMIT_MSG_TMP` + docs/ 编号文档，现至 docs/61）
+- 一切改动留痕（git 中文 conventional 提交走 `COMMIT_MSG_TMP` + docs/ 编号文档，现至 docs/62）
 - 室内改动先出俯视方案图给作者确认再动代码；验收三线：窗不卡门/家具、出口门廊、墙纸全覆盖
 - 剧本双版本：`D:\AI\galgame-原版.docx` / `D:\AI\galgame-美化版.docx`（不合并不改名）
 - 游戏模式：主线推进剧情 + 支线日常，玩家自选；浏览器验收用本机 Edge

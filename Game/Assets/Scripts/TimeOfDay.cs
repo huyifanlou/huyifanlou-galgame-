@@ -15,6 +15,9 @@ public class TimeOfDay : MonoBehaviour
     Weather _wth;
     bool _winNight;
     float _cullTimer;
+    bool _perf;
+    float _perfClock;
+    int _perfFrames;
     PostFX _post;
     Material _skybox;
 
@@ -78,6 +81,13 @@ public class TimeOfDay : MonoBehaviour
         }
         var sp = Args.F("-speed");
         if (sp.HasValue) TimeSpeed = sp.Value;
+        _perf = Args.Has("-fps");
+        if (_perf)
+        {
+            Application.runInBackground = true;
+            QualitySettings.vSyncCount = 0;
+            Application.targetFrameRate = -1;
+        }
 
         // 太阳（web: directionalLight position [14,20,10]、intensity 1.42、2048² 柔影）
         var sun = new GameObject("Sun");
@@ -88,7 +98,7 @@ public class TimeOfDay : MonoBehaviour
         _dir.type = LightType.Directional;
         _dir.color = DAY_DIR;
         _dir.intensity = DAY_DIR_I;
-        _dir.shadows = LightShadows.Soft;
+        _dir.shadows = Args.Has("-noshadow") ? LightShadows.None : LightShadows.Soft;
         _dir.shadowStrength = 0.95f;
         _dir.shadowBias = 0.02f;
         _dir.shadowNormalBias = 0.4f;
@@ -161,6 +171,33 @@ public class TimeOfDay : MonoBehaviour
         Apply();
 
         if (Toast != "" && Time.time > _toastUntil) Toast = "";
+    }
+
+    // 灯光剔除放在 LateUpdate：此时相机已跟到玩家最终位置（Update 首帧相机还在原点，会把整街灯误关）
+    void LateUpdate()
+    {
+        if (_w == null || Camera.main == null) return;
+        if (_perf)
+        {
+            _perfClock += Time.unscaledDeltaTime;
+            _perfFrames++;
+            if (_perfFrames >= 300)
+            {
+                Debug.Log($"[Perf] 近 300 帧平均 {_perfFrames / Mathf.Max(0.001f, _perfClock):F1} FPS");
+                _perfClock = 0f;
+                _perfFrames = 0;
+            }
+        }
+        _cullTimer -= Time.deltaTime;
+        if (_cullTimer > 0f) return;
+        _cullTimer = 0.2f;
+        var cp = Camera.main.transform.position;
+        for (int i = 0; i < _w.LampLights.Count; i++)
+        {
+            var ll = _w.LampLights[i];
+            bool near = (ll.transform.position - cp).sqrMagnitude < 38f * 38f;
+            if (ll.enabled != near) ll.enabled = near;
+        }
     }
 
     public void SetSpeed(float s)
@@ -293,36 +330,67 @@ public class TimeOfDay : MonoBehaviour
                 _w.LampGlass.SetColor("_EmissionColor", new Color(1f, 0.72f, 0.4f) * (m * 0.85f));
             }
             if (_w.LampPool != null) _w.LampPool.SetColor("_TintColor", new Color(1f, 0.82f, 0.55f, m * 0.55f));
-            foreach (var ll in _w.LampLights) ll.intensity = m * 1.0f;
-
-            // 只点亮相机附近的路灯（远处灯对画面贡献很小，却会成倍增加光照 pass）
-            _cullTimer -= Time.deltaTime;
-            if (_cullTimer <= 0f && Camera.main != null)
-            {
-                _cullTimer = 0.25f;
-                var cp = Camera.main.transform.position;
-                for (int i = 0; i < _w.LampLights.Count; i++)
-                {
-                    var ll = _w.LampLights[i];
-                    bool near = (ll.transform.position - cp).sqrMagnitude < 38f * 38f;
-                    if (ll.enabled != near) ll.enabled = near;
-                }
-            }
+            for (int i = 0; i < _w.LampLights.Count; i++)
+                _w.LampLights[i].intensity = m * (i < _w.LampLightPower.Count ? _w.LampLightPower[i] : 1f);
 
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
-                _post.BloomIntensity = Mathf.Lerp(0.14f, 0.42f, m);
-                _post.VigStrength = Mathf.Lerp(0.60f, 0.70f, m);
-                _post.Threshold = Mathf.Lerp(0.86f, 0.72f, m);
+                // 写实档：白天几乎不泛光、暗角很轻；夜里只让灯/窗/招牌晕开
+                _post.BloomIntensity = Mathf.Lerp(0.07f, 0.22f, m);
+                _post.VigStrength = Mathf.Lerp(0.16f, 0.26f, m);
+                _post.Threshold = Mathf.Lerp(1.10f, 0.85f, m);
             }
 
-            // 发光窗片：夜里点亮（简单可靠），白天关闭
+            // 店铺橱窗夜里透暖光（立面窗格由贴图渐变表现，不再覆盖玻璃片）
+            if (_w.WindowGlassMat != null)
+            {
+                if (m > 0.15f)
+                {
+                    _w.WindowGlassMat.EnableKeyword("_EMISSION");
+                    _w.WindowGlassMat.SetColor("_EmissionColor", new Color(0.55f, 0.32f, 0.12f) * (m * 0.7f));
+                }
+                else _w.WindowGlassMat.DisableKeyword("_EMISSION");
+            }
             if (_w.WindowGlowMat != null)
                 _w.WindowGlowMat.color = new Color(0.95f, 0.72f, 0.42f) * Mathf.Clamp01(m * 0.95f);
-            bool glowOn = m > 0.25f;
+            bool glowOn = m >= 0.25f;
             for (int i = 0; i < _w.WindowGlowRenders.Count; i++)
                 if (_w.WindowGlowRenders[i].enabled != glowOn) _w.WindowGlowRenders[i].enabled = glowOn;
+            bool signGlowOn = m >= 0.25f;
+            for (int i = 0; i < _w.SignGlowRenders.Count; i++)
+                if (_w.SignGlowRenders[i].enabled != signGlowOn) _w.SignGlowRenders[i].enabled = signGlowOn;
+
+            // 店铺招牌：夜里用自身贴图做自发光；门灯/骑楼灯笼亮起
+            for (int i = 0; i < _w.SignMatRefs.Count; i++)
+            {
+                var sm = _w.SignMatRefs[i];
+                if (m > 0.05f)
+                {
+                    sm.EnableKeyword("_EMISSION");
+                    sm.SetTexture("_EmissionMap", sm.mainTexture);
+                    sm.SetColor("_EmissionColor", new Color(1f, 0.82f, 0.55f) * (m * 0.9f));
+                }
+                else sm.DisableKeyword("_EMISSION");
+            }
+            if (_w.DoorLampMat != null)
+            {
+                if (m > 0.02f)
+                {
+                    _w.DoorLampMat.EnableKeyword("_EMISSION");
+                    _w.DoorLampMat.SetColor("_EmissionColor", new Color(1f, 0.78f, 0.45f) * (m * 0.8f));
+                }
+                else _w.DoorLampMat.DisableKeyword("_EMISSION");
+            }
+            if (_w.LanternMat != null)
+            {
+                if (m > 0.02f)
+                {
+                    _w.LanternMat.EnableKeyword("_EMISSION");
+                    _w.LanternMat.SetColor("_EmissionColor", new Color(1f, 0.32f, 0.18f) * (m * 0.9f));
+                }
+                else _w.LanternMat.DisableKeyword("_EMISSION");
+            }
         }
     }
 }
