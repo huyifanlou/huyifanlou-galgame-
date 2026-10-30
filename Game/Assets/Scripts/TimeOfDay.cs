@@ -81,8 +81,8 @@ public class TimeOfDay : MonoBehaviour
         }
         var sp = Args.F("-speed");
         if (sp.HasValue) TimeSpeed = sp.Value;
-        _perf = Args.Has("-fps");
-        if (_perf)
+        _perf = Args.Has("-fps") || Args.Has("-fpslog");   // -fpslog 只记录帧率，保持 60 帧上限
+        if (Args.Has("-fps"))
         {
             Application.runInBackground = true;
             QualitySettings.vSyncCount = 0;

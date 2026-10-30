@@ -742,9 +742,10 @@ public class WorldBuilder : MonoBehaviour
     // ── 入口 ──────────────────────────────────────────────────
     void Start()
     {
-        // 叙事游戏不需要失控帧率：锁 60 并开垂直同步，避免 CPU/GPU 长期满载
+        // 叙事游戏不需要失控帧率：硬锁 60。
+        // 不能用 vSync=1：165Hz 等高分屏上垂直同步会让 Unity 忽略 targetFrameRate，直接按刷新率跑。
+        QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
-        QualitySettings.vSyncCount = 1;
         if (string.IsNullOrEmpty(Args.Str("-shot")))
             Screen.SetResolution(1600, 900, FullScreenMode.Windowed);   // 默认窗口，可拖动边缘调整；F11 切全屏
         QualitySettings.shadowDistance = 140f;

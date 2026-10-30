@@ -22,12 +22,13 @@
 - 渲染（docs/61）：**Linear 色彩空间 + HDR + ACES 色调映射 + 半分辨率 SSAO + 程序化天空（SunDisk/大气，夜穹星空保留）**；三色环境光；日光阴影 4096/140m/0.85；移轴景深关闭；相机 clearFlags 由 PlayerRig 保留 Skybox
 - 外部适配（docs/62）：**日间窗格改在立面贴图里画天空反射渐变**（删除玻璃补片）；草地贴图压向橄榄绿；小镇骑楼横匾夜间发光 + 左右各一盏暖灯（1.4×）；骑楼柱列让开店门；灯光 38m 剔除移到 LateUpdate（修掉启动首帧整街灯全灭）
 - 远山/林带（docs/63~65，已整体回退）：三轮山体林带 + 两轮树冠改型（圆冠 docs/64 → 方块 docs/65）作者认为“效果不好”，代码已恢复到 docs/62 状态（见 docs/66）；相关脚本不再包含这些改动
+- 锁帧（docs/67）：`vSync=0 + targetFrameRate=60`。原来 vSync=1 在 165Hz 屏上会忽略 60 上限、按 165 FPS 跑，CPU 2~4 核 / GPU 30%；修复后 60 FPS、CPU 0.6~0.9 核 / GPU 11%。`-fpslog` 只记帧率不解除锁帧
 - 性能：锁 60 帧、路灯 38m 距离裁剪、ProximityHide、树渲染级硬排除；静态合批覆盖建筑/花/栏/灯/远景/灌木；**焦点窗口 1600×900 实测 340~356 FPS**（后台被 DWM 压到 ~6 FPS，不可当性能数据）；诊断参数 `-fps/-noshadow/-noao/-nofx`
 - 校验：`WorldValidator.TownBatch`（小镇四规则）+ `[Interior:*]` 日志均零问题
 
 ## 关键约定
 
-- 一切改动留痕（git 中文 conventional 提交走 `COMMIT_MSG_TMP` + docs/ 编号文档，现至 docs/66；docs/63~65 已回退）
+- 一切改动留痕（git 中文 conventional 提交走 `COMMIT_MSG_TMP` + docs/ 编号文档，现至 docs/67；docs/63~65 已回退）
 - 室内改动先出俯视方案图给作者确认再动代码；验收三线：窗不卡门/家具、出口门廊、墙纸全覆盖
 - 剧本双版本：`D:\AI\galgame-原版.docx` / `D:\AI\galgame-美化版.docx`（不合并不改名）
 - 游戏模式：主线推进剧情 + 支线日常，玩家自选；浏览器验收用本机 Edge
