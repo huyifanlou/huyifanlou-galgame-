@@ -1237,7 +1237,7 @@ public class WorldBuilder : MonoBehaviour
             float lz = dx * s + dz * c;
             float t = lz - b.size[2] / 2f;   // 0 = 主墙，向正门外为正
             float pw = (b.style == "library" ? Mathf.Min(8f, b.size[0] * 0.4f) : 11f) / 2f;
-            if (t >= 3.0f && t <= 4.35f && Mathf.Abs(lx) <= pw + 0.85f)
+            if (t >= 3.0f && t <= 4.35f && Mathf.Abs(lx) <= pw)
                 return t < 3.47f ? 0.48f : t < 3.87f ? 0.35f : 0.22f;
             if (t >= 0f && t < 3.0f && Mathf.Abs(lx) <= pw) return 0.45f;
         }
@@ -1962,10 +1962,13 @@ public class WorldBuilder : MonoBehaviour
                 SignMatRefs.Add(signMat);
             }
             float entranceZ = d / 2f + b.EntranceExtra;
-            Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f, entranceZ + 0.035f), LitTex("door"));
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, entranceZ + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
-            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
-            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
+            // 图书馆/礼堂的门开在柱廊台面上：门整体抬高 0.45m，底部与台面齐平
+            float porchLift = b.style == "library" || b.style == "hall" ? 0.45f : 0f;
+            Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f + porchLift, entranceZ + 0.035f), LitTex("door"));
+            if (porchLift == 0f)
+                MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, entranceZ + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
+            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f + porchLift, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
+            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f + porchLift, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
             Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
             // 店铺：雨棚 + 悬挂小招牌；骑楼店铺用横匾
@@ -2105,8 +2108,8 @@ public class WorldBuilder : MonoBehaviour
         Box(grp, new Vector3(0f, baseY + 3.45f, front + bayD + 0.95f),
             new Vector3(bayW * 0.72f, 0.18f, 1.9f), ColMat(b.roof));
         foreach (int sx in new[] { -1, 1 })
-            Box(grp, new Vector3(sx * (bayW * 0.3f), baseY + 2.0f, front + bayD + 1.55f),
-                new Vector3(0.22f, 2.9f, 0.22f), ColMat(b.trim));
+            Box(grp, new Vector3(sx * (bayW * 0.3f), baseY + 1.72f, front + bayD + 1.55f),
+                new Vector3(0.22f, 3.44f, 0.22f), ColMat(b.trim));
     }
 
     // 古典柱廊：台阶 + 柱列 + 檐部 + 三角山花（图书馆/礼堂共用）
@@ -2117,10 +2120,10 @@ public class WorldBuilder : MonoBehaviour
         const float depth = 3f;
         var stone = ColMat(b.trim);
         var roofMat = LitTex("roof_" + b.id, 4f, 2f);
-        // 三级台阶：最高一级贴柱廊平台，逐级向外降低并加宽（此前高低反了）
+        // 三级台阶：最高一级贴柱廊平台，逐级向外降低；宽度不超过柱廊平台，避免左右凸出
         for (int i = 0; i < 3; i++)
             Box(grp, new Vector3(0f, baseY + 0.36f - i * 0.13f, front + depth + 0.25f + i * 0.4f),
-                new Vector3(porticoW + 1.3f + i * 0.24f, 0.24f, 0.44f), ColMat(b.plinth));
+                new Vector3(porticoW - 0.4f + i * 0.2f, 0.24f, 0.44f), ColMat(b.plinth));
         Box(grp, new Vector3(0f, baseY + 0.34f, front + depth / 2f + 0.35f),
             new Vector3(porticoW, 0.22f, depth + 0.7f), stone);
         for (int i = 0; i < nCols; i++)
