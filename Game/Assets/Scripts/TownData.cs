@@ -196,6 +196,7 @@ public static class TownData
         P("planter", -99f, -43f, w: 2.4f, d: 1f, kind: "green"),
         P("bench", -68f, -66f), P("bench", -78f, -56f, ry: Mathf.PI),
         P("bench", -84f, -66f, ry: Mathf.PI / 2f),
+        P("bench", -84f, -70f, ry: Mathf.PI / 2f),
         P("bench", -98f, -39f, ry: Mathf.PI / 2f),
         P("bench", -40f, -54f, ry: Mathf.PI / 2f), P("bench", -40f, -66f, ry: Mathf.PI / 2f),
         P("bench", -24f, -89f),
