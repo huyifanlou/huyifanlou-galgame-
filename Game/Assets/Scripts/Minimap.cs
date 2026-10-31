@@ -109,9 +109,16 @@ public class Minimap : MonoBehaviour
         var fill = Hex("#d8c8a8");
         foreach (var bl in _w.W.BUILDINGS)
         {
-            float hw = bl.size[0] / 2f, hd = bl.size[2] / 2f;
+            float hw = bl.HalfWX, hd = bl.HalfWZ;
             Rect(bl.pos[0] - hw - 0.8f, bl.pos[1] - hd - 0.8f, bl.pos[0] + hw + 0.8f, bl.pos[1] + hd + 0.8f, edge);
             Rect(bl.pos[0] - hw, bl.pos[1] - hd, bl.pos[0] + hw, bl.pos[1] + hd, fill);
+        }
+        var court = Hex("#4f8a6a");
+        foreach (var g in _w.W.GROUNDS)
+        {
+            if (g.id == "playground") continue;
+            Rect(g.pos[0] - g.size[0] / 2f, g.pos[1] - g.size[1] / 2f,
+                 g.pos[0] + g.size[0] / 2f, g.pos[1] + g.size[1] / 2f, court);
         }
         var v = _w.W.VILLA;
         if (v != null)
@@ -197,7 +204,7 @@ public class Minimap : MonoBehaviour
         void AddB(string label, string id, bool major = false)
         {
             var b = Find(id);
-            if (b != null) _dest.Add((label, b.pos[0], b.pos[1] + b.face * (b.size[2] / 2f + 1.7f), major));
+            if (b != null) _dest.Add((label, b.pos[0] + b.FrontOffsetX(1.7f), b.pos[1] + b.FrontOffsetZ(1.7f), major));
         }
         if (w.VILLA != null)
             _dest.Add(("家", w.VILLA.x, w.VILLA.z + w.VILLA.d / 2f + 1.7f, true));
@@ -209,6 +216,7 @@ public class Minimap : MonoBehaviour
         AddB("实验楼", "s_lab");
         AddB("礼堂", "s_hall");
         AddB("宿舍楼", "s_dorm");
+        AddB("活动中心", "s_center");
         AddB("餐厅", "r_rest", true);
         AddB("超市", "r_market", true);
         AddB("奶茶店", "r_milktea");
@@ -229,7 +237,7 @@ public class Minimap : MonoBehaviour
         AddB("音乐亭", "p_pav");
 
         // 非建筑地标保留（方便去公园/钟楼）
-        _dest.Add(("钟楼", -14f, -6f, true));
+        _dest.Add(("钟楼", -17f, -5f, true));
         _dest.Add(("公园", 34f, -24f, true));
     }
 

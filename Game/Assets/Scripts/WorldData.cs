@@ -19,6 +19,7 @@ public class WorldData
     public VillaDef VILLA;
     public TreeItem[] TREES;
     public PosItem[] BUSHES;
+    public PosItem[] AZALEAS;
     public PosItem[] FLOWERS;
     public PosItem[] DIRT_PATCHES;
     public LampItem[] LAMPS;
@@ -47,8 +48,18 @@ public class WorldData
     public float[] size;   // [w, h, d]
     public string wall, trim, plinth, roof;
     public int cols, rows, face;
-    public string style;   // flat / gable / grand
+    public string style;   // flat / gable / grand / collegiate / library / modern / dorm / hall / stand
     public bool wing, antenna, banner, roofProps, tank, awning, vent;
+
+    // 朝向：1=+Z、-1=-Z、2=+X、-2=-X；以下按朝向换算世界占地与正门位置
+    public bool FacesX => face == 2 || face == -2;
+    public float HalfWX => FacesX ? size[2] / 2f : size[0] / 2f;
+    public float HalfWZ => FacesX ? size[0] / 2f : size[2] / 2f;
+    public float FrontX => face == 2 ? size[2] / 2f : face == -2 ? -size[2] / 2f : 0f;
+    public float FrontZ => face == 1 ? size[2] / 2f : face == -1 ? -size[2] / 2f : 0f;
+    public float Yaw => face == 2 ? 90f : face == -2 ? -90f : face == -1 ? 180f : 0f;
+    public float FrontOffsetX(float extra) => FrontX + (face == 2 ? extra : face == -2 ? -extra : 0f);
+    public float FrontOffsetZ(float extra) => FrontZ + (face == 1 ? extra : face == -1 ? -extra : 0f);
 }
 
 [Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }

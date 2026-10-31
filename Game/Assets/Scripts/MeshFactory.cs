@@ -55,7 +55,7 @@ public static class MeshFactory
     // 做法：以已验证的 Quad（法线 +Y）/ QuadZ（法线 +Z）为模板，逐面旋转+平移 —— 旋转不改变绕序，
     // 镜像面（-Y/-Z）单独反转三角顺序。UV = 面尺寸 / 贴图覆盖米数 → 每面像素密度恒定。
     // texU/texV：贴图在 U/V 方向上覆盖的世界米数（方形贴图传同一个值）
-    public static Mesh BoxUV(Vector3 size, float texU, float texV)
+    public static Mesh BoxUV(Vector3 size, float texU, float texV, float uOff = 0f, float vOff = 0f)
     {
         float hx = size.x * 0.5f, hy = size.y * 0.5f, hz = size.z * 0.5f;
         float ux = size.x / texU, uy = size.y / texV, uz = size.z / texU;
@@ -67,7 +67,8 @@ public static class MeshFactory
         {
             int i = verts.Count;
             verts.AddRange(v);
-            uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(uw, 0)); uvs.Add(new Vector2(uw, uh)); uvs.Add(new Vector2(0, uh));
+            uvs.Add(new Vector2(uOff, vOff)); uvs.Add(new Vector2(uOff + uw, vOff));
+            uvs.Add(new Vector2(uOff + uw, vOff + uh)); uvs.Add(new Vector2(uOff, vOff + uh));
             if (quadOrder) { tris.Add(i); tris.Add(i + 2); tris.Add(i + 1); tris.Add(i); tris.Add(i + 3); tris.Add(i + 2); }
             else { tris.Add(i); tris.Add(i + 1); tris.Add(i + 2); tris.Add(i); tris.Add(i + 2); tris.Add(i + 3); }
         }

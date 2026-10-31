@@ -44,15 +44,16 @@ public static class TownData
 
     static readonly BuildingDef[] Buildings =
     {
-        // ── 学校区（西北）：最上一栋宿舍楼 ──
-        B("s_dorm", "宿舍楼", -61, -78, 22, 13, 9, W_MILK, T_WHITE, P_STONE, R_TILE, 7, 4),
-        B("s_teach", "教学楼", -67, -62, 24, 16, 10, W_GREY, T_PALE, P_GREY, R_GREEN, 8, 5, 1, "grand"),
-        B("s_lib", "图书馆", -60, -46, 16, 11, 10, "#d3c2a2", "#f2ead8", "#94805e", "#7c4a38", 5, 3, 1, "grand"),
-        B("s_lab", "实验楼", -24, -78, 18, 14, 9, "#c3c8cf", "#eef1f4", "#828a94", "#3d4654", 6, 4),
-        B("s_canteen", "食堂", -30, -64, 18, 8, 10, "#e0b34e", "#fff3d6", "#a07838", "#a03c30", 6, 2, 1, "gable"),
-        B("s_hall", "礼堂", -24, -52, 16, 12, 8, "#e0d5c3", "#f6f0e4", "#9c8f78", "#4e6a58", 5, 3, 1, "grand"),
-        B("s_gate", "门卫", -52, -32, 5, 3.5f, 4, "#d8d2c4", "#f2eee4", "#98917f", "#4a5568", 2, 1),
-        B("s_stand", "看台", -28, -28, 24, 2.4f, 3, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, 1, "plain"),
+        // ── 学校区（西北）：图书馆收西轴线，教学/实验夹方院，生活区在西南，运动区隔中央街 ──
+        B("s_teach", "教学楼", -70, -74, 30, 16, 11, "#a9604a", "#efe3ce", "#7d6a56", "#3f4a54", 8, 5, 1, "collegiate"),
+        B("s_lib", "图书馆", -90.5f, -60, 22, 13, 12, "#d8cbb2", "#f5efe0", "#8f8270", "#4a6a58", 6, 3, 2, "library"),
+        B("s_lab", "实验楼", -70, -46, 26, 14, 10, "#c3c8cf", "#eef1f4", "#828a94", "#3d4654", 7, 4, -1, "modern"),
+        B("s_dorm", "宿舍楼", -92, -37, 20, 12, 9, "#b9775e", "#f0e4cf", "#80685a", "#5a4a42", 7, 4, 2, "dorm"),
+        B("s_canteen", "食堂", -79, -30.8f, 12, 8, 6.5f, "#e0b34e", "#fff3d6", "#a07838", "#a03c30", 4, 2, -1, "gable"),
+        B("s_center", "活动中心", -63, -90, 20, 8, 8, "#b98a62", "#f2e6d4", "#8a6a52", "#4a5a52", 6, 2, 1, "gable"),
+        B("s_hall", "礼堂", -24, -52, 16, 12, 8, "#d8cbb2", "#f6f0e4", "#9c8f78", "#3f5a4a", 5, 3, -2, "hall"),
+        B("s_gate", "门卫", -59.5f, -65, 6, 4, 4, "#d8d2c4", "#f2eee4", "#98917f", "#4a5568", 2, 1, 2, "gable"),
+        B("s_stand", "看台", -28, -29, 24, 0.6f, 5, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, -1, "stand"),
 
         // ── 公园 ──
         B("p_pav", "音乐亭", 56, -32, 6, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 2, 1, 1, "gable"),
@@ -118,7 +119,6 @@ public static class TownData
     {
         R("main", "z", 0f, -98f, 98f, 11f, "mainstone"),          // 主街（石板）
         R("central", "z", -45f, -92f, 98f, 5f, "slab"),           // 中央街（青砖）
-        R("ringN", "z", -84f, -76f, -16f, 5f, "slab"),            // 西环路北段
         R("ringS", "z", -84f, 8f, 88f, 5f, "slab"),               // 西环路南段
         R("market", "x", 27f, -74f, -6f, 8f, "mainstone"),        // 老街商街（旧石板）
         R("resN", "x", 49f, -74f, -16f, 4f, "slab"),              // 住宅北街
@@ -128,6 +128,13 @@ public static class TownData
         R("parkRd", "z", 65f, -46f, -10f, 5f, "slab"),            // 公园联络路
         R("fest", "x", -46f, 62f, 94f, 12f, "mainstone", false),  // 夏日祭参道（整幅铺石，无侧石）
         R("shrineSteps", "z", 79f, -62f, -48f, 10f, "slab", false), // 神社石阶
+    };
+
+    // ── 场地（操场跑道 / 球场）──
+    static readonly GroundDef[] Grounds =
+    {
+        new GroundDef { id = "playground", name = "操场", pos = new[] { -28f, -37f }, size = new[] { 24f, 12f } },
+        new GroundDef { id = "basket", name = "篮球场", kind = "basket", pos = new[] { -61f, -32f }, size = new[] { 14f, 8f } },
     };
 
     // ── 步道（任意方向铺装条，旋转到走向；宽度 3m）──
@@ -155,17 +162,57 @@ public static class TownData
         PL2(60, -74, 66, -74),                                    // 神社连林道
         PL2(28, -16, 28, 2), PL2(28, 19, 28, 26),                 // 廊桥南北接驳
         PL2(54, -46, 62, -46),                                    // 参道连园道
-        // 学校内部支路
-        PL2(-84, -71, -48, -71), PL2(-84, -54, -45, -54), PL2(-41.5f, -45.5f, -14, -45.5f),
+        // 校园步道：东西主轴（校门→图书馆）、南北次轴、生活道、活动中心前庭
+        PL2(-84.5f, -60, -49.4f, -60, 5f),
+        PL2(-70, -68.5f, -70, -51, 4f),
+        PL2(-88, -82.2f, -49.4f, -82.2f, 3f),
+        PL2(-54, -82.2f, -54, -39, 3f),
+        PL2(-54, -39, -49.4f, -39, 3f),
+        PL2(-86, -38, -54, -38, 3f),
+        PL2(-86.3f, -38, -86.3f, -36.5f, 2.5f),
+        PL2(-79, -38, -79, -35, 2.5f),
+        PL2(-61, -38, -61, -36, 3f),
+        PL2(-73, -84.2f, -53, -84.2f, 3f),
+        PL2(-63, -82.2f, -63, -84.2f, 3f),
+        // 运动区/礼堂：中央街两侧步道与操场支路
+        PL2(-42.5f, -39, -36, -39, 3f),
+        PL2(-36, -39, -36, -45, 3f),
+        PL2(-37, -39, -37, -43, 3f),
         // 住宅排间巷
         PL2(-74, 60.5f, -16, 60.5f),
 
+        // 校园广场与配套（校门 / 方院 / 生活区 / 篮球场 / 礼堂前庭）
+        P("plaza", -53.2f, -60, w: 7.6f, d: 12f),
+        P("plaza", -32f, -52, w: 8f, d: 14f),
+        P("gate", -49.4f, -60, ry: Mathf.PI / 2f, kind: "main"),
+        P("flag", -56f, -55.8f),
+        P("board", -56f, -63.8f),
+        P("planter", -55.8f, -58.8f, w: 3f, d: 1.2f, kind: "green"),
+        P("planter", -55.8f, -61.2f, w: 3f, d: 1.2f, kind: "green"),
+        P("sundial", -77f, -65f),
+        P("bench", -64f, -63.2f), P("bench", -64f, -56.8f, ry: Mathf.PI),
+        P("bench", -82.5f, -67f, ry: Mathf.PI / 2f),
+        P("bench", -74f, -67.8f), P("bench", -74f, -52.2f, ry: Mathf.PI),
+        P("bench", -78f, -40f, ry: Mathf.PI), P("bench", -60f, -40f, ry: Mathf.PI),
+        P("bench", -68f, -84.8f), P("bench", -85.5f, -42f, ry: Mathf.PI / 2f),
+        P("bench", -34f, -48f, ry: Mathf.PI / 2f), P("bench", -34f, -56f, ry: Mathf.PI / 2f),
+        P("bench", -72f, -32f, ry: Mathf.PI / 2f),
+        P("bin", -66f, -63.2f), P("bin", -80f, -40f), P("bin", -33f, -50f),
+        P("board", -62f, -67.8f),
+        P("bikerack", -79f, -67.8f, n: 5), P("bikerack", -80.5f, -72.5f, ry: Mathf.PI / 2f, n: 5),
+        P("bikerack", -51.7f, -67.2f, ry: Mathf.PI / 2f, n: 4),
+        P("bikerack", -57f, -84.8f, n: 5), P("bikerack", -85.5f, -45f, ry: Mathf.PI / 2f, n: 4),
+        P("planter", -80f, -67.8f, w: 2.4f, d: 1f, kind: "green"), P("planter", -60f, -67.8f, w: 2.4f, d: 1f, kind: "green"),
+        P("planter", -69f, -84.8f, w: 2.4f, d: 1f, kind: "green"), P("planter", -73f, -84.8f, w: 2.4f, d: 1f, kind: "green"),
+        // 篮球场：方院南侧草坪，篮架面向场心
+        P("hoop", -67.5f, -32, ry: Mathf.PI / 2f), P("hoop", -54.5f, -32, ry: -Mathf.PI / 2f),
+
         // 广场 / 站前 / 停车
-        P("plaza_round", -15, -12, r: 11f),                       // 钟楼广场
+        P("plaza_round", -17, -12, r: 10f),                       // 钟楼广场
         P("plaza", 76, 78, w: 26, d: 6),                          // 站前广场
         P("parking", 20, 72, w: 24, d: 16),
         P("crates", 44, 74, w: 14, d: 14),
-        P("clocktower", -14, -12),
+        P("clocktower", -17, -12),
         P("railway", 0, 104, len: 236),
         P("torii", 79, -63.4f, w: 10),
 
@@ -175,16 +222,52 @@ public static class TownData
         P("ride_tent", 76, 43), P("ride_cart", 39, 50), P("ride_stage", 47, 50),
         P("kart", 72, 28, w: 14, d: 10),
 
-        // 夏日祭摊位（参道两侧）
-        // 神社参道两侧（中间 79 轴留空，视线直通鸟居/本殿）
-        P("stall", 63, -52.5f, kind: "goldfish"), P("stall", 69, -52.5f, kind: "food"),
-        P("stall", 89, -52.5f, kind: "goods"), P("stall", 95, -52.5f, kind: "candy"),
-        P("stall", 63, -39.5f, kind: "grill"), P("stall", 69, -39.5f, kind: "masks"),
-        P("stall", 89, -39.5f, kind: "games"), P("stall", 95, -39.5f, kind: "ice"),
-        P("stall", 66, -55.5f, kind: "drinks"), P("stall", 92, -36.5f, kind: "lantern"),
+        // 夏日祭摊位：两排沿参道街面对面，中间 x74~84 留给神社参道
+        P("stall", 62.6f, -52.8f, kind: "takoyaki"),
+        P("stall", 67.4f, -52.8f, kind: "goldfish"),
+        P("stall", 72.2f, -52.8f, kind: "masks"),
+        P("stall", 86.0f, -52.8f, kind: "shooting"),
+        P("stall", 90.6f, -52.8f, kind: "apple"),
+        P("stall", 62.6f, -39.2f, ry: Mathf.PI, kind: "yakisoba"),
+        P("stall", 67.4f, -39.2f, ry: Mathf.PI, kind: "drinks"),
+        P("stall", 72.2f, -39.2f, ry: Mathf.PI, kind: "ice"),
+        P("stall", 86.0f, -39.2f, ry: Mathf.PI, kind: "goods"),
+        P("stall", 90.6f, -39.2f, ry: Mathf.PI, kind: "water"),
 
-        // 公园喷泉
+        // 神社区域：石灯笼 / 提灯串 / 狛犬 / 绘马 / 御神签 / 手水 / 赛钱箱 / 酒樽 / 授与所
+        P("lantern", 72.3f, -56.0f), P("lantern", 85.7f, -56.0f),
+        P("lantern", 72.3f, -60.0f), P("lantern", 85.7f, -60.0f),
+        P("lantern", 71.8f, -66.5f), P("lantern", 86.2f, -66.5f),
+        P("komainu", 72.4f, -61.8f), P("komainu", 85.6f, -61.8f),
+        P("chochin_string", 79f, -52f, len: 10f),
+        P("chochin_string", 79f, -57f, len: 10f),
+        P("chochin_string", 65f, -46f, ry: Mathf.PI / 2f, len: 12f),
+        P("chochin_string", 93f, -46f, ry: Mathf.PI / 2f, len: 12f),
+        P("nobori", 70.5f, -50.5f, kind: "red"), P("nobori", 87.5f, -50.5f, kind: "white"),
+        P("nobori", 70.5f, -60.0f, kind: "white"), P("nobori", 87.5f, -60.0f, kind: "red"),
+        P("temizuya", 69f, -63.4f),
+        P("ema", 72.0f, -68.2f, ry: Mathf.PI / 2f),
+        P("omikuji", 86.0f, -68.2f, ry: -Mathf.PI / 2f),
+        P("sake", 71.2f, -74.2f),
+        P("offering", 79f, -64.6f),
+        P("office", 87.5f, -70.5f, ry: -Mathf.PI / 2f),
+        P("festival_board", 96.5f, -46f, ry: -Mathf.PI / 2f),
+        P("bench", 71.5f, -66.0f, ry: Mathf.PI / 2f), P("bench", 86.5f, -66.0f, ry: -Mathf.PI / 2f),
+
+        // 公园喷泉（三层石盘 +「樱之冠」花雕塑地标）
         P("fountain", 34, -40, r: 4.2f),
+        // 池畔四角花坛与石灯笼
+        P("flowerbed", 44f, -20f, w: 5.2f, d: 2.4f), P("flowerbed", 24f, -20f, w: 5.2f, d: 2.4f),
+        P("flowerbed", 44f, -62f, w: 5.2f, d: 2.4f), P("flowerbed", 24f, -62f, w: 5.2f, d: 2.4f),
+        P("lantern", 50f, -22f), P("lantern", 18f, -22f),
+        P("lantern", 50f, -58f), P("lantern", 18f, -58f),
+        // 樱花林：中央巨樱 + 两侧石灯笼/坐凳 + 林道灯笼
+        P("giant_cherry", 29f, -74.5f),
+        P("lantern", 24.5f, -70.5f), P("lantern", 24.5f, -78.5f),
+        P("bench", 23.5f, -74.5f, ry: Mathf.PI / 2f),
+        P("bench", 33.6f, -80.2f, ry: -0.6f),
+        P("lantern", 30.5f, -63.5f), P("lantern", 42f, -68f),
+        P("lantern", 35.4f, -70.2f),
 
         // 河畔长椅：贴着滨河步道外缘，面朝河（南岸 ry=π，北岸 ry=0）
         P("bench", -30f, RiverZ(-30f) + 15.8f, ry: Mathf.PI),
@@ -207,13 +290,21 @@ public static class TownData
     static List<(float x, float z, float hw, float hd)> KeepOut()
     {
         var k = new List<(float, float, float, float)>();
-        foreach (var b in Buildings) k.Add((b.pos[0], b.pos[1], b.size[0] / 2f + 2.8f, b.size[2] / 2f + 2.8f));
+        foreach (var b in Buildings) k.Add((b.pos[0], b.pos[1], b.HalfWX + 2.8f, b.HalfWZ + 2.8f));
         foreach (var r in Roads) k.Add(r.axis == "z"
             ? (r.at, (r.from + r.to) / 2f, r.width / 2f + 2.4f, (r.to - r.from) / 2f + 2.4f)
             : ((r.from + r.to) / 2f, r.at, (r.to - r.from) / 2f + 2.4f, r.width / 2f + 2.4f));
+        foreach (var g in Grounds) k.Add((g.pos[0], g.pos[1], g.size[0] / 2f + 1.6f, g.size[1] / 2f + 1.6f));
         k.Add((-35.5f, 66f, 8f, 5f));                                  // 主角家
-        k.Add((-28f, -37f, 14f, 8f));                                  // 操场
-        k.Add((-15f, -12f, 11f, 12f));                                 // 钟楼广场
+        k.Add((-70f, -60f, 14.5f, 10.5f));                             // 校园方院（草坪+步道保持洁净）
+        k.Add((-53.2f, -60f, 4.3f, 6.5f));                             // 校门内广场
+        k.Add((-32f, -52f, 4.5f, 7.5f));                               // 礼堂前庭
+        k.Add((-63f, -84.2f, 10.5f, 2.2f));                            // 活动中心前庭
+        k.Add((-49.4f, -61.8f, 1.6f, 36.4f));                           // 校园东墙
+        k.Add((-73.7f, -25.6f, 24.5f, 1.6f));                           // 校园南墙
+        k.Add((-98f, -49.3f, 1.6f, 23.7f));                             // 校园西墙
+        k.Add((-59.7f, -98f, 10.3f, 1.6f));                             // 校园北墙
+        k.Add((-17f, -12f, 10.5f, 11f));                               // 钟楼广场
         k.Add((76f, 68f, 15f, 5f));                                    // 站前广场
         k.Add((20f, 72f, 14f, 10f));                                   // 停车场
         k.Add((44f, 74f, 9f, 9f));                                     // 货场
@@ -257,85 +348,39 @@ public static class TownData
         return false;
     }
 
-    // ── 学校区域道路/步道两侧矮墙：路口与建筑入口自动留口 ──
+    // ── 校园围墙：沿新校区边界一圈，东墙留正门（z -65~-55）与东侧门（z -44~-34）──
     static FenceDef[] BuildSchoolWalls()
     {
-        var bands = new (string axis, float at, float from, float to, float width)[]
-        {
-            ("z", -45f, -92f, -26f, 5f),     // 中央街（学校段）
-            ("z", -84f, -76f, -26f, 5f),     // 西环路北（学校段）
-            ("x", -71f, -84f, -50.5f, 3f),     // 学校北支路
-            ("x", -54f, -84f, -50.5f, 3f),     // 学校西支路
-            ("x", -45.5f, -40f, -14f, 3f), // 学校东支路
-        };
         var runs = new List<FenceDef>();
-        foreach (var b in bands)
+        void W(string axis, float at, float from, float to)
         {
-            float off = b.width / 2f + (b.width >= 4f ? 1.9f : 0.8f);
-            for (int sgn = -1; sgn <= 1; sgn += 2)
-            {
-                float at = b.at + sgn * off;
-                var gaps = new List<(float a, float c)>();
-                foreach (var o in bands)
-                {
-                    if (o.axis == b.axis) continue;
-                    if (b.axis == "z")
-                    {
-                        if (!(o.from - 0.5f <= at && at <= o.to + 0.5f)) continue;
-                        if (o.at < b.from - 0.5f || o.at > b.to + 0.5f) continue;
-                    }
-                    else
-                    {
-                        if (!(o.from - 0.5f <= at && at <= o.to + 0.5f)) continue;
-                        if (o.at < b.from - 0.5f || o.at > b.to + 0.5f) continue;
-                    }
-                    gaps.Add((o.at - o.width / 2f - 2.2f, o.at + o.width / 2f + 2.2f));
-                }
-                foreach (var bd in Buildings)
-                {
-                    if (!bd.id.StartsWith("s_")) continue;
-                    float doorX = bd.pos[0];
-                    float doorZ = bd.pos[1] + bd.face * (bd.size[2] / 2f + 0.9f);
-                    if (b.axis == "z")
-                    {
-                        if (Mathf.Abs(doorX - at) > 4.5f) continue;
-                        if (doorZ < b.from - 1f || doorZ > b.to + 1f) continue;
-                        gaps.Add((doorZ - 1.8f, doorZ + 1.8f));
-                    }
-                    else
-                    {
-                        if (Mathf.Abs(doorZ - at) > 4.5f) continue;
-                        if (doorX < b.from - 1f || doorX > b.to + 1f) continue;
-                        gaps.Add((doorX - 1.8f, doorX + 1.8f));
-                    }
-                }
-                // 校内支路在中央街/环路墙上的开口（支路墙体已收在墙外，这里补主墙开口）
-                if (b.axis == "z" && Mathf.Abs(b.at + 45f) < 6f)
-                    foreach (float gz in new[] { -71f, -54f, -45.5f }) gaps.Add((gz - 3f, gz + 3f));
-                if (b.axis == "z" && (Mathf.Abs(b.at + 88f) < 3f || Mathf.Abs(b.at + 80f) < 3f))
-                    foreach (float gz in new[] { -71f, -54f }) gaps.Add((gz - 3f, gz + 3f));
-                // 学校大门（中央街西侧，门卫旁边）
-                if (b.axis == "z" && Mathf.Abs(b.at + 45f) < 0.1f && sgn < 0)
-                    gaps.Add((-34f, -28f));
-                gaps.Sort((p, q) => p.a.CompareTo(q.a));
-                float cur = b.from;
-                foreach (var (ga, gc) in gaps)
-                {
-                    float gs = Mathf.Max(ga, b.from), ge = Mathf.Min(gc, b.to);
-                    if (ge <= cur) continue;
-                    if (gs > cur + 1.2f) runs.Add(new FenceDef { axis = b.axis, at = at, from = cur, to = gs });
-                    cur = Mathf.Max(cur, ge);
-                }
-                if (b.to > cur + 1.2f) runs.Add(new FenceDef { axis = b.axis, at = at, from = cur, to = b.to });
-            }
+            if (to - from > 1.2f) runs.Add(new FenceDef { axis = axis, at = at, from = from, to = to });
         }
+        // 东墙（沿中央街西侧）
+        W("z", -49.4f, -98f, -65f);
+        W("z", -49.4f, -55f, -44f);
+        W("z", -49.4f, -34f, -25.6f);
+        // 南墙 / 西墙 / 北墙
+        W("x", -25.6f, -98f, -49.4f);
+        W("z", -98f, -73f, -25.6f);
+        W("x", -98f, -70f, -49.4f);
+        // 西北角：沿世界圆边界内侧阶梯收分，避免矩形墙角伸出可行走区
+        W("x", -98f, -76f, -70f);
+        W("z", -76f, -98f, -94f);
+        W("x", -94f, -82f, -76f);
+        W("z", -82f, -94f, -87f);
+        W("x", -87f, -88f, -82f);
+        W("z", -88f, -87f, -80f);
+        W("x", -80f, -94f, -88f);
+        W("z", -94f, -80f, -73f);
+        W("x", -73f, -98f, -94f);
         return runs.ToArray();
     }
 
     static bool NearBuilding(float x, float z, float margin)
     {
         foreach (var b in Buildings)
-            if (Mathf.Abs(x - b.pos[0]) < b.size[0] / 2f + margin && Mathf.Abs(z - b.pos[1]) < b.size[2] / 2f + margin)
+            if (Mathf.Abs(x - b.pos[0]) < b.HalfWX + margin && Mathf.Abs(z - b.pos[1]) < b.HalfWZ + margin)
                 return true;
         if (Mathf.Abs(x + 35.5f) < 6f + margin && Mathf.Abs(z - 66f) < 3f + margin) return true;
         return false;
@@ -365,10 +410,7 @@ public static class TownData
             ROADS = Roads,
             BRANCH_PATHS = new BranchPathDef[0],
             BUILDINGS = Buildings,
-            GROUNDS = new[]
-            {
-                new GroundDef { id = "playground", name = "操场", pos = new[] { -28f, -37f }, size = new[] { 24f, 12f } },
-            },
+            GROUNDS = Grounds,
             PROPS = Props,
             POND = new PondDef { pos = new[] { 34f, -40f }, r = 20f },
             VILLA = new VillaDef { x = -35.5f, z = 66f, w = 12f, h = 6f, d = 6f, face = 1 },
@@ -403,9 +445,26 @@ public static class TownData
             trees.Add(new TreeItem { x = R1(x), z = R1(z), v = v });
         }
 
-        // 樱花林（公园北侧 x 14~60 / z -84~-66）
-        for (int i = 0; i < 26; i++)
-            TryTree(16f + (float)rnd.Next() * 42f, -82f + (float)rnd.Next() * 14f, 10, 3.0f);
+        // 樱花林（公园北侧 x 8~66 / z -96~-68）：范围扩到原林区边界外，中央留 16m 空地给巨樱。
+        // 用错排抖动网格而不是纯随机散点，保证树距均匀、不结块
+        const float gx0 = 8f, gx1 = 65f, gz0 = -96f, gz1 = -68.8f, step = 6.8f;
+        for (int row = 0; row * step + gz0 <= gz1 + 0.01f; row++)
+        {
+            float z0 = gz0 + row * step;
+            float xOff = (row % 2) * step * 0.5f;
+            for (float x0 = gx0 + xOff; x0 <= gx1; x0 += step)
+            {
+                float x = x0 + ((float)rnd.Next() * 2 - 1) * 2.0f;
+                float z = z0 + ((float)rnd.Next() * 2 - 1) * 1.8f;
+                if ((x - 29f) * (x - 29f) + (z + 74.5f) * (z + 74.5f) < 16.0f * 16.0f) continue;
+                float roll = (float)rnd.Next();
+                int v = roll < 0.45f ? 10 : roll < 0.68f ? 12 : roll < 0.88f ? 11 : 13;   // 粉/八重/浅粉/垂枝
+                TryTree(x, z, v, 6.2f);
+            }
+        }
+        // 少量常绿与秋色树压在新林地边缘，给樱花林做背景
+        foreach (var (tx, tz, tv) in new[] { (10f, -72f, 0), (12f, -92f, 2), (62f, -92f, 0), (64f, -70f, 2), (48f, -94f, 5), (26f, -94f, 0), (8f, -86f, 1), (66f, -82f, 0) })
+            TryTree(tx, tz, tv, 6.2f);
         // 公园点景树（围绕池塘；同样走保留区检查，避免踩到池沿/步道）
         foreach (var (tx, tz) in new[] { (20f, -52f), (28f, -55f), (44f, -54f), (52f, -48f), (54f, -32f), (16f, -40f), (16f, -28f), (48f, -56f) })
             TryTree(tx, tz, 0, 3.5f);
@@ -439,6 +498,12 @@ public static class TownData
         }
         // 站前绿地点景
         TryTree(12f, 86f, 0); TryTree(22f, 86f, 5); TryTree(32f, 86f, 2);
+        // 校园点景树（方院外缘 / 图书馆北 / 活动中心西 / 东墙内）
+        foreach (var (tx, tz, tv) in new[]
+        {
+            (-80f, -84f, 0), (-75f, -88f, 2),
+            (-86f, -78f, 5), (-52f, -78f, 0), (-53f, -28.5f, 2),
+        }) TryTree(tx, tz, tv, 4.5f);
         // 全镇散布
         for (int i = 0; i < 90; i++)
         {
@@ -453,12 +518,21 @@ public static class TownData
             if (Mathf.Abs(t.x - 79f) < 12f && Mathf.Abs(t.z + 57f) < 15f) continue;
             bool bad = false;
             foreach (var b in Buildings)
-                if (Mathf.Abs(t.x - b.pos[0]) < b.size[0] / 2f + 2.6f && Mathf.Abs(t.z - b.pos[1]) < b.size[2] / 2f + 2.6f) { bad = true; break; }
+                if (Mathf.Abs(t.x - b.pos[0]) < b.HalfWX + 2.6f && Mathf.Abs(t.z - b.pos[1]) < b.HalfWZ + 2.6f) { bad = true; break; }
             if (!bad && Mathf.Abs(t.x + 35.5f) < 8.6f && Mathf.Abs(t.z - 66f) < 5.6f) bad = true;
             if (!bad)
                 foreach (var br in w.RIVER.bridges)
                     if (Mathf.Abs(t.x - br.x) < br.width / 2f + 3f &&
                         Mathf.Abs(t.z - RiverZ(br.x)) < (w.RIVER.width + 1.6f) / 2f + 3f) { bad = true; break; }
+            if (!bad && (t.x - 29f) * (t.x - 29f) + (t.z + 74.5f) * (t.z + 74.5f) < 16.0f * 16.0f) bad = true;   // 巨樱空地
+            if (!bad)
+                foreach (var p in Props)
+                {
+                    if (p.type != "flowerbed" && p.type != "lantern" && p.type != "bench") continue;
+                    float hw = p.type == "flowerbed" ? 3.6f : p.type == "bench" ? 2.2f : 1.8f;
+                    float hd = p.type == "flowerbed" ? 2.4f : 1.8f;
+                    if (Mathf.Abs(t.x - p.x) < hw && Mathf.Abs(t.z - p.z) < hd) { bad = true; break; }
+                }
             if (!bad) keptTrees.Add(t);
         }
         w.TREES = keptTrees.ToArray();
@@ -471,6 +545,8 @@ public static class TownData
             if (InKeep(cx, cz, keep, false)) continue;
             if (Mathf.Abs(cz - RiverZ(cx)) < 15.5f) continue;
             if (NearBuilding(cx, cz, 5.5f)) continue;
+            // 樱花林下改用杜鹃/花丛做地被，方块灌木不再进入林区（近看像绿箱子）
+            if (cx > 5f && cx < 70f && cz > -98f && cz < -64f) continue;
             bool near = false;
             foreach (var t in trees) if (Mathf.Sqrt((cx - t.x) * (cx - t.x) + (cz - t.z) * (cz - t.z)) < 2.4f) { near = true; break; }
             if (near) continue;
@@ -482,6 +558,7 @@ public static class TownData
                 if (InKeep(x, z, keep, false)) continue;
                 if (Mathf.Abs(z - RiverZ(x)) < 15.5f) continue;
                 if (NearBuilding(x, z, 5.0f)) continue;
+                if (x > 5f && x < 70f && z > -98f && z < -64f) continue;
                 bool bad = false;
                 foreach (var p in bushes) if (Mathf.Sqrt((x - p.x) * (x - p.x) + (z - p.z) * (z - p.z)) < 0.9f) { bad = true; break; }
                 if (bad) continue;
@@ -489,6 +566,47 @@ public static class TownData
             }
         }
         w.BUSHES = bushes.ToArray();
+
+        bool NearParkProp(float x, float z, float d)
+        {
+            foreach (var p in Props)
+            {
+                if (p.type != "flowerbed" && p.type != "lantern" && p.type != "bench" && p.type != "giant_cherry") continue;
+                if (Mathf.Abs(x - p.x) < d && Mathf.Abs(z - p.z) < d) return true;
+            }
+            return false;
+        }
+
+        // 杜鹃：樱花林下成片，公园池畔外圈再补几丛（避开步道、花坛、灯笼、长椅）
+        var azaleas = new List<PosItem>();
+        for (int c = 0; c < 150 && azaleas.Count < 54; c++)
+        {
+            float cx = 8f + (float)rnd.Next() * 58f;
+            float cz = -96f + (float)rnd.Next() * 28f;
+            if (InKeep(cx, cz, keep, false)) continue;
+            if ((cx - 29f) * (cx - 29f) + (cz + 74.5f) * (cz + 74.5f) < 5.0f * 5.0f) continue;
+            if (NearParkProp(cx, cz, 2.2f)) continue;
+            int n = 2 + rnd.NextInt(2);
+            for (int k = 0; k < n && azaleas.Count < 54; k++)
+            {
+                float x = cx + ((float)rnd.Next() * 2 - 1) * 1.2f;
+                float z = cz + ((float)rnd.Next() * 2 - 1) * 1.2f;
+                if (InKeep(x, z, keep, false)) continue;
+                if ((x - 29f) * (x - 29f) + (z + 74.5f) * (z + 74.5f) < 4.5f * 4.5f) continue;
+                if (NearParkProp(x, z, 1.8f)) continue;
+                azaleas.Add(new PosItem { x = R1(x), z = R1(z) });
+            }
+        }
+        for (int c = 0; c < 90 && azaleas.Count < 76; c++)
+        {
+            float a = (float)rnd.Next() * Mathf.PI * 2f;
+            float x = 34f + Mathf.Cos(a) * (26f + (float)rnd.Next() * 5f);
+            float z = -40f + Mathf.Sin(a) * (20f + (float)rnd.Next() * 3f);
+            if (InKeep(x, z, keep, false)) continue;
+            if (NearParkProp(x, z, 2.2f)) continue;
+            azaleas.Add(new PosItem { x = R1(x), z = R1(z) });
+        }
+        w.AZALEAS = azaleas.ToArray();
 
         var flowers = new List<PosItem>();
         for (int c = 0; c < 260 && flowers.Count < 150; c++)
@@ -512,6 +630,25 @@ public static class TownData
                 if (bad) continue;
                 flowers.Add(new PosItem { x = R1(x), z = R1(z) });
             }
+        }
+        // 樱花林与公园草坪的定向花丛（补充林下色彩，避开巨樱根盘与步道）
+        for (int i = 0; i < 60 && flowers.Count < 210; i++)
+        {
+            float x = 8f + (float)rnd.Next() * 58f;
+            float z = -96f + (float)rnd.Next() * 28f;
+            if (InKeep(x, z, keep, false)) continue;
+            if ((x - 29f) * (x - 29f) + (z + 74.5f) * (z + 74.5f) < 4.8f * 4.8f) continue;
+            if (NearParkProp(x, z, 1.2f)) continue;
+            flowers.Add(new PosItem { x = R1(x), z = R1(z) });
+        }
+        for (int i = 0; i < 24 && flowers.Count < 234; i++)
+        {
+            float a = (float)rnd.Next() * Mathf.PI * 2f;
+            float x = 34f + Mathf.Cos(a) * (26f + (float)rnd.Next() * 6f);
+            float z = -40f + Mathf.Sin(a) * (20f + (float)rnd.Next() * 4f);
+            if (InKeep(x, z, keep, false)) continue;
+            if (NearParkProp(x, z, 1.2f)) continue;
+            flowers.Add(new PosItem { x = R1(x), z = R1(z) });
         }
         w.FLOWERS = flowers.ToArray();
 
@@ -565,14 +702,17 @@ public static class TownData
             L(x, 46.2f, -Mathf.PI / 2f); L(x, 51.8f, Mathf.PI / 2f);
             L(x, 69.2f, -Mathf.PI / 2f); L(x, 74.8f, Mathf.PI / 2f);
         }
-        // 夏日祭参道两侧
-        foreach (float x in new[] { 66f, 78f, 90f })
-        {
-            L(x, -58.5f, -Mathf.PI / 2f);
-            L(x, -33.5f, Mathf.PI / 2f);
-        }
-        // 神社石阶
-        L(73.2f, -56f, 0f); L(84.8f, -56f, Mathf.PI);
+        // 神社参道：不再用现代路灯，改由石灯笼/提灯串（Props）照明
+        // 校园：校门广场、东西主轴、次轴、生活道、活动中心、篮球场、礼堂前庭
+        L(-52f, -56.5f, -Mathf.PI / 2f); L(-52f, -63.5f, Mathf.PI / 2f);
+        L(-66f, -63.5f, 0f); L(-74f, -63.5f, 0f); L(-78.5f, -56.5f, 0f);
+        L(-75.5f, -66.8f, Mathf.PI / 2f); L(-72.5f, -52.2f, -Mathf.PI / 2f);
+        L(-52.5f, -74f, Mathf.PI / 2f); L(-52.5f, -46f, Mathf.PI / 2f);
+        L(-60f, -84.3f, 0f); L(-76f, -84.3f, 0f);
+        L(-82f, -40f, 0f); L(-60f, -40f, 0f);
+        L(-56f, -38f, -Mathf.PI / 2f); L(-71f, -38f, Mathf.PI / 2f);
+        L(-36f, -46f, 0f); L(-36f, -58f, 0f);
+        L(-54f, -84f, 0f);
         // 车站街两侧
         for (float x = 14f; x <= 82f; x += 18f)
         {
@@ -581,11 +721,11 @@ public static class TownData
         }
         // 站前广场
         L(70f, 78f, Mathf.PI / 2f); L(82f, 78f, Mathf.PI / 2f);
-        // 公园（池塘四角）
-        L(34f, -57f, Mathf.PI / 2f); L(34f, -23f, -Mathf.PI / 2f);
+        // 公园（池塘四角；南北两盏略偏离轴线，避免挡住喷泉地标）
+        L(28f, -56f, Mathf.PI / 2f); L(40f, -23.5f, -Mathf.PI / 2f);
         L(14f, -40f, 0f); L(54f, -40f, Mathf.PI);
-        // 钟楼广场
-        L(-8f, -19f, -Mathf.PI / 2f); L(-21f, -19f, -Mathf.PI / 2f);
+        // 钟楼广场（贴新圆盘内缘，避开塔基）
+        L(-10.5f, -19f, -Mathf.PI / 2f); L(-23.5f, -19f, -Mathf.PI / 2f);
         // 滨河两岸
         for (float x = -90f; x <= 90f; x += 22f)
         {
@@ -617,8 +757,9 @@ public static class TownData
         {
             foreach (var b in Buildings)
             {
-                float dz = b.pos[1] + b.face * (b.size[2] / 2f + 0.9f);
-                if (Mathf.Abs(l.x - b.pos[0]) < 2.8f && Mathf.Abs(l.z - dz) < 2.8f) return true;
+                float dx = b.pos[0] + b.FrontOffsetX(0.9f);
+                float dz = b.pos[1] + b.FrontOffsetZ(0.9f);
+                if (Mathf.Abs(l.x - dx) < 2.8f && Mathf.Abs(l.z - dz) < 2.8f) return true;
             }
             if (Mathf.Abs(l.x + 35.5f) < 3f && Mathf.Abs(l.z - 69f) < 2.6f) return true;
             return false;
@@ -638,6 +779,7 @@ public static class TownData
         {
             if (Mathf.Abs(t.z - RiverZ(t.x)) < 12f) continue;
             if (Mathf.Abs(t.x - 79f) < 12f && Mathf.Abs(t.z + 57f) < 15f) continue;
+            if (t.x < -48f && t.x > -101f && t.z < -24f && t.z > -101f) continue;   // 校园范围内不落边界林
             btKept.Add(t);
         }
         w.BORDER_TREES = btKept.ToArray();
@@ -649,12 +791,13 @@ public static class TownData
         foreach (var b in Buildings)
             spots.Add(new SpotDef
             {
-                name = b.name, x = b.pos[0], z = b.pos[1] + b.face * (b.size[2] / 2f + 1.2f),
+                name = b.name, x = b.pos[0] + b.FrontOffsetX(1.2f), z = b.pos[1] + b.FrontOffsetZ(1.2f),
                 r = Mathf.Clamp(b.size[0] / 2f, 2.2f, 4f)
             });
         spots.Add(new SpotDef { name = "家", x = -35.5f, z = 66f + 3f + 1.2f, r = 3f });
-        spots.Add(new SpotDef { name = "操场", x = -28f, z = -31f, r = 3f });
-        spots.Add(new SpotDef { name = "钟楼广场", x = -14f, z = -6f, r = 3.5f });
+        spots.Add(new SpotDef { name = "操场", x = -28f, z = -37f, r = 3f });
+        spots.Add(new SpotDef { name = "篮球场", x = -63f, z = -35.5f, r = 2.5f });
+        spots.Add(new SpotDef { name = "钟楼广场", x = -17f, z = -5f, r = 3.5f });
         spots.Add(new SpotDef { name = "公园", x = 34f, z = -24f, r = 4f });
         spots.Add(new SpotDef { name = "池塘", x = 34f, z = -23.5f, r = 3f });
         spots.Add(new SpotDef { name = "樱花林", x = 36f, z = -66f, r = 4f });
@@ -669,7 +812,7 @@ public static class TownData
         // 碰撞：建筑 / 主角家 / 河面（桥位留口）/ 主要设施
         var bl = new List<BlockerDef>();
         foreach (var b in Buildings)
-            bl.Add(new BlockerDef { x = b.pos[0], z = b.pos[1], hw = b.size[0] / 2f, hd = b.size[2] / 2f });
+            bl.Add(new BlockerDef { x = b.pos[0], z = b.pos[1], hw = b.HalfWX, hd = b.HalfWZ });
         bl.Add(new BlockerDef { x = -35.5f, z = 66f, hw = 6f, hd = 3f });
         for (float x = -104f; x <= 104f; x += 1.6f)
         {
@@ -693,7 +836,63 @@ public static class TownData
                 case "ride_stage": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 3f, hd = 2f }); break;
                 case "crates": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 6f, hd = 6f }); break;
                 case "stall": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.3f, hd = 1.3f }); break;
+                case "bench":
+                    {
+                        bool rot = Mathf.Abs(Mathf.Sin(p.ry)) > 0.7f;
+                        bl.Add(new BlockerDef { x = p.x, z = p.z, hw = rot ? 0.32f : 0.9f, hd = rot ? 0.9f : 0.32f });
+                    }
+                    break;
+                case "bin": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.3f, hd = 0.3f }); break;
+                case "board":
+                    {
+                        bool rot = Mathf.Abs(Mathf.Sin(p.ry)) > 0.7f;
+                        bl.Add(new BlockerDef { x = p.x, z = p.z, hw = rot ? 0.22f : 0.95f, hd = rot ? 0.95f : 0.22f });
+                    }
+                    break;
+                case "bikerack":
+                    {
+                        bool rot = Mathf.Abs(Mathf.Sin(p.ry)) > 0.7f;
+                        float bw = (p.n > 0 ? p.n : 5) * 0.35f;
+                        bl.Add(new BlockerDef { x = p.x, z = p.z, hw = rot ? 0.5f : bw, hd = rot ? bw : 0.5f });
+                    }
+                    break;
+                case "planter":
+                    {
+                        bool rot = Mathf.Abs(Mathf.Sin(p.ry)) > 0.7f;
+                        bl.Add(new BlockerDef { x = p.x, z = p.z, hw = (rot ? p.d : p.w) / 2f, hd = (rot ? p.w : p.d) / 2f });
+                    }
+                    break;
+                case "flag": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.35f, hd = 0.35f }); break;
+                case "hoop": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.25f, hd = 0.25f }); break;
+                case "sundial": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.8f, hd = 0.8f }); break;
+                case "gate":
+                    {
+                        float px = Mathf.Cos(p.ry), pz = -Mathf.Sin(p.ry);
+                        float off = p.kind == "main" ? 3.6f : 4.2f;
+                        float ph = p.kind == "main" ? 0.55f : 0.5f;
+                        bl.Add(new BlockerDef { x = p.x + px * off, z = p.z + pz * off, hw = ph, hd = ph });
+                        bl.Add(new BlockerDef { x = p.x - px * off, z = p.z - pz * off, hw = ph, hd = ph });
+                    }
+                    break;
+                case "lantern": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.4f, hd = 0.4f }); break;
+                case "komainu": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.55f, hd = 0.55f }); break;
+                case "ema": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.3f, hd = 1.3f }); break;
+                case "omikuji": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.6f, hd = 0.6f }); break;
+                case "office": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.5f, hd = 1.5f }); break;
+                case "temizuya": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.0f, hd = 0.8f }); break;
+                case "sake": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 0.8f, hd = 0.8f }); break;
+                case "offering": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.2f, hd = 0.6f }); break;
+                case "festival_board": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.3f, hd = 0.5f }); break;
+                case "chochin_string":
+                    {
+                        float hf = p.len * 0.5f;
+                        float cs = Mathf.Cos(p.ry), sn = Mathf.Sin(p.ry);
+                        bl.Add(new BlockerDef { x = p.x + hf * cs, z = p.z - hf * sn, hw = 0.18f, hd = 0.18f });
+                        bl.Add(new BlockerDef { x = p.x - hf * cs, z = p.z + hf * sn, hw = 0.18f, hd = 0.18f });
+                    }
+                    break;
                 case "fountain": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = p.r, hd = p.r }); break;
+                case "giant_cherry": bl.Add(new BlockerDef { x = p.x, z = p.z, hw = 1.4f, hd = 1.4f }); break;
                 case "torii":
                     bl.Add(new BlockerDef { x = p.x - p.w / 2f + 0.5f, z = p.z, hw = 0.45f, hd = 0.45f });
                     bl.Add(new BlockerDef { x = p.x + p.w / 2f - 0.5f, z = p.z, hw = 0.45f, hd = 0.45f });
