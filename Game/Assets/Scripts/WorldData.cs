@@ -60,6 +60,8 @@ public class WorldData
     public float Yaw => face == 2 ? 90f : face == -2 ? -90f : face == -1 ? 180f : 0f;
     public float FrontOffsetX(float extra) => FrontX + (face == 2 ? extra : face == -2 ? -extra : 0f);
     public float FrontOffsetZ(float extra) => FrontZ + (face == 1 ? extra : face == -1 ? -extra : 0f);
+    // 门厅/门斗向正门外凸出的深度（碰撞与门的位置共用，避免门口空气墙）
+    public float EntranceExtra => style == "collegiate" ? 1.04f : style == "modern" ? 1.16f : 0f;
 }
 
 [Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }

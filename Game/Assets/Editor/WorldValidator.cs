@@ -23,7 +23,7 @@ public static class WorldValidator
 
         // —— 轮廓集合 ——
         var bFoot = new List<Rect>();
-        foreach (var b in W.BUILDINGS) bFoot.Add(RC(b.pos[0], b.pos[1], b.size[0] / 2, b.size[2] / 2, b.id));
+        foreach (var b in W.BUILDINGS) bFoot.Add(RC(b.pos[0], b.pos[1], b.HalfWX, b.HalfWZ, b.id));
         var gFoot = new List<Rect>();
         foreach (var g in W.GROUNDS) gFoot.Add(RC(g.pos[0], g.pos[1], g.size[0] / 2, g.size[1] / 2, g.id));
         var roadB = new List<Rect>();

@@ -445,8 +445,19 @@ public class PlayerRig : MonoBehaviour
         // 室内：只查当前房间、当前楼层的墙与家具
         if (_indoor && _im != null && _im.Current != null)
             return _im.Collides(x, z, _player.position.y);
+        // 建筑按朝向换算占地（HalfWX/HalfWZ）；门厅凸出的部分也计入，保证能走到可见的门口
+        const float pad = 0.45f;
         foreach (var b in _w.W.BUILDINGS)
-            if (Mathf.Abs(x - b.pos[0]) < b.size[0] / 2f + 0.45f && Mathf.Abs(z - b.pos[1]) < b.size[2] / 2f + 0.45f) return true;
+        {
+            float x0 = b.pos[0] - b.HalfWX - pad, x1 = b.pos[0] + b.HalfWX + pad;
+            float z0 = b.pos[1] - b.HalfWZ - pad, z1 = b.pos[1] + b.HalfWZ + pad;
+            float e = b.EntranceExtra;
+            if (b.face == 2) x1 += e;
+            else if (b.face == -2) x0 -= e;
+            else if (b.face == 1) z1 += e;
+            else if (b.face == -1) z0 -= e;
+            if (x > x0 && x < x1 && z > z0 && z < z1) return true;
+        }
         foreach (var t in _w.W.TREES)
             if (Mathf.Abs(x - t.x) < 0.75f && Mathf.Abs(z - t.z) < 0.75f) return true;
         foreach (var fc in _w.W.FENCES)
