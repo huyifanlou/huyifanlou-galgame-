@@ -1952,7 +1952,7 @@ public class WorldBuilder : MonoBehaviour
 
             // 招牌 + 大门 + 台阶 + 门灯 + 雨落管 + 门前绿篱（纯色体块不配这些）
             if (plain) continue;
-            // 校舍不挂名称门牌（作者要求）；校门“华清大学”横匾单独保留
+            // 校舍不挂名称门牌（作者要求）；校门“学校”横匾单独保留
             string signId = b.id.StartsWith("s_") ? null : SignIdFor(b.id);
             var signTex = string.IsNullOrEmpty(signId) ? null : TextureLibrary.ByName("sign_" + signId, false, false);
             if (signTex != null)
@@ -2084,8 +2084,12 @@ public class WorldBuilder : MonoBehaviour
         const float bayD = 1.05f;
         MeshObj(grp, MeshFactory.BoxUV(new Vector3(bayW, h, bayD), w, h),
             new Vector3(0f, 0f, front + bayD / 2f), wallMat);
-        Box(grp, new Vector3(0f, baseY + 0.45f, front + bayD + 0.03f),
-            new Vector3(bayW + 0.4f, 0.9f, 0.14f), ColMat(b.plinth));
+        // 门前裙板分左右两段，中间留门洞，避免挡住门扇下半截
+        const float doorGap = 2.3f;
+        float segW = (bayW + 0.4f - doorGap) / 2f;
+        foreach (int sx in new[] { -1, 1 })
+            Box(grp, new Vector3(sx * (doorGap / 2f + segW / 2f), baseY + 0.45f, front + bayD + 0.03f),
+                new Vector3(segW, 0.9f, 0.14f), ColMat(b.plinth));
         foreach (int sx in new[] { -1, 1 })
         {
             Box(grp, new Vector3(sx * (bayW / 2f - 0.12f), 0f, front + bayD + 0.05f),

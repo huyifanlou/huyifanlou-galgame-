@@ -313,6 +313,7 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(DORM_X - 2.6f, 0.86f, 6.2f), new Vector3(0.9f, 0.04f, 0.30f), C("#e6e2d8"), 1f);
         Part(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.34f), new Vector3(1.1f, 0.30f, 0.04f), C("#6f4a32"), 1f);
         SignText(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.37f), 180f, "宿管值班", 0.024f, MatLib.Hex("#f3e9d2"));
+        SignText(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.31f), 0f, "宿管值班", 0.024f, MatLib.Hex("#f3e9d2"));
 
         Sofa(p, new Vector3(DORM_X + 3.25f, 0f, lz), 2.2f, 270f, C("#7a5a6a"));
         Reg(it, DORM_X + 3.25f, lz, 1.0f, 2.2f);
