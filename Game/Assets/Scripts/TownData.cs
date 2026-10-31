@@ -45,15 +45,17 @@ public static class TownData
     static readonly BuildingDef[] Buildings =
     {
         // ── 学校区（西北）：图书馆收西轴线，教学/实验夹方院，生活区在西南，运动区隔中央街 ──
-        B("s_teach", "教学楼", -70, -74, 30, 16, 11, "#a9604a", "#efe3ce", "#7d6a56", "#3f4a54", 8, 5, 1, "collegiate"),
-        B("s_lib", "图书馆", -90.5f, -60, 22, 13, 12, "#d8cbb2", "#f5efe0", "#8f8270", "#4a6a58", 6, 3, 2, "library"),
-        B("s_lab", "实验楼", -70, -46, 26, 14, 10, "#c3c8cf", "#eef1f4", "#828a94", "#3d4654", 7, 4, -1, "modern"),
-        B("s_dorm", "宿舍楼", -92, -37, 20, 12, 9, "#b9775e", "#f0e4cf", "#80685a", "#5a4a42", 7, 4, 2, "dorm"),
-        B("s_canteen", "食堂", -79, -30.8f, 12, 8, 6.5f, "#e0b34e", "#fff3d6", "#a07838", "#a03c30", 4, 2, -1, "gable"),
-        B("s_center", "活动中心", -63, -90, 20, 8, 8, "#b98a62", "#f2e6d4", "#8a6a52", "#4a5a52", 6, 2, 1, "gable"),
-        B("s_hall", "礼堂", -24, -52, 16, 12, 8, "#d8cbb2", "#f6f0e4", "#9c8f78", "#3f5a4a", 5, 3, -2, "hall"),
-        B("s_gate", "门卫", -59.5f, -65, 6, 4, 4, "#d8d2c4", "#f2eee4", "#98917f", "#4a5568", 2, 1, 2, "gable"),
-        B("s_stand", "看台", -28, -29, 24, 0.6f, 5, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, -1, "stand"),
+        // 学校区：校门在东北角主轴，图书馆压轴，教学/实验隔 30m 方院相对；
+        // 宿舍食堂独立西北生活园，活动中心在北侧服务带，礼堂对准校门并远离跑道
+        B("s_teach", "教学楼", -68, -86, 30, 16, 11, "#a9604a", "#efe3ce", "#7d6a56", "#3f4a54", 8, 5, 1, "collegiate"),
+        B("s_lib", "图书馆", -94, -60, 22, 13, 12, "#d8cbb2", "#f5efe0", "#8f8270", "#4a6a58", 6, 3, 2, "library"),
+        B("s_lab", "实验楼", -68, -42, 26, 14, 10, "#c3c8cf", "#eef1f4", "#828a94", "#3d4654", 7, 4, -1, "modern"),
+        B("s_dorm", "宿舍楼", -111, -33, 18, 10, 9, "#b9775e", "#f0e4cf", "#80685a", "#5a4a42", 7, 4, 2, "dorm"),
+        B("s_canteen", "食堂", -93, -31, 12, 8, 6.5f, "#e0b34e", "#fff3d6", "#a07838", "#a03c30", 4, 2, -2, "gable"),
+        B("s_center", "活动中心", -70, -26, 20, 8, 8, "#b98a62", "#f2e6d4", "#8a6a52", "#4a5a52", 6, 2, -1, "gable"),
+        B("s_hall", "礼堂", -24, -60, 16, 12, 8, "#d8cbb2", "#f6f0e4", "#9c8f78", "#3f5a4a", 5, 3, -2, "hall"),
+        B("s_gate", "门卫", -54, -66, 6, 4, 4, "#d8d2c4", "#f2eee4", "#98917f", "#4a5568", 2, 1, 1, "gable"),
+        B("s_stand", "看台", -28, -23, 24, 0.6f, 5, "#bdb6a8", "#e8e3d6", "#8e8a80", "#5a5a60", 6, 1, -1, "stand"),
 
         // ── 公园 ──
         B("p_pav", "音乐亭", 56, -32, 6, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 2, 1, 1, "gable"),
@@ -133,8 +135,9 @@ public static class TownData
     // ── 场地（操场跑道 / 球场）──
     static readonly GroundDef[] Grounds =
     {
-        new GroundDef { id = "playground", name = "操场", pos = new[] { -28f, -37f }, size = new[] { 24f, 12f } },
-        new GroundDef { id = "basket", name = "篮球场", kind = "basket", pos = new[] { -61f, -32f }, size = new[] { 14f, 8f } },
+        new GroundDef { id = "playground", name = "操场", pos = new[] { -28f, -32f }, size = new[] { 24f, 12f } },
+        // 篮球场移到体育区：礼堂南侧，与跑道分开，避免压生活园
+        new GroundDef { id = "basket", name = "篮球场", kind = "basket", pos = new[] { -28f, -82f }, size = new[] { 14f, 8f } },
     };
 
     // ── 步道（任意方向铺装条，旋转到走向；宽度 3m）──
@@ -162,50 +165,46 @@ public static class TownData
         PL2(60, -74, 66, -74),                                    // 神社连林道
         PL2(28, -16, 28, 2), PL2(28, 19, 28, 26),                 // 廊桥南北接驳
         PL2(54, -46, 62, -46),                                    // 参道连园道
-        // 校园步道：东西主轴（校门→图书馆）、南北次轴、生活道、活动中心前庭
-        PL2(-84.5f, -60, -49.4f, -60, 5f),
-        PL2(-70, -68.5f, -70, -51, 4f),
-        PL2(-88, -82.2f, -49.4f, -82.2f, 3f),
-        PL2(-54, -82.2f, -54, -39, 3f),
-        PL2(-54, -39, -49.4f, -39, 3f),
-        PL2(-86, -38, -54, -38, 3f),
-        PL2(-86.3f, -38, -86.3f, -36.5f, 2.5f),
-        PL2(-79, -38, -79, -35, 2.5f),
-        PL2(-61, -38, -61, -36, 3f),
-        PL2(-73, -84.2f, -53, -84.2f, 3f),
-        PL2(-63, -82.2f, -63, -84.2f, 3f),
-        // 运动区/礼堂：中央街两侧步道与操场支路
-        PL2(-42.5f, -39, -36, -39, 3f),
-        PL2(-36, -39, -36, -45, 3f),
-        PL2(-37, -39, -37, -43, 3f),
+        // 校园步道：校门主轴（→图书馆）、教学/实验次轴、生活园环路、活动中心支路
+        PL2(-87.5f, -60, -49.4f, -60, 5f),
+        PL2(-68, -78, -68, -49, 4f),
+        PL2(-102, -46, -83, -46, 3f),
+        PL2(-102, -24, -102, -46, 3f),
+        PL2(-83, -46, -83, -60, 3f),
+        PL2(-51.5f, -44, -51.5f, -32.5f, 2.5f),
+        PL2(-51.5f, -32.5f, -75, -32.5f, 2.5f),
+        // 体育区：校门→礼堂、礼堂前庭→篮球场、中央街→操场/看台
+        PL2(-49.4f, -60, -41, -60, 5f),
+        PL2(-38, -60, -38, -82, 3f),
+        PL2(-38, -82, -35, -82, 3f),
+        PL2(-42.5f, -32, -40, -32, 3f),
+        PL2(-42.5f, -23, -40, -23, 3f),
         // 住宅排间巷
         PL2(-74, 60.5f, -16, 60.5f),
 
-        // 校园广场与配套（校门 / 方院 / 生活区 / 篮球场 / 礼堂前庭）
-        P("plaza", -53.2f, -60, w: 7.6f, d: 12f),
-        P("plaza", -32f, -52, w: 8f, d: 14f),
+        // 校园广场与配套（校门 / 方院 / 生活园 / 活动中心 / 体育区）
+        P("plaza", -57f, -60, w: 16f, d: 14f),
+        P("plaza", -37f, -60, w: 8f, d: 18f),
         P("gate", -49.4f, -60, ry: Mathf.PI / 2f, kind: "main"),
-        P("flag", -56f, -55.8f),
-        P("board", -56f, -63.8f),
-        P("planter", -55.8f, -58.8f, w: 3f, d: 1.2f, kind: "green"),
-        P("planter", -55.8f, -61.2f, w: 3f, d: 1.2f, kind: "green"),
-        P("sundial", -77f, -65f),
-        P("bench", -64f, -63.2f), P("bench", -64f, -56.8f, ry: Mathf.PI),
-        P("bench", -82.5f, -67f, ry: Mathf.PI / 2f),
-        P("bench", -74f, -67.8f), P("bench", -74f, -52.2f, ry: Mathf.PI),
-        P("bench", -78f, -40f, ry: Mathf.PI), P("bench", -60f, -40f, ry: Mathf.PI),
-        P("bench", -68f, -84.8f), P("bench", -85.5f, -42f, ry: Mathf.PI / 2f),
-        P("bench", -34f, -48f, ry: Mathf.PI / 2f), P("bench", -34f, -56f, ry: Mathf.PI / 2f),
-        P("bench", -72f, -32f, ry: Mathf.PI / 2f),
-        P("bin", -66f, -63.2f), P("bin", -80f, -40f), P("bin", -33f, -50f),
-        P("board", -62f, -67.8f),
-        P("bikerack", -79f, -67.8f, n: 5), P("bikerack", -80.5f, -72.5f, ry: Mathf.PI / 2f, n: 5),
-        P("bikerack", -51.7f, -67.2f, ry: Mathf.PI / 2f, n: 4),
-        P("bikerack", -57f, -84.8f, n: 5), P("bikerack", -85.5f, -45f, ry: Mathf.PI / 2f, n: 4),
-        P("planter", -80f, -67.8f, w: 2.4f, d: 1f, kind: "green"), P("planter", -60f, -67.8f, w: 2.4f, d: 1f, kind: "green"),
-        P("planter", -69f, -84.8f, w: 2.4f, d: 1f, kind: "green"), P("planter", -73f, -84.8f, w: 2.4f, d: 1f, kind: "green"),
-        // 篮球场：方院南侧草坪，篮架面向场心
-        P("hoop", -67.5f, -32, ry: Mathf.PI / 2f), P("hoop", -54.5f, -32, ry: -Mathf.PI / 2f),
+        P("flag", -62f, -65f),
+        P("sundial", -76f, -66f),
+        P("board", -58f, -54.5f), P("board", -80f, -70f),
+        P("planter", -64f, -54f, w: 2.4f, d: 1f, kind: "green"),
+        P("planter", -64f, -66f, w: 2.4f, d: 1f, kind: "green"),
+        P("planter", -85f, -54f, w: 2.4f, d: 1f, kind: "green"),
+        P("planter", -85f, -66f, w: 2.4f, d: 1f, kind: "green"),
+        P("planter", -99f, -43f, w: 2.4f, d: 1f, kind: "green"),
+        P("bench", -68f, -66f), P("bench", -78f, -56f, ry: Mathf.PI),
+        P("bench", -84f, -66f, ry: Mathf.PI / 2f),
+        P("bench", -98f, -39f, ry: Mathf.PI / 2f),
+        P("bench", -40f, -54f, ry: Mathf.PI / 2f), P("bench", -40f, -66f, ry: Mathf.PI / 2f),
+        P("bench", -24f, -89f),
+        P("bin", -60f, -69f), P("bin", -80f, -54f), P("bin", -40.5f, -52f),
+        P("bikerack", -80f, -74.5f, n: 5), P("bikerack", -60f, -74.5f, n: 5),
+        P("bikerack", -77f, -52f, n: 5), P("bikerack", -57f, -52f, ry: Mathf.PI / 2f, n: 4),
+        P("bikerack", -60f, -70.5f, ry: Mathf.PI / 2f, n: 4),
+        // 体育区篮球场：礼堂南侧，篮架面向场心
+        P("hoop", -35, -82, ry: Mathf.PI / 2f), P("hoop", -21, -82, ry: -Mathf.PI / 2f),
 
         // 广场 / 站前 / 停车
         P("plaza_round", -17, -12, r: 10f),                       // 钟楼广场
@@ -296,14 +295,29 @@ public static class TownData
             : ((r.from + r.to) / 2f, r.at, (r.to - r.from) / 2f + 2.4f, r.width / 2f + 2.4f));
         foreach (var g in Grounds) k.Add((g.pos[0], g.pos[1], g.size[0] / 2f + 1.6f, g.size[1] / 2f + 1.6f));
         k.Add((-35.5f, 66f, 8f, 5f));                                  // 主角家
-        k.Add((-70f, -60f, 14.5f, 10.5f));                             // 校园方院（草坪+步道保持洁净）
-        k.Add((-53.2f, -60f, 4.3f, 6.5f));                             // 校门内广场
-        k.Add((-32f, -52f, 4.5f, 7.5f));                               // 礼堂前庭
-        k.Add((-63f, -84.2f, 10.5f, 2.2f));                            // 活动中心前庭
-        k.Add((-49.4f, -61.8f, 1.6f, 36.4f));                           // 校园东墙
-        k.Add((-73.7f, -25.6f, 24.5f, 1.6f));                           // 校园南墙
-        k.Add((-98f, -49.3f, 1.6f, 23.7f));                             // 校园西墙
-        k.Add((-59.7f, -98f, 10.3f, 1.6f));                             // 校园北墙
+        k.Add((-70f, -60f, 20f, 8.5f));                                // 校门主轴/方院中带
+        k.Add((-57f, -60f, 9f, 8f));                                   // 校门内广场
+        k.Add((-37f, -60f, 5f, 10f));                                  // 礼堂前庭
+        k.Add((-63.25f, -32.5f, 12.75f, 2.5f));                        // 活动中心前路
+        // 校园围墙：沿新阶梯边界分段留空（0.6m 矮墙）
+        k.Add((-49.4f, -60f, 1.6f, 42f));                              // 东墙 z -102..-18
+        k.Add((-67.7f, -18f, 18.3f, 1.6f));                            // 北墙东段
+        k.Add((-103f, -22f, 17f, 1.6f));                               // 北墙西段
+        k.Add((-86f, -20f, 1.6f, 2f));                                 // 北墙台阶
+        k.Add((-120f, -33f, 1.6f, 11f));                               // 西墙 1
+        k.Add((-115f, -44f, 5f, 1.6f));                                // 西墙台阶 1
+        k.Add((-110f, -54f, 1.6f, 10f));                               // 西墙 2
+        k.Add((-107f, -64f, 3f, 1.6f));                                // 西墙台阶 2
+        k.Add((-104f, -69f, 1.6f, 5f));                                // 西墙 3
+        k.Add((-100f, -74f, 4f, 1.6f));                                // 西墙台阶 3
+        k.Add((-96f, -77f, 1.6f, 3f));                                 // 西墙 4
+        k.Add((-92f, -80f, 4f, 1.6f));                                 // 西墙台阶 4
+        k.Add((-88f, -84f, 1.6f, 4f));                                 // 西墙 5
+        k.Add((-84f, -88f, 4f, 1.6f));                                 // 西墙台阶 5
+        k.Add((-80f, -92f, 1.6f, 4f));                                 // 西墙 6
+        k.Add((-76f, -96f, 4f, 1.6f));                                 // 西墙台阶 6
+        k.Add((-72f, -99f, 1.6f, 3f));                                 // 西墙 7
+        k.Add((-60.7f, -102f, 11.3f, 1.6f));                           // 南墙
         k.Add((-17f, -12f, 10.5f, 11f));                               // 钟楼广场
         k.Add((76f, 68f, 15f, 5f));                                    // 站前广场
         k.Add((20f, 72f, 14f, 10f));                                   // 停车场
@@ -348,7 +362,7 @@ public static class TownData
         return false;
     }
 
-    // ── 校园围墙：沿新校区边界一圈，东墙留正门（z -65~-55）与东侧门（z -44~-34）──
+    // ── 校园围墙：扩至北侧河岸与西侧圆边界，阶梯收分；东墙留正门与东侧门 ──
     static FenceDef[] BuildSchoolWalls()
     {
         var runs = new List<FenceDef>();
@@ -356,24 +370,30 @@ public static class TownData
         {
             if (to - from > 1.2f) runs.Add(new FenceDef { axis = axis, at = at, from = from, to = to });
         }
-        // 东墙（沿中央街西侧）
-        W("z", -49.4f, -98f, -65f);
+        // 东墙（沿中央街西侧）：正门 z -65..-55，东侧门 z -44..-34
+        W("z", -49.4f, -102f, -65f);
         W("z", -49.4f, -55f, -44f);
-        W("z", -49.4f, -34f, -25.6f);
-        // 南墙 / 西墙 / 北墙
-        W("x", -25.6f, -98f, -49.4f);
-        W("z", -98f, -73f, -25.6f);
-        W("x", -98f, -70f, -49.4f);
-        // 西北角：沿世界圆边界内侧阶梯收分，避免矩形墙角伸出可行走区
-        W("x", -98f, -76f, -70f);
-        W("z", -76f, -98f, -94f);
-        W("x", -94f, -82f, -76f);
-        W("z", -82f, -94f, -87f);
-        W("x", -87f, -88f, -82f);
-        W("z", -88f, -87f, -80f);
-        W("x", -80f, -94f, -88f);
-        W("z", -94f, -80f, -73f);
-        W("x", -73f, -98f, -94f);
+        W("z", -49.4f, -34f, -18f);
+        // 北墙：西段 z=-22，东段 z=-18（临河退让）
+        W("x", -18f, -86f, -49.4f);
+        W("x", -22f, -120f, -86f);
+        W("z", -86f, -22f, -18f);
+        // 西墙：随世界圆边界阶梯收分
+        W("z", -120f, -44f, -22f);
+        W("x", -44f, -120f, -110f);
+        W("z", -110f, -64f, -44f);
+        W("x", -64f, -110f, -104f);
+        W("z", -104f, -74f, -64f);
+        W("x", -74f, -104f, -96f);
+        W("z", -96f, -80f, -74f);
+        W("x", -80f, -96f, -88f);
+        W("z", -88f, -88f, -80f);
+        W("x", -88f, -88f, -80f);
+        W("z", -80f, -96f, -88f);
+        W("x", -96f, -80f, -72f);
+        W("z", -72f, -102f, -96f);
+        // 南墙
+        W("x", -102f, -72f, -49.4f);
         return runs.ToArray();
     }
 
@@ -498,11 +518,12 @@ public static class TownData
         }
         // 站前绿地点景
         TryTree(12f, 86f, 0); TryTree(22f, 86f, 5); TryTree(32f, 86f, 2);
-        // 校园点景树（方院外缘 / 图书馆北 / 活动中心西 / 东墙内）
+        // 校园点景树（教学西侧 / 图书馆南与西 / 生活园 / 方院外围）
         foreach (var (tx, tz, tv) in new[]
         {
-            (-80f, -84f, 0), (-75f, -88f, 2),
-            (-86f, -78f, 5), (-52f, -78f, 0), (-53f, -28.5f, 2),
+            (-88f, -78f, 0), (-100f, -76f, 2), (-107.5f, -52f, 5),
+            (-84f, -26f, 0), (-94f, -40f, 2), (-58f, -73f, 0), (-80f, -72f, 5),
+            (-76f, -70f, 2), (-90f, -76f, 0),
         }) TryTree(tx, tz, tv, 4.5f);
         // 全镇散布
         for (int i = 0; i < 90; i++)
@@ -703,16 +724,17 @@ public static class TownData
             L(x, 69.2f, -Mathf.PI / 2f); L(x, 74.8f, Mathf.PI / 2f);
         }
         // 神社参道：不再用现代路灯，改由石灯笼/提灯串（Props）照明
-        // 校园：校门广场、东西主轴、次轴、生活道、活动中心、篮球场、礼堂前庭
-        L(-52f, -56.5f, -Mathf.PI / 2f); L(-52f, -63.5f, Mathf.PI / 2f);
-        L(-66f, -63.5f, 0f); L(-74f, -63.5f, 0f); L(-78.5f, -56.5f, 0f);
-        L(-75.5f, -66.8f, Mathf.PI / 2f); L(-72.5f, -52.2f, -Mathf.PI / 2f);
-        L(-52.5f, -74f, Mathf.PI / 2f); L(-52.5f, -46f, Mathf.PI / 2f);
-        L(-60f, -84.3f, 0f); L(-76f, -84.3f, 0f);
-        L(-82f, -40f, 0f); L(-60f, -40f, 0f);
-        L(-56f, -38f, -Mathf.PI / 2f); L(-71f, -38f, Mathf.PI / 2f);
-        L(-36f, -46f, 0f); L(-36f, -58f, 0f);
-        L(-54f, -84f, 0f);
+        // 校园：主轴、生活街、活动中心、礼堂前庭、篮球场
+        L(-58.5f, -63.5f, 0f); L(-50.6f, -56.5f, 0f);
+        L(-70f, -63.5f, 0f); L(-70f, -56.5f, 0f);
+        L(-86f, -63.5f, 0f); L(-86f, -56.5f, 0f);
+        L(-99.8f, -27f, -Mathf.PI / 2f); L(-99.8f, -41f, -Mathf.PI / 2f);
+        L(-98f, -43.8f, 0f); L(-88f, -43.8f, 0f);
+        L(-50.6f, -38f, Mathf.PI);
+        L(-41.5f, -54f, 0f); L(-41.5f, -66f, 0f);
+        L(-36f, -70.5f, 0f); L(-36f, -81.5f, 0f);
+        L(-38f, -44f, 0f); L(-18f, -44f, 0f);
+        L(-66f, -70.5f, 0f);
         // 车站街两侧
         for (float x = 14f; x <= 82f; x += 18f)
         {
@@ -795,8 +817,8 @@ public static class TownData
                 r = Mathf.Clamp(b.size[0] / 2f, 2.2f, 4f)
             });
         spots.Add(new SpotDef { name = "家", x = -35.5f, z = 66f + 3f + 1.2f, r = 3f });
-        spots.Add(new SpotDef { name = "操场", x = -28f, z = -37f, r = 3f });
-        spots.Add(new SpotDef { name = "篮球场", x = -63f, z = -35.5f, r = 2.5f });
+        spots.Add(new SpotDef { name = "操场", x = -28f, z = -32f, r = 3f });
+        spots.Add(new SpotDef { name = "篮球场", x = -28f, z = -82f, r = 2.5f });
         spots.Add(new SpotDef { name = "钟楼广场", x = -17f, z = -5f, r = 3.5f });
         spots.Add(new SpotDef { name = "公园", x = 34f, z = -24f, r = 4f });
         spots.Add(new SpotDef { name = "池塘", x = 34f, z = -23.5f, r = 3f });

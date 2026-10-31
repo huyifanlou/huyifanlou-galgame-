@@ -1937,7 +1937,8 @@ public class WorldBuilder : MonoBehaviour
 
             // 招牌 + 大门 + 台阶 + 门灯 + 雨落管 + 门前绿篱（纯色体块不配这些）
             if (plain) continue;
-            string signId = SignIdFor(b.id);
+            // 校舍不挂名称门牌（作者要求）；校门“华清大学”横匾单独保留
+            string signId = b.id.StartsWith("s_") ? null : SignIdFor(b.id);
             var signTex = string.IsNullOrEmpty(signId) ? null : TextureLibrary.ByName("sign_" + signId, false, false);
             if (signTex != null)
             {
@@ -2301,8 +2302,8 @@ public class WorldBuilder : MonoBehaviour
         mr.receiveShadows = false;
         WindowGlowRenders.Add(mr);
 
-        // 夜间招牌：用招牌贴图本身做一块 Unlit 发光片（比材质 Emission 更稳）
-        string signId = SignIdFor(b.id);
+        // 夜间招牌：用招牌贴图本身做一块 Unlit 发光片（比材质 Emission 更稳）；校舍不挂
+        string signId = b.id.StartsWith("s_") ? null : SignIdFor(b.id);
         var signTex = string.IsNullOrEmpty(signId) ? null : TextureLibrary.ByName("sign_" + signId, false, false);
         if (signTex != null)
         {
