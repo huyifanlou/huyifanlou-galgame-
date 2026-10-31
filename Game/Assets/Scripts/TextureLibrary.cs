@@ -902,7 +902,7 @@ public static class TextureLibrary
     static Px ClockFace()
     {
         var p = new Px(192, 192);
-        p.FillRect(0, 0, 192, 192, C("#f2ecdc"));
+        // 圆盘外保持透明（材质走 Cutout），塔身/钟亭上只看到圆形钟面
         p.FillCircle(96, 96, 92, C("#3a2f28"));
         p.FillCircle(96, 96, 84, C("#f7f2e6"));
         p.StrokeCircle(96, 96, 88, 3, C("#b08a4a"));

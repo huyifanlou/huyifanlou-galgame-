@@ -98,6 +98,16 @@ public class WorldBuilder : MonoBehaviour
         if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Lit(tex, tu, tv); _cache[k] = m; }
         return m;
     }
+    // 钟面：圆盘以外透明，贴在塔身/柱廊上不再出现方形底板的“虚影”
+    Material ClockMat()
+    {
+        if (!_cache.TryGetValue("clock_cut", out var m))
+        {
+            m = MatLib.CutoutTexture(MatLib.Tex("clock", true, false), 1f, 1f, 0.12f);
+            _cache["clock_cut"] = m;
+        }
+        return m;
+    }
     Material ColMat(string hex)
     {
         string k = "C|" + hex;
@@ -486,8 +496,8 @@ public class WorldBuilder : MonoBehaviour
                         MeshObj(grp, MeshFactory.TaperedBox(4.0f, 4.0f, 3.3f, 3.3f, 5.6f, 2.4f), new Vector3(0f, 5.5f, 0f), stone);
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.1f, 0.26f, 4.1f), 2.4f), new Vector3(0f, 11.2f, 0f), stone);
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.3f, 3.1f, 3.3f), 2.4f), new Vector3(0f, 12.85f, 0f), stone);
-                        var clockMat = MatLib.LitTexture(MatLib.Tex("clock"), 1f, 1f, 0.12f);
-                        foreach (var (px, pz, ry) in new[] { (0f, 1.66f, 0f), (0f, -1.66f, 180f), (1.66f, 0f, 90f), (-1.66f, 0f, -90f) })
+                        var clockMat = ClockMat();
+                        foreach (var (px, pz, ry) in new[] { (0f, 1.70f, 0f), (0f, -1.70f, 180f), (1.70f, 0f, 90f), (-1.70f, 0f, -90f) })
                             Face(grp, 1.62f, 1.62f, new Vector3(px, 13.1f, pz), clockMat, ry);
                         // 钟楼下小阳台
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.9f, 0.12f, 3.9f), 2.4f), new Vector3(0f, 11.45f, 0f), stone);
@@ -2108,7 +2118,8 @@ public class WorldBuilder : MonoBehaviour
             new Vector3(0f, pedY, front + bayD + 0.04f), ColMat(b.trim));
         Box(grp, new Vector3(0f, h / 2f - 2.2f, front + bayD + 0.02f),
             new Vector3(2.4f, 2.4f, 0.1f), ColMat(b.plinth));
-        Face(grp, 2.0f, 2.0f, new Vector3(0f, h / 2f - 2.2f, front + bayD + 0.07f), LitTex("clock"));
+        // 钟面比底座前脸再前移 2cm，避免共面 z-fighting 造成的“虚影”
+        Face(grp, 2.0f, 2.0f, new Vector3(0f, h / 2f - 2.2f, front + bayD + 0.09f), ClockMat());
         Box(grp, new Vector3(0f, baseY + 3.45f, front + bayD + 0.95f),
             new Vector3(bayW * 0.72f, 0.18f, 1.9f), ColMat(b.roof));
         foreach (int sx in new[] { -1, 1 })
@@ -2175,7 +2186,7 @@ public class WorldBuilder : MonoBehaviour
             new Vector3(0f, 1.8f, 0f), LitTex("roof_" + b.id, 4f, 2f));
         Cylinder(cu, new Vector3(0f, 4.0f, 0f), 0.09f, 0.8f, MatMetal("#c9a24a"));
         foreach (var (dx, dz, ry) in new[] { (0f, 1f, 0f), (1f, 0f, 90f), (0f, -1f, 180f), (-1f, 0f, -90f) })
-            Face(cu, 1.35f, 1.35f, new Vector3(dx * 1.37f, 0.7f, dz * 1.37f), LitTex("clock"), ry);
+            Face(cu, 1.35f, 1.35f, new Vector3(dx * 1.39f, 0.7f, dz * 1.39f), ClockMat(), ry);
     }
 
     // 现代实验楼：玻璃门厅 + 水平遮阳带 + 屋顶设备
