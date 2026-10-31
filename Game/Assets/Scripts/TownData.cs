@@ -186,7 +186,6 @@ public static class TownData
         P("plaza", -57f, -60, w: 16f, d: 14f),
         P("plaza", -37f, -60, w: 8f, d: 18f),
         P("gate", -49.4f, -60, ry: Mathf.PI / 2f, kind: "main"),
-        P("flag", -62f, -65f),
         P("sundial", -76f, -66f),
         P("board", -58f, -54.5f), P("board", -80f, -70f),
         P("planter", -64f, -54f, w: 2.4f, d: 1f, kind: "green"),
@@ -206,6 +205,8 @@ public static class TownData
         P("bikerack", -60f, -70.5f, ry: Mathf.PI / 2f, n: 4),
         // 体育区篮球场：礼堂南侧，篮架面向场心
         P("hoop", -35, -82, ry: Mathf.PI / 2f), P("hoop", -21, -82, ry: -Mathf.PI / 2f),
+        // 升旗台与操场看台结合：旗杆落在看台中央台面，三级踏步朝跑道
+        P("flag", -28, -23),
 
         // 广场 / 站前 / 停车
         P("plaza_round", -17, -12, r: 10f),                       // 钟楼广场

@@ -2222,10 +2222,11 @@ public class WorldBuilder : MonoBehaviour
                 new Vector3(0.2f, 3.0f, 0.2f), ColMat(b.trim));
     }
 
-    // 看台：低平台 + 五级座席 + 背墙栏杆
+    // 看台：低平台 + 五级座席 + 背墙栏杆；s_stand 中央留 5m 升旗台，踏步朝跑道
     void Bleacher(Transform grp, BuildingDef b, float w, float h, float d)
     {
         float baseY = -h / 2f;
+        bool flagStand = b.id == "s_stand";
         Box(grp, new Vector3(0f, baseY + 1.2f, -d / 2f + 0.25f),
             new Vector3(w, 2.4f, 0.5f), ColMat(b.wall));
         int n = 5;
@@ -2233,8 +2234,30 @@ public class WorldBuilder : MonoBehaviour
         {
             float y = baseY + 0.3f + i * 0.38f;
             float z = d / 2f - 0.5f - i * (d - 1.0f) / (n - 1);
-            Box(grp, new Vector3(0f, y, z), new Vector3(w - 0.5f, 0.38f, 0.8f),
-                ColMat(i % 2 == 0 ? b.trim : b.wall));
+            var mat = ColMat(i % 2 == 0 ? b.trim : b.wall);
+            if (flagStand)
+            {
+                const float halfGap = 2.5f;
+                float segW = (w - 0.5f - halfGap * 2f) / 2f;
+                float cx = halfGap + segW / 2f;
+                Box(grp, new Vector3(-cx, y, z), new Vector3(segW, 0.38f, 0.8f), mat);
+                Box(grp, new Vector3(cx, y, z), new Vector3(segW, 0.38f, 0.8f), mat);
+            }
+            else
+            {
+                Box(grp, new Vector3(0f, y, z), new Vector3(w - 0.5f, 0.38f, 0.8f), mat);
+            }
+        }
+        if (flagStand)
+        {
+            // 中央升旗台：台面 1.2m，三级踏步朝跑道（局部 +Z）
+            Box(grp, new Vector3(0f, baseY + 0.6f, -0.5f), new Vector3(5f, 1.2f, 4f), ColMat(b.trim));
+            for (int s = 0; s < 3; s++)
+            {
+                float sh = 0.4f * (s + 1);
+                float sz = 2.335f - s * 0.33f;
+                Box(grp, new Vector3(0f, baseY + sh / 2f, sz), new Vector3(5f, sh, 0.33f), ColMat(b.plinth));
+            }
         }
         foreach (int s in new[] { -1, 1 })
             Box(grp, new Vector3(s * (w / 2f - 0.2f), baseY + 0.9f, 0f),
