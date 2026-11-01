@@ -151,18 +151,18 @@ public static partial class InteriorBuilder
     }
 
     // 双面吊牌：门厅侧（+Z）和观众厅侧（-Z）都能读，避免只能看背面镜像
+    // ceil：接顶高度。后墙这三块挂在门头梁底（4.0），不能按 8.5 的吊顶抬高——抬上去就埋进梁里了。
     static void TwoWayHangingSign(Transform p, float x, float y, float z, string label,
-                                  float w, float h, Material plate, float textH)
+                                  float w, float h, Material plate, float textH, float ceil = 0f)
     {
+        y = HangY(y, h * 0.5f, ceil);
         Part(p, new Vector3(x, y, z), new Vector3(w, h, 0.06f), plate, 1f);
         foreach (float f in new[] { -1f, 1f })
         {
             Part(p, new Vector3(x, y, z + f * 0.039f), new Vector3(w - 0.16f, h - 0.12f, 0.012f), C("#dfe6dc"), 1f);
             SignText(p, new Vector3(x, y, z + f * 0.061f), f > 0 ? 180f : 0f, label, textH, MatLib.Hex("#1f3428"));
         }
-        foreach (float sx in new[] { -1f, 1f })
-            Part(p, new Vector3(x + sx * w * 0.35f, y + h * 0.5f + 0.35f, z),
-                 new Vector3(0.02f, 0.7f, 0.02f), C("#6a7078"), 1f);
+        HangRods(p, x, y + h * 0.5f, z, w, ceil);
     }
 
     static Interior Auditorium(Transform parent)
@@ -213,8 +213,8 @@ public static partial class InteriorBuilder
                  new Vector3(b - a + 0.3f, 0.14f, 0.34f), gold, 1f);
         }
         foreach (var (a, b) in new[] { (-28f, -24f), (24f, 28f) })
-            TwoWayHangingSign(p, ox + (a + b) * 0.5f, 3.7f, 14f, "出口", 1.2f, 0.34f, C("#2f4a3a"), 0.026f);
-        TwoWayHangingSign(p, ox, 3.75f, 14f, "观众厅", 2.0f, 0.44f, C("#6a3a32"), 0.034f);
+            TwoWayHangingSign(p, ox + (a + b) * 0.5f, 3.7f, 14f, "出口", 1.2f, 0.34f, C("#2f4a3a"), 0.026f, 4.0f);
+        TwoWayHangingSign(p, ox, 3.75f, 14f, "观众厅", 2.0f, 0.44f, C("#6a3a32"), 0.034f, 4.0f);
 
         // ── 舞台：台面/台口/红幕/背景幕/台阶/讲台/钢琴 ──
         Part(p, new Vector3(ox, 0.48f, -21f), new Vector3(26f, 0.92f, 10f), wood, 2f);

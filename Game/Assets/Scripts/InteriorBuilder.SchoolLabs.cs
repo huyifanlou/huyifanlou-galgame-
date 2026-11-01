@@ -20,7 +20,8 @@ public static partial class InteriorBuilder
         float zDesk = zWall + dir * 0.78f;
         Table(p, new Vector3(x, 0f, zDesk), 3.0f, 0.9f, 0.82f, wood);
         Reg(it, x, zDesk, 3.0f, 0.9f);
-        Chair(p, it, new Vector3(x, 0f, zDesk + dir * 0.76f), dir < 0 ? 180f : 0f, wood, true);
+        // 椅子在讲台靠教室一侧，人要面向讲台与白板（Chair 靠背在局部 -Z：朝 +Z 取 0，朝 -Z 取 180）
+        Chair(p, it, new Vector3(x, 0f, zDesk + dir * 0.76f), dir < 0 ? 0f : 180f, wood, true);
         float zBoard = zWall + dir * 0.13f;
         Part(p, new Vector3(x, 1.58f, zBoard), new Vector3(5.0f, 1.20f, 0.06f), C("#f2f0e6"), 1f);
         Part(p, new Vector3(x, 2.22f, zBoard), new Vector3(5.2f, 0.10f, 0.10f), C("#6f5540"), 1f);

@@ -80,7 +80,7 @@ public static partial class InteriorBuilder
                             C("#8a7440"), C("#5b4a6b"), C("#a9a08a"), C("#b06a4e") };
 
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(32f, 0.04f, 20f), T("in_floor"), 2f, default, true);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(32f, 0.06f, 20f), T("in_ceil"), 2f);
+        CeilingSlab(p, ox, W, 32f, 20f, T("in_ceil"));
         WallX(p, it, ox - X, ox + X, -Z, 0f, W, 0f, 0f, 2.7f, wall);
         WallX(p, it, ox - X, ox + X, Z, 0f, W, ox - 1.3f, ox + 1.3f, 2.7f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.7f, wall);
@@ -241,7 +241,7 @@ public static partial class InteriorBuilder
 
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(30f, 0.04f, 20f), T("in_floor"), 2f, default, true);
         Part(p, new Vector3(ox, 0.05f, 8.4f), new Vector3(30f, 0.02f, 3.2f), T("in_tile"), 1.4f);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(30f, 0.06f, 20f), T("in_ceil"), 2f);
+        CeilingSlab(p, ox, W, 30f, 20f, T("in_ceil"));
         WallX(p, it, ox - X, ox + X, -Z, 0f, W, ox - 1.2f, ox + 1.2f, 2.6f, wall);
         WallX(p, it, ox - X, ox + X, Z, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);
@@ -399,7 +399,7 @@ public static partial class InteriorBuilder
 
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(26f, 0.04f, 17f), T("in_tile"), 2f, default, true);
         Part(p, new Vector3(ox, 0.05f, 0f), new Vector3(2.4f, 0.02f, 14.0f), C("#d6d0c4"), 1f);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(26f, 0.06f, 17f), T("in_ceil"), 2f);
+        CeilingSlab(p, ox, W, 26f, 17f, T("in_ceil"));
         WallX(p, it, ox - X, ox + X, -Z, 0f, W, ox - 1.3f, ox + 1.3f, 2.6f, wall);
         WallX(p, it, ox - X, ox + X, Z, 0f, W, 0f, 0f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);
@@ -524,7 +524,7 @@ public static partial class InteriorBuilder
 
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(28f, 0.04f, 18f), T("in_tile"), 2f, default, true);
         Part(p, new Vector3(ox, 0.05f, 0f), new Vector3(2.4f, 0.02f, 16.0f), C("#d6d0c4"), 1f);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(28f, 0.06f, 18f), T("in_ceil"), 2f);
+        CeilingSlab(p, ox, W, 28f, 18f, T("in_ceil"));
         WallX(p, it, ox - X, ox + X, -Z, 0f, W, 0f, 0f, 2.6f, wall);
         WallX(p, it, ox - X, ox + X, Z, 0f, W, ox - 1.3f, ox + 1.3f, 2.6f, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, 2.6f, wall);

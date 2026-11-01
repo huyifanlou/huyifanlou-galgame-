@@ -87,6 +87,35 @@ public static partial class InteriorBuilder
 
     static readonly Dictionary<string, Material> _cache = new Dictionary<string, Material>();
 
+    // 当前房间天花板底面高度（各房间层高不同，不能写死）：吊牌吊杆与吊灯都要接到这里
+    static float _ceilY;
+
+    // 天花板薄片：铺顶的同时记录本房间吊顶高度，供 HangingSign / Pendant 接顶
+    static void CeilingSlab(Transform p, float ox, float W, float w, float d, Material ceil)
+    {
+        _ceilY = W - 0.06f;
+        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(w, 0.06f, d), ceil, 2f);
+    }
+
+    // 吊杆长度上限：大层高房间（礼堂 8.5m）把悬挂物整体抬高，而不是挂一根五米的细杆
+    const float MAX_ROD = 2.8f;
+
+    // 悬挂件中心高度：杆长不超过 MAX_ROD。ceil>0 时按指定吊顶接顶（如礼堂门头梁底 4.0）。
+    static float HangY(float y, float halfH, float ceil = 0f)
+    {
+        if (ceil <= 0f) ceil = _ceilY;
+        return ceil > 0f ? Mathf.Max(y, ceil - MAX_ROD - halfH) : y;
+    }
+
+    // 两根吊杆：从悬挂件顶面接到天花板底；没有层高信息时退回 0.7m 短杆
+    static void HangRods(Transform p, float x, float top, float z, float w, float ceil = 0f)
+    {
+        if (ceil <= 0f) ceil = _ceilY;
+        float y1 = ceil > top + 0.05f ? ceil : top + 0.7f;
+        Part(p, new Vector3(x - w * 0.35f, (top + y1) * 0.5f, z), new Vector3(0.02f, y1 - top, 0.02f), C("#6a7078"), 1f);
+        Part(p, new Vector3(x + w * 0.35f, (top + y1) * 0.5f, z), new Vector3(0.02f, y1 - top, 0.02f), C("#6a7078"), 1f);
+    }
+
     static Material T(string tex)
     {
         if (!_cache.TryGetValue("T" + tex, out var m)) { m = MatLib.Lit(tex); _cache["T" + tex] = m; }
@@ -286,6 +315,7 @@ public static partial class InteriorBuilder
     static void Rug(Transform p, Vector3 pos, float w, float d, Material mat)
         => Part(p, pos, new Vector3(w, 0.02f, d), mat, 1f);
 
+    // 椅子：靠背在局部 -Z，所以 ry=0 人朝 +Z。摆在桌子南侧取 0、北侧 180、西侧 90、东侧 270。
     static void Chair(Transform p, Interior it, Vector3 seat, float ry, Material wood, bool solid = false)
     {
         var g = new GameObject("chair").transform;
@@ -507,7 +537,7 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(ox + 9.2f, 0.05f, 6f), new Vector3(11.6f, 0.02f, 8f), tile, 1.4f);
 
         // ── 天花 ──
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(30f, 0.06f, 20f), ceil, 2f);
+        CeilingSlab(p, ox, W, 30f, 20f, ceil);
 
         // ── 外墙 ──
         WallX(p, it, ox - 15f, ox + 15f, -10f, 0f, W, ox - 1.2f, ox + 1.2f, 2.6f, wall);
@@ -636,7 +666,7 @@ public static partial class InteriorBuilder
         // 书房（x -9.4..-2.2）
         Part(p, new Vector3(ox - 5.8f, 0.85f, 9.2f), new Vector3(2.2f, 0.06f, 0.8f), wood, 1f);
         Part(p, new Vector3(ox - 5.8f, 0.4f, 9.2f), new Vector3(2.1f, 0.8f, 0.7f), wood, 1f);
-        Chair(p, it, new Vector3(ox - 5.8f, 0f, 8.25f), 180f, wood, true);
+        Chair(p, it, new Vector3(ox - 5.8f, 0f, 8.25f), 0f, wood, true);   // 书桌贴北墙，人朝北坐
         Part(p, new Vector3(ox - 8.95f, 1.1f, 5.5f), new Vector3(0.4f, 2.2f, 2.6f), woodDark, 1f);
         Part(p, new Vector3(ox - 3.4f, 0.48f, 4.6f), new Vector3(1.1f, 0.5f, 1.0f), fabric, 1.2f);
         Part(p, new Vector3(ox - 3.4f, 0.72f, 5.1f), new Vector3(1.1f, 0.95f, 0.2f), fabric, 1.2f);
@@ -783,7 +813,7 @@ public static partial class InteriorBuilder
 
         // ── 地面 / 天花 ──
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(56f, 0.04f, 30f), floor, 2f, default, true);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(56f, 0.06f, 30f), ceil, 2f);
+        CeilingSlab(p, ox, W, 56f, 30f, ceil);
 
         // ── 外墙（南墙正中 5m 大门）──
         WallX(p, it, ox - 28f, ox + 28f, -15f, 0f, W, 0f, 0f, 2.8f, wall);

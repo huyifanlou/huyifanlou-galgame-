@@ -88,49 +88,48 @@ public static partial class InteriorBuilder
         var ink = C("#33413a");
 
         LightGrid(p, ox - 11f, ox + 11f, -6f, 7f, W - 0.32f, 4, 3, 11f, 1.0f);
-        for (int i = 0; i < 4; i++) Pendant(p, ox - 6f + i * 4f, W - 0.1f, 2.6f, 1.1f, "#d8a05a");
+        for (int i = 0; i < 4; i++) Pendant(p, ox - 6f + i * 4f, 3.0f, 2.6f, 1.1f, "#d8a05a");
 
-        // 前场：点单吧台（横）+ 取餐台（折回），双层高差
+        // 前场：点单吧台（横，z=2.6）—— 顾客面在北（朝门），操作面在南（朝后场）
         BarCounter(p, it, ox - 2.5f, 2.6f, 11f, woodDark, cream);
-        Part(p, new Vector3(ox + 3.6f, 0.45f, 1.4f), new Vector3(1.4f, 0.9f, 1.6f), woodDark, 1f);
-        Part(p, new Vector3(ox + 3.6f, 0.92f, 1.4f), new Vector3(1.5f, 0.05f, 1.7f), cream, 1f);
-        Reg(it, ox + 3.6f, 1.4f, 1.4f, 1.6f);
+        Part(p, new Vector3(ox + 3.6f, 0.45f, 3.9f), new Vector3(1.4f, 0.9f, 1.6f), woodDark, 1f);   // 取餐台（东北端）
+        Part(p, new Vector3(ox + 3.6f, 0.92f, 3.9f), new Vector3(1.5f, 0.05f, 1.7f), cream, 1f);
+        Reg(it, ox + 3.6f, 3.9f, 1.4f, 1.6f);
         for (int i = 0; i < 4; i++)
         {
             float mx = ox - 6.5f + i * 1.1f;
-            Part(p, new Vector3(mx, 1.55f, 2.1f), new Vector3(0.9f, 0.6f, 0.06f), ink, 0.5f);      // 菜单屏
-            foreach (int s in new[] { -1, 1 })
-                Part(p, new Vector3(mx + s * 0.35f, 2.45f, 2.1f), new Vector3(0.02f, 1.2f, 0.02f), C("#6a7078"), 1f);
+            // 菜单屏在顾客面一侧（吧台北缘），抬到 2.75 便于平视读、又不挡通道
+            Part(p, new Vector3(mx, 2.75f, 3.5f), new Vector3(0.9f, 0.6f, 0.06f), ink, 0.5f);
+            HangRods(p, mx, 3.05f, 3.5f, 0.9f);
         }
-        Part(p, new Vector3(ox + 2.9f, 1.35f, 2.05f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);                 // 封口机
-        Part(p, new Vector3(ox - 4.2f, 1.2f, 2.05f), new Vector3(1.8f, 0.7f, 0.7f), C("#cfd8e2"), 1f);             // 展示柜
-        Part(p, new Vector3(ox - 4.2f, 1.58f, 2.02f), new Vector3(1.7f, 0.5f, 0.6f), Glass(), 1f);
-        HangingSign(p, ox - 2.5f, 3.0f, 1.6f, 1, "点单台", 1.3f, 0.38f, C("#2f4a3a"), 0.026f);
-        HangingSign(p, ox + 3.4f, 3.0f, 0.6f, 1, "取餐口", 1.3f, 0.38f, C("#8a5a3c"), 0.026f);
+        Part(p, new Vector3(ox + 2.4f, 1.35f, 2.15f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);               // 封口机（操作面）
+        Part(p, new Vector3(ox - 4.2f, 1.2f, 3.15f), new Vector3(1.8f, 0.7f, 0.7f), C("#cfd8e2"), 1f);           // 展示柜（贴顾客面）
+        Part(p, new Vector3(ox - 4.2f, 1.58f, 3.2f), new Vector3(1.7f, 0.5f, 0.6f), Glass(), 1f);
+        HangingSign(p, ox - 2.5f, 3.0f, 4.1f, 1, "点单台", 1.3f, 0.38f, C("#2f4a3a"), 0.026f);
+        HangingSign(p, ox + 3.6f, 3.0f, 5.0f, 1, "取餐口", 1.3f, 0.38f, C("#8a5a3c"), 0.026f);
 
-        // 后场：开放操作间（1.2m 半墙 + 玻璃），右侧留 1.2m 通道
-        foreach (var (x0, x1) in new[] { (-14.4f, 6.4f) })
-        {
-            Part(p, new Vector3(ox + (x0 + x1) / 2f, 0.6f, -5.2f), new Vector3(x1 - x0, 1.2f, 0.14f), woodDark, 1f);
-            Part(p, new Vector3(ox + (x0 + x1) / 2f, 1.75f, -5.2f), new Vector3(x1 - x0, 0.9f, 0.05f), Glass(), 1f);
-            Reg(it, ox + (x0 + x1) / 2f, -5.2f, x1 - x0, 0.2f);
-        }
+        // 后场：开放操作间（1.2m 半墙 + 玻璃出餐口），东端留 8.6m 通道
+        Part(p, new Vector3(ox - 4f, 0.6f, -5.2f), new Vector3(20.8f, 1.2f, 0.14f), woodDark, 1f);
+        Part(p, new Vector3(ox - 4f, 1.75f, -5.2f), new Vector3(20.8f, 0.9f, 0.05f), Glass(), 1f);
+        Reg(it, ox - 4f, -5.2f, 20.8f, 0.2f);
         Part(p, new Vector3(ox - 1f, 0.45f, -8.4f), new Vector3(9f, 0.9f, 0.8f), C("#9aa2ac"), 1f);
         Part(p, new Vector3(ox - 1f, 0.92f, -8.4f), new Vector3(9.1f, 0.05f, 0.86f), cream, 1f);
         Reg(it, ox - 1f, -8.4f, 9f, 0.8f);
         ShelfWallX(p, it, -9.5f, ox - 6f, ox + 4f, 1, wood, new[] { mint, cream, C("#d8a05a"), C("#b06a4e") }, 2.0f, 0.8f);
         Part(p, new Vector3(ox + 9.5f, 0.9f, -8.0f), new Vector3(2.6f, 1.8f, 1.2f), C("#8d949c"), 1f);
         Reg(it, ox + 9.5f, -8.0f, 2.6f, 1.2f);
-        HangingSign(p, ox + 1.5f, 3.0f, -4.6f, -1, "加料区", 1.2f, 0.36f, C("#3f5c6b"), 0.026f);
-        HangingSign(p, ox + 10.5f, 3.0f, 4.0f, 1, "外卖自取", 1.4f, 0.36f, C("#8a5a3c"), 0.026f);
+        HangingSign(p, ox + 1.5f, 3.0f, -4.6f, 1, "加料区", 1.2f, 0.36f, C("#3f5c6b"), 0.026f);
+        HangingSign(p, ox + 6.2f, 3.0f, 4.4f, 1, "外卖自取", 1.4f, 0.36f, C("#8a5a3c"), 0.026f);
 
-        // 中场客座：双人方桌 ×6 + 西墙高脚吧台 + 东墙卡座
-        foreach (var (tx, tz) in new[] { (-10.5f, -1.2f), (-6.5f, -1.2f), (-10.5f, 2.6f), (-6.5f, 2.6f), (1.2f, -2.2f), (1.2f, 1.6f) })
+        // 中场客座：双人方桌 3×2（桌两侧椅子面对面）+ 西墙高脚吧台 + 东墙卡座
+        // 排距留出 1.2m 横向走道，且不得压到吧台（z 2.15~3.05）与后场隔断（z -5.2）
+        foreach (var (tx, tz) in new[] { (-10.0f, 0.2f), (-6.6f, 0.2f), (-3.2f, 0.2f),
+                                          (-10.0f, -3.5f), (-6.6f, -3.5f), (-3.2f, -3.5f) })
         {
             Table(p, new Vector3(ox + tx, 0f, tz), 1.0f, 0.8f, 0.76f, wood);
             Reg(it, ox + tx, tz, 1.0f, 0.8f);
-            Chair(p, it, new Vector3(ox + tx - 0.95f, 0f, tz), 0f, wood, true);
-            Chair(p, it, new Vector3(ox + tx + 0.95f, 0f, tz), 180f, wood, true);
+            Chair(p, it, new Vector3(ox + tx - 0.95f, 0f, tz), 90f, wood, true);    // 西侧，人朝东
+            Chair(p, it, new Vector3(ox + tx + 0.95f, 0f, tz), 270f, wood, true);   // 东侧，人朝西
         }
         Part(p, new Vector3(ox - 13.9f, 0.55f, -1.0f), new Vector3(0.5f, 1.1f, 6.0f), wood, 1f);
         Part(p, new Vector3(ox - 13.9f, 1.12f, -1.0f), new Vector3(0.56f, 0.06f, 6.1f), cream, 1f);
@@ -143,7 +142,7 @@ public static partial class InteriorBuilder
             Table(p, new Vector3(ox + 12.2f, 0f, sz), 1.2f, 0.9f, 0.76f, wood);
             Reg(it, ox + 12.2f, sz, 1.2f, 0.9f);
         }
-        HangingSign(p, ox + 6.0f, 3.0f, -1.0f, -1, "堂食区", 1.2f, 0.36f, C("#4a6a52"), 0.026f);
+        HangingSign(p, ox - 6.6f, 3.0f, -1.6f, 1, "堂食区", 1.2f, 0.36f, C("#4a6a52"), 0.026f);
         Plant(p, new Vector3(ox - 13.2f, 0.02f, 6.6f), 1.0f);
         Plant(p, new Vector3(ox + 13.2f, 0.02f, -4.4f), 1.0f);
         WallClock(p, new Vector3(ox, 3.1f, -Z + 0.16f), 0f);
@@ -189,8 +188,8 @@ public static partial class InteriorBuilder
         {
             Table(p, new Vector3(ox + 3.5f + i * 2.0f, 0f, 6.0f), 1.6f, 0.7f, 0.75f, wood);
             Reg(it, ox + 3.5f + i * 2.0f, 6.0f, 1.6f, 0.7f);
-            Chair(p, it, new Vector3(ox + 3.5f + i * 2.0f, 0f, 5.1f), 180f, wood, true);
-            Chair(p, it, new Vector3(ox + 3.5f + i * 2.0f, 0f, 6.9f), 0f, wood, true);
+            Chair(p, it, new Vector3(ox + 3.5f + i * 2.0f, 0f, 5.1f), 0f, wood, true);    // 南侧，人朝北
+            Chair(p, it, new Vector3(ox + 3.5f + i * 2.0f, 0f, 6.9f), 180f, wood, true);  // 北侧，人朝南
             Part(p, new Vector3(ox + 3.5f + i * 2.0f, 0.82f, 6.0f), new Vector3(0.5f, 0.35f, 0.36f), ink, 0.5f);   // 选片屏
         }
         HangingSign(p, ox + 4.5f, 3.2f, 4.4f, 1, "选片区", 1.1f, 0.34f, C("#8a5a3c"), 0.026f);
@@ -208,22 +207,40 @@ public static partial class InteriorBuilder
                 Part(p, new Vector3(ox - 14.24f, 2.35f, mz - 0.25f + s * 0.25f), new Vector3(0.04f, 0.14f, 0.1f), C("#d8c8a8"), 0.4f);
         }
         HangingSign(p, ox - 11.0f, 3.2f, 0.4f, 1, "化妆间", 1.2f, 0.36f, C("#4a6a52"), 0.026f);
-        Part(p, new Vector3(ox + 13.9f, 1.62f, 1.0f), new Vector3(0.1f, 0.06f, 4.2f), C("#8d99a6"), 1f);
-        Part(p, new Vector3(ox + 13.9f, 1.6f, -0.9f), new Vector3(0.1f, 0.06f, 4.2f), C("#8d99a6"), 1f);
-        for (int i = 0; i < 9; i++)
-            Part(p, new Vector3(ox + 13.9f, 1.15f, -1.4f + i * 0.36f), new Vector3(0.5f, 0.9f, 0.16f),
+        // 服装架：一根挂杆 + 两端立柱 + 一排样衣（拿衣服 → 更衣 → 拍摄，动线自北向南）
+        Part(p, new Vector3(ox + 14.2f, 1.62f, 3.0f), new Vector3(0.1f, 0.06f, 4.0f), C("#8d99a6"), 1f);
+        foreach (int s in new[] { -1, 1 })
+            Part(p, new Vector3(ox + 14.2f, 0.81f, 3.0f + s * 1.95f), new Vector3(0.1f, 1.62f, 0.1f), C("#8d99a6"), 1f);
+        for (int i = 0; i < 11; i++)
+            Part(p, new Vector3(ox + 14.18f, 1.15f, 1.25f + i * 0.34f), new Vector3(0.42f, 0.9f, 0.16f),
                  i % 3 == 0 ? red : (i % 3 == 1 ? blue : C("#6b7a4a")), 0.5f);
-        Reg(it, ox + 13.9f, 0.2f, 0.6f, 5.4f);
-        foreach (float fz in new[] { -2.6f, -5.4f })
+        Reg(it, ox + 14.2f, 3.0f, 0.6f, 4.1f);
+
+        // 更衣隔间：两间贴东墙的开面隔间。正面只有帘子（不登记碰撞），
+        // 只把背板和两侧板算成实体，否则整间被封成一块空气墙，人进不去。
+        var board = C("#c9bfae");
+        foreach (float fz in new[] { -1.0f, -3.2f })
         {
-            Part(p, new Vector3(ox + 11.2f, 1.1f, fz), new Vector3(2.6f, 2.2f, 0.1f), wood, 1f);
-            Part(p, new Vector3(ox + 11.2f, 1.1f, fz + 1.3f), new Vector3(0.1f, 2.2f, 2.6f), wood, 1f);
-            Part(p, new Vector3(ox + 11.2f, 1.1f, fz - 1.3f), new Vector3(0.1f, 2.2f, 2.6f), wood, 1f);
-            Part(p, new Vector3(ox + 12.45f, 1.1f, fz), new Vector3(0.1f, 2.2f, 2.6f), C("#b9b0a0"), 1f);
-            Reg(it, ox + 11.2f, fz, 2.6f, 2.7f);
-            Part(p, new Vector3(ox + 9.7f, 1.5f, fz), new Vector3(0.05f, 1.6f, 0.9f), Glass(), 1f);
+            Part(p, new Vector3(ox + 14.78f, 1.3f, fz), new Vector3(0.1f, 2.6f, 1.7f), board, 1f);
+            Reg(it, ox + 14.78f, fz, 0.12f, 1.72f);
+            foreach (int s in new[] { -1, 1 })
+            {
+                Part(p, new Vector3(ox + 13.9f, 1.3f, fz + s * 0.85f), new Vector3(1.76f, 2.6f, 0.08f), board, 1f);
+                Reg(it, ox + 13.9f, fz + s * 0.85f, 1.78f, 0.1f);
+            }
+            // 帘杆 + 两片布帘：中间留空，看得见脚也进得去人
+            Part(p, new Vector3(ox + 12.95f, 2.52f, fz), new Vector3(0.06f, 0.06f, 1.8f), C("#8d99a6"), 1f);
+            foreach (int s in new[] { -1, 1 })
+                Part(p, new Vector3(ox + 12.95f, 1.35f, fz + s * 0.55f), new Vector3(0.07f, 2.3f, 0.55f), C("#7a5a6a"), 1f);
+            // 带框试衣镜（背板内面）+ 镜上小搁架 + 侧板挂钩
+            Part(p, new Vector3(ox + 14.7f, 1.2f, fz), new Vector3(0.05f, 1.9f, 1.1f), C("#6f5540"), 1f);
+            Part(p, new Vector3(ox + 14.66f, 1.16f, fz), new Vector3(0.03f, 1.72f, 0.92f), Glass(), 1f);
+            Part(p, new Vector3(ox + 14.62f, 2.28f, fz), new Vector3(0.24f, 0.05f, 1.1f), C("#6f5540"), 1f);
+            Part(p, new Vector3(ox + 13.95f, 1.62f, fz + 0.78f), new Vector3(0.5f, 0.05f, 0.06f), C("#8d99a6"), 1f);
+            // 门口踏脚垫
+            Rug(p, new Vector3(ox + 12.6f, 0.045f, fz), 0.7f, 1.4f, C("#6b5a52"));
         }
-        HangingSign(p, ox + 11.4f, 3.2f, -4.0f, 1, "服装间", 1.2f, 0.36f, C("#8a5a3c"), 0.026f);
+        HangingSign(p, ox + 11.8f, 3.2f, -2.1f, 1, "服装间", 1.2f, 0.36f, C("#8a5a3c"), 0.026f);
 
         // 后场：拍摄棚，三个背景位（背景纸宽 2.7m、横杆 2.8m，留出挂灯高度）
         for (int i = 0; i < 3; i++)
@@ -371,7 +388,8 @@ public static partial class InteriorBuilder
         // 杂志架 + 报刊墙 + 绿植
         Part(p, new Vector3(ox + 14.6f, 0.72f, 2.2f), new Vector3(0.5f, 1.45f, 1.4f), C("#b9b0a0"), 1f);
         Reg(it, ox + 14.6f, 2.2f, 0.5f, 1.4f);
-        ShelfWallX(p, it, -Z + 0.45f, ox - 15f, ox - 10f, 1, C("#7d848c"), goods, 1.6f, 0.9f);
+        // 报刊架：收到西墙一角，避免和冷柜带（x 从 -10.5 起）叠在同一处
+        ShelfWallX(p, it, -Z + 0.45f, ox - 15f, ox - 11.6f, 1, C("#7d848c"), goods, 1.6f, 0.9f);
         Plant(p, new Vector3(ox - 14.6f, 0.02f, 9.4f), 0.9f);
         Plant(p, new Vector3(ox + 14.6f, 0.02f, 9.4f), 0.9f);
         WallClock(p, new Vector3(ox, 3.1f, -Z + 0.16f), 0f);

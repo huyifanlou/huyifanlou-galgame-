@@ -29,7 +29,7 @@ public static partial class InteriorBuilder
         var p = root.transform;
 
         Part(p, new Vector3(ox, 0f, 0f), new Vector3(X * 2f, 0.04f, Z * 2f), floor, 2f, default, true);
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(X * 2f, 0.06f, Z * 2f), ceil, 2f);
+        CeilingSlab(p, ox, W, X * 2f, Z * 2f, ceil);
         WallX(p, it, ox - X, ox + X, -Z, 0f, W, 0f, 0f, doorH, wall);
         WallX(p, it, ox - X, ox + X, Z, 0f, W, ox - doorHalf, ox + doorHalf, doorH, wall);
         WallZ(p, it, -Z, Z, ox - X, 0f, W, 0f, 0f, doorH, wall);

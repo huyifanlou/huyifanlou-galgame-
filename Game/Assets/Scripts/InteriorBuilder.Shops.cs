@@ -96,10 +96,15 @@ public static partial class InteriorBuilder
         Part(p, pos + new Vector3(0f, 0.30f, 0f), new Vector3(0.30f, 0.02f, 0.30f), C("#8a7440"), 1f);
     }
 
-    // 吊灯（暖光）
+    // 吊灯（暖光）：y 是灯罩中心，吊杆自动接到天花板底，且不会把灯罩埋进吊顶
     static void Pendant(Transform p, float x, float y, float z, float drop, string shade = "#d8c8a8")
     {
-        Part(p, new Vector3(x, y + drop * 0.5f, z), new Vector3(0.025f, drop, 0.025f), C("#2f3338"), 1f);
+        if (_ceilY > 0f) y = Mathf.Min(y, _ceilY - 0.75f);
+        y = HangY(y, 0.10f);
+        float rodBottom = y + 0.10f;
+        float rodTop = _ceilY > rodBottom + 0.05f ? _ceilY : rodBottom + Mathf.Max(drop, 0.2f);
+        Part(p, new Vector3(x, (rodBottom + rodTop) * 0.5f, z),
+             new Vector3(0.025f, rodTop - rodBottom, 0.025f), C("#2f3338"), 1f);
         Part(p, new Vector3(x, y, z), new Vector3(0.52f, 0.20f, 0.52f), C(shade), 1f);
         Part(p, new Vector3(x, y + 0.13f, z), new Vector3(0.42f, 0.03f, 0.42f), C("#fff2d6"), 1f);
         var go = new GameObject("pendantlight");
@@ -134,20 +139,18 @@ public static partial class InteriorBuilder
                  label, textH, MatLib.Hex("#1f3428"));
     }
 
-    // 吊牌（挂在空中，朝 face 方向）
+    // 吊牌（吊杆接天花板，朝 face 方向）
     static void HangingSign(Transform p, float x, float y, float z, int face, string label,
                             float w = 1.7f, float h = 0.42f, Material plate = null, float textH = 0.028f)
     {
         plate ??= C("#2f4a3a");
+        y = HangY(y, h * 0.5f);
         Part(p, new Vector3(x, y, z), new Vector3(w, h, 0.05f), plate, 1f);
         Part(p, new Vector3(x, y, z + face * 0.035f),
              new Vector3(w - 0.16f, h - 0.12f, 0.012f), C("#dfe6dc"), 1f);
         SignText(p, new Vector3(x, y, z + face * 0.055f), face > 0 ? 180f : 0f,
                  label, textH, MatLib.Hex("#1f3428"));
-        Part(p, new Vector3(x - w * 0.35f, y + h * 0.5f + 0.35f, z),
-             new Vector3(0.02f, 0.7f, 0.02f), C("#6a7078"), 1f);
-        Part(p, new Vector3(x + w * 0.35f, y + h * 0.5f + 0.35f, z),
-             new Vector3(0.02f, 0.7f, 0.02f), C("#6a7078"), 1f);
+        HangRods(p, x, y + h * 0.5f, z, w);
     }
 
     // 墙纸 + 踢脚线（doorSide：0 北墙、1 南墙、2 西墙、3 东墙）
