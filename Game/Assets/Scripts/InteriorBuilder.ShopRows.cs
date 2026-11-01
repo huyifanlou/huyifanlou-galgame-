@@ -103,8 +103,18 @@ public static partial class InteriorBuilder
             HangRods(p, mx, 3.05f, 3.5f, 0.9f);
         }
         Part(p, new Vector3(ox + 2.4f, 1.35f, 2.15f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);               // 封口机（操作面）
-        Part(p, new Vector3(ox - 4.2f, 1.2f, 3.15f), new Vector3(1.8f, 0.7f, 0.7f), C("#cfd8e2"), 1f);           // 展示柜（贴顾客面）
-        Part(p, new Vector3(ox - 4.2f, 1.58f, 3.2f), new Vector3(1.7f, 0.5f, 0.6f), Glass(), 1f);
+        // 展示柜：三面壳体、前面留空露甜点（沿用超市 Cooler 的做法 —— 不透明玻璃会把柜子糊成一个白盒）
+        Part(p, new Vector3(ox - 4.2f, 1.37f, 2.85f), new Vector3(1.8f, 0.5f, 0.08f), C("#cfd8e2"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.62f, 3.15f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.14f, 3.15f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
+        foreach (int s in new[] { -1, 1 })
+            Part(p, new Vector3(ox - 4.2f + s * 0.87f, 1.37f, 3.15f), new Vector3(0.06f, 0.5f, 0.68f), C("#cfd8e2"), 1f);
+        for (int i = 0; i < 4; i++)
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.26f, 3.2f), new Vector3(0.3f, 0.16f, 0.2f),
+                 i % 2 == 0 ? C("#d8a05a") : C("#b06a4e"), 0.4f);
+        for (int i = 0; i < 4; i++)
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.46f, 3.2f), new Vector3(0.3f, 0.16f, 0.2f),
+                 i % 2 == 0 ? C("#e6d2a8") : C("#8a5a3c"), 0.4f);
         HangingSign(p, ox - 2.5f, 3.0f, 4.1f, 1, "点单台", 1.3f, 0.38f, C("#2f4a3a"), 0.026f);
         HangingSign(p, ox + 3.6f, 3.0f, 5.0f, 1, "取餐口", 1.3f, 0.38f, C("#8a5a3c"), 0.026f);
 
@@ -170,10 +180,10 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(ox - 8f, 0.45f, 6.4f), new Vector3(3.0f, 0.9f, 0.9f), wood, 1f);
         Part(p, new Vector3(ox - 8f, 0.93f, 6.4f), new Vector3(3.1f, 0.05f, 1.0f), cream, 1f);
         Reg(it, ox - 8f, 6.4f, 3.0f, 0.9f);
-        Part(p, new Vector3(ox - 8f, 1.12f, 5.86f), new Vector3(1.1f, 0.3f, 0.04f), C("#6f4a32"), 1f);
-        Part(p, new Vector3(ox - 8f, 1.12f, 6.94f), new Vector3(1.1f, 0.3f, 0.04f), C("#6f4a32"), 1f);
-        SignText(p, new Vector3(ox - 8f, 1.12f, 5.82f), 0f, "前台接待", 0.024f, MatLib.Hex("#e6ded0"));
-        SignText(p, new Vector3(ox - 8f, 1.12f, 6.98f), 180f, "前台接待", 0.024f, MatLib.Hex("#e6ded0"));
+        // 前台牌：一块牌立在桌面正中、两面都有字（原来南北各立一块同样大小的牌，前后错开看着像多一层虚影）
+        Part(p, new Vector3(ox - 8f, 1.09f, 6.4f), new Vector3(0.8f, 0.24f, 0.03f), C("#6f4a32"), 1f);
+        SignText(p, new Vector3(ox - 8f, 1.09f, 6.42f), 180f, "前台接待", 0.019f, MatLib.Hex("#e6ded0"));
+        SignText(p, new Vector3(ox - 8f, 1.09f, 6.38f), 0f, "前台接待", 0.019f, MatLib.Hex("#e6ded0"));
         Part(p, new Vector3(ox - 14.4f, 1.9f, 6.5f), new Vector3(0.06f, 2.4f, 6.0f), C("#cfc7b6"), 1f);
         for (int i = 0; i < 6; i++)
             Part(p, new Vector3(ox - 14.32f, 1.2f + (i / 3) * 1.1f, 4.6f + (i % 3) * 1.3f),

@@ -106,7 +106,8 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(x, (rodBottom + rodTop) * 0.5f, z),
              new Vector3(0.025f, rodTop - rodBottom, 0.025f), C("#2f3338"), 1f);
         Part(p, new Vector3(x, y, z), new Vector3(0.52f, 0.20f, 0.52f), C(shade), 1f);
-        Part(p, new Vector3(x, y + 0.13f, z), new Vector3(0.42f, 0.03f, 0.42f), C("#fff2d6"), 1f);
+        // 发光面朝下并嵌进灯罩底 1cm（原来放在罩顶 1.5cm 处，看着像灯罩上又多扣了一块白板）
+        Part(p, new Vector3(x, y - 0.115f, z), new Vector3(0.42f, 0.03f, 0.42f), C("#fff2d6"), 1f);
         var go = new GameObject("pendantlight");
         go.transform.SetParent(p, false);
         go.transform.localPosition = new Vector3(x, y - 0.10f, z);

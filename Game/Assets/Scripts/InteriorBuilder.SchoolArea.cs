@@ -309,11 +309,15 @@ public static partial class InteriorBuilder
         float lz = 10.5f;
         Table(p, new Vector3(DORM_X - 2.6f, 0f, 6.6f), 2.4f, 0.8f, 0.78f, desk);
         Reg(it, DORM_X - 2.6f, 6.6f, 2.4f, 0.8f);
-        Chair(p, it, new Vector3(DORM_X - 3.45f, 0f, 6.6f), 90f, frame, true);
-        Part(p, new Vector3(DORM_X - 2.6f, 0.86f, 6.2f), new Vector3(0.9f, 0.04f, 0.30f), C("#e6e2d8"), 1f);
-        Part(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.34f), new Vector3(1.1f, 0.30f, 0.04f), C("#6f4a32"), 1f);
-        SignText(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.37f), 180f, "宿管值班", 0.024f, MatLib.Hex("#f3e9d2"));
-        SignText(p, new Vector3(DORM_X - 2.6f, 1.02f, 6.31f), 0f, "宿管值班", 0.024f, MatLib.Hex("#f3e9d2"));
+        // 宿管坐在桌子南侧，面向来开门方向的来访者（Chair 靠背在局部 -Z → ry=0 人朝 +Z）
+        Chair(p, it, new Vector3(DORM_X - 2.6f, 0f, 5.75f), 0f, frame, true);
+        // 值班牌立在桌面上、靠来访者一侧（桌面顶 0.78，牌子下沉 0.5cm 免得和桌面共面闪面）
+        Part(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.86f), new Vector3(0.8f, 0.24f, 0.03f), C("#6f4a32"), 1f);
+        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.88f), 180f, "宿管值班", 0.019f, MatLib.Hex("#f3e9d2"));
+        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.84f), 0f, "宿管值班", 0.019f, MatLib.Hex("#f3e9d2"));
+        // 登记本平放桌面（原来是一块 0.9×0.3 的白板悬在牌子后面，看着像牌子多了一层虚影）
+        Part(p, new Vector3(DORM_X - 3.35f, 0.795f, 6.5f), new Vector3(0.34f, 0.03f, 0.24f), C("#d8d2c4"), 1f);
+        Part(p, new Vector3(DORM_X - 3.35f, 0.815f, 6.5f), new Vector3(0.30f, 0.01f, 0.20f), C("#f3efe4"), 1f);
 
         Sofa(p, new Vector3(DORM_X + 3.25f, 0f, lz), 2.2f, 270f, C("#7a5a6a"));
         Reg(it, DORM_X + 3.25f, lz, 1.0f, 2.2f);

@@ -149,11 +149,11 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(ox - 13.1f, 1.08f, 5.95f), new Vector3(1.16f, 0.07f, 2.66f), cream, 1f);
         Reg(it, ox - 9.2f, 7.35f, 5.2f, 1.1f);
         Reg(it, ox - 13.1f, 5.95f, 1.1f, 2.6f);
-        Part(p, new Vector3(ox - 9.2f, 1.18f, 6.79f), new Vector3(2.2f, 0.34f, 0.05f), C("#2f4a3a"), 1f);
-        SignText(p, new Vector3(ox - 9.2f, 1.18f, 6.76f), 0f, "借阅台", 0.030f, MatLib.Hex("#1f3428"));
-        // 借阅台牌原来只有朝教室内一侧有字，从入口方向看是空板 —— 补朝入口的一面
-        Part(p, new Vector3(ox - 9.2f, 1.18f, 7.91f), new Vector3(2.2f, 0.34f, 0.05f), C("#2f4a3a"), 1f);
-        SignText(p, new Vector3(ox - 9.2f, 1.18f, 7.94f), 180f, "借阅台", 0.030f, MatLib.Hex("#dfe6dc"));
+        // 借阅台牌：贴柜台立面、顶到台面为止（原来两块牌高出台面 23cm，从任何一侧看都像两块牌叠成虚影）
+        Part(p, new Vector3(ox - 9.2f, 0.87f, 6.79f), new Vector3(2.2f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
+        SignText(p, new Vector3(ox - 9.2f, 0.87f, 6.76f), 0f, "借阅台", 0.030f, MatLib.Hex("#dfe6dc"));
+        Part(p, new Vector3(ox - 9.2f, 0.87f, 7.91f), new Vector3(2.2f, 0.3f, 0.05f), C("#2f4a3a"), 1f);
+        SignText(p, new Vector3(ox - 9.2f, 0.87f, 7.94f), 180f, "借阅台", 0.030f, MatLib.Hex("#dfe6dc"));
         Part(p, new Vector3(ox - 5.5f, 0.42f, 7.5f), new Vector3(0.8f, 0.84f, 0.8f), C("#8a6a4a"), 1f);
         Part(p, new Vector3(ox - 5.5f, 0.86f, 7.5f), new Vector3(0.7f, 0.06f, 0.7f), C("#3f5c6b"), 1f);
         Reg(it, ox - 5.5f, 7.5f, 0.8f, 0.8f);
