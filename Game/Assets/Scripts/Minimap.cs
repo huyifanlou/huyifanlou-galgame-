@@ -294,6 +294,30 @@ public class Minimap : MonoBehaviour
         _me.wrapMode = TextureWrapMode.Clamp;
     }
 
+    GUIStyle _stTitle, _stMajor, _stMinor, _stAsk, _stAskSub, _stIndoor;
+    bool _stLarge;
+    readonly List<Rect> _usedLabels = new List<Rect>();
+
+    // OnGUI 每帧跑两遍（Layout + Repaint）。样式必须缓存：以前在地标循环里 new GUIStyle，
+    // 放大地图一帧就分配上百个对象 → GC 抖动 → 画面一卡一卡。
+    void EnsureStyles()
+    {
+        if (_stTitle != null && _stLarge == _large) return;
+        _stLarge = _large;
+        _stTitle = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
+        _stTitle.normal.textColor = new Color(1f, 0.95f, 0.85f);
+        _stMajor = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
+        _stMajor.normal.textColor = new Color(0.9f, 0.97f, 1f, 1f);
+        _stMinor = new GUIStyle(_stMajor);
+        _stMinor.normal.textColor = new Color(0.92f, 0.88f, 0.74f, 1f);
+        _stIndoor = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
+        _stIndoor.normal.textColor = new Color(1f, 0.9f, 0.7f);
+        _stAsk = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+        _stAsk.normal.textColor = new Color(1f, 0.95f, 0.85f);
+        _stAskSub = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
+        _stAskSub.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
+    }
+
     void Update()
     {
         if (Input.GetKeyDown(KeyCode.M))
@@ -377,12 +401,8 @@ public class Minimap : MonoBehaviour
         GUI.color = new Color(0.04f, 0.05f, 0.06f, 0.96f);
         GUI.DrawTexture(pr, Texture2D.whiteTexture);
         GUI.color = Color.white;
-        var st = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
-        st.normal.textColor = new Color(1f, 0.95f, 0.85f);
-        GUI.Label(new Rect(pr.x, pr.y + 18f, pw, 30f), $"传送到「{_dest[_pending].name}」？", st);
-        var sst = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
-        sst.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
-        GUI.Label(new Rect(pr.x, pr.y + 50f, pw, 20f), "会传送到该建筑门前", sst);
+        GUI.Label(new Rect(pr.x, pr.y + 18f, pw, 30f), $"传送到「{_dest[_pending].name}」？", _stAsk);
+        GUI.Label(new Rect(pr.x, pr.y + 50f, pw, 20f), "会传送到该建筑门前", _stAskSub);
         if (GUI.Button(new Rect(pr.x + 60f, pr.y + 92f, 100f, 36f), "确认"))
         {
             var d = _dest[_pending];
@@ -395,6 +415,7 @@ public class Minimap : MonoBehaviour
     void OnGUI()
     {
         if (_map == null || _rig == null) return;
+        EnsureStyles();
         float size = _large ? Mathf.Min(Screen.width, Screen.height) * 0.82f : Mathf.Min(272f, Screen.height * 0.33f);
         float x = _large ? (Screen.width - size) / 2f : Screen.width - size - 20f;
         float y = _large ? (Screen.height - size) / 2f - 6f : 70f;
@@ -418,20 +439,14 @@ public class Minimap : MonoBehaviour
         GUI.color = Color.white;
 
         if (Indoor)
-        {
-            var tt = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
-            tt.normal.textColor = new Color(1f, 0.9f, 0.7f);
-            GUI.Label(new Rect(0, 40f, Screen.width, 24f), "室内 · 地图仅查看（出门后再传送）", tt);
-        }
+            GUI.Label(new Rect(0, 40f, Screen.width, 24f), "室内 · 地图仅查看（出门后再传送）", _stIndoor);
 
-        var title = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
-        title.normal.textColor = new Color(1f, 0.95f, 0.85f);
         GUI.Label(new Rect(x, y, size, 18f),
             _large ? "拖拽平移 · 滚轮缩放 · 单击地标确认 · 双击空白传送"
-                   : "小镇地图（M 放大 · 地标确认传送）", title);
+                   : "小镇地图（M 放大 · 地标确认传送）", _stTitle);
 
-        var small = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
-        var usedLabels = new List<Rect>();
+        _usedLabels.Clear();
+        var usedLabels = _usedLabels;
 
         for (int i = 0; i < _dest.Count; i++)
         {
@@ -449,8 +464,7 @@ public class Minimap : MonoBehaviour
             if (!_large) continue;
             bool hover = (new Vector2(dx, dy) - mousePos).sqrMagnitude < 100f;
             if (!d.major && _zoom < 2.0f && !hover) continue;
-            var dl = new GUIStyle(small);
-            dl.normal.textColor = d.major ? new Color(0.9f, 0.97f, 1f, 1f) : new Color(0.92f, 0.88f, 0.74f, 1f);
+            var dl = d.major ? _stMajor : _stMinor;
             // 上下交替，避免住宅街一排建筑的标签叠在一起
             float ly = i % 2 == 0 ? dy - 18f : dy + 3f;
             float lw = 78f;

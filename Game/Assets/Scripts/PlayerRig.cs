@@ -31,6 +31,11 @@ public class PlayerRig : MonoBehaviour
     float _fpPitch;             // 第一人称俯仰（上正下负）
     float _lastMapClose;        // M 按下时刻，开图瞬间不抢回鼠标锁定
     float _groundY;             // 脚底高度（人行道/桥面）
+    const float JUMP_V = 3.15f; // 起跳初速：约 0.5m 跳高、0.64s 一次
+    const float GRAV = 9.8f;
+    float _vy, _airH;           // 跳跃：垂直速度与离地高度
+    float _crouchBlend;         // 下蹲过渡 0..1
+    string _poseArg;            // 验收：-pose jump|crouch 摆姿势截图
     Vector3 _dragLast;
     string _simKey;
     int _simFrames = -1;
@@ -79,6 +84,7 @@ public class PlayerRig : MonoBehaviour
         }
 
         _forceRun = Args.Str("-run") == "1";   // 验收：-sim 时强制跑步动画
+        _poseArg = Args.Str("-pose");          // 验收：摆姿势截图（jump / crouch）
 
         // 验收：-sim d,40 → 前 40 帧模拟按住 D
         var sim = Args.Str("-sim");
@@ -310,7 +316,26 @@ public class PlayerRig : MonoBehaviour
         float f = (holdW ? 1f : 0f) - (holdS ? 1f : 0f);
         float r = (holdD ? 1f : 0f) - (holdA ? 1f : 0f);
         bool moving = f != 0f || r != 0f;
-        bool running = moving && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || _forceRun);
+
+        // 跳跃（空格）/ 下蹲（C）：叙事游戏的动作与手感，不改 2D 碰撞（跳不过障碍，也不钻矮洞）
+        bool grounded = _airH <= 0.0001f;
+        if (_poseArg == "jump") { _airH = 0.36f; _vy = 0f; }
+        else
+        {
+            if (grounded && Input.GetKeyDown(KeyCode.Space)) { _vy = JUMP_V; _airH = 0.001f; }
+            if (!grounded)
+            {
+                _vy -= GRAV * dt;
+                _airH += _vy * dt;
+                if (_airH <= 0f) { _airH = 0f; _vy = 0f; }
+            }
+        }
+        bool crouch = _poseArg == "crouch" || Input.GetKey(KeyCode.C);
+        if (!grounded) crouch = false;            // 空中不收蹲，落地后要重新按
+        _crouchBlend = Mathf.MoveTowards(_crouchBlend, crouch ? 1f : 0f, dt * 9f);
+
+        bool running = moving && grounded && _crouchBlend < 0.5f &&
+                       (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || _forceRun);
         float dirX = 0f, dirZ = 0f;
         if (moving)
         {
@@ -319,7 +344,7 @@ public class PlayerRig : MonoBehaviour
             float len = Mathf.Sqrt(dirX * dirX + dirZ * dirZ);
             dirX /= len;
             dirZ /= len;
-            float speed = running ? RUN_SPEED : MOVE_SPEED;
+            float speed = (running ? RUN_SPEED : MOVE_SPEED) * (1f - 0.52f * _crouchBlend);
             var cand = NextPoint(p.x + dirX * speed * dt, p.z + dirZ * speed * dt);
             if (!Collides(cand.x, p.z)) p.x = cand.x;
             if (!Collides(p.x, cand.y)) p.z = cand.y;
@@ -330,7 +355,8 @@ public class PlayerRig : MonoBehaviour
         _groundY = Mathf.Lerp(_groundY, gy, Mathf.Min(1f, dt * 12f));
         float stepFreq = running ? 13.5f : 10f;
         float stepAmp = running ? 0.075f : 0.05f;
-        p.y = _groundY + (moving ? Mathf.Abs(Mathf.Sin(Time.time * stepFreq)) * stepAmp : 0f);
+        float walkBob = moving && grounded ? Mathf.Abs(Mathf.Sin(Time.time * stepFreq)) * stepAmp * (1f - 0.6f * _crouchBlend) : 0f;
+        p.y = _groundY + walkBob + _airH;
         _player.position = p;
         // 验收：-sim 模拟行走时每 30 帧打一次坐标，便于确认楼梯/门能不能过去
         if (_simFrames > 0 && Time.frameCount % 30 == 0)
@@ -352,7 +378,8 @@ public class PlayerRig : MonoBehaviour
             align = Mathf.Atan2(Mathf.Sin(align), Mathf.Cos(align));
             _facing += align * Mathf.Min(1f, dt * 4f);
         }
-        if (_avatar != null) _avatar.Tick(moving, running, _facing, dt);
+        if (_avatar != null)
+            _avatar.Tick(moving, running, _facing, dt, Mathf.Clamp01(_airH / 0.36f), _vy / JUMP_V, _crouchBlend);
 
         // 可交互地点检测（建筑正门 / 操场 / 池塘 / 家）
         // 取**最近**的那个：门前交互圈会互相重叠，按数组顺序取第一个会挑错门
@@ -387,7 +414,7 @@ public class PlayerRig : MonoBehaviour
         // 相机：第一人称贴头 / 第三人称球坐标跟随
         if (_firstPerson)
         {
-            _cam.transform.position = new Vector3(p.x, p.y + 1.45f, p.z);
+            _cam.transform.position = new Vector3(p.x, p.y + 1.45f - 0.42f * _crouchBlend, p.z);
             float cp = Mathf.Cos(_fpPitch);
             var fwd = new Vector3(-Mathf.Sin(_yaw) * cp, Mathf.Sin(_fpPitch), -Mathf.Cos(_yaw) * cp);
             _cam.transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
@@ -397,7 +424,7 @@ public class PlayerRig : MonoBehaviour
         // 室内自适应俯仰：走廊只有 1.6m 宽，机位一贴墙就满屏墙纸。
         // 先探一下当前俯仰下能退多远，太近就抬高机位改成俯视
         float pitchUse = _pitch;
-        Vector3 head = new Vector3(p.x, p.y + 1.35f, p.z);
+        Vector3 head = new Vector3(p.x, p.y + 1.35f - 0.32f * _crouchBlend, p.z);
         if (_indoor)
         {
             var probe = new Vector3(Mathf.Sin(_yaw) * Mathf.Cos(_pitch), Mathf.Sin(_pitch),

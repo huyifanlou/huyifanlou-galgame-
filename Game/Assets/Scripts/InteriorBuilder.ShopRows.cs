@@ -50,7 +50,7 @@ public static partial class InteriorBuilder
         for (int i = 0; i < n; i++)
         {
             float dx = cx - len / 2f + (i + 0.5f) * len / n;
-            Part(p, new Vector3(dx, 1.05f, z + face * 0.02f), new Vector3(len / n - 0.12f, 1.7f, 0.04f), Glass(), 1f);
+            Part(p, new Vector3(dx, 1.05f, z + face * 0.03f), new Vector3(len / n - 0.12f, 1.7f, 0.04f), Glass(), 1f);   // 门要离柜面 1cm，共面会闪
             for (int s = 0; s < 3; s++)
                 Part(p, new Vector3(dx, 0.45f + s * 0.5f, z + face * 0.1f), new Vector3(len / n - 0.3f, 0.05f, 0.16f), glow, 0.4f);
         }
@@ -58,11 +58,13 @@ public static partial class InteriorBuilder
     }
 
     // 吧台：外柜 1.05m（挡操作台凌乱）+ 内台面 0.9m，高差 ≥0.25m 是奶茶店设计要点
+    // 台面板下沉 2cm 压进柜体：原来板底正好等于柜顶（1.05）→ 两个共面一直在闪；
+    // 内侧踏板也要离开柜体背面（原来后沿正好 = 柜背 2.15，柜台背后一条闪面缝）
     static void BarCounter(Transform p, Interior it, float cx, float cz, float len, Material body, Material top)
     {
         Part(p, new Vector3(cx, 0.525f, cz), new Vector3(len, 1.05f, 0.9f), body, 1f);
-        Part(p, new Vector3(cx, 1.08f, cz), new Vector3(len + 0.1f, 0.06f, 0.96f), top, 1f);
-        Part(p, new Vector3(cx, 0.72f, cz - 0.28f), new Vector3(len - 0.3f, 0.05f, 0.34f), top, 1f);
+        Part(p, new Vector3(cx, 1.06f, cz), new Vector3(len + 0.1f, 0.06f, 0.96f), top, 1f);
+        Part(p, new Vector3(cx, 0.72f, cz - 0.24f), new Vector3(len - 0.3f, 0.05f, 0.3f), top, 1f);
         Reg(it, cx, cz, len, 0.9f);
     }
 
@@ -102,18 +104,19 @@ public static partial class InteriorBuilder
             Part(p, new Vector3(mx, 2.75f, 3.5f), new Vector3(0.9f, 0.6f, 0.06f), ink, 0.5f);
             HangRods(p, mx, 3.05f, 3.5f, 0.9f);
         }
-        Part(p, new Vector3(ox + 2.4f, 1.35f, 2.15f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);               // 封口机（操作面）
-        // 展示柜：三面壳体、前面留空露甜点（沿用超市 Cooler 的做法 —— 不透明玻璃会把柜子糊成一个白盒）
-        Part(p, new Vector3(ox - 4.2f, 1.37f, 2.85f), new Vector3(1.8f, 0.5f, 0.08f), C("#cfd8e2"), 1f);
-        Part(p, new Vector3(ox - 4.2f, 1.62f, 3.15f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
-        Part(p, new Vector3(ox - 4.2f, 1.14f, 3.15f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
+        Part(p, new Vector3(ox + 2.4f, 1.33f, 2.45f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);               // 封口机（操作面，落在台面板内）
+        // 展示柜：三面壳体、前面留空露甜点（不透明玻璃会把柜子糊成白盒）。
+        // 整柜收在台面板范围内（台面 z 2.12~3.08），不再超出台缘。
+        Part(p, new Vector3(ox - 4.2f, 1.37f, 2.30f), new Vector3(1.8f, 0.5f, 0.08f), C("#cfd8e2"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.62f, 2.60f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.11f, 2.60f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
         foreach (int s in new[] { -1, 1 })
-            Part(p, new Vector3(ox - 4.2f + s * 0.87f, 1.37f, 3.15f), new Vector3(0.06f, 0.5f, 0.68f), C("#cfd8e2"), 1f);
+            Part(p, new Vector3(ox - 4.2f + s * 0.87f, 1.37f, 2.60f), new Vector3(0.06f, 0.5f, 0.68f), C("#cfd8e2"), 1f);
         for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.26f, 3.2f), new Vector3(0.3f, 0.16f, 0.2f),
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.26f, 2.72f), new Vector3(0.3f, 0.16f, 0.2f),
                  i % 2 == 0 ? C("#d8a05a") : C("#b06a4e"), 0.4f);
         for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.46f, 3.2f), new Vector3(0.3f, 0.16f, 0.2f),
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.46f, 2.72f), new Vector3(0.3f, 0.16f, 0.2f),
                  i % 2 == 0 ? C("#e6d2a8") : C("#8a5a3c"), 0.4f);
         HangingSign(p, ox - 2.5f, 3.0f, 4.1f, 1, "点单台", 1.3f, 0.38f, C("#2f4a3a"), 0.026f);
         HangingSign(p, ox + 3.6f, 3.0f, 5.0f, 1, "取餐口", 1.3f, 0.38f, C("#8a5a3c"), 0.026f);

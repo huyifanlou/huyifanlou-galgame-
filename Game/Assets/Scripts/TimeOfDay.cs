@@ -167,6 +167,7 @@ public class TimeOfDay : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.T)) Advance(720f);
         if (Input.GetKeyDown(KeyCode.LeftBracket)) Advance(-60f);
         if (Input.GetKeyDown(KeyCode.RightBracket)) Advance(60f);
+        if (Input.GetKeyDown(KeyCode.F10)) CycleFrameMode();
 
         Apply();
 
@@ -212,6 +213,30 @@ public class TimeOfDay : MonoBehaviour
         while (GameMinutes >= 1440f) { GameMinutes -= 1440f; DayNum++; }
         while (GameMinutes < 0f) { GameMinutes += 1440f; if (DayNum > 1) DayNum--; else { GameMinutes = 0f; break; } }
         ShowToast($"时间 {(min > 0f ? "+" : "")}{min / 60f} 小时（T 跳 12h ｜ [ ] ±1h）");
+    }
+
+    int _frameMode;   // 0 锁 60 ｜ 1 垂直同步 ｜ 2 不锁帧
+
+    // 高刷屏（144/165Hz）上「锁 60 且关垂直同步」会让每帧显示 2 或 3 个刷新周期，画面看着一卡一卡；
+    // 给一个运行时切换键，作者可以在自己屏幕上直接试出最顺的一档。
+    void CycleFrameMode()
+    {
+        _frameMode = (_frameMode + 1) % 3;
+        if (_frameMode == 0)
+        {
+            QualitySettings.vSyncCount = 0; Application.targetFrameRate = 60;
+            ShowToast("帧率：锁定 60（默认）");
+        }
+        else if (_frameMode == 1)
+        {
+            QualitySettings.vSyncCount = 1; Application.targetFrameRate = 60;
+            ShowToast("帧率：垂直同步 · 高刷屏更顺（约 55~60）");
+        }
+        else
+        {
+            QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
+            ShowToast("帧率：不锁帧（跟随刷新率，最跟手）");
+        }
     }
 
     public void ShowToast(string msg)

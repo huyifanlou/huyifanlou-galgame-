@@ -323,7 +323,8 @@ public static partial class InteriorBuilder
         g.localPosition = seat;
         g.localEulerAngles = new Vector3(0f, ry, 0f);
         Part(g, new Vector3(0f, 0.44f, 0f), new Vector3(0.46f, 0.06f, 0.46f), wood, 0.8f);
-        Part(g, new Vector3(0f, 0.70f, -0.20f), new Vector3(0.46f, 0.52f, 0.06f), wood, 0.8f);
+        // 靠背比坐面窄 4cm、后沿内缩 1cm：同材质共面会闪
+        Part(g, new Vector3(0f, 0.70f, -0.19f), new Vector3(0.42f, 0.52f, 0.06f), wood, 0.8f);
         for (int i = 0; i < 4; i++)
             Part(g, new Vector3(i % 2 == 0 ? -0.19f : 0.19f, 0.22f, i < 2 ? -0.19f : 0.19f),
                  new Vector3(0.05f, 0.44f, 0.05f), wood, 0.6f);
@@ -335,9 +336,9 @@ public static partial class InteriorBuilder
         Part(p, new Vector3(basePos.x, basePos.y + h - 0.04f, basePos.z), new Vector3(w, 0.08f, d), wood, 1.1f);
         for (int i = 0; i < 4; i++)
             Part(p, new Vector3(basePos.x + (i % 2 == 0 ? -w * 0.5f + 0.12f : w * 0.5f - 0.12f),
-                                basePos.y + (h - 0.08f) * 0.5f,
+                                basePos.y + (h - 0.04f) * 0.5f,
                                 basePos.z + (i < 2 ? -d * 0.5f + 0.12f : d * 0.5f - 0.12f)),
-                 new Vector3(0.08f, h - 0.08f, 0.08f), wood, 0.7f);
+                 new Vector3(0.08f, h - 0.04f, 0.08f), wood, 0.7f);   // 腿顶伸进台面 4cm，不与板底共面
     }
 
     // 靠东墙的书架：书脊朝 -x，两段书架之间正好夹住窗户
@@ -410,17 +411,18 @@ public static partial class InteriorBuilder
         }
     }
 
+    // 沙发：各面深度互相错开 ≥2cm —— 同材质的共平面（坐垫/扶手/靠背原来同一圈坐标）会闪面
     static void Sofa(Transform p, Vector3 pos, float len, float ry, Material fabric)
     {
         var g = new GameObject("sofa").transform;
         g.SetParent(p, false);
         g.localPosition = pos;
         g.localEulerAngles = new Vector3(0f, ry, 0f);
-        Part(g, new Vector3(0f, 0.11f, 0f), new Vector3(len - 0.12f, 0.22f, 0.86f), C("#6f5540"), 1f);  // 底座（原来沙发悬空 20cm）
-        Part(g, new Vector3(0f, 0.42f, 0f), new Vector3(len, 0.44f, 0.95f), fabric, 1.2f);
-        Part(g, new Vector3(0f, 0.68f, -0.38f), new Vector3(len, 0.85f, 0.18f), fabric, 1.2f);
-        Part(g, new Vector3(-len * 0.5f + 0.1f, 0.62f, 0f), new Vector3(0.2f, 0.62f, 0.95f), fabric, 1.2f);
-        Part(g, new Vector3(len * 0.5f - 0.1f, 0.62f, 0f), new Vector3(0.2f, 0.62f, 0.95f), fabric, 1.2f);
+        Part(g, new Vector3(0f, 0.11f, 0f), new Vector3(len - 0.16f, 0.22f, 0.78f), C("#6f5540"), 1f);  // 底座（内缩）
+        Part(g, new Vector3(0f, 0.42f, 0.02f), new Vector3(len - 0.28f, 0.44f, 0.86f), fabric, 1.2f);   // 坐垫（比扶手内缩）
+        Part(g, new Vector3(0f, 0.70f, -0.36f), new Vector3(len - 0.24f, 0.86f, 0.16f), fabric, 1.2f);  // 靠背
+        foreach (int s in new[] { -1, 1 })
+            Part(g, new Vector3(s * (len * 0.5f - 0.1f), 0.62f, 0f), new Vector3(0.2f, 0.62f, 0.94f), fabric, 1.2f);
     }
 
     // 出口门廊：室外地面 + 顶 + 柱 + 暖灯（出口不再是空白）
