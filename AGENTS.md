@@ -24,8 +24,11 @@
 # 对拍导出贴图 / 世界数据 JSON：
 "$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod TextureDump.DumpBatch
 "$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod WorldValidator.DumpJsonBatch
-# 布点/密度校验（贴地密度基准 160px/米，见 docs/09、docs/10）：
+# 布点/密度校验（跑的是游戏默认构建的当前世界 TownData；贴地密度基准 160px/米，见 docs/09、docs/10）：
 "$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod WorldValidator.RunBatch
+# 小镇总平面四条净距规则（建筑↔道路/步道/河道/建筑，docs/18）：
+"$EDITOR" -batchmode -quit -projectPath "$(pwd)/Game" -executeMethod WorldValidator.TownBatch
+# 旧校园专用数据集（只有 -campus 启动才用）：WorldValidator.RunCampus
 
 # 编辑器（Unity 2022.3.62f3c1 中国版；许可证需 id.unity.cn 账号登录 Hub 一次）
 EDITOR="D:/AI/Unity/Editor/2022.3.62f3c1/Editor/Unity.exe"

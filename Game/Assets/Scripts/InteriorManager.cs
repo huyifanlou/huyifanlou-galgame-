@@ -52,6 +52,10 @@ public class InteriorManager : MonoBehaviour
         "宿舍楼" => "dorm",
         "礼堂" => "auditorium",
         "实验楼" => "labs",
+        "奶茶店" => "milktea",
+        "照相馆" => "photo",
+        "书店" => "book",
+        "便利店" => "conv",
         _ => null,
     };
 

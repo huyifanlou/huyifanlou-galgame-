@@ -12,12 +12,42 @@ public static class WorldValidator
     static bool Overlap(Rect a, Rect b, float pad) =>
         Mathf.Abs(a.x - b.x) < a.hw + b.hw + pad && Mathf.Abs(a.z - b.z) < a.hd + b.hd + pad;
 
+    // 正门点与外法向：face 1/-1 沿 Z，2/-2 沿 X（旧代码只算了 ±1，朝 ±X 的建筑会算错门前走廊）
+    static void DoorOf(BuildingDef b, out float dx, out float dz, out float nx, out float nz)
+    {
+        nx = b.face == 2 ? 1f : b.face == -2 ? -1f : 0f;
+        nz = b.face == 1 ? 1f : b.face == -1 ? -1f : 0f;
+        float off = b.FacesX ? b.HalfWX : b.HalfWZ;
+        dx = b.pos[0] + nx * (off + 0.9f);
+        dz = b.pos[1] + nz * (off + 0.9f);
+    }
+    // 点到步道中心线的距离（减去半宽；步道是带朝向的长条 plaza 道具）
+    static float PathDist(float px, float pz, PropDef p)
+    {
+        float hx = Mathf.Sin(p.ry) * p.d / 2f, hz = Mathf.Cos(p.ry) * p.d / 2f;
+        float sx = p.x - hx, sz = p.z - hz, vx = 2 * hx, vz = 2 * hz;
+        float wx = px - sx, wz = pz - sz;
+        float t = Mathf.Clamp01((wx * vx + wz * vz) / Mathf.Max(0.0001f, vx * vx + vz * vz));
+        float ddx = px - (sx + vx * t), ddz = pz - (sz + vz * t);
+        return Mathf.Sqrt(ddx * ddx + ddz * ddz) - p.w / 2f;
+    }
+    // 门前走廊矩形：从正门向外 reach 米、横向 half 米
+    static Rect DoorCorr(BuildingDef b, float reach, float half)
+    {
+        DoorOf(b, out float dx, out float dz, out float nx, out float nz);
+        float ah = reach / 2f + 0.5f, cx = dx + nx * reach / 2f, cz = dz + nz * reach / 2f;
+        return Mathf.Abs(nx) > 0.5f ? RC(cx, cz, ah, half) : RC(cx, cz, half, ah);
+    }
+
     public static void RunBatch() { Run(); }
 
-    [MenuItem("Campus/校验世界布点")]
-    public static void Run()
+    // 校验对象＝游戏默认构建的世界（TownData）；旧校园数据集（-campus 启动时才用）走 RunCampus()
+    [MenuItem("Campus/校验世界布点（当前世界）")]
+    public static void Run() => Validate(TownData.Build());
+    public static void RunCampus() => Validate(CampusData.Build());
+
+    static void Validate(WorldData W)
     {
-        var W = CampusData.Build();
         var errors = new List<string>();
         var warns = new List<string>();
 
@@ -30,14 +60,25 @@ public static class WorldValidator
         foreach (var r in W.ROADS) roadB.Add(r.axis == "z"
             ? RC(r.at, (r.from + r.to) / 2, r.width / 2, (r.to - r.from) / 2, r.id)
             : RC((r.from + r.to) / 2, r.at, (r.to - r.from) / 2, r.width / 2, r.id));
-        var pond = RC(W.POND.pos[0], W.POND.pos[1], W.POND.r + 0.6f, W.POND.r + 0.6f, "pond");
-        var villa = RC(W.VILLA.x, W.VILLA.z, W.VILLA.w / 2 + 1.2f, W.VILLA.d / 2 + 4.6f, "villa");
+        // 池塘实际是椭圆（rx=r+0.6，rz=0.7(r+0.6)）；按矩形判定会把东西两侧草坪误判成水面
+        bool HitsPond(Rect b, float pad)
+        {
+            float rx = W.POND.r + 0.6f + pad, rz = (W.POND.r + 0.6f) * 0.7f + pad;
+            float nx = Mathf.Clamp(W.POND.pos[0], b.x - b.hw, b.x + b.hw);
+            float nz = Mathf.Clamp(W.POND.pos[1], b.z - b.hd, b.z + b.hd);
+            float ex = (nx - W.POND.pos[0]) / rx, ez = (nz - W.POND.pos[1]) / rz;
+            return ex * ex + ez * ez < 1f;
+        }
+        // 主角家的院落只在正门一侧（前院木篱在 d/2+3），背面按建筑本体算，避免误判邻街铺面
+        float vySign = W.VILLA.face == 1 ? 1f : -1f;
+        var villa = RC(W.VILLA.x, W.VILLA.z + vySign * 2.3f, W.VILLA.w / 2 + 1.2f, W.VILLA.d / 2 + 2.3f, "villa");
+        const float villaPad = 0.5f;   // 主角家的院落矩形已含 4.6m 退让，再叠 1m 会把邻街铺面误判
 
         // 道具轮廓
         var pFoot = new List<Rect>();
         foreach (var p in W.PROPS)
         {
-            if (p.type == "plaza") continue;
+            if (p.type == "plaza" || p.type == "plaza_round" || p.type == "parking") continue;   // 铺装/圆形广场/停车场是地面，其上允许摆设施
             float hw = 0.5f, hd = 0.5f;
             switch (p.type)
             {
@@ -61,15 +102,26 @@ public static class WorldValidator
         var lampF = new List<Rect>();
         foreach (var l in W.LAMPS) lampF.Add(RC(l.x, l.z, 0.15f, 0.15f, "lamp"));   // 灯柱实际半宽 0.08，取 0.15 更贴近实体
 
-        // 1) 建筑相互 ≥5m / 建筑 vs 场地/道路/池塘/家
+        // 1) 建筑间距（校园栋距 ≥5m；小镇沿街铺面是连排骑楼，只要求 ≥0.5m 不贴死）
+        //    建筑 vs 场地/道路/池塘/家
         for (int i = 0; i < bFoot.Count; i++)
         {
             for (int j = i + 1; j < bFoot.Count; j++)
-                if (Overlap(bFoot[i], bFoot[j], 5.0f)) errors.Add($"建筑过近：{bFoot[i].id} × {bFoot[j].id}（要求 ≥5m）");
-            foreach (var g in gFoot) if (Overlap(bFoot[i], g, 1.5f)) errors.Add($"建筑压场地：{bFoot[i].id} × {g.id}");
+            {
+                bool campusPair = bFoot[i].id.StartsWith("s_") && bFoot[j].id.StartsWith("s_");
+                float pad = campusPair ? 5.0f : 0.5f;
+                if (Overlap(bFoot[i], bFoot[j], pad))
+                    errors.Add($"建筑过近：{bFoot[i].id} × {bFoot[j].id}（要求 ≥{(campusPair ? 5 : 0.5)}m）");
+            }
+            foreach (var g in gFoot)
+            {
+                // 看台按定义就贴着跑道边缘（docs/77），不适用「建筑压场地」退让
+                if (bFoot[i].id == "s_stand" && g.id == "playground") continue;
+                if (Overlap(bFoot[i], g, 1.5f)) errors.Add($"建筑压场地：{bFoot[i].id} × {g.id}");
+            }
             foreach (var r in roadB) if (Overlap(bFoot[i], r, 1.0f)) errors.Add($"建筑压路：{bFoot[i].id} × {r.id}");
-            if (Overlap(bFoot[i], pond, 1.0f)) errors.Add($"建筑压池塘：{bFoot[i].id}");
-            if (Overlap(bFoot[i], villa, 1.0f)) errors.Add($"建筑压主角家：{bFoot[i].id}");
+            if (HitsPond(bFoot[i], 1.0f)) errors.Add($"建筑压池塘：{bFoot[i].id}");
+            if (Overlap(bFoot[i], villa, villaPad)) errors.Add($"建筑压主角家：{bFoot[i].id}");
         }
         // 2) 道路相互（正交交叉合法）
         for (int i = 0; i < roadB.Count; i++)
@@ -83,17 +135,37 @@ public static class WorldValidator
         for (int i = 0; i < gFoot.Count; i++)
         {
             foreach (var r in roadB) if (Overlap(gFoot[i], r, 1.0f)) errors.Add($"场压路：{gFoot[i].id} × {r.id}");
-            if (Overlap(gFoot[i], pond, 0.5f)) errors.Add($"场地压池塘：{gFoot[i].id}");
+            if (HitsPond(gFoot[i], 0.5f)) errors.Add($"场地压池塘：{gFoot[i].id}");
             if (Overlap(gFoot[i], villa, 1.0f)) errors.Add($"场地压主角家：{gFoot[i].id}");
             for (int j = i + 1; j < gFoot.Count; j++)
                 if (Overlap(gFoot[i], gFoot[j], 1.5f)) errors.Add($"场地重叠：{gFoot[i].id} × {gFoot[j].id}");
         }
         // 4) 道具 vs 建筑/道路/道具
+        //    豁免（都是设计意图，不是布点错误）：
+        //      · 步行街（无侧石：夏日祭参道、神社石阶）本来就用来摆摊位
+        //      · 提灯串/幡是架空悬挂物，不占地面
+        //      · 手水舍是敞亭，净手盘/绘马架/提灯/长凳就设在亭下
+        //      · 旗杆落在看台中央的升旗台上（docs/77）
+        var walkStreets = new HashSet<string>();
+        foreach (var r in W.ROADS) if (!r.sidewalk) walkStreets.Add(r.id);
+        var fairProps = new HashSet<string> { "stall", "festival_board", "crates" };
+        var hungProps = new HashSet<string> { "chochin_string", "nobori" };
+        var pavilionProps = new HashSet<string> { "temizuya", "ema", "omikuji", "offering", "sake", "lantern", "komainu", "bench" };
         for (int i = 0; i < pFoot.Count; i++)
         {
-            foreach (var b in bFoot) if (Overlap(pFoot[i], b, 0.6f)) errors.Add($"道具压建筑：{pFoot[i].id} × {b.id}");
-            if (!pFoot[i].id.StartsWith("gate"))
-                foreach (var r in roadB) if (Overlap(pFoot[i], r, 0.4f)) errors.Add($"道具压路：{pFoot[i].id} × {r.id}");
+            string ptype = pFoot[i].id.Split('@')[0];
+            foreach (var b in bFoot)
+            {
+                if (b.id == "k_chozu" && pavilionProps.Contains(ptype)) continue;
+                if (b.id == "s_stand" && ptype == "flag") continue;
+                if (Overlap(pFoot[i], b, 0.6f)) errors.Add($"道具压建筑：{pFoot[i].id} × {b.id}");
+            }
+            if (!pFoot[i].id.StartsWith("gate") && !hungProps.Contains(ptype))
+                foreach (var r in roadB)
+                {
+                    if (fairProps.Contains(ptype) && walkStreets.Contains(r.id)) continue;
+                    if (Overlap(pFoot[i], r, 0.4f)) errors.Add($"道具压路：{pFoot[i].id} × {r.id}");
+                }
             for (int j = i + 1; j < pFoot.Count; j++)
                 if (Overlap(pFoot[i], pFoot[j], 0.5f)) errors.Add($"道具重叠：{pFoot[i].id} × {pFoot[j].id}");
         }
@@ -108,8 +180,7 @@ public static class WorldValidator
         }
         foreach (var b in W.BUILDINGS)
         {
-            float dz = b.face * (b.size[2] / 2 + 0.9f);
-            var corr = b.face == 1 ? RC(b.pos[0], b.pos[1] + dz + 6, 0.3f, 6.5f) : RC(b.pos[0], b.pos[1] + dz - 6, 0.3f, 6.5f);
+            var corr = DoorCorr(b, 12f, 0.3f);
             foreach (var f in W.FENCES)
             {
                 var line = f.axis == "z" ? RC(f.at, (f.from + f.to) / 2, 0.2f, (f.to - f.from) / 2) : RC((f.from + f.to) / 2, f.at, (f.to - f.from) / 2, 0.2f);
@@ -139,8 +210,7 @@ public static class WorldValidator
                 if (Overlap(l, lampF[j], 0.2f)) errors.Add($"路灯重叠：({l.x},{l.z}) × ({lampF[j].x},{lampF[j].z})");
             foreach (var b in W.BUILDINGS)
             {
-                float dz = b.face * (b.size[2] / 2 + 0.9f);
-                var corr = b.face == 1 ? RC(b.pos[0], b.pos[1] + dz + 5, 1.3f, 5.5f) : RC(b.pos[0], b.pos[1] + dz - 5, 1.3f, 5.5f);
+                var corr = DoorCorr(b, 10f, 1.3f);
                 if (Mathf.Abs(l.x - corr.x) < corr.hw + 0.3f && Mathf.Abs(l.z - corr.z) < corr.hd + 0.3f)
                     errors.Add($"路灯挡门：({l.x},{l.z}) 位于 {b.id} 门前通路");
             }
@@ -152,7 +222,7 @@ public static class WorldValidator
             foreach (var b in bFoot) if (Overlap(f, b, 0.2f)) errors.Add($"{label}压建筑：({x},{z}) × {b.id}");
             foreach (var rr in roadB) if (Overlap(f, rr, 0.2f)) errors.Add($"{label}压路：({x},{z}) × {rr.id}");
             foreach (var g in gFoot) if (label != "土斑" && Overlap(f, g, -0.6f)) errors.Add($"{label}压场地：({x},{z}) × {g.id}");
-            if (Overlap(f, pond, -0.5f)) errors.Add($"{label}压池塘：({x},{z})");
+            if (HitsPond(f, -0.5f)) errors.Add($"{label}压池塘：({x},{z})");
             if (Overlap(f, villa, -1.0f)) errors.Add($"{label}压主角家：({x},{z})");
             if (vsProp) foreach (var p in pFoot) if (Overlap(f, p, 0.2f)) errors.Add($"{label}压道具：({x},{z}) × {p.id}");
         }
@@ -190,7 +260,7 @@ public static class WorldValidator
         // 9) 边界植被不得侵入可行走区
         void CheckBorder(float x, float z, string label)
         {
-            if (Mathf.Sqrt(x * x + z * z) < W.BOUND - 2f) errors.Add($"{label}侵入可行走区：({x},{z})");
+            if (Mathf.Sqrt(x * x + z * z) < W.BOUND - 14f) errors.Add($"{label}侵入可行走区：({x},{z})");
         }
         foreach (var t in W.BORDER_TREES) CheckBorder(t.x, t.z, "边界树");
         foreach (var t in W.BORDER_BUSHES) CheckBorder(t.x, t.z, "边界灌木");
@@ -209,10 +279,10 @@ public static class WorldValidator
             foreach (var t in W.BORDER_TREES)
                 if (Mathf.Abs(t.x - b.x) < b.w / 2 + 2 && Mathf.Abs(t.z - b.z) < b.d / 2 + 2) errors.Add($"边界树压远景楼：({t.x},{t.z}) × {i}");
         }
-        // 11) 可达性：门 → (直面路 或 经岔路连上路)
+        // 11) 可达性：门 → 直面路 / 经步道（plaza 条带）/ 经岔路连上路
         foreach (var def in W.BUILDINGS)
         {
-            float dx = def.pos[0], dzr = def.pos[1] + def.face * (def.size[2] / 2 + 0.9f);
+            DoorOf(def, out float dx, out float dzr, out _, out _);
             bool ok = false;
             foreach (var r in roadB)
             {
@@ -221,6 +291,12 @@ public static class WorldValidator
                 bool inSpan = vertical ? (dzr >= r.z - r.hd - 1 && dzr <= r.z + r.hd + 1) : (dx >= r.x - r.hw - 1 && dx <= r.x + r.hw + 1);
                 if (inSpan && d <= 5f) { ok = true; break; }
             }
+            if (!ok)
+                foreach (var p in W.PROPS)
+                {
+                    if (p.type != "plaza") continue;
+                    if (PathDist(dx, dzr, p) <= 1.5f) { ok = true; break; }
+                }
             if (!ok)
             {
                 var doorR = RC(dx, dzr, 1.6f, 2.2f);
@@ -240,7 +316,9 @@ public static class WorldValidator
                     if (touch) { ok = true; break; }
                 }
             }
-            if (!ok) errors.Add($"可达性失败：{def.id}");
+            // 公园草坪、神社院内、看台（从跑道上下）是开放地面，不设步道也算可达
+            bool openPrecinct = def.id.StartsWith("f_") || def.id.StartsWith("k_") || def.id == "p_pav" || def.id == "s_stand";
+            if (!ok && !openPrecinct) errors.Add($"可达性失败：{def.id}");
         }
         // 12) 贴地/贴面纹理密度（密度铁律：基准 160px/米；周期单一来源在 TexScale）
         //     基准组超出 ±6% 即报错 —— 专门抓「贴图像素尺寸」与「平铺周期」脱钩这类静默退化
@@ -292,6 +370,7 @@ public static class WorldValidator
         audit.Add($"树冠 leaves   {128f / TexScale.LeafMeters,6:F1}×{128f / TexScale.LeafMeters,6:F1}px/米  ✅ 一致（BoxUV/Cone 逐面）");
         audit.Add($"树干 bark     {96f / TexScale.BarkMeters,6:F1}×{96f / TexScale.BarkMeters,6:F1}px/米  ✅ 一致（BoxUV 逐面）");
         audit.Add($"人物 player   {104f / 1.12f,6:F1}×{152f / 1.64f,6:F1}px/米  {Verdict(104f / 1.12f, 152f / 1.64f)}（作者指定暂不动）");
+        if (W.DISTANT_BUILDINGS.Length > 0)   // 当前世界没有远景楼（小镇用真实建筑+山体），示例审计要留空判
         {
             var d0 = W.DISTANT_BUILDINGS[0];
             float dd = TextureLibrary.FacadeDensity(d0.w, d0.h);
@@ -345,12 +424,17 @@ public static class WorldValidator
     {
         var W = TownData.Build();
         var errors = new List<string>();
+        var seen = new HashSet<string>();
+        void Err(string msg) { if (seen.Add(msg)) errors.Add(msg); }   // 同一条规则沿路径采样会重复报同一问题
         float RZ(float x) => W.RIVER.amp * Mathf.Sin((x + W.RIVER.phase) / W.RIVER.freq) + W.RIVER.offset;
+        // 校园用地（围墙内的教学区）：临河退让按校园总平面另有约定
+        bool CampusSite(float x, float z) => x < -48f && z < -18f;
 
-        // 建筑轮廓（含主角家）
-        var blds = new List<(string name, float x, float z, float hw, float hd)>();
-        foreach (var b in W.BUILDINGS) blds.Add((b.name, b.pos[0], b.pos[1], b.size[0] / 2f, b.size[2] / 2f));
-        blds.Add(("主角家", W.VILLA.x, W.VILLA.z, W.VILLA.w / 2f, W.VILLA.d / 2f));
+        // 建筑轮廓（含主角家）：占地必须按朝向换算，否则朝 ±X 的校舍会整体转 90°
+        var blds = new List<(string name, float x, float z, float hw, float hd, bool campus)>();
+        foreach (var b in W.BUILDINGS)
+            blds.Add((b.name, b.pos[0], b.pos[1], b.HalfWX, b.HalfWZ, CampusSite(b.pos[0], b.pos[1])));
+        blds.Add(("主角家", W.VILLA.x, W.VILLA.z, W.VILLA.w / 2f, W.VILLA.d / 2f, false));
 
         // 1) 建筑 ↔ 道路：净距 ≥1m
         foreach (var b in blds)
@@ -361,32 +445,41 @@ public static class WorldValidator
                 float rhw = r.axis == "z" ? r.width / 2f : (r.to - r.from) / 2f;
                 float rhd = r.axis == "z" ? (r.to - r.from) / 2f : r.width / 2f;
                 if (Mathf.Abs(b.x - rx) < b.hw + rhw + 1f && Mathf.Abs(b.z - rz) < b.hd + rhd + 1f)
-                    errors.Add($"{b.name} × 道路 {r.id}（净距 <1m）");
+                    Err($"{b.name} × 道路 {r.id}（净距 <1m）");
             }
 
         // 1b) 建筑 ↔ 步道（3m 铺装条，含斜向）：沿中心线 1m 采样
-        foreach (var p in W.PROPS)
+        //     正门接驳段（门前走廊内）属于设计意图，不计入净距
+        var corrs = new List<Rect>();
+        foreach (var b in W.BUILDINGS) corrs.Add(DoorCorr(b, 8f, 2.6f));
+        corrs.Add(RC(99999f, 99999f, 0.1f, 0.1f));       // 主角家门前另算
+        for (int bi = 0; bi < blds.Count; bi++)
         {
-            if (p.type != "plaza" || p.w > 3.5f) continue;
-            int n = Mathf.Max(2, Mathf.CeilToInt(p.d));
-            for (int i = 0; i <= n; i++)
+            var b = blds[bi];
+            foreach (var p in W.PROPS)
             {
-                float t = i / (float)n;
-                float px = p.x + Mathf.Sin(p.ry) * (t - 0.5f) * p.d;
-                float pz = p.z + Mathf.Cos(p.ry) * (t - 0.5f) * p.d;
-                foreach (var b in blds)
-                    if (Mathf.Abs(px - b.x) < b.hw + p.w / 2f + 1f && Mathf.Abs(pz - b.z) < b.hd + p.w / 2f + 1f)
-                        errors.Add($"{b.name} × 步道（净距 <1m）");
+                if (p.type != "plaza" || p.w > 3.5f) continue;
+                int n = Mathf.Max(2, Mathf.CeilToInt(p.d));
+                for (int i = 0; i <= n; i++)
+                {
+                    float t = i / (float)n;
+                    float px = p.x + Mathf.Sin(p.ry) * (t - 0.5f) * p.d;
+                    float pz = p.z + Mathf.Cos(p.ry) * (t - 0.5f) * p.d;
+                    if (Mathf.Abs(px - b.x) >= b.hw + p.w / 2f + 1f || Mathf.Abs(pz - b.z) >= b.hd + p.w / 2f + 1f) continue;
+                    if (Overlap(RC(px, pz, 0.05f, 0.05f), corrs[bi], 0f)) continue;
+                    Err($"{b.name} × 步道（净距 <1m）");
+                }
             }
         }
 
-        // 2) 建筑 ↔ 河道：建筑 z 范围须完全离开河道中心线 ±16m
+        // 2) 建筑 ↔ 河道：小镇要求离水边 ≥8m；校园北侧临河带按总平面只退 2m
         foreach (var b in blds)
         {
-            float lo = Mathf.Min(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) - 16f;
-            float hi = Mathf.Max(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) + 16f;
+            float bank = W.RIVER.width / 2f + (b.campus ? 2f : 8f);
+            float lo = Mathf.Min(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) - bank;
+            float hi = Mathf.Max(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) + bank;
             if (!(b.z + b.hd < lo || b.z - b.hd > hi))
-                errors.Add($"{b.name} 距河道过近（中心线 ±16m 内）");
+                Err($"{b.name} 距河道过近（要求离水边 ≥{(b.campus ? 2 : 8)}m）");
         }
 
         // 3) 建筑 ↔ 建筑：间距 ≥0.5m
@@ -395,7 +488,7 @@ public static class WorldValidator
             {
                 var a = blds[i]; var c = blds[j];
                 if (Mathf.Abs(a.x - c.x) < a.hw + c.hw - 0.5f && Mathf.Abs(a.z - c.z) < a.hd + c.hd - 0.5f)
-                    errors.Add($"{a.name} × {c.name}（间距 <0.5m）");
+                    Err($"{a.name} × {c.name}（间距 <0.5m）");
             }
 
         // 4) 道路/步道不得压到河面（桥位除外）
