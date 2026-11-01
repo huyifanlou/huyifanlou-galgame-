@@ -142,13 +142,11 @@ public class PlayerAvatar : MonoBehaviour
     }
 
     // ── 动画 ─────────────────────────────────────────────
-    // air：离地高度归一（0 落地 ~ 1 顶点）；vvel：垂直速度归一（上为正）；crouch：下蹲过渡 0..1
-    public void Tick(bool moving, bool running, float facing, float dt,
-                     float air = 0f, float vvel = 0f, float crouch = 0f)
+    public void Tick(bool moving, bool running, float facing, float dt)
     {
         if (_model == null) return;
         transform.localRotation = Quaternion.Euler(0f, facing * Mathf.Rad2Deg, 0f);
-        _blend = Mathf.MoveTowards(_blend, moving && air <= 0f ? 1f : 0f, dt * 6f);
+        _blend = Mathf.MoveTowards(_blend, moving ? 1f : 0f, dt * 6f);
         _runBlend = Mathf.MoveTowards(_runBlend, moving && running ? 1f : 0f, dt * 5f);
         _phase += dt * (moving ? Mathf.Lerp(9.5f, 13.5f, _runBlend) : 2.0f);
 
@@ -156,26 +154,16 @@ public class PlayerAvatar : MonoBehaviour
         float idle = Mathf.Sin(Time.time * 1.6f) * (1f - _blend);
         float stride = 42f + 14f * _runBlend;
         float armSwing = 36f + 16f * _runBlend;
-
-        // 蹲：腿整体按比例缩短、身体同步下降 —— 脚不离开地面，比"腿前伸 + 身体下沉"更不穿模
-        float legScale = 1f - 0.32f * crouch;
-        _legL.localScale = new Vector3(1f, legScale, 1f);
-        _legR.localScale = new Vector3(1f, legScale, 1f);
-
-        // 跳：上升段收腿、到顶并拢、下落段前伸准备落地；手臂上摆
-        float tuck = air * 26f, kick = Mathf.Max(0f, -vvel) * 18f;
-        _legL.localRotation = Quaternion.Euler(sw * stride + tuck + kick, 0f, 0f);
-        _legR.localRotation = Quaternion.Euler(-sw * stride + tuck * 0.45f - kick * 0.5f, 0f, 0f);
-        float armUp = air * (vvel > 0f ? 118f : 62f);
-        _armL.localRotation = Quaternion.Euler(-sw * armSwing + idle * 2.5f + armUp + 14f * crouch, 0f, 0f);
-        _armR.localRotation = Quaternion.Euler(sw * armSwing - idle * 2.5f + armUp + 14f * crouch, 0f, 0f);
+        _legL.localRotation = Quaternion.Euler(sw * stride, 0f, 0f);
+        _legR.localRotation = Quaternion.Euler(-sw * stride, 0f, 0f);
+        _armL.localRotation = Quaternion.Euler(-sw * armSwing + idle * 2.5f, 0f, 0f);
+        _armR.localRotation = Quaternion.Euler(sw * armSwing - idle * 2.5f, 0f, 0f);
 
         float bob = Mathf.Abs(Mathf.Sin(_phase)) * (1f + 0.7f * _runBlend) * PX * 0.7f * _blend;
-        float breath = Mathf.Sin(Time.time * 2.1f) * 0.15f * PX * (1f - _blend) * (1f - crouch);
-        float crouchDrop = 11.75f * PX * (1f - legScale);
-        _body.localPosition = new Vector3(0f, 12f * PX + bob + breath - crouchDrop, 0f);
-        _body.localRotation = Quaternion.Euler(7f * _runBlend + 17f * crouch - 6f * air, 0f, 0f);
-        _head.localRotation = Quaternion.Euler(2.5f + idle * 1.5f - 2f * _runBlend + 15f * crouch + 4f * air, 0f, 0f);
+        float breath = Mathf.Sin(Time.time * 2.1f) * 0.15f * PX * (1f - _blend);
+        _body.localPosition = new Vector3(0f, 12f * PX + bob + breath, 0f);
+        _body.localRotation = Quaternion.Euler(7f * _runBlend, 0f, 0f);
+        _head.localRotation = Quaternion.Euler(2.5f + idle * 1.5f - 2f * _runBlend, 0f, 0f);
     }
 
     public void SetVisible(bool v)

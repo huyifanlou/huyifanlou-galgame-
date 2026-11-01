@@ -42,9 +42,6 @@ EDITOR="D:/AI/Unity/Editor/2022.3.62f3c1/Editor/Unity.exe"
 
 # 截图验收（与 web 版 URL 参数一一对应）
 Game/Build/Win/Campus.exe -shot shots/x.png -time 18.5 -px 0 -pz 4 -at -21,7.5 -freeze 1
-# 动作姿态截图（跳跃只有 0.6 秒，用 -pose 钉住姿势）
-Game/Build/Win/Campus.exe -freeze 1 -pose jump   -px 0 -pz 4 -at -21,7.5 -shot shots/jump.png
-Game/Build/Win/Campus.exe -freeze 1 -pose crouch -px 0 -pz 4 -at -21,7.5 -shot shots/crouch.png
 ```
 
 ## 室内系统速查（必读：`docs/35-交接说明.md`、`docs/34`）

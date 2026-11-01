@@ -105,18 +105,19 @@ public static partial class InteriorBuilder
             HangRods(p, mx, 3.05f, 3.5f, 0.9f);
         }
         Part(p, new Vector3(ox + 2.4f, 1.33f, 2.45f), new Vector3(0.6f, 0.5f, 0.35f), mint, 0.6f);               // 封口机（操作面，落在台面板内）
-        // 展示柜：三面壳体、前面留空露甜点（不透明玻璃会把柜子糊成白盒）。
-        // 整柜收在台面板范围内（台面 z 2.12~3.08），不再超出台缘。
-        Part(p, new Vector3(ox - 4.2f, 1.37f, 2.30f), new Vector3(1.8f, 0.5f, 0.08f), C("#cfd8e2"), 1f);
-        Part(p, new Vector3(ox - 4.2f, 1.62f, 2.60f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
-        Part(p, new Vector3(ox - 4.2f, 1.11f, 2.60f), new Vector3(1.84f, 0.05f, 0.68f), C("#8d949c"), 1f);
-        foreach (int s in new[] { -1, 1 })
-            Part(p, new Vector3(ox - 4.2f + s * 0.87f, 1.37f, 2.60f), new Vector3(0.06f, 0.5f, 0.68f), C("#cfd8e2"), 1f);
+        // 展示柜：一个实心柜体 + 顶底框 + 前面两层深色橱窗格（作者实机看到"虚影"的原因：
+        // 背板/侧板与顶底框的边完全共面，从操作面看过去整条棱在闪）。
+        // 现在所有面两两至少错开 1cm：框比柜体每边外凸 2cm，橱窗格从柜面前凸 1.5cm。
+        Part(p, new Vector3(ox - 4.2f, 1.37f, 2.60f), new Vector3(1.8f, 0.5f, 0.68f), C("#cfd8e2"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.63f, 2.60f), new Vector3(1.84f, 0.06f, 0.72f), C("#8d949c"), 1f);
+        Part(p, new Vector3(ox - 4.2f, 1.11f, 2.60f), new Vector3(1.84f, 0.06f, 0.72f), C("#8d949c"), 1f);
+        foreach (float gy in new[] { 1.27f, 1.47f })
+            Part(p, new Vector3(ox - 4.2f, gy, 2.965f), new Vector3(1.62f, 0.17f, 0.05f), C("#4a545c"), 1f);
         for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.26f, 2.72f), new Vector3(0.3f, 0.16f, 0.2f),
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.26f, 3.02f), new Vector3(0.3f, 0.16f, 0.18f),
                  i % 2 == 0 ? C("#d8a05a") : C("#b06a4e"), 0.4f);
         for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.46f, 2.72f), new Vector3(0.3f, 0.16f, 0.2f),
+            Part(p, new Vector3(ox - 4.85f + i * 0.44f, 1.46f, 3.02f), new Vector3(0.3f, 0.16f, 0.18f),
                  i % 2 == 0 ? C("#e6d2a8") : C("#8a5a3c"), 0.4f);
         HangingSign(p, ox - 2.5f, 3.0f, 4.1f, 1, "点单台", 1.3f, 0.38f, C("#2f4a3a"), 0.026f);
         HangingSign(p, ox + 3.6f, 3.0f, 5.0f, 1, "取餐口", 1.3f, 0.38f, C("#8a5a3c"), 0.026f);
