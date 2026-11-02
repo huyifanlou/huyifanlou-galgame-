@@ -8,7 +8,7 @@ using UnityEngine;
 //   用 -campus 启动可回到原校园世界，默认进入小镇
 public static class TownData
 {
-    public const float BOUND = 128f;
+    public const float BOUND = 150f;   // docs/87：128→150，给住宅区留出真正的楼间距与西侧新一排
     public const float GROUND_SIZE = 620f;
 
     public static float RiverZ(float x) => 10f * Mathf.Sin((x + 40f) / 34f) + 2f;
@@ -65,40 +65,40 @@ public static class TownData
         B("k_haiden", "拜殿", 79, -70, 10, 5, 6, "#b06a4e", TP, SPT, R_DARK, 3, 1, 1, "shrine"),
         B("k_chozu", "手水舍", 69, -66, 4, 3, 3, W_SHRINE, TP, SPT, R_DARK, 1, 1, 1, "gable"),
 
-        // ── 骑楼老街 ──
-        B("o_silk", "绸缎庄", -68, 18.5f, 10, 8, 5, W_BRICK, T_CREAM, P_DARK, R_SLATE, 3, 2, 1, "gable"),
-        B("o_tea", "茶楼", -56, 18.5f, 10, 8, 5, W_BRICK, T_CREAM, P_DARK, R_SLATE, 3, 2, 1, "gable"),
-        B("o_grocery", "杂货铺", -68, 36, 10, 7.5f, 5, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
-        B("o_pharm", "药铺", -54, 36, 10, 7.5f, 5, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
-        B("o_theater", "戏院", -32, 38, 14, 11, 8, "#b56a4a", "#f0ddd0", "#7a4a38", "#5a3a30", 4, 2, -1, "grand"),
-        B("o_post", "邮局", -18, 36, 12, 8, 5, "#d4c8b4", "#f4eee2", "#8a7e6a", "#4a5568", 4, 2, -1),
+        // ── 骑楼老街（docs/87：商街加宽到 10m、两侧退界 4.5~5m、山墙缝 5~8m 不再贴死）──
+        B("o_silk", "绸缎庄", -70, 18.5f, 10, 8, 5, W_BRICK, T_CREAM, P_DARK, R_SLATE, 3, 2, 1, "gable"),
+        B("o_tea", "茶楼", -55, 18.5f, 10, 8, 5, W_BRICK, T_CREAM, P_DARK, R_SLATE, 3, 2, 1, "gable"),
+        B("o_grocery", "杂货铺", -70, 39.5f, 10, 7.5f, 5, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
+        B("o_pharm", "药铺", -55, 39.5f, 10, 7.5f, 5, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
+        B("o_theater", "戏院", -31, 39, 14, 11, 8, "#b56a4a", "#f0ddd0", "#7a4a38", "#5a3a30", 4, 2, -1, "grand"),
+        B("o_post", "邮局", -13, 39.5f, 12, 8, 5, "#d4c8b4", "#f4eee2", "#8a7e6a", "#4a5568", 4, 2, -1),
 
-        // ── 河东住宅 第1排：店铺（面朝北街）──
-        B("r_milktea", "奶茶店", -75, 55, 9, 7, 6, "#e8d9c0", "#f8f2e6", P_STONE, "#7a4a3a", 3, 2, -1),
-        B("r_market", "超市", -64.5f, 55, 9, 7.5f, 6, "#cfc9bd", "#efece2", P_GREY, "#4a5568", 3, 2, -1),
-        B("r_rest", "餐厅", -54, 55, 9, 7, 6, "#c8a06a", "#f0e2d0", "#8a6a52", "#5a4a42", 3, 2, -1, "gable"),
-        B("r_photo", "照相馆", -37, 55, 9, 7, 6, "#d8cbb4", "#f6f0e2", "#948a74", "#4a5568", 3, 2, -1),
-        B("r_book", "书店", -26, 55, 9, 7, 6, "#cbb894", "#f0e8d6", "#8d7a58", "#a05a3c", 3, 2, -1),
-        B("r_conv", "便利店", -17.5f, 55, 7, 6.5f, 6, "#d4c4a8", "#f4ecdc", "#907e62", "#5a4a42", 2, 2, -1),
+        // ── 河东住宅 第1排：底商（朝住宅北街，退界 2.5m；山墙缝 3~8m）──
+        B("r_milktea", "奶茶店", -80, 57, 9, 7, 6, "#e8d9c0", "#f8f2e6", P_STONE, "#7a4a3a", 3, 2, -1),
+        B("r_market", "超市", -67, 57, 9, 7.5f, 6, "#cfc9bd", "#efece2", P_GREY, "#4a5568", 3, 2, -1),
+        B("r_rest", "餐厅", -54, 57, 9, 7, 6, "#c8a06a", "#f0e2d0", "#8a6a52", "#5a4a42", 3, 2, -1, "gable"),
+        B("r_photo", "照相馆", -37, 57, 9, 7, 6, "#d8cbb4", "#f6f0e2", "#948a74", "#4a5568", 3, 2, -1),
+        B("r_book", "书店", -25, 57, 9, 7, 6, "#cbb894", "#f0e8d6", "#8d7a58", "#a05a3c", 3, 2, -1),
+        B("r_conv", "便利店", -14, 57, 7, 6.5f, 6, "#d4c4a8", "#f4ecdc", "#907e62", "#5a4a42", 2, 2, -1),
 
-        // ── 第2排（主角家在中间，由 VILLA 单独生成）──
-        B("r_court1", "合院", -75, 66, 10, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 3, 1, 1, "gable"),
-        B("r_two1", "两层小楼", -64.5f, 66, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, 1, "gable"),
-        B("r_flat1", "平房小院", -54, 66, 9, 4.5f, 6, W_GREY, T_PALE, P_GREY, R_SLATE, 3, 1, 1),
-        B("r_two2", "两层小楼", -22, 66, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, 1, "gable"),
+        // ── 第2排：与底商行隔 6m（这一排正面朝南，日照面在中街一侧）──
+        B("r_court1", "合院", -79, 70, 10, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 3, 1, 1, "gable"),
+        B("r_two1", "两层小楼", -66, 70, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, 1, "gable"),
+        B("r_flat1", "平房小院", -54, 70, 8, 4.5f, 6, W_GREY, T_PALE, P_GREY, R_SLATE, 3, 1, 1),
+        B("r_two2", "两层小楼", -20, 70, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, 1, "gable"),
 
-        // ── 第3排 ──
-        B("r_court2", "合院", -75, 78, 10, 5, 6, W_MILK, T_WHITE, P_STONE, R_TILE, 3, 1, -1, "gable"),
-        B("r_two3", "两层小楼", -64.5f, 78, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
-        B("r_flat2", "平房小院", -54, 78, 9, 4.5f, 6, W_GREY, T_PALE, P_GREY, R_SLATE, 3, 1, -1),
-        B("r_flat3", "平房小院", -35, 78, 10, 4.5f, 6, W_GREY, T_PALE, P_GREY, R_SLATE, 3, 1, -1),
-        B("r_two4", "两层小楼", -22, 78, 8, 6.5f, 6, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 3, 2, -1, "gable"),
+        // ── 西一排（docs/87 新增：西环路西移腾出的地带，原第3排住户迁来，山墙缝 6m）──
+        B("r_court2", "合院", -92, 41, 7, 5, 8, W_MILK, T_WHITE, P_STONE, R_TILE, 2, 1, -2, "gable"),
+        B("r_two3", "两层小楼", -92, 55, 7, 6.5f, 8, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 2, 2, -2, "gable"),
+        B("r_flat2", "平房小院", -92, 69, 7, 4.5f, 8, W_GREY, T_PALE, P_GREY, R_SLATE, 2, 1, -2),
+        B("r_two4", "两层小楼", -92, 83, 7, 6.5f, 8, W_WOOD, T_BEIGE, P_WOOD, R_TILE, 2, 2, -2, "gable"),
+        B("r_flat3", "平房小院", -92, 96, 7, 4.5f, 8, W_GREY, T_PALE, P_GREY, R_SLATE, 2, 1, -2),
 
-        // ── 第4排：单元楼（4/6/5/4 层）──
+        // ── 单元楼（4/6/5/4 层）：与第2排正面间距 16.5m ≈ 1.1~1.4H（原来只有 8.5m）──
         B("r_apt1", "单元楼", -74, 93f, 12, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
-        B("r_apt2", "单元楼", -58, 93f, 12, 18, 7, "#bfb6a4", "#ece6d8", "#857c6c", "#3f4650", 4, 6, -1),
+        B("r_apt2", "单元楼", -57, 93f, 12, 18, 7, "#bfb6a4", "#ece6d8", "#857c6c", "#3f4650", 4, 6, -1),
         B("r_apt3", "单元楼", -34, 93f, 14, 15, 7, "#c4bbaa", "#eee8da", "#887f6e", "#444a54", 5, 5, -1),
-        B("r_apt4", "单元楼", -19.5f, 93f, 11, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
+        B("r_apt4", "单元楼", -17, 93f, 11, 12, 7, "#c8bfae", "#efe9dc", "#8a8272", "#4a4a50", 4, 4, -1),
 
         // ── 车站 ──
         B("st_hall", "站房", 76, 86, 20, 9, 9, W_BRICK, T_CREAM, P_DARK, R_SLATE, 5, 2, -1, "grand"),
@@ -121,10 +121,10 @@ public static class TownData
     {
         R("main", "z", 0f, -98f, 98f, 11f, "mainstone"),          // 主街（石板）
         R("central", "z", -45f, -92f, 98f, 5f, "slab"),           // 中央街（青砖）
-        R("ringS", "z", -84f, 8f, 88f, 5f, "slab"),               // 西环路南段
-        R("market", "x", 27f, -74f, -6f, 8f, "mainstone"),        // 老街商街（旧石板）
-        R("resN", "x", 49f, -74f, -16f, 4f, "slab"),              // 住宅北街
-        R("resM", "x", 72f, -74f, -16f, 4f, "slab"),              // 住宅中街
+        R("ringS", "z", -101f, 8f, 100f, 6f, "slab"),             // 西环路（docs/87 西移，服务西一排）
+        R("market", "x", 28f, -78f, -6f, 10f, "mainstone"),       // 老街商街（加宽：车行 6m + 两侧骑楼前 2m）
+        R("resN", "x", 48f, -86f, -8f, 7f, "slab"),               // 住宅北街（小区路）
+        R("resM", "x", 80f, -86f, -8f, 6.5f, "slab"),             // 住宅中街（从两排住宅中间穿过）
         R("stSt", "x", 58f, 6f, 92f, 7f, "slab"),                 // 车站街
         R("stRd", "z", 58f, 58f, 96f, 6f, "slab"),                // 车站路
         R("parkRd", "z", 65f, -46f, -10f, 5f, "slab"),            // 公园联络路
@@ -181,9 +181,9 @@ public static class TownData
         // 门口接驳：食堂/宿舍正门到生活街、单元楼前排横路
         PL2(-97.4f, -31, -102, -31, 2.5f),
         PL2(-105.4f, -33, -102, -33, 2.5f),
-        PL2(-84f, 87, -14f, 87, 3f),
-        // 住宅排间巷
-        PL2(-74, 60.5f, -16, 60.5f),
+        PL2(-84f, 86.5f, -12f, 86.5f, 3f),
+        // 住宅排间巷（底商与第2排之间，连通西环路—中央街—主街）
+        PL2(-84, 64f, -8, 64f, 3f),
 
         // 校园广场与配套（校门 / 方院 / 生活园 / 活动中心 / 体育区）
         P("plaza", -57f, -60, w: 16f, d: 14f),
@@ -287,7 +287,7 @@ public static class TownData
         P("bench", 18.8f, -54.2f, ry: 0.7f), P("bench", 18.8f, -25.8f, ry: Mathf.PI - 0.7f),
         // 广场/车站/主街长椅
         P("bench", -7f, -23.5f, ry: Mathf.PI), P("bench", 68f, 65.5f, ry: Mathf.PI / 2f),
-        P("bench", 84f, 65.5f, ry: -Mathf.PI / 2f), P("bench", -18f, 45.6f, ry: Mathf.PI),
+        P("bench", 84f, 65.5f, ry: -Mathf.PI / 2f), P("bench", -21f, 34.4f, ry: Mathf.PI),
     };
 
     // ── 保留区（植被不得进入）──
@@ -299,14 +299,14 @@ public static class TownData
             ? (r.at, (r.from + r.to) / 2f, r.width / 2f + 2.4f, (r.to - r.from) / 2f + 2.4f)
             : ((r.from + r.to) / 2f, r.at, (r.to - r.from) / 2f + 2.4f, r.width / 2f + 2.4f));
         foreach (var g in Grounds) k.Add((g.pos[0], g.pos[1], g.size[0] / 2f + 1.6f, g.size[1] / 2f + 1.6f));
-        k.Add((-35.5f, 66f, 8f, 5f));                                  // 主角家
+        k.Add((-34f, 70f, 8f, 5f));                                // 主角家
         k.Add((-70f, -60f, 20f, 8.5f));                                // 校门主轴/方院中带
         k.Add((-57f, -60f, 9f, 8f));                                   // 校门内广场
         k.Add((-35f, -60f, 6f, 10f));                                  // 礼堂前庭
         k.Add((-63.25f, -32.5f, 12.75f, 2.5f));                        // 活动中心前路
         k.Add((-99.7f, -31f, 2.6f, 1.8f));                             // 食堂门口接驳
         k.Add((-103.7f, -33f, 2f, 1.8f));                              // 宿舍门口接驳
-        k.Add((-49f, 87f, 35f, 2f));                                   // 单元楼前排横路
+        k.Add((-55f, 86.5f, 43f, 2f));                              // 单元楼前排横路
         // 校园围墙：沿新阶梯边界分段留空（0.6m 矮墙）
         k.Add((-49.4f, -60f, 1.6f, 42f));                              // 东墙 z -102..-18
         k.Add((-67.7f, -18f, 18.3f, 1.6f));                            // 北墙东段
@@ -336,15 +336,15 @@ public static class TownData
         k.Add((31f, 33f, 7f, 7f));                                     // 旋转木马
         k.Add((72f, 28f, 9f, 7f));                                     // 卡丁车
         // 骑楼柱廊前（不放植被）
-        k.Add((-62f, 22f, 16f, 2.4f));
-        k.Add((-60f, 32.8f, 16f, 2.4f));
-        k.Add((-25f, 32.8f, 15f, 2.4f));
+        k.Add((-62.5f, 20.5f, 13f, 2.2f));
+        k.Add((-61f, 35f, 14f, 2.2f));
+        k.Add((-22f, 34f, 16f, 1.4f));
         // 神社前庭 / 鸟居 / 石阶
         k.Add((79f, -57f, 12f, 15f));   // 神社前庭+参道口整体留空（含参道北侧）
         // 游乐场核心（游乐设施之间保持空地）
         k.Add((51f, 37f, 43f, 15f));
-        // 铁路道床
-        k.Add((0f, 92f, 105f, 3.0f));
+        // 铁路道床（铁路在 z=104，docs/87 顺手修正原来写成 92 的旧值）
+        k.Add((0f, 104f, 108f, 3.2f));
         // 站前广场
         k.Add((76f, 68f, 14f, 4f));
         // 三座桥面（含引桥）
@@ -443,7 +443,7 @@ public static class TownData
             GROUNDS = Grounds,
             PROPS = Props,
             POND = new PondDef { pos = new[] { 34f, -40f }, r = 20f },
-            VILLA = new VillaDef { x = -35.5f, z = 66f, w = 12f, h = 6f, d = 6f, face = 1 },
+            VILLA = new VillaDef { x = -34f, z = 70f, w = 12f, h = 6f, d = 6f, face = 1 },
             FENCES = BuildSchoolWalls(),
             DISTANT_BUILDINGS = new DistantDef[0],
             ROCKERIES = new RockeryItem[0],
@@ -725,36 +725,39 @@ public static class TownData
         }
         w.REEDS = reeds.ToArray();
 
-        // 路灯：主街/中央街/老街/住宅/参道/神社/车站/站前/公园/滨河两岸
+        // 路灯：docs/87 按 CJJ45-2015 重排 —— 6m 杆居住区/商业 15~18m、主街 20m、灯杆距缘石 0.8m
         var lamps = new List<LampItem>();
         void L(float x, float z, float r) => lamps.Add(new LampItem { x = x, z = z, r = r });
-        // 主街两侧
-        for (float z = -84f; z <= 90f; z += 14f)
+        // 主街两侧（11m 车行道，双侧交错 20m）
+        for (float z = -84f; z <= 90f; z += 20f)
         {
             if (Mathf.Abs(z - RiverZ(0)) < 14f) continue;
-            L(-6.4f, z, 0f); L(6.4f, z, Mathf.PI);
+            L(-6.3f, z, 0f); L(6.3f, z, Mathf.PI);
         }
-        // 中央街两侧
-        for (float z = -88f; z <= 94f; z += 22f)
+        // 中央街两侧（5m 支路，20m）
+        for (float z = -88f; z <= 94f; z += 20f)
         {
             if (Mathf.Abs(z - RiverZ(-45f)) < 12f) continue;
-            L(-48.9f, z, 0f); L(-41.1f, z, Mathf.PI);
+            L(-48.3f, z, 0f); L(-41.7f, z, Mathf.PI);
         }
-        // 老街商街两侧
-        foreach (float x in new[] { -70f, -50f, -30f, -12f })
+        // 老街商街：商业步行街照明加密到 15m，灯臂朝街心（灯位避开中央街车行道与各铺面正门）
+        foreach (float x in new[] { -76f, -61f, -50f, -38f, -26f, -8f })
         {
-            L(x, 22.3f, -Mathf.PI / 2f);
-            L(x, 31.7f, Mathf.PI / 2f);
+            L(x, 22.2f, -Mathf.PI / 2f);
+            L(x, 33.8f, Mathf.PI / 2f);
         }
-        // 住宅北街/中街：灯位错开沿街铺面正门，并留出建筑与路缘之间的窄带
-        foreach (float x in new[] { -69.5f, -59.5f, -45.5f, -31.5f, -21.5f })
+        // 住宅北街 / 中街：13~16m 双侧，灯位避开沿街铺面与住宅正门（门前 2.8m 由下面的过滤器兜底）
+        foreach (float x in new[] { -86f, -70f, -59f, -40f, -22f, -10f })
         {
-            L(x, 46.2f, -Mathf.PI / 2f); L(x, 51.4f, Mathf.PI / 2f);
+            L(x, 43.7f, -Mathf.PI / 2f); L(x, 52.3f, Mathf.PI / 2f);
         }
-        foreach (float x in new[] { -70f, -59f, -45f, -27f })
+        foreach (float x in new[] { -85f, -72f, -60f, -40f, -27f, -13f })
         {
-            L(x, 69.55f, -Mathf.PI / 2f); L(x, 74.45f, Mathf.PI / 2f);
+            L(x, 75.95f, -Mathf.PI / 2f); L(x, 84.05f, Mathf.PI / 2f);
         }
+        // 西环路：单侧 14~16m（另一侧是住宅山墙，不照窗）；z 避开西一排各户正门通路
+        foreach (float z in new[] { 20f, 34f, 48f, 62f, 76f, 90f })
+            L(-104.8f, z, Mathf.PI);
         // 神社参道：不再用现代路灯，改由石灯笼/提灯串（Props）照明
         // 校园：成排布置在铺装外 1–2m 的草边，灯臂一律朝步道/广场
         // 校门广场：南北草边各一盏，灯臂朝广场
@@ -777,11 +780,11 @@ public static class TownData
         // 体育区：跑道南侧两盏、篮球场西侧两盏
         L(-36f, -39.2f, -Mathf.PI / 2f); L(-20f, -39.2f, -Mathf.PI / 2f);
         L(-40.8f, -72f, 0f); L(-40.8f, -79f, 0f);
-        // 车站街两侧：灯位错开游乐场一侧的建筑正门
-        foreach (float x in new[] { 21f, 32f, 42f, 63f, 74f })
+        // 车站街两侧：16~18m 双侧，灯位错开游乐场一侧的建筑正门
+        foreach (float x in new[] { 20f, 40f, 56f, 74f, 90f })
         {
-            L(x, 53.5f, -Mathf.PI / 2f);
-            L(x, 62.5f, Mathf.PI / 2f);
+            L(x, 53.7f, -Mathf.PI / 2f);
+            L(x, 62.3f, Mathf.PI / 2f);
         }
         // 站前广场
         L(70f, 78f, Mathf.PI / 2f); L(82f, 78f, Mathf.PI / 2f);
@@ -796,7 +799,7 @@ public static class TownData
             L(x, RiverZ(x) + 15.7f, -Mathf.PI / 2f);
             L(x, RiverZ(x) - 15.7f, Mathf.PI / 2f);
         }
-        // 路灯不得立在车行道上：两轮把压路的灯推到路缘外
+        // 路灯不得立在车行道上：压到路面的灯推到缘石外 0.8m（CJJ45：支路灯杆距路缘 0.5~1.0m）
         for (int pass = 0; pass < 2; pass++)
             foreach (var l in lamps)
                 foreach (var r in Roads)
@@ -806,14 +809,14 @@ public static class TownData
                         if (l.z < r.from - 0.5f || l.z > r.to + 0.5f) continue;
                         if (Mathf.Abs(l.x - r.at) >= r.width / 2f + 0.4f) continue;
                         float side = l.x >= r.at ? 1f : -1f;
-                        l.x = r.at + side * (r.width / 2f + 0.55f);
+                        l.x = r.at + side * (r.width / 2f + 0.8f);
                     }
                     else
                     {
                         if (l.x < r.from - 0.5f || l.x > r.to + 0.5f) continue;
                         if (Mathf.Abs(l.z - r.at) >= r.width / 2f + 0.4f) continue;
                         float side = l.z >= r.at ? 1f : -1f;
-                        l.z = r.at + side * (r.width / 2f + 0.55f);
+                        l.z = r.at + side * (r.width / 2f + 0.8f);
                     }
                 }
         // 不在建筑门口放路灯（门前 2.8m 内）
@@ -825,17 +828,17 @@ public static class TownData
                 float dz = b.pos[1] + b.FrontOffsetZ(0.9f);
                 if (Mathf.Abs(l.x - dx) < 2.8f && Mathf.Abs(l.z - dz) < 2.8f) return true;
             }
-            if (Mathf.Abs(l.x + 35.5f) < 3f && Mathf.Abs(l.z - 69f) < 2.6f) return true;
+            if (Mathf.Abs(l.x + 34f) < 3f && Mathf.Abs(l.z - 73.5f) < 3f) return true;   // 主角家门前
             return false;
         });
         w.LAMPS = lamps.ToArray();
 
-        // 边界林带
+        // 边界林带（半径跟着 BOUND 走：校验要求边界植被在 r ≥ BOUND−14 之外）
         var bt = new List<TreeItem>();
         for (int i = 0; i < 96; i++)
         {
             float a = i / 96f * Mathf.PI * 2f;
-            float r = 116f + (float)rnd.Next() * 6f;
+            float r = BOUND - 12f + (float)rnd.Next() * 6f;
             bt.Add(new TreeItem { x = R1(Mathf.Cos(a) * r), z = R1(Mathf.Sin(a) * r), v = 6 + rnd.NextInt(3) });
         }
         var btKept = new List<TreeItem>();

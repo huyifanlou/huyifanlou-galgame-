@@ -467,7 +467,7 @@ public static class WorldValidator
                     float pz = p.z + Mathf.Cos(p.ry) * (t - 0.5f) * p.d;
                     if (Mathf.Abs(px - b.x) >= b.hw + p.w / 2f + 1f || Mathf.Abs(pz - b.z) >= b.hd + p.w / 2f + 1f) continue;
                     if (Overlap(RC(px, pz, 0.05f, 0.05f), corrs[bi], 0f)) continue;
-                    Err($"{b.name} × 步道（净距 <1m）");
+                    Err($"{b.name}@({b.x},{b.z}) × 步道@({p.x},{p.z}) w{p.w} len{p.d:F1} ry{p.ry:F2}（净距 <1m）");
                 }
             }
         }
@@ -479,7 +479,7 @@ public static class WorldValidator
             float lo = Mathf.Min(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) - bank;
             float hi = Mathf.Max(RZ(b.x - b.hw), RZ(b.x), RZ(b.x + b.hw)) + bank;
             if (!(b.z + b.hd < lo || b.z - b.hd > hi))
-                Err($"{b.name} 距河道过近（要求离水边 ≥{(b.campus ? 2 : 8)}m）");
+                Err($"{b.name}@({b.x},{b.z}) 距河道过近（要求离水边 ≥{(b.campus ? 2 : 8)}m，需 z<{lo:F1} 或 z>{hi:F1}，实际 {b.z - b.hd:F1}~{b.z + b.hd:F1}）");
         }
 
         // 3) 建筑 ↔ 建筑：间距 ≥0.5m
