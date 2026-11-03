@@ -415,6 +415,20 @@ public static class WorldValidator
     }
     public static void DumpJsonBatch() { DumpJson(); }
 
+    // 导出**当前世界**（TownData）的完整数据，供脚本做量化核对（路灯朝向/间距等）
+    [MenuItem("Campus/导出当前世界 JSON")]
+    public static void DumpTownJsonMenu() => DumpTownJson();
+    public static void DumpTownJsonBatch() { DumpTownJson(); }
+
+    static void DumpTownJson()
+    {
+        var W = TownData.Build();
+        var path = Path.Combine(Application.dataPath, "..", "Build", "world_town.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(path));
+        File.WriteAllText(path, JsonUtility.ToJson(W));
+        Debug.Log($"[WorldValidator] 已导出 {path}（建筑 {W.BUILDINGS.Length} / 道路 {W.ROADS.Length} / 路灯 {W.LAMPS.Length}）");
+    }
+
     // ── 小镇总平面校验（docs/18 的四条净距规则，直接作用于 TownData）──
     [MenuItem("Campus/校验小镇布点")]
     public static void TownMenu() => ValidateTown(false);

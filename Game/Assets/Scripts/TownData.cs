@@ -725,29 +725,30 @@ public static class TownData
         }
         w.REEDS = reeds.ToArray();
 
-        // 路灯：docs/87 按 CJJ45-2015 重排 —— 6m 杆居住区/商业 15~18m、主街 20m、灯杆距缘石 0.8m
+        // 路灯：docs/87 按 CJJ45-2015 重排 —— 6m 杆居住区 15~18m、主街 20m、灯杆距缘石 0.8m
+        // docs/88 复核：主街/中央街改显式点位表（原来的等距循环被"跨河/跨街自动外推"吃掉，
+        // 留下 26~62m 的黑洞，还会把灯推到相邻街上叠成双灯）；西环路、滨河两岸灯臂朝向纠正。
         var lamps = new List<LampItem>();
         void L(float x, float z, float r) => lamps.Add(new LampItem { x = x, z = z, r = r });
-        // 主街两侧（11m 车行道，双侧交错 20m）
-        for (float z = -84f; z <= 90f; z += 20f)
+        // 主街（11m 车行道，双侧 20m；桥位两岸各留一盏，避开老街商街与车站街的交叉带）
+        foreach (float z in new[] { -84f, -64f, -44f, -24f, -4f, 20f, 36f, 52f, 72f, 90f })
         {
-            if (Mathf.Abs(z - RiverZ(0)) < 14f) continue;
-            L(-6.3f, z, 0f); L(6.3f, z, Mathf.PI);
+            L(-6.3f, z, 0f);        // 西侧灯臂朝东
+            L(6.3f, z, Mathf.PI);   // 东侧灯臂朝西
         }
-        // 中央街两侧（5m 支路，20m）
-        for (float z = -88f; z <= 94f; z += 20f)
+        // 中央街（5m 支路，双侧 20m；z=−10/14 卡在桥两端，不再留 60m 黑洞）
+        foreach (float z in new[] { -88f, -68f, -48f, -28f, -10f, 14f, 32f, 52f, 72f, 92f })
         {
-            if (Mathf.Abs(z - RiverZ(-45f)) < 12f) continue;
             L(-48.3f, z, 0f); L(-41.7f, z, Mathf.PI);
         }
         // 老街商街：商业步行街照明加密到 15m，灯臂朝街心（灯位避开中央街车行道与各铺面正门）
-        foreach (float x in new[] { -76f, -61f, -50f, -38f, -26f, -8f })
+        foreach (float x in new[] { -76f, -61f, -50f, -38f, -26f, -12f })
         {
             L(x, 22.2f, -Mathf.PI / 2f);
             L(x, 33.8f, Mathf.PI / 2f);
         }
         // 住宅北街 / 中街：13~16m 双侧，灯位避开沿街铺面与住宅正门（门前 2.8m 由下面的过滤器兜底）
-        foreach (float x in new[] { -86f, -70f, -59f, -40f, -22f, -10f })
+        foreach (float x in new[] { -86f, -70f, -59f, -48f, -29f, -22f, -10f })
         {
             L(x, 43.7f, -Mathf.PI / 2f); L(x, 52.3f, Mathf.PI / 2f);
         }
@@ -757,7 +758,7 @@ public static class TownData
         }
         // 西环路：单侧 14~16m（另一侧是住宅山墙，不照窗）；z 避开西一排各户正门通路
         foreach (float z in new[] { 20f, 34f, 48f, 62f, 76f, 90f })
-            L(-104.8f, z, Mathf.PI);
+            L(-104.8f, z, 0f);   // 灯在路西肩外 → 灯臂朝东照路面（原来朝西，整排背对街）
         // 神社参道：不再用现代路灯，改由石灯笼/提灯串（Props）照明
         // 校园：成排布置在铺装外 1–2m 的草边，灯臂一律朝步道/广场
         // 校门广场：南北草边各一盏，灯臂朝广场
@@ -793,12 +794,18 @@ public static class TownData
         L(14f, -40f, 0f); L(54f, -40f, Mathf.PI);
         // 钟楼广场（贴新圆盘内缘，避开塔基）
         L(-10.5f, -19f, -Mathf.PI / 2f); L(-23.5f, -19f, -Mathf.PI / 2f);
-        // 滨河两岸
+        // 滨河两岸：灯臂一律朝水面/步道（+15.7 在南岸要朝北，−15.7 在北岸要朝南；原来写反）
         for (float x = -90f; x <= 90f; x += 22f)
         {
-            L(x, RiverZ(x) + 15.7f, -Mathf.PI / 2f);
-            L(x, RiverZ(x) - 15.7f, Mathf.PI / 2f);
+            L(x, RiverZ(x) + 15.7f, Mathf.PI / 2f);
+            L(x, RiverZ(x) - 15.7f, -Mathf.PI / 2f);
         }
+        // 车站路（38m 长原来整条没灯）：东侧单侧 20m，灯臂朝西
+        foreach (float z in new[] { 66f, 86f })
+            L(61.8f, z, Mathf.PI);
+        // 公园联络路（36m 长原来整条没灯）：西侧单侧 20m，灯臂朝东
+        foreach (float z in new[] { -34f, -16f })
+            L(61.7f, z, 0f);
         // 路灯不得立在车行道上：压到路面的灯推到缘石外 0.8m（CJJ45：支路灯杆距路缘 0.5~1.0m）
         for (int pass = 0; pass < 2; pass++)
             foreach (var l in lamps)
@@ -831,6 +838,39 @@ public static class TownData
             if (Mathf.Abs(l.x + 34f) < 3f && Mathf.Abs(l.z - 73.5f) < 3f) return true;   // 主角家门前
             return false;
         });
+        // 路口与桥头会被两条街各放一盏，两轮"让开车行道"外推后常常只差 1~3m（看着像双灯）：
+        // 保留先登记的（干路/街坊路优先），删掉后到的。3m 以内算重复，路口两侧各一盏（4~5m）是正常做法。
+        var lampKeep = new List<LampItem>();
+        foreach (var l in lamps)
+        {
+            bool tooClose = false;
+            foreach (var k in lampKeep)
+                if ((k.x - l.x) * (k.x - l.x) + (k.z - l.z) * (k.z - l.z) < 9f) { tooClose = true; break; }
+            if (!tooClose) lampKeep.Add(l);
+        }
+        lamps = lampKeep;
+        // 最后统一"对灯臂"：凡是站在某条街的肩线上（含被外推过去的滨河/公园灯），
+        // 灯臂一律垂直指向这条街的中心线 —— 手写朝向很容易在改路宽/改位置后失效，这里一次算准。
+        foreach (var l in lamps)
+        {
+            RoadDef best = null;
+            float bestD = float.MaxValue;
+            foreach (var r in Roads)
+            {
+                float off = r.axis == "z" ? l.x - r.at : l.z - r.at;
+                float along = r.axis == "z" ? l.z : l.x;
+                if (along < r.from - 1f || along > r.to + 1f) continue;
+                float d = Mathf.Abs(Mathf.Abs(off) - (r.width / 2f + 0.8f));
+                if (d > 0.6f || d >= bestD) continue;
+                bestD = d; best = r;
+            }
+            if (best == null) continue;
+            float o = best.axis == "z" ? l.x - best.at : l.z - best.at;
+            // 南北向路：西侧灯臂朝东(0)、东侧朝西(π)；东西向路：北侧朝南(−π/2)、南侧朝北(+π/2)
+            l.r = best.axis == "z"
+                ? (o < 0f ? 0f : Mathf.PI)
+                : (o < 0f ? -Mathf.PI / 2f : Mathf.PI / 2f);
+        }
         w.LAMPS = lamps.ToArray();
 
         // 边界林带（半径跟着 BOUND 走：校验要求边界植被在 r ≥ BOUND−14 之外）
