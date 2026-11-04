@@ -2,9 +2,12 @@
 
 ## 定位
 
+**《他山之石》**（2026-11-03 定名，英文名 `STONES FROM ANOTHER HILL`）——
 校园 × 恋爱 × 悬疑 × 奇幻题材的 **2.5D 像素风叙事游戏（HD-2D）** Unity 版。
 - 本仓库（`Unity开发galgame`）是**唯一继续开发线**。
 - web 版（Three.js）已冻结：仓库 `chuanzhibei-game`，tag `web-v1.0-frozen-20261015`（v0.40）——只作历史与资产配方来源，不在其上继续开发。
+- 游戏名已进 `productName`、HUD 左上标题与开场 logo（docs/91、docs/92）；
+  **exe 文件名仍是 `Campus.exe`**——输出名写死在 `Bootstrap.cs`，与 `productName` 无关，所以下面那些验收命令照旧有效，别去改它。
 
 ## 硬约定
 
