@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<style>
+  html,body{margin:0;padding:0;background:transparent;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+<script>
+const W={char0:[300,300],char1:[300,300],char2:[300,300],char3:[300,300],
+         ridge:[1600,360],sub:[1400,80],stone:[120,120],preview:[1600,900]};
+const q=new URLSearchParams(location.search);
+const a=q.get('a')||'char0';
+const CHARS=['他','山','之','石'];
+const cv=document.getElementById('cv');
+const [cw,ch]=W[a]||W.char0;
+cv.width=cw; cv.height=ch;
+const g=cv.getContext('2d');
+
+function drawChar(c,size,glow){
+  g.clearRect(0,0,cv.width,cv.height);
+  g.font=`${size}px "LiSu","隶书"`;
+  g.textAlign='center'; g.textBaseline='middle';
+  if(glow){ g.shadowColor='rgba(95,224,200,.55)'; g.shadowBlur=size*0.16; }
+  g.fillStyle='#f4efe6';
+  g.fillText(c,cv.width/2,cv.height/2+size*0.02);
+}
+function drawStone(x,y,s,alpha){
+  g.save(); g.globalAlpha=alpha; g.translate(x,y); g.scale(s/120,s/120);
+  const P=(pts,col)=>{g.fillStyle=col;g.beginPath();pts.forEach(([px,py],i)=>i?g.lineTo(px,py):g.moveTo(px,py));g.closePath();g.fill();};
+  P([[34,58],[60,20],[92,44],[84,86],[46,92]],'#5fe0c8');
+  P([[60,20],[92,44],[66,58]],'#8ef4e0');
+  P([[66,58],[92,44],[84,86]],'#2f9c8a');
+  P([[34,58],[66,58],[46,92]],'#49c4b0');
+  g.restore();
+}
+function drawRidge(x,y,w,alpha,rise){
+  g.save(); g.globalAlpha=alpha; g.translate(x,y+rise); g.scale(w/1600,w/1600);
+  const P=(pts,col)=>{g.fillStyle=col;g.beginPath();pts.forEach(([px,py],i)=>i?g.lineTo(px,py):g.moveTo(px,py));g.closePath();g.fill();};
+  P([[0,300],[180,168],[300,250],[470,120],[640,246],[760,190],[900,268],[1050,150],[1210,258],[1360,196],[1600,300],[1600,360],[0,360]],'#22334f');
+  P([[0,340],[220,236],[400,316],[600,214],[820,322],[1010,250],[1240,330],[1440,262],[1600,336],[1600,360],[0,360]],'#131e33');
+  P([[470,120],[640,246],[600,214],[470,138]],'rgba(45,68,104,.5)');
+  P([[1050,150],[1210,258],[1170,236],[1050,168]],'rgba(45,68,104,.4)');
+  g.restore();
+}
+function drawSub(x,y,alpha){
+  g.save(); g.globalAlpha=alpha;
+  g.font='400 34px "Microsoft YaHei"';
+  try{ g.letterSpacing='22px'; }catch(e){}
+  g.fillStyle='#a9c6d8'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText('STONES FROM ANOTHER HILL',x,y);
+  g.restore();
+}
+function line(x0,y0,len,h,alpha){
+  g.save(); g.globalAlpha=alpha;
+  g.fillStyle='rgba(95,224,200,.28)'; g.fillRect(x0,y0-4,len,h+8);
+  g.fillStyle='#5fe0c8'; g.fillRect(x0,y0,len,h);
+  g.restore();
+}
+const clamp=v=>Math.max(0,Math.min(1,v));
+const ease=t=>t<0?0:t>1?1:t*t*(3-2*t);
+
+if(a==='preview'){
+  const t=parseFloat(q.get('t')||'2.3');
+  g.fillStyle='#05070c'; g.fillRect(0,0,1600,900);
+  // 0.35→0.95 山脊浮起
+  const ra=ease((t-0.35)/0.60);
+  drawRidge(0,900-360,1600,ra*0.85,(1-ra)*26);
+  // 0.90 起逐字淡入，每字 90ms，各 0.28s
+  const cx=800-315, cy=300, sz=210, step=210;
+  g.font=`${sz}px "LiSu","隶书"`; g.textAlign='center'; g.textBaseline='middle';
+  for(let i=0;i<4;i++){
+    const al=ease((t-(0.90+i*0.09))/0.28);
+    if(al<=0) continue;
+    g.save(); g.globalAlpha=al;
+    g.shadowColor='rgba(95,224,200,.5)'; g.shadowBlur=sz*0.14;
+    g.fillStyle='#f4efe6';
+    g.fillText(CHARS[i],cx+i*step,cy+(1-al)*14);
+    g.restore();
+  }
+  // 1.60→1.95 青线划出
+  const la=ease((t-1.60)/0.35);
+  line(675,cy+150,250*la,3,la);
+  // 2.10→2.45 副标 + 石点
+  const sa=ease((t-2.10)/0.35);
+  drawSub(800,cy+196,sa);
+  drawStone(768,cy-118,64,sa);
+  // 2.60→3.00 整体淡出
+  if(t>2.6){ g.fillStyle=`rgba(5,7,12,${clamp((t-2.6)/0.4)})`; g.fillRect(0,0,1600,900); }
+}else if(a.startsWith('char')){
+  drawChar(CHARS[+a.slice(4)],210,true);
+}else if(a==='ridge'){
+  g.save(); g.translate(0,0); g.scale(1,1);
+  drawRidge(0,0,1600,1,0); g.restore();
+}else if(a==='stone'){
+  drawStone(0,0,120,1);
+}else if(a==='sub'){
+  g.font='400 34px "Microsoft YaHei"';
+  try{ g.letterSpacing='22px'; }catch(e){}
+  g.fillStyle='#a9c6d8'; g.textAlign='center'; g.textBaseline='middle';
+  g.fillText('STONES FROM ANOTHER HILL',700,40);
+}
+</script>
+</body>
+</html>

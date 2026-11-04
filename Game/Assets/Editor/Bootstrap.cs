@@ -78,7 +78,7 @@ public static class Bootstrap
         Debug.Log("[Bootstrap] Shader 占位材质完成（Standard 已按 Cutout 变体配置）");
 
         // ── 2) 项目设置 ──
-        PlayerSettings.productName = "校园叙事 RPG";
+        PlayerSettings.productName = "他山之石";
         PlayerSettings.companyName = "huyifanlou";
         PlayerSettings.defaultScreenWidth = 1280;
         PlayerSettings.defaultScreenHeight = 720;
@@ -185,7 +185,31 @@ public static class Bootstrap
         PlayerSettings.defaultScreenWidth = 1600;
         PlayerSettings.defaultScreenHeight = 900;
         PlayerSettings.colorSpace = ColorSpace.Linear;   // 每次构建都确保线性空间（写实光照）
+        SetupIntroTextures();
         AssetDatabase.SaveAssets();
+    }
+
+    // 开场 logo 素材（Resources/intro/*.png）是烘好的隶书字与剪影，不是像素贴图：
+    // 必须 Bilinear + 无 mipmap，否则非整数倍缩放时字缘会锯齿/闪动（docs/92）
+    static void SetupIntroTextures()
+    {
+        var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/intro" });
+        foreach (var guid in guids)
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var ti = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (ti == null) continue;
+            ti.textureType = TextureImporterType.Default;
+            ti.textureCompression = TextureImporterCompression.Uncompressed;
+            ti.mipmapEnabled = false;
+            ti.filterMode = FilterMode.Bilinear;
+            ti.wrapMode = TextureWrapMode.Clamp;
+            ti.npotScale = TextureImporterNPOTScale.None;
+            ti.alphaIsTransparency = true;
+            ti.maxTextureSize = 2048;
+            ti.SaveAndReimport();
+        }
+        if (guids.Length > 0) Debug.Log($"[Bootstrap] 开场素材导入设置完成：{guids.Length} 张");
     }
 
     // 构建 WebGL（部署上线用）

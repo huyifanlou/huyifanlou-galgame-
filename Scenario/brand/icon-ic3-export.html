@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>IC-3 导出</title>
+<style>
+  html,body{margin:0;padding:0;background:#000;overflow:hidden}
+  svg{display:block}
+</style>
+</head>
+<body>
+<svg id="ic" viewBox="0 0 128 128" width="256" height="256" shape-rendering="geometricPrecision">
+  <rect width="128" height="128" fill="#0e1626"/>
+  <!-- 地面与街道 -->
+  <rect x="0" y="96" width="128" height="32" fill="#121d31"/>
+  <rect x="10" y="95" width="108" height="3.4" fill="#33516f"/>
+  <!-- 远山（后）与近山（前） -->
+  <polygon points="18,96 50,50 82,96" fill="#26405c"/>
+  <polygon points="58,96 88,60 118,96" fill="#1d3349"/>
+  <!-- 青石：刻面，右上 -->
+  <polygon points="86,42 102,33 115,46 106,62 89,57" fill="#5fe0c8"/>
+  <polygon points="102,33 106,62 89,57" fill="#2f9c8a"/>
+  <polygon points="86,42 102,33 89,57" fill="#8ef4e0" opacity=".8"/>
+  <!-- 路灯：灯头 + 灯杆（加粗到 32px 还不消失） -->
+  <circle cx="29" cy="33" r="4.6" fill="#ffbe6a"/>
+  <circle cx="29" cy="33" r="8.4" fill="#ffbe6a" opacity=".18"/>
+  <rect x="27.2" y="33" width="3.6" height="28" fill="#1b2b42"/>
+  <rect x="27.2" y="58" width="7" height="3.6" fill="#1b2b42"/>
+  <!-- 几扇亮着的窗 -->
+  <g fill="#ffbe6a" opacity=".85">
+    <rect x="98" y="82" width="4" height="5"/>
+    <rect x="106" y="88" width="4" height="5"/>
+    <rect x="14" y="84" width="4" height="5"/>
+  </g>
+</svg>
+<script>
+  // 尺寸由 URL 参数 ?s=256 决定，headless 截图按同样尺寸开窗
+  const s=new URLSearchParams(location.search).get('s')||'256';
+  const ic=document.getElementById('ic');
+  ic.setAttribute('width',s); ic.setAttribute('height',s);
+</script>
+</body>
+</html>

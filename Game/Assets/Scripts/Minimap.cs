@@ -414,7 +414,7 @@ public class Minimap : MonoBehaviour
 
     void OnGUI()
     {
-        if (_map == null || _rig == null) return;
+        if (_map == null || _rig == null || Args.NoHud || IntroScreen.Live) return;
         EnsureStyles();
         float size = _large ? Mathf.Min(Screen.width, Screen.height) * 0.82f : Mathf.Min(272f, Screen.height * 0.33f);
         float x = _large ? (Screen.width - size) / 2f : Screen.width - size - 20f;

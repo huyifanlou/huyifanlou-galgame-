@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>他山之石 · F 方向 × 隶书 细化稿 v3</title>
+<style>
+  :root{--teal:#5fe0c8;--bone:#f4efe6;--navy:#101a2e;--red:#b0342a}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0c11;color:#dfe3ea;font:"Microsoft YaHei",sans-serif;padding:26px 32px 56px}
+  h1{font-size:21px;letter-spacing:.16em;margin-bottom:4px}
+  .sub{font-size:12px;color:#8892a3;margin-bottom:20px}
+  h2{font-size:14px;letter-spacing:.12em;color:#9fb3c8;margin:28px 0 12px;font-weight:600;
+     border-left:3px solid var(--teal);padding-left:9px}
+  .grid{display:grid;grid-template-columns:repeat(2,760px);gap:20px}
+  .grid.five{grid-template-columns:repeat(5,300px);gap:14px}
+  .card{position:relative;width:760px;height:428px;overflow:hidden;border-radius:4px;
+        box-shadow:0 6px 22px rgba(0,0,0,.5);background-size:cover;background-position:center}
+  .tag{position:absolute;left:0;top:0;z-index:9;background:rgba(12,14,20,.78);color:#cfe6dd;
+       font:400 11px/1.5 "Microsoft YaHei";letter-spacing:.1em;padding:5px 10px;border-bottom-right-radius:4px}
+  .dim::after{content:"";position:absolute;inset:0;
+       background:radial-gradient(ellipse at 46% 66%,rgba(4,7,14,.06) 0%,rgba(4,7,14,.62) 100%)}
+  /* 隶书标题通用 */
+  .ls{font-family:"LiSu","隶书","STLiti",serif;font-weight:400;color:var(--bone)}
+  .bl{position:absolute;left:58px;bottom:78px;font-size:66px;letter-spacing:.14em;text-indent:.14em}
+  .bar{position:absolute;left:60px;bottom:60px;width:158px;height:3px;background:var(--teal)}
+  .en{position:absolute;left:60px;bottom:38px;font:400 11.5px/1 "Microsoft YaHei";
+      letter-spacing:.34em;color:#a9c6d8}
+  .center{position:absolute;left:0;right:0;top:150px;text-align:center;font-size:72px;
+          letter-spacing:.2em;text-indent:.2em}
+  .glow{text-shadow:0 0 12px rgba(95,224,200,.55),0 0 38px rgba(70,150,230,.35)}
+  .hard{text-shadow:2px 2px 0 rgba(6,10,18,.85),-1px -1px 0 rgba(6,10,18,.5)}
+  .thin{border-top:1px solid rgba(244,239,230,.35);border-bottom:1px solid rgba(244,239,230,.35);
+        padding:16px 0}
+  .stamp{position:absolute;right:58px;bottom:70px;width:46px;height:46px;background:var(--red);border-radius:5px;
+         display:grid;place-items:center;font-family:"LiSu","隶书";font-size:26px;color:#f6ece2;
+         box-shadow:0 0 0 2px rgba(176,52,42,.3)}
+  .stone{position:absolute;right:70px;top:64px}
+  /* 动效帧 */
+  .frame{position:relative;width:300px;height:169px;overflow:hidden;border-radius:3px;background:#05070c;
+         box-shadow:0 3px 12px rgba(0,0,0,.5)}
+  .frame .t{position:absolute;left:0;right:0;top:56px;text-align:center;font-size:34px;letter-spacing:.16em;text-indent:.16em}
+  .frame .f{position:absolute;left:0;right:0;bottom:26px;text-align:center;font:400 8px/1 "Microsoft YaHei";
+            letter-spacing:.3em;color:#8fa8bb}
+  .frame .tag{font-size:10px;padding:3px 7px}
+  svg{display:block;border-radius:14%}
+  .icons{display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap}
+  .ic{text-align:center}
+  .ic .tiles{display:flex;gap:12px;align-items:flex-end}
+  .ic .lbl{font-size:11px;color:#8892a3;margin-top:8px}
+  .note{margin-top:20px;border:1px solid #232b38;border-radius:6px;padding:18px 20px;background:#0e1219;
+        font-size:12.5px;line-height:1.95;color:#9aa5b5}
+  .note b{color:#cfe6dd}
+  code{background:#191f2a;color:#9fe0c8;padding:1px 5px;border-radius:3px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>他山之石 · F 方向 × 隶书 细化稿 v3</h1>
+<div class="sub">选定：F（实景底 · 左下署名）＋ 标题字 隶书 ｜ 底图全部为当前构建实拍（<code>-nohud -fp 1</code>）</div>
+
+<h2>一、标题卡六版</h2>
+<div class="grid">
+
+  <div class="card dim" style="background-image:url('ref/bg-street-night.png')">
+    <div class="tag">F-1 ｜ 左下 · 干净压底（推荐）</div>
+    <div class="ls bl">他山之石</div>
+    <div class="bar"></div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <div class="card dim" style="background-image:url('ref/bg-street-night.png')">
+    <div class="tag">F-2 ｜ 左下 · 硬描边（16-bit 游戏感）</div>
+    <div class="ls bl hard">他山之石</div>
+    <div class="bar"></div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <div class="card dim" style="background-image:url('ref/bg-sakura-night.png')">
+    <div class="tag">F-3 ｜ 左下 · 夜樱底（更柔，字容易被吃掉）</div>
+    <div class="ls bl hard">他山之石</div>
+    <div class="bar"></div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(180deg,#070b13,#0d1626 55%,#122036)">
+    <div class="tag">F-4 ｜ 居中 · 上下细线（片头感）</div>
+    <div class="ls center thin" style="top:126px">他山之石</div>
+    <div style="position:absolute;left:0;right:0;top:250px;text-align:center;font:400 11px/1 'Microsoft YaHei';
+                letter-spacing:.42em;color:#7f9cb5">STONES FROM ANOTHER HILL</div>
+    <svg class="stone" style="right:auto;left:584px;top:130px" width="56" height="56" viewBox="0 0 128 128">
+      <polygon points="86,40 104,28 118,46 106,64 88,58" fill="#5fe0c8" opacity=".9"/>
+      <polygon points="104,28 106,64 88,58" fill="#2f9c8a"/>
+    </svg>
+  </div>
+
+  <div class="card dim" style="background-image:url('ref/bg-town-night.png')">
+    <div class="tag">F-5 ｜ 左下 · 霓虹外发光（v1 的 F 换隶书）</div>
+    <div class="ls bl glow">他山之石</div>
+    <div class="bar" style="box-shadow:0 0 14px var(--teal)"></div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <div class="card" style="background:radial-gradient(ellipse at 34% 26%,#1d2740,#0b1120 72%)">
+    <div class="tag">F-6 ｜ 左下 · 朱印收尾（不要英文副标就用这版）</div>
+    <div class="ls bl" style="bottom:74px;font-size:70px">他山之石</div>
+    <div class="stamp">石</div>
+    <div class="en" style="left:60px;bottom:38px;color:#8fa0b4">卷一 · 初遇</div>
+  </div>
+</div>
+
+<h2>二、启动 Logo 动效时间轴（Unity splash 之后，约 2.6 秒）</h2>
+<div class="grid five">
+  <div class="frame"><div class="tag">0.0s 全黑</div></div>
+  <div class="frame"><div class="tag">0.35s 山脊浮出</div>
+    <svg width="300" height="169" viewBox="0 0 300 169" style="position:absolute;inset:0;opacity:.5">
+      <polygon points="20,150 96,74 172,150" fill="#22354c"/><polygon points="120,150 190,88 262,150" fill="#1b2a3d"/>
+    </svg>
+  </div>
+  <div class="frame"><div class="tag">0.9s 标题淡入</div>
+    <div class="ls t" style="opacity:.85;color:#f4efe6">他山之石</div>
+  </div>
+  <div class="frame"><div class="tag">1.6s 青线划出</div>
+    <div class="ls t" style="top:48px">他山之石</div>
+    <div style="position:absolute;left:64px;right:64px;top:106px;height:2px;background:var(--teal);
+                box-shadow:0 0 12px var(--teal)"></div>
+  </div>
+  <div class="frame"><div class="tag">2.1s 副标 + 石点</div>
+    <div class="ls t" style="top:44px">他山之石</div>
+    <div style="position:absolute;left:64px;right:64px;top:100px;height:2px;background:var(--teal);opacity:.7"></div>
+    <div class="f" style="top:112px;bottom:auto">STONES FROM ANOTHER HILL</div>
+    <svg width="26" height="26" viewBox="0 0 128 128" style="position:absolute;right:52px;top:34px">
+      <polygon points="30,60 62,20 96,60 62,104" fill="#5fe0c8"/><polygon points="62,20 96,60 62,104" fill="#2f9c8a"/>
+    </svg>
+  </div>
+</div>
+<div class="note">
+  <b>时间轴</b>：0.0 全黑 → 0.35 山脊剪影自下方浮起 → 0.9 隶书标题逐字淡入（每字 90ms）→
+  1.6 青色横线由左划出 → 2.1 英文副标与青石点出现 → 停留 0.5s → 2.6 整体淡出进主菜单。
+  按 <code>空格 / 鼠标点击</code> 可跳过。<br>
+  <b>标题字必须烘成贴图</b>：隶书（<code>LiSu</code>）是 Windows 自带字体，但别人机器上不一定有，
+  运行时用 <code>CreateDynamicFontFromOSFont</code> 会掉成方框。
+  所以定稿后我把「他山之石」四个字一次性导出成 PNG 贴图（含描边/发光版本），
+  进 <code>Resources/tex</code> 走现成的无损导入设置，运行时不再依赖系统字体。
+</div>
+
+<h2>三、桌面图标（配 F 方向 · 隶书）</h2>
+<div class="icons">
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="16,102 52,42 88,102" fill="#2f4c6b"/><polygon points="56,102 84,60 114,102" fill="#243c55"/>
+      <polygon points="86,40 104,28 118,46 106,64 88,58" fill="#5fe0c8"/>
+      <polygon points="104,28 106,64 88,58" fill="#2f9c8a"/>
+      <rect x="16" y="102" width="98" height="3" fill="#5b7f9e" opacity=".45"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="16,102 52,42 88,102" fill="#2f4c6b"/><polygon points="56,102 84,60 114,102" fill="#243c55"/>
+      <polygon points="86,40 104,28 118,46 106,64 88,58" fill="#5fe0c8"/><polygon points="104,28 106,64 88,58" fill="#2f9c8a"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="16,104 52,44 88,104" fill="#2f4c6b"/><polygon points="86,40 104,28 118,46 106,64 88,58" fill="#5fe0c8"/></svg>
+  </div><div class="lbl">IC-1 山与青石（延续 B 标志，最稳）</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="24" y="24" width="80" height="80" rx="7" fill="#b0342a"/>
+      <text x="64" y="82" font-family="LiSu,隶书" font-size="58" fill="#f6ece2" text-anchor="middle">石</text></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="24" y="24" width="80" height="80" rx="7" fill="#b0342a"/>
+      <text x="64" y="82" font-family="LiSu,隶书" font-size="58" fill="#f6ece2" text-anchor="middle">石</text></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="22" y="22" width="84" height="84" rx="8" fill="#b0342a"/>
+      <text x="64" y="84" font-family="LiSu,隶书" font-size="60" fill="#f6ece2" text-anchor="middle">石</text></svg>
+  </div><div class="lbl">IC-2 朱底隶书单字「石」（中式、辨识度高）</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0e1626"/>
+      <rect x="14" y="96" width="100" height="4" fill="#33516f"/>
+      <polygon points="20,96 50,52 80,96" fill="#26405c"/>
+      <polygon points="60,96 86,62 112,96" fill="#1d3349"/>
+      <polygon points="88,44 102,36 112,48 104,60 90,56" fill="#5fe0c8"/>
+      <circle cx="30" cy="34" r="3.4" fill="#ffbe6a"/><rect x="28.6" y="34" width="2.8" height="26" fill="#16273c"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0e1626"/>
+      <polygon points="20,96 50,52 80,96" fill="#26405c"/><polygon points="60,96 86,62 112,96" fill="#1d3349"/>
+      <polygon points="88,44 102,36 112,48 104,60 90,56" fill="#5fe0c8"/>
+      <circle cx="30" cy="34" r="5" fill="#ffbe6a"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0e1626"/>
+      <polygon points="18,100 54,48 92,100" fill="#26405c"/>
+      <polygon points="88,44 104,36 114,50 104,62 90,56" fill="#5fe0c8"/>
+      <circle cx="28" cy="32" r="8" fill="#ffbe6a"/></svg>
+  </div><div class="lbl">IC-3 夜街 · 山 · 一盏灯（最贴游戏画面）</div></div>
+</div>
+
+<div class="note">
+  <b>已确定的落地项</b>（不需要你再决策）：<code>productName</code> 改「他山之石」<b>不会影响 exe 名</b>——
+  构建输出名写死在 <code>Bootstrap.cs:178</code> 的 <code>Build/Win/Campus.exe</code>，
+  所以 <code>taskkill //IM Campus.exe</code> 和 docs 里所有验收命令继续有效。<br>
+  <b>还等你点头的</b>：标题卡取 F 几（1 / 2 / 3 / 4 / 5 / 6）、图标取 IC 几、英文副标留不留。
+</div>
+</body>
+</html>

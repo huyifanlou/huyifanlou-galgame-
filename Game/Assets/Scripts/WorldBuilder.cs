@@ -963,6 +963,11 @@ public class WorldBuilder : MonoBehaviour
         if (cam != null && Args.Has("-noao")) cam.GetComponent<PostFX>().AOSStrength = 0f;
         if (cam != null && Args.Has("-nofx")) cam.GetComponent<PostFX>().enabled = false;
 
+        // 开场 logo 要先于 HUD/小地图决定 Live，避免它们盖在 logo 上面
+        var intro = GetComponent<IntroScreen>();
+        if (intro == null) intro = gameObject.AddComponent<IntroScreen>();
+        intro.Init();
+
         var tod = GetComponent<TimeOfDay>();
         if (tod != null) tod.Init(this);
         var rig = GetComponent<PlayerRig>();

@@ -199,7 +199,7 @@ public class PlayerRig : MonoBehaviour
 
     void Update()
     {
-        if (_cam == null || _player == null) return;
+        if (_cam == null || _player == null || IntroScreen.Live) return;
         float dt = Time.deltaTime;
         var p = _player.position;
 

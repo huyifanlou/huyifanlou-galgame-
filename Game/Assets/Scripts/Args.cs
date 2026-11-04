@@ -8,6 +8,10 @@ public static class Args
 
     public static bool Has(string key) => Array.IndexOf(A, key) >= 0;
 
+    // 干净画面（拍 logo 底图 / 宣传图用）：隐藏 HUD 与小地图
+    static bool? _noHud;
+    public static bool NoHud => _noHud ??= Has("-nohud");
+
     public static string Str(string key)
     {
         var a = A;

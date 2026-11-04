@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>他山之石 · 图标与 Logo 概念稿 v1</title>
+<style>
+  :root{
+    --ink:#12161f; --paper:#efe8db; --navy:#101a2e; --slate:#3c5a78;
+    --teal:#5fe0c8; --teal-d:#2f9c8a; --amber:#ffbe6a; --bone:#f4efe6; --red:#b0342a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0a0c11;color:#dfe3ea;font:"Microsoft YaHei",-apple-system,sans-serif;padding:28px 34px 60px}
+  h1{font-size:22px;letter-spacing:.18em;font-weight:700;margin-bottom:4px}
+  .sub{font-size:12px;color:#8892a3;margin-bottom:22px}
+  h2{font-size:14px;letter-spacing:.12em;color:#9fb3c8;margin:30px 0 12px;font-weight:600;
+     border-left:3px solid var(--teal);padding-left:9px}
+  .grid{display:grid;grid-template-columns:repeat(2,760px);gap:22px}
+  .grid.three{grid-template-columns:repeat(3,490px)}
+  .card{position:relative;width:760px;height:428px;overflow:hidden;border-radius:4px;
+        box-shadow:0 6px 22px rgba(0,0,0,.5)}
+  .card.small{width:490px;height:276px}
+  .tag{position:absolute;left:0;top:0;z-index:9;background:rgba(12,14,20,.78);color:#cfe6dd;
+       font-size:11px;letter-spacing:.1em;padding:5px 10px;border-bottom-right-radius:4px}
+  .photo{background-size:cover;background-position:center}
+  .dim::after{content:"";position:absolute;inset:0;
+       background:radial-gradient(ellipse at 50% 62%,rgba(4,7,14,.10) 0%,rgba(4,7,14,.66) 100%)}
+  .pix{position:absolute;left:0;right:0;top:74px;width:760px;height:150px;image-rendering:pixelated;
+       filter:drop-shadow(0 0 16px rgba(95,224,200,.30))}
+  .card.small .pix{top:44px;width:490px;height:96px}
+  .rule{position:absolute;left:50%;transform:translateX(-50%);top:232px;width:250px;height:2px;
+        background:linear-gradient(90deg,transparent,var(--teal),transparent)}
+  .card.small .rule{top:150px;width:160px}
+  .foot{position:absolute;left:0;right:0;bottom:38px;text-align:center;font-size:12px;
+        letter-spacing:.42em;color:#aeb9c8}
+  /* 水墨 */
+  .ink{background:
+        repeating-linear-gradient(0deg,rgba(0,0,0,.014) 0 3px,transparent 3px 6px),
+        radial-gradient(circle at 22% 18%,#f7f2e6,#e9e1d0 70%,#ded5c0)}
+  .ink .title{position:absolute;left:0;right:0;top:112px;text-align:center;
+        font:700 74px/1 "STXingkai","KaiTi","楷体","Microsoft YaHei";color:#161a22;letter-spacing:.06em;
+        text-shadow:0 1px 0 rgba(255,255,255,.5)}
+  .ink .tag{background:rgba(238,232,220,.86);color:#3a4351}
+  /* 极简 */
+  .flat{background:linear-gradient(180deg,#0d1729,#16263f 60%,#1b2d4a)}
+  .flat .title{position:absolute;left:0;right:0;top:246px;text-align:center;
+        font:700 46px/1 "Microsoft YaHei";color:var(--bone);letter-spacing:.34em;text-indent:.34em}
+  .flat .en{position:absolute;left:0;right:0;top:316px;text-align:center;font-size:12px;
+        letter-spacing:.36em;color:#7fa0bd}
+  .mark{position:absolute;left:50%;top:56px;transform:translateX(-50%)}
+  /* 朱印竖排 */
+  .seal{background:radial-gradient(ellipse at 30% 20%,#1d2740,#0e1522 70%)}
+  .seal .v{position:absolute;right:96px;top:56px;writing-mode:vertical-rl;
+        font:700 60px/1.12 "STXingkai","KaiTi","楷体","Microsoft YaHei";color:var(--bone);letter-spacing:.1em}
+  .stamp{position:absolute;left:96px;bottom:74px;width:78px;height:78px;background:var(--red);
+        border-radius:6px;display:grid;grid-template-columns:1fr 1fr;place-items:center;
+        box-shadow:0 0 0 3px rgba(176,52,42,.28), inset 0 0 12px rgba(0,0,0,.35);
+        font:700 26px/1 "KaiTi","楷体";color:#f6ece2;padding:6px}
+  .seal .note{position:absolute;left:96px;bottom:40px;font-size:11px;color:#7d8ba1;letter-spacing:.2em}
+  /* 霓虹 */
+  .neon{background-size:cover;background-position:center}
+  .neon .title{position:absolute;left:56px;bottom:96px;
+        font:700 62px/1.05 "Microsoft YaHei";color:#eaf7ff;letter-spacing:.1em;
+        text-shadow:0 0 10px rgba(95,224,200,.75),0 0 34px rgba(60,150,255,.45),0 2px 0 #0a1020}
+  .neon .bar{position:absolute;left:58px;bottom:80px;width:150px;height:3px;background:var(--teal);
+        box-shadow:0 0 14px var(--teal)}
+  .neon .en{position:absolute;left:58px;bottom:50px;font-size:12px;letter-spacing:.34em;color:#9fd9ff}
+  /* 图标 */
+  .icons{display:flex;gap:26px;align-items:flex-end;flex-wrap:wrap}
+  .ic{ text-align:center}
+  .ic .tiles{display:flex;gap:12px;align-items:flex-end}
+  .ic .lbl{font-size:11px;color:#8892a3;margin-top:8px;letter-spacing:.08em}
+  svg{display:block;border-radius:14%}
+  .sheet{margin-top:18px;border:1px solid #232b38;border-radius:6px;padding:20px 22px;background:#0e1219}
+  .sheet h3{font-size:13px;color:#cfe6dd;margin-bottom:8px}
+  .sheet p{font-size:12.5px;line-height:1.9;color:#9aa5b5}
+  .sheet code{background:#191f2a;color:#9fe0c8;padding:1px 5px;border-radius:3px;font-size:12px}
+</style>
+</head>
+<body>
+<h1>他山之石 · 标题与图标概念稿 v1</h1>
+<div class="sub">校园叙事 RPG ｜ HD-2D ｜ 标题字全部用系统真实字体渲染，非 AI 生成，笔画可保证正确</div>
+
+<h2>一、启动 / 标题画面（16:9，实景底取自游戏当前构建）</h2>
+<div class="grid">
+
+  <!-- A 像素 -->
+  <div class="card photo dim" style="background-image:url('ref/bg-town-night.png')">
+    <div class="tag">A ｜ 像素 HD-2D · 小镇夜景</div>
+    <canvas class="pix" data-text="他山之石" data-fs="18" data-sp="6" data-fill="#f4efe6" data-edge="#0b1220"></canvas>
+    <div class="rule"></div>
+    <div class="foot">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <!-- B 极简几何 -->
+  <div class="card flat">
+    <div class="tag">B ｜ 现代极简 · 几何山石</div>
+    <svg class="mark" width="300" height="180" viewBox="0 0 300 180" shape-rendering="geometricPrecision">
+      <polygon points="36,168 128,44 220,168" fill="#2f4straight" style="fill:#33516f"/>
+      <polygon points="104,168 186,74 268,168" fill="#26405c"/>
+      <polygon points="198,66 236,44 262,72 244,100 206,96" fill="#5fe0c8"/>
+      <polygon points="198,66 236,44 262,72 244,100 206,96" fill="none" stroke="#8ef4e0" stroke-width="1.4" opacity=".7"/>
+      <polygon points="236,44 244,100 206,96" fill="#2f9c8a" opacity=".85"/>
+      <line x1="36" y1="168" x2="268" y2="168" stroke="#5b7f9e" stroke-width="1.6" opacity=".6"/>
+    </svg>
+    <div class="title">他山之石</div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <!-- B 水墨 -->
+  <div class="card ink">
+    <div class="tag">C ｜ 水墨留白</div>
+    <svg width="760" height="428" viewBox="0 0 760 428" style="position:absolute;inset:0">
+      <!-- 远山：淡墨平铺 -->
+      <path d="M0 150 L96 96 L168 138 L252 82 L336 140 L420 104 L470 148 L520 120 L600 160 L760 132 L760 176 L0 176 Z"
+            fill="#2a3140" opacity=".13"/>
+      <path d="M0 168 L140 128 L232 166 L348 122 L470 170 L600 140 L760 178 L760 196 L0 196 Z"
+            fill="#2a3140" opacity=".09"/>
+      <!-- 近山：一笔枯笔浓墨 -->
+      <path d="M52 352 C 118 338 150 300 196 268 C 224 248 246 246 262 262 C 286 286 316 300 356 306
+               C 372 308 374 296 358 292 C 316 280 288 262 268 236 C 256 220 240 218 224 232
+               C 186 266 148 306 96 328 C 74 337 56 342 52 352 Z"
+            fill="#171c25" opacity=".88"/>
+      <path d="M196 268 C 214 258 232 250 250 246" fill="none" stroke="#171c25" stroke-width="3" opacity=".35"/>
+      <!-- 石：带棱角的墨块 + 底晕 -->
+      <ellipse cx="628" cy="356" rx="56" ry="9" fill="#171c25" opacity=".16"/>
+      <path d="M596 306 L636 288 L672 308 L664 346 L618 352 Z" fill="#1d232e" opacity=".92"/>
+      <path d="M596 306 L636 288 L642 320 L618 352 Z" fill="#2c3543" opacity=".9"/>
+      <path d="M636 288 L672 308 L642 320 Z" fill="#0f131b" opacity=".85"/>
+      <path d="M642 320 L664 346 M642 320 L618 352" fill="none" stroke="#6d7a8c" stroke-width="1.6" opacity=".5"/>
+    </svg>
+    <div class="title">他山之石</div>
+    <div class="foot" style="color:#5d6674;bottom:56px">他山之石，可以攻玉</div>
+  </div>
+
+  <!-- C 像素 · 夜樱 -->
+  <div class="card photo dim" style="background-image:url('ref/bg-sakura-night.png')">
+    <div class="tag">D ｜ 像素 HD-2D · 夜樱</div>
+    <canvas class="pix" data-text="他山之石" data-fs="18" data-sp="6" data-fill="#f6e9df" data-edge="#141024"></canvas>
+    <div class="rule"></div>
+    <div class="foot">STONES FROM ANOTHER HILL</div>
+  </div>
+
+  <!-- D 朱印竖排 -->
+  <div class="card seal">
+    <div class="tag">E ｜ 竖排 + 朱印</div>
+    <div class="v">他山之石</div>
+    <div class="stamp"><span>他</span><span>山</span><span>之</span><span>石</span></div>
+    <div class="note">VOLUME 1 · 初遇</div>
+  </div>
+
+  <!-- E 霓虹 -->
+  <div class="card neon" style="background-image:url('ref/bg-street-night.png')">
+    <div class="tag">F ｜ 左下署名 · 都市夜</div>
+    <div class="title">他山之石</div>
+    <div class="bar"></div>
+    <div class="en">STONES FROM ANOTHER HILL</div>
+  </div>
+</div>
+
+<h2>二、标题字候选（同一版式换字体，全部系统自带）</h2>
+<div class="grid three" style="margin-bottom:6px">
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">黑体 Microsoft YaHei ｜ 稳、现代</div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;color:#f4efe6;
+         font:700 54px/1 'Microsoft YaHei';letter-spacing:.22em;text-indent:.22em">他山之石</div>
+  </div>
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">等线 DengXian ｜ 轻、文艺</div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;color:#f4efe6;
+         font:400 54px/1 'DengXian','等线';letter-spacing:.22em;text-indent:.22em">他山之石</div>
+  </div>
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">楷体 KaiTi ｜ 叙事情书感</div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;color:#f4efe6;
+         font:700 54px/1 'KaiTi','楷体';letter-spacing:.18em;text-indent:.18em">他山之石</div>
+  </div>
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">隶书 LiSu ｜ 古典、悬疑线</div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;color:#f4efe6;
+         font:400 54px/1 'LiSu','隶书';letter-spacing:.16em;text-indent:.16em">他山之石</div>
+  </div>
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">宋体 SimSun 加粗 ｜ 出版物</div>
+    <div style="position:absolute;inset:0;display:grid;place-items:center;color:#f4efe6;
+         font:700 54px/1 'SimSun','宋体';letter-spacing:.2em;text-indent:.2em">他山之石</div>
+  </div>
+  <div class="card small" style="background:#0e1522">
+    <div class="tag">像素化黑体（A 方案用的就是这个）</div>
+    <canvas class="pix" style="top:60px;left:0;right:0;width:490px;height:150px"
+            data-text="他山之石" data-fs="14" data-sp="5" data-fill="#f4efe6" data-edge="#0b1220"></canvas>
+  </div>
+</div>
+
+<h2>三、桌面图标（同一标志缩到 128 / 64 / 32 px 验可读性）</h2>
+<div class="icons">
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="18,104 52,44 86,104" fill="#2f4c6b"/><polygon points="58,104 84,62 112,104" fill="#26405c"/>
+      <polygon points="86,40 104,30 116,46 106,62 88,58" fill="#5fe0c8"/>
+      <polygon points="104,30 106,62 88,58" fill="#2f9c8a"/>
+      <rect x="18" y="104" width="94" height="4" fill="#4b6d8c" opacity=".5"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="18,104 52,44 86,104" fill="#2f4c6b"/><polygon points="58,104 84,62 112,104" fill="#26405c"/>
+      <polygon points="86,40 104,30 116,46 106,62 88,58" fill="#5fe0c8"/><polygon points="104,30 106,62 88,58" fill="#2f9c8a"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <polygon points="18,104 52,44 86,104" fill="#2f4c6b"/><polygon points="58,104 84,62 112,104" fill="#26405c"/>
+      <polygon points="86,40 104,30 116,46 106,62 88,58" fill="#5fe0c8"/><polygon points="104,30 106,62 88,58" fill="#2f9c8a"/></svg>
+  </div><div class="lbl">I-1 山与石（几何，主推）</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#f4efe6"/>
+      <polygon points="20,100 64,40 108,100" fill="#1b2433"/><polygon points="84,28 94,12 112,18 110,36 92,40" fill="#2f9c8a"/><polygon points="94,12 110,36 92,40" fill="#2f9c8a" opacity=".55"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#f4efe6"/>
+      <polygon points="20,100 64,40 108,100" fill="#1b2433"/><polygon points="84,28 94,12 112,18 110,36 92,40" fill="#2f9c8a"/><polygon points="94,12 110,36 92,40" fill="#2f9c8a" opacity=".55"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#f4efe6"/>
+      <polygon points="20,100 64,40 108,100" fill="#1b2433"/><polygon points="84,28 94,12 112,18 110,36 92,40" fill="#2f9c8a"/><polygon points="94,12 110,36 92,40" fill="#2f9c8a" opacity=".55"/></svg>
+  </div><div class="lbl">I-2 反白单山</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="26" y="26" width="76" height="76" rx="8" fill="#b0342a"/>
+      <text x="64" y="52" font-family="KaiTi,楷体" font-size="26" fill="#f6ece2" text-anchor="middle">他山</text>
+      <text x="64" y="90" font-family="KaiTi,楷体" font-size="26" fill="#f6ece2" text-anchor="middle">之石</text></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="26" y="26" width="76" height="76" rx="8" fill="#b0342a"/>
+      <text x="64" y="52" font-family="KaiTi,楷体" font-size="26" fill="#f6ece2" text-anchor="middle">他山</text>
+      <text x="64" y="90" font-family="KaiTi,楷体" font-size="26" fill="#f6ece2" text-anchor="middle">之石</text></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <rect x="26" y="26" width="76" height="76" rx="8" fill="#b0342a"/></svg>
+  </div><div class="lbl">I-3 朱印（32px 后字迹糊，只作封面角标）</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0d1522"/>
+      <circle cx="64" cy="64" r="44" fill="#16243b" stroke="#5fe0c8" stroke-width="2"/>
+      <polygon points="34,92 64,42 94,92" fill="#2f4c6b"/><circle cx="84" cy="42" r="9" fill="#ffbe6a"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0d1522"/>
+      <circle cx="64" cy="64" r="44" fill="#16243b" stroke="#5fe0c8" stroke-width="3"/>
+      <polygon points="34,92 64,42 94,92" fill="#2f4c6b"/><circle cx="84" cy="42" r="10" fill="#ffbe6a"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#0d1522"/>
+      <circle cx="64" cy="64" r="46" fill="#16243b" stroke="#5fe0c8" stroke-width="5"/>
+      <polygon points="34,94 64,44 94,94" fill="#2f4c6b"/><circle cx="85" cy="42" r="12" fill="#ffbe6a"/></svg>
+  </div><div class="lbl">I-4 徽章 · 山与灯</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128" shape-rendering="crispEdges"><rect width="128" height="128" fill="#111b2e"/>
+      <g fill="#2f4c6b"><rect x="24" y="80" width="80" height="10"/><rect x="34" y="66" width="60" height="14"/>
+         <rect x="46" y="52" width="36" height="14"/></g>
+      <g fill="#5fe0c8"><rect x="58" y="28" width="20" height="16"/><rect x="52" y="36" width="32" height="12"/></g>
+      <rect x="64" y="98" width="6" height="12" fill="#ffbe6a"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128" shape-rendering="crispEdges"><rect width="128" height="128" fill="#111b2e"/>
+      <g fill="#2f4c6b"><rect x="24" y="80" width="80" height="10"/><rect x="34" y="66" width="60" height="14"/>
+         <rect x="46" y="52" width="36" height="14"/></g>
+      <g fill="#5fe0c8"><rect x="58" y="28" width="20" height="16"/><rect x="52" y="36" width="32" height="12"/></g></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128" shape-rendering="crispEdges"><rect width="128" height="128" fill="#111b2e"/>
+      <g fill="#2f4c6b"><rect x="24" y="80" width="80" height="12"/><rect x="40" y="62" width="48" height="18"/></g>
+      <g fill="#5fe0c8"><rect x="50" y="34" width="28" height="26"/></g></svg>
+  </div><div class="lbl">I-5 像素堆山（贴合游戏美术）</div></div>
+
+  <div class="ic"><div class="tiles">
+    <svg width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <path d="M22 96 L56 40 L78 72 L96 50 L108 96 Z" fill="#e8eef5"/></svg>
+    <svg width="64" height="64" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <path d="M22 96 L56 40 L78 72 L96 50 L108 96 Z" fill="#e8eef5"/></svg>
+    <svg width="32" height="32" viewBox="0 0 128 128"><rect width="128" height="128" fill="#101a2e"/>
+      <path d="M22 96 L56 40 L78 72 L96 50 L108 96 Z" fill="#e8eef5"/></svg>
+  </div><div class="lbl">I-6 一笔山脊（最简）</div></div>
+</div>
+
+<div class="sheet">
+  <h3>落地方式（选定后我来接）</h3>
+  <p>
+  1. <code>productName</code> 由「校园叙事 RPG」改为「他山之石」，窗口标题与任务栏随之变；
+  桌面图标换成 <code>Game/Assets/icon.png</code>（现有那张是占位）。<br>
+  2. exe 文件名要不要跟着改是个决定点：改中文<code>他山之石.exe</code> 会打断
+  <code>taskkill //IM Campus.exe</code>、构建脚本与 docs 里所有验收命令；
+  建议 exe 保留 <code>Campus.exe</code>，对外显示名走 productName。<br>
+  3. <b>Unity 默认 splash 去不掉</b>：<code>m_ShowUnitySplashLogo=0</code> 与自定义 splash 图都是 Pro 版功能，
+  个人版只能在它后面接一段<b>我们自己的开场 logo</b>（黑底 → 标题像素字淡入 → 青色横线划出 → 淡出进主菜单），
+  这段完全由代码控制，也就是你实际会看到的 logo。<br>
+  4. 标题字用系统字体（雅黑 / 楷体）程序化烘成贴图，不引入外部图片资产，符合本作"资产全程序化"的约定；
+  像素版是真实像素化处理（先小字号栅格化再最近邻放大），所以它确实是 16-bit 质感而不是模糊放大的字。
+  </p>
+</div>
+
+<script>
+document.querySelectorAll('canvas.pix').forEach(cv=>{
+  const W=cv.clientWidth||760, H=cv.clientHeight||150;
+  const dpr=1; cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d');
+  const text=cv.dataset.text, fs=+cv.dataset.fs, sp=+cv.dataset.sp;
+  const fill=cv.dataset.fill, edge=cv.dataset.edge;
+  const off=document.createElement('canvas').getContext('2d');
+  const font=`700 ${fs}px "Microsoft YaHei"`;
+  const probe=(c)=>{c.font=font; try{c.letterSpacing=sp+'px'}catch(e){}
+    return c.measureText(text).width;};
+  const tw=probe(off), th=fs*1.45;
+  const o=document.createElement('canvas');
+  o.width=Math.ceil(tw+fs*2); o.height=Math.ceil(th+fs);
+  const oc=o.getContext('2d'); oc.font=font; try{oc.letterSpacing=sp+'px'}catch(e){}
+  oc.textBaseline='middle';
+  const px=(v)=>Math.round(v);
+  // 16-bit 描边：八向硬偏移
+  oc.fillStyle=edge;
+  [[-2,0],[2,0],[0,-2],[0,2],[-1,-1],[1,-1],[-1,1],[1,1]].forEach(([dx,dy])=>
+    oc.fillText(text,px(fs+dx),px(o.height/2+dy)));
+  oc.fillStyle=fill; oc.fillText(text,px(fs),px(o.height/2));
+  // 最近邻放大 = 真像素感
+  ctx.imageSmoothingEnabled=false;
+  const s=Math.floor(H/o.height*0.92);
+  const dw=o.width*s, dh=o.height*s;
+  ctx.drawImage(o,px((W-dw)/2),px((H-dh)/2),dw,dh);
+});
+</script>
+</body>
+</html>

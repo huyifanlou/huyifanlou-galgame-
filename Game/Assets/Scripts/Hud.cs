@@ -39,7 +39,7 @@ public class Hud : MonoBehaviour
 
     void OnGUI()
     {
-        if (Time == null) return;
+        if (Time == null || Args.NoHud || IntroScreen.Live) return;
         if (_title == null)
         {
             _title = Mk(18, TextAnchor.UpperLeft, new Color(0.91f, 0.91f, 0.93f));
@@ -52,7 +52,7 @@ public class Hud : MonoBehaviour
         float W = Screen.width, H = Screen.height;
 
         // 左上：标题 + 操作说明
-        GUI.Label(new Rect(16, 10, 900, 28), "（游戏名待定）· 校园叙事 RPG（Unity 版）", _title);
+        GUI.Label(new Rect(16, 10, 900, 28), "他山之石", _title);
         GUI.Label(new Rect(16, 36, 1100, 24),
             "WASD 移动 ｜ Shift 跑 ｜ 拖拽 或 Q/E 视角 ｜ 滚轮 缩放 ｜ F11 全屏 ｜ F10 帧率 ｜ M 地图 ｜ V 视角 ｜ F 交互 ｜ 0/1/2/3 时间 ｜ T +12h ｜ Y 天气", _hint);
 

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>他山之石 · 镜荧侧脸（动漫画风）v2</title>
+<style>
+  body{background:#0a0c11;color:#dfe3ea;font:"Microsoft YaHei",sans-serif;padding:26px 32px 56px;margin:0}
+  h1{font-size:21px;letter-spacing:.16em;margin:0 0 4px}
+  .sub{font-size:12px;color:#8892a3;margin-bottom:18px}
+  h2{font-size:14px;letter-spacing:.12em;color:#9fb3c8;margin:26px 0 12px;font-weight:600;
+     border-left:3px solid #5fe0c8;padding-left:9px}
+  .row{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+  .v{text-align:center}
+  .v .lbl{font-size:11px;color:#8892a3;margin-top:8px;letter-spacing:.06em}
+  .tiles{display:flex;gap:12px;align-items:flex-end}
+  svg{display:block;border-radius:8%}
+  .note{margin-top:24px;border:1px solid #232b38;border-radius:6px;padding:16px 20px;background:#0e1219;
+        font-size:12.5px;line-height:1.9;color:#9aa5b5;max-width:1560px}
+  .note b{color:#cfe6dd}
+</style>
+</head>
+<body>
+<h1>镜荧 · 侧脸头像（动漫画风）v2</h1>
+<div class="sub">v1 的解剖问题已改：头放大、脖子收短、鼻子收小显童稚、头顶补发盖住露皮、耳朵隐入发里、去掉右上角那盏灯</div>
+
+<h2>一、四种底色</h2>
+<div class="row" id="r1"></div>
+<h2>二、构图</h2>
+<div class="row" id="r2"></div>
+
+<template id="tpl">
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="cp"><rect x="0" y="0" width="512" height="512" rx="46"/></clipPath>
+    <linearGradient id="iris" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1a448a"/><stop offset=".5" stop-color="#3f86d8"/>
+      <stop offset="1" stop-color="#a8e2ff"/>
+    </linearGradient>
+    <linearGradient id="hairG" x1=".15" y1="0" x2=".85" y2="1">
+      <stop offset="0" stop-color="#f6f9ff"/><stop offset=".55" stop-color="#e2eaf5"/>
+      <stop offset="1" stop-color="#b6c6dd"/>
+    </linearGradient>
+    <clipPath id="eyeClip"><path d="M162 186 C 180 166 216 162 236 180 C 232 208 200 220 176 208 C 168 204 164 196 162 186 Z"/></clipPath>
+  </defs>
+  <g clip-path="url(#cp)">
+    <rect width="512" height="512" fill="BG"/>
+    <!-- 远山 -->
+    <g opacity=".5">
+      <path d="M0 452 L104 356 L196 436 L300 340 L400 428 L512 356 L512 512 L0 512 Z" fill="#182740"/>
+      <path d="M0 486 L128 414 L246 486 L364 412 L512 490 L512 512 L0 512 Z" fill="#111c30"/>
+    </g>
+
+    <!-- 后发大形（含头顶，画在脸之前，脸再压回来） -->
+    <path d="M168 150 C 176 74 250 30 330 44 C 412 58 448 132 442 216
+             C 436 306 416 396 408 470 L 300 470 C 330 392 344 316 340 250
+             C 336 178 300 132 244 124 C 208 120 180 132 168 150 Z" fill="url(#hairG)"/>
+
+    <!-- 颈与肩（短颈） -->
+    <path d="M252 268 C 258 300 256 322 248 340 L 300 352 C 340 364 366 400 372 470
+             L 168 470 C 176 404 202 366 236 348 C 246 330 248 300 244 272 Z" fill="#f7d6c0"/>
+    <path d="M236 348 C 272 356 320 366 348 400 C 366 422 372 446 374 470 L 166 470
+             C 172 412 196 368 236 348 Z" fill="#223049"/>
+    <path d="M262 352 L 292 470 L 268 470 L 244 360 Z" fill="#3c5a78"/>
+    <path d="M300 366 C 326 384 344 412 350 442 L 330 442 C 324 414 312 388 294 372 Z" fill="#2a3c58"/>
+
+    <!-- 脸：朝左侧脸（童稚：额头饱满、鼻小、下巴圆） -->
+    <path d="M266 76 C 212 78 176 116 170 160
+             C 168 176 164 186 158 196 C 152 206 150 214 156 219
+             C 161 223 168 222 172 226 C 176 230 173 236 167 240
+             C 174 246 181 248 177 256 C 173 266 181 281 199 290
+             C 221 301 254 302 278 291 C 304 279 317 250 319 214
+             L 320 128 C 318 94 298 76 266 76 Z" fill="#ffe6d4"/>
+    <!-- 侧脸暗面（颧骨到下颌） -->
+    <path d="M278 291 C 304 279 317 250 319 214 L 320 128 C 318 94 298 76 266 76
+             C 292 84 306 106 308 140 C 310 200 300 254 278 291 Z" fill="#f2c9b0"/>
+    <!-- 刘海在额头的投影 -->
+    <path d="M172 158 C 190 138 226 128 262 132 C 250 148 232 160 214 172
+             C 198 182 184 186 174 184 Z" fill="#eab89f" opacity=".55"/>
+
+    <!-- 头发：刘海三束（压住发际与头顶） -->
+    <path d="M158 168 C 168 84 246 34 332 50 C 404 64 440 128 438 200
+             C 424 156 396 122 356 104 C 316 86 272 92 240 118
+             C 214 138 196 166 188 198 C 184 214 182 228 184 240
+             C 172 218 162 192 158 168 Z" fill="url(#hairG)"/>
+    <path d="M204 132 C 232 96 282 76 330 82 C 292 94 258 118 236 150
+             C 220 174 212 198 212 220 C 200 196 196 160 204 132 Z" fill="#eef3fa"/>
+    <path d="M262 92 C 302 82 344 88 372 108 C 340 108 310 120 288 140
+             C 270 156 258 176 252 198 C 244 162 248 118 262 92 Z" fill="#f8fbff"/>
+    <path d="M330 82 C 372 96 404 128 420 170 C 404 140 380 118 350 106
+             C 330 98 312 96 296 98 C 308 90 320 84 330 82 Z" fill="#dfe8f4"/>
+    <!-- 脑后垂发（前层，压住肩） -->
+    <path d="M312 108 C 366 138 394 204 394 286 C 394 356 380 424 366 470 L 424 470
+             C 436 388 444 300 434 230 C 422 150 378 104 312 108 Z" fill="#e4ecf7"/>
+    <path d="M336 140 C 372 180 386 240 384 306 C 382 372 370 428 358 470 L 336 470
+             C 352 420 366 358 366 298 C 366 232 356 180 336 140 Z" fill="#c2d0e3"/>
+    <!-- 垂到颊侧的一缕 -->
+    <path d="M322 148 C 336 190 340 240 334 290 C 330 322 322 346 314 362 L 300 352
+             C 312 326 320 292 320 250 C 320 206 314 174 322 148 Z" fill="#dbe4f0"/>
+
+    <!-- 眼（放大、位置下移） -->
+    <g>
+      <path d="M162 186 C 180 166 216 162 236 180 C 232 208 200 220 176 208 C 168 204 164 196 162 186 Z"
+            fill="#f9fcff"/>
+      <g clip-path="url(#eyeClip)">
+        <ellipse cx="200" cy="192" rx="24" ry="26" fill="url(#iris)"/>
+        <ellipse cx="200" cy="194" rx="9" ry="13" fill="#101c30"/>
+        <ellipse cx="188" cy="180" rx="8" ry="6" fill="#f0faff"/>
+        <ellipse cx="210" cy="206" rx="6" ry="4" fill="#bfe6ff" opacity=".85"/>
+        <path d="M162 168 C 190 160 224 164 240 176 L 240 160 L 162 156 Z" fill="#1a2233" opacity=".45"/>
+      </g>
+      <path d="M160 184 C 180 162 218 160 238 178" fill="none" stroke="#16203a" stroke-width="8"
+            stroke-linecap="round"/>
+      <path d="M162 180 C 156 175 152 170 150 164" fill="none" stroke="#16203a" stroke-width="5"
+            stroke-linecap="round"/>
+      <path d="M164 192 C 158 194 154 196 151 196" fill="none" stroke="#16203a" stroke-width="3.6"
+            stroke-linecap="round" opacity=".9"/>
+      <!-- 眉 -->
+      <path d="M176 152 C 196 142 220 142 238 150" fill="none" stroke="#b3c2d6" stroke-width="7"
+            stroke-linecap="round" opacity=".9"/>
+    </g>
+
+    <!-- 鼻（收小） -->
+    <path d="M166 196 C 160 204 155 211 156 216 C 158 220 164 221 170 224" fill="none"
+          stroke="#e0a892" stroke-width="3.6" stroke-linecap="round"/>
+    <path d="M158 210 C 154 214 154 218 158 221" fill="none" stroke="#f6d3bd" stroke-width="4"
+          stroke-linecap="round" opacity=".8"/>
+    <!-- 嘴（小，露一颗虎牙） -->
+    <path d="M168 240 C 176 236 186 237 191 242 C 184 249 174 249 168 240 Z" fill="#d98b8b"/>
+    <path d="M170 242 C 177 247 184 247 189 243 C 186 251 175 251 170 242 Z" fill="#c26b6b"/>
+    <path d="M172 240 L 178 240 L 175 247 Z" fill="#ffffff"/>
+    <ellipse cx="196" cy="232" rx="15" ry="7" fill="#f3a89e" opacity=".4"/>
+    <!-- 发丝暗纹与天使环 -->
+    <g stroke="#b6c6dd" stroke-width="2.8" fill="none" opacity=".75">
+      <path d="M356 150 C 380 202 388 274 380 356"/>
+      <path d="M382 190 C 400 240 404 310 396 388"/>
+    </g>
+    <path d="M206 116 C 246 82 306 72 352 88" fill="none" stroke="#ffffff" stroke-width="8"
+          stroke-linecap="round" opacity=".5"/>
+  </g>
+</svg>
+</template>
+
+<script>
+const tpl=document.getElementById('tpl').content;
+let uid=0;
+function make(bg,label,sizes,extra){
+  const w=document.createElement('div'); w.className='v';
+  const t=document.createElement('div'); t.className='tiles';
+  sizes.forEach(s=>{
+    const node=tpl.cloneNode(true);
+    // 克隆后 id 会重复，逐个改名
+    const k=++uid;
+    node.querySelectorAll('[id]').forEach(el=>{
+      const old=el.id, nw=old+'_'+k; el.id=nw;
+      node.querySelectorAll('*').forEach(u=>{
+        ['clip-path','fill'].forEach(a=>{
+          const v=u.getAttribute&&u.getAttribute(a);
+          if(v===`url(#${old})`) u.setAttribute(a,`url(#${nw})`);
+        });
+      });
+    });
+    node.querySelectorAll('rect').forEach(r=>{ if(r.getAttribute('fill')==='BG') r.setAttribute('fill',bg); });
+    const svg=node.querySelector('svg');
+    if(extra){ const g=svg.querySelector('g[clip-path]'); g.setAttribute('transform',extra); }
+    svg.setAttribute('width',s); svg.setAttribute('height',s);
+    svg.style.width=s+'px'; svg.style.height=s+'px';
+    t.appendChild(svg);
+  });
+  w.appendChild(t);
+  const l=document.createElement('div'); l.className='lbl'; l.textContent=label;
+  w.appendChild(l); return w;
+}
+const r1=document.getElementById('r1');
+r1.appendChild(make('#0e1626','A-1 夜色底（远山）',[256,128,64,32]));
+r1.appendChild(make('#101a2e','A-2 纯藏青',[256,128,64,32]));
+r1.appendChild(make('#f4efe6','A-3 反白底',[256,128,64,32]));
+r1.appendChild(make('#16233a','A-4 深青灰',[256,128,64,32]));
+const r2=document.getElementById('r2');
+r2.appendChild(make('#0e1626','B-1 特写（放大 1.22，裁到脸）',[256,128,64,32],'translate(-30 -22) scale(1.22)'));
+r2.appendChild(make('#0e1626','B-2 原构图（头肩）',[256,128,64,32]));
+</script>
+</body>
+</html>
