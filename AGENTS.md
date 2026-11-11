@@ -46,6 +46,8 @@ EDITOR="D:/AI/Unity/Editor/2022.3.62f3c1/Editor/Unity.exe"
 
 # 截图验收（与 web 版 URL 参数一一对应）
 Game/Build/Win/Campus.exe -shot shots/x.png -time 18.5 -px 0 -pz 4 -at -21,7.5 -freeze 1
+# 角色模型验收（docs/96）：-avatar 换玩家模型拍镜荧/景楠；不带 = 樊楼；实机按 C 循环切换三人
+Game/Build/Win/Campus.exe -avatar jingying -facing 0 -dist 3.4 -pitch 0.3 -freeze 1 -shot shots/x.png
 ```
 
 ## 室内系统速查（必读：`docs/89-交接说明.md`、`docs/35`、`docs/34`）
@@ -72,6 +74,19 @@ Campus.exe -indoor home -px 899 -pz -4.6 -at 899,6 -sim w,200 -frames 240   # �
 
 建完室内自动跑 `Validate()`，`Player.log` 里应看到「校验完成：N 个碰撞盒，问题 0 处」。
 
+## 对话系统速查（必读：`docs/100`）
+
+第一卷 8 章扩写稿已接进工程：`ScenarioData` 解析行语法 → `DialogueManager` IMGUI 播放（立绘卡＋名字条＋旁白/内心/演出分样式）。
+
+```bash
+Campus.exe -scenario 1 [-scenline 7] [-scenlog|-scenauto] [-frames 30] -shot shots/x.png   # 进第 N 章第 M 句截图（-scenario 跳过开场）
+# 实机：B 开/继续剧情（点框/空格推进，Esc 退出）；L 回顾（左栏章节目录＋点句回退定位）；A 自动；S 跳过；C 人物自选菜单；H 按键侧栏
+```
+
+- 剧本源在 `Scenario/第一卷-初遇/`，构建期 `Bootstrap.SyncScenario` 自动拷到 `StreamingAssets/Scenario`（源不动）。
+- 行语法：台词 `角色：「…」`、`【旁白/内心/演出/场景/音效/BGM/伏笔】`、`## 场 N` 分场；文末附录自动截断、伏笔隐藏、※/† 剥掉。
+- 立绘 `Resources/Portraits/{id}-dialogue` 按说话人反查（六主角有图）；无名角色只给名字条。对话/菜单期间锁移动。
+
 ## 文档索引
 
 - `docs/00-立项与迁移说明.md` —— 引擎选择（含中国网络实测）、冻结策略、迁移策略
@@ -80,5 +95,20 @@ Campus.exe -indoor home -px 899 -pz -4.6 -at 899,6 -sim w,200 -frames 240   # �
 - `docs/03`~`docs/10` —— 首屏上线 / 世界扩容 / 布局重整 / 单一语言（JS 退役） / 贴图生成器移植与对拍 / 美化后处理 / 像素密度收尾①②
 - `docs/11`~`docs/88` —— 材质写实化 / 物理与流动水 / 世界边界 / 光照与写实渲染 / 校园与小镇总平面多轮 / 樱花与巨樱 / 神社区域 / 学校区与校舍 / 室内系统（34~46、82~86） / 住宅区商铺区扩边界与路网路灯联动（87~88）
 - **`docs/89-交接说明.md` —— 新会话入口**：当前状态、各轮踩坑、未处理项、下一步优先级
+- `docs/90` —— 剧本线开工与第一章扩写样张（口径六轮校正的完整记录）
+- `docs/91`~`docs/92` —— 品牌线：图标概念稿与开场 logo 实现
+- `docs/93` —— 原作底本入库（番茄作家后台抓取与字体混淆的结论）
+- `docs/94` —— 第一卷后半扩写（第 5~8 章）与覆盖校验脚本用法
+- **`docs/95-交接说明-剧本线.md` —— 剧本线的交接页**：口径六条、行语法、校验命令、待作者批的 8 件事
+- `docs/96` —— NPC 建模第一批：CharacterDef 数据驱动 + 镜荧A/景楠A 实装、`-avatar` 验收钩子
+- `docs/97` —— NPC 修订轮：镜荧红眼放大+中分八字+礼服细节+长发穿模修复、景楠立领夹克（服装多样化）
+- `docs/98`~`docs/99` —— C 阶段：莉莉雅/瑶清寒/紫薇参考与概念、建模实装（女角色 4×4 眼、脸部去黑边）
+- **`docs/100-对话系统与人物自选菜单.md`** —— 玩法线首装：剧本行语法→IMGUI 对话播放 + C 键六人自选菜单
+- `docs/101` —— 待定立绘重画与入库：樊楼 FL-A / 景楠 JN-D（百炼 Wan2.7-Image 八版挑稿、水印盖除与抠图阈值）
+- `docs/102` —— 立绘白底清干净（无损源+种子点泛填）＋瑶清寒缩小 0.8＋H 按键侧边栏＋剧情浏览章节目录
+- **剧本线文件**：`Scenario/第一卷-初遇/01~08-*-扩写.md`（比赛只用第一卷）、
+  `Scenario/原作-我的人生是否有问题/原作全文.md`（作者本人原作 120 章，**底本**）、
+  `Scenario/原作-我的人生是否有问题/001-篇章结构与设定增量.md`（13 卷弧结构与信息边界）。
+  改完稿跑：`python tools/check-coverage.py 1 8 <八章文件>` → `Scenario/第一卷-初遇/_coverage.txt`
 - 世界数值（建筑/道路/植被/路灯/交互点）：**当前默认世界是 `Game/Assets/Scripts/TownData.cs`**（`BOUND=150`，46 栋 / 11 街 / 137 灯）；
   `CampusData.cs` 只在 `-campus` 启动时用。web 期的 `assets/world.json` 只作对拍参考。

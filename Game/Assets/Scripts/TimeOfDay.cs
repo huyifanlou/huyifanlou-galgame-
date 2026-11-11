@@ -42,12 +42,13 @@ public class TimeOfDay : MonoBehaviour
     static readonly Color NIGHT_FOG = MatLib.Hex("#0e1626");
     static readonly Color GLASS_OFF = MatLib.Hex("#d5dbe4");
     static readonly Color GLASS_ON = MatLib.Hex("#ffd98a");
-    // 写实向（2026-10-18 第二版）：压低整体曝光 + 保住「直射 : 环境」比 → 不再晃眼、层次更厚
-    // （上一版白天 1.00:0.20 太亮，白墙/路面对比不足；夜晚同步略降，靠路灯/窗户发光撑起可读性）
-    const float DAY_AMB = 0.28f, DAY_HEMI = 0.16f, DAY_DIR_I = 0.95f;
-    const float NIGHT_AMB = 0.22f, NIGHT_HEMI = 0.16f, NIGHT_DIR_I = 0.40f;
-    const float DAY_FOG_NEAR = 70f, DAY_FOG_FAR = 300f;
-    const float NIGHT_FOG_NEAR = 60f, NIGHT_FOG_FAR = 230f;
+    // 卡通渲染（2026-11-10 美术重做）：直射光承担「亮面」，环境光承担「暗面」，
+    // 两者比例要拉开到 3:1 以上才有硬朗的阶梯感；上一版写实的 0.95:0.28 太平，会糊成一片。
+    // 夜晚：卡通夜景靠「深蓝环境 + 暖黄灯光」的高对比，不是把整体提亮。
+    const float DAY_AMB = 0.42f, DAY_HEMI = 0.20f, DAY_DIR_I = 1.15f;
+    const float NIGHT_AMB = 0.26f, NIGHT_HEMI = 0.16f, NIGHT_DIR_I = 0.42f;
+    const float DAY_FOG_NEAR = 80f, DAY_FOG_FAR = 340f;
+    const float NIGHT_FOG_NEAR = 65f, NIGHT_FOG_FAR = 240f;
 
     public static float Smooth(float x) => x * x * (3f - 2f * x);
 
@@ -130,22 +131,16 @@ public class TimeOfDay : MonoBehaviour
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
 
-        // 写实天空：内置程序化天空盒（太阳盘 + 大气渐变），替换原来的平涂昼穹；
-        // 夜穹保留为透明星空层叠在天空盒上。
-        _skybox = Resources.Load<Material>("mat_holder/Skybox_Procedural");
-        if (_skybox != null)
-        {
-            RenderSettings.skybox = _skybox;
-            RenderSettings.sun = _dir;
-            RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Skybox;
-            RenderSettings.defaultReflectionResolution = 256;
-            RenderSettings.reflectionIntensity = 1f;
-            var cam = Camera.main;
-            if (cam != null) cam.clearFlags = CameraClearFlags.Skybox;
-            if (_w != null && _w.SkyDayGo != null) _w.SkyDayGo.SetActive(false);
-            Debug.Log("[TimeOfDay] 程序化天空启用");
-        }
-        else Debug.LogWarning("[TimeOfDay] 程序化天空材质未找到，保留昼穹");
+        // 卡通渲染的天空：不用写实程序化天空盒（大气散射渐变会把画面拉回写实），
+        // 改用平涂渐变穹顶 + 远处的「云带」——卡通天空是色块，不是大气。
+        // WorldBuilder 建的 SkyDay / SkyNight 双穹正是为此而生，这里保留并驱动它们。
+        RenderSettings.skybox = null;
+        RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
+        RenderSettings.customReflectionTexture = null;
+        RenderSettings.reflectionIntensity = 0f;
+        var camC = Camera.main;
+        if (camC != null) camC.clearFlags = CameraClearFlags.SolidColor;
+        Debug.Log("[TimeOfDay] 卡通平涂天空启用");
 
         Apply();
     }
@@ -286,6 +281,10 @@ public class TimeOfDay : MonoBehaviour
         RenderSettings.ambientEquatorColor = new Color(ambEq.r, ambEq.g, ambEq.b, 1f);
         RenderSettings.ambientGroundColor = new Color(ambGnd.r, ambGnd.g, ambGnd.b, 1f);
 
+        // 卡通着色器的全局环境光 / 太阳强度（Toon.shader 里 _ToonAmbient / _ToonSunPower）
+        // 卡通渲染不用 Unity 的三色环境光，所以这里单独喂一份，取天空+地面混合后的等效值。
+        // ⚠ 必须放在下面 _dir.intensity 更新之后，否则用的还是上一帧的太阳强度。
+
         if (_dir != null)
         {
             _dir.intensity = Mathf.Lerp(DAY_DIR_I, NIGHT_DIR_I, m) * wSun;
@@ -297,6 +296,22 @@ public class TimeOfDay : MonoBehaviour
         {
             _up.intensity = Mathf.Lerp(DAY_HEMI, NIGHT_HEMI, m) * 0.55f;
             _up.color = sky;
+        }
+
+        // 卡通全局量（太阳强度已更新完毕，这里取的是本帧值）
+        // ⚠ 卡通 shader 里的 _ToonAmbient 是「直接乘到 albedo 上」的绝对量，不是比例，
+        // 所以这里必须给绝对亮度值。上一版从 ambSky/ambGnd 推导（它们已乘过 ambI），
+        // 夜晚会算出一个偏亮的灰蓝，画面像「蓝色白天」——这是夜景发灰的根因。
+        {
+            float toonSun = _dir != null ? _dir.intensity : DAY_DIR_I;
+            // 白天环境：冷白偏暗一点（卡通渲染的暗面要能看出色阶，环境光太亮会把阶梯冲平）
+            Color dayAmb = new Color(0.38f, 0.42f, 0.55f, 1f);
+            // 夜晚环境：深蓝、明显更暗（卡通夜景靠路灯暖光做对比）
+            Color nightAmb = new Color(0.10f, 0.13f, 0.27f, 1f);
+            Color toonAmb = Color.Lerp(dayAmb, nightAmb, m);
+            // 室内：抬到中性暖白，但**不能过亮**（上一版 0.62 让白墙直接过曝成一片白）
+            if (Indoor) toonAmb = Color.Lerp(toonAmb, new Color(0.42f, 0.40f, 0.37f), 0.72f);
+            MatLib.SetGlobals(toonAmb, toonSun);
         }
 
         // 水面着色（Campus/Water 自定义着色器）
@@ -321,7 +336,7 @@ public class TimeOfDay : MonoBehaviour
         RenderSettings.fogStartDistance = Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m) * fogNearMul;
         RenderSettings.fogEndDistance = Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m) * fogFarMul;
 
-        // 程序化天空：太阳盘只在白天出现，晨昏染暖，夜晚低曝光
+        // 卡通天空：太阳盘只在白天出现，晨昏染暖，夜晚低曝光（已改用平涂穹顶，见 Init）
         if (_skybox != null)
         {
             _skybox.SetFloat("_SunDisk", m > 0.55f ? 0f : 2f);
@@ -361,10 +376,15 @@ public class TimeOfDay : MonoBehaviour
             // 后处理随昼夜：夜晚泛光更强（路灯/窗户晕开）、暗角略深
             if (_post != null)
             {
-                // 写实档：白天几乎不泛光、暗角很轻；夜里只让灯/窗/招牌晕开
-                _post.BloomIntensity = Mathf.Lerp(0.07f, 0.22f, m);
-                _post.VigStrength = Mathf.Lerp(0.16f, 0.26f, m);
-                _post.Threshold = Mathf.Lerp(1.10f, 0.85f, m);
+                // 卡通档：白天轻微泛光（让受光面通透），夜里**降低**泛光——
+                // 卡通夜景靠「暗地面 + 亮灯光」的对比，泛光一强整个路面就被抬成灰蓝，夜景感全没了。
+                _post.BloomIntensity = Mathf.Lerp(0.18f, 0.12f, m);
+                _post.VigStrength = Mathf.Lerp(0.12f, 0.34f, m);
+                // 阈值随夜晚升高：只有真正亮的东西（灯头/窗户/招牌）才泛光，路面不泛
+                _post.Threshold = Mathf.Lerp(1.05f, 1.35f, m);
+                // 卡通色彩：夜里压曝光把地面沉下去，蓝调才出得来
+                _post.Saturation = Mathf.Lerp(1.20f, 1.08f, m);
+                _post.Exposure = Mathf.Lerp(1.02f, 0.78f, m);
             }
 
             // 店铺橱窗夜里透暖光（立面窗格由贴图渐变表现，不再覆盖玻璃片）

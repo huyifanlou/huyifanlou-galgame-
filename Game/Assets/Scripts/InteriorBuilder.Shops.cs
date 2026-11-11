@@ -17,15 +17,19 @@ public static partial class InteriorBuilder
     {
         const float d = 0.50f;
         float len = x1 - x0, cx = (x0 + x1) * 0.5f;
-        Part(p, new Vector3(cx, h * 0.5f, z - face * (d * 0.5f - 0.02f)),
-             new Vector3(len, h, 0.04f), frame, 1f);
-        Part(p, new Vector3(x0 + 0.03f, 0.06f, z), new Vector3(0.06f, 0.12f, d), frame, 0.7f);
-        Part(p, new Vector3(x1 - 0.03f, 0.06f, z), new Vector3(0.06f, 0.12f, d), frame, 0.7f);
-        Part(p, new Vector3(cx, h - 0.03f, z), new Vector3(len, 0.06f, d), frame, 1f);
-        Part(p, new Vector3(cx, 0.06f, z), new Vector3(len, 0.12f, d), frame, 1f);
+        var trim = Darker(frame, 0.76f);
+        // 背板/顶板/底板/隔板全部倒角：卡通描边把每层格子分开
+        PartC(p, new Vector3(cx, h * 0.5f, z - face * (d * 0.5f - 0.02f)),
+              new Vector3(len, h, 0.04f), frame, 0.010f, 1f);
+        PartC(p, new Vector3(x0 + 0.03f, 0.06f, z), new Vector3(0.06f, 0.12f, d), frame, 0.010f, 0.7f);
+        PartC(p, new Vector3(x1 - 0.03f, 0.06f, z), new Vector3(0.06f, 0.12f, d), frame, 0.010f, 0.7f);
+        PartC(p, new Vector3(cx, h - 0.03f, z), new Vector3(len, 0.06f, d), frame, 0.012f, 1f);
+        PartC(p, new Vector3(cx, 0.06f, z), new Vector3(len, 0.12f, d), frame, 0.012f, 1f);
+        // 顶部压条：比顶板外凸 1cm，书架顶沿在卡通渲染里有一条独立亮线
+        Part(p, new Vector3(cx, h + 0.005f, z), new Vector3(len + 0.02f, 0.03f, d + 0.02f), trim, 1f);
         for (int r = 1; r <= 3; r++)
-            Part(p, new Vector3(cx, 0.12f + r * 0.48f, z),
-                 new Vector3(len - 0.12f, 0.04f, d - 0.06f), frame, 1f);
+            PartC(p, new Vector3(cx, 0.12f + r * 0.48f, z),
+                  new Vector3(len - 0.12f, 0.04f, d - 0.06f), trim, 0.008f, 1f);
 
         float step = 0.17f * (productScale < 0.9f ? 0.76f : 1f);
         int n = Mathf.FloorToInt((len - 0.24f) / step);
@@ -51,15 +55,17 @@ public static partial class InteriorBuilder
     {
         const float d = 0.50f;
         float len = z1 - z0, cz = (z0 + z1) * 0.5f;
-        Part(p, new Vector3(x - face * (d * 0.5f - 0.02f), h * 0.5f, cz),
-             new Vector3(0.04f, h, len), frame, 1f);
-        Part(p, new Vector3(x, 0.06f, z0 + 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.7f);
-        Part(p, new Vector3(x, 0.06f, z1 - 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.7f);
-        Part(p, new Vector3(x, h - 0.03f, cz), new Vector3(d, 0.06f, len), frame, 1f);
-        Part(p, new Vector3(x, 0.06f, cz), new Vector3(d, 0.12f, len), frame, 1f);
+        var trim = Darker(frame, 0.76f);
+        PartC(p, new Vector3(x - face * (d * 0.5f - 0.02f), h * 0.5f, cz),
+              new Vector3(0.04f, h, len), frame, 0.010f, 1f);
+        PartC(p, new Vector3(x, 0.06f, z0 + 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.010f, 0.7f);
+        PartC(p, new Vector3(x, 0.06f, z1 - 0.03f), new Vector3(d, 0.12f, 0.06f), frame, 0.010f, 0.7f);
+        PartC(p, new Vector3(x, h - 0.03f, cz), new Vector3(d, 0.06f, len), frame, 0.012f, 1f);
+        PartC(p, new Vector3(x, 0.06f, cz), new Vector3(d, 0.12f, len), frame, 0.012f, 1f);
+        Part(p, new Vector3(x, h + 0.005f, cz), new Vector3(d + 0.02f, 0.03f, len + 0.02f), trim, 1f);
         for (int r = 1; r <= 3; r++)
-            Part(p, new Vector3(x, 0.12f + r * 0.48f, cz),
-                 new Vector3(d - 0.06f, 0.04f, len - 0.12f), frame, 1f);
+            PartC(p, new Vector3(x, 0.12f + r * 0.48f, cz),
+                  new Vector3(d - 0.06f, 0.04f, len - 0.12f), trim, 0.008f, 1f);
 
         float step = 0.17f * (productScale < 0.9f ? 0.76f : 1f);
         int n = Mathf.FloorToInt((len - 0.24f) / step);
@@ -81,33 +87,35 @@ public static partial class InteriorBuilder
 
     static void BookStack(Transform p, Vector3 pos, int n = 3)
     {
-        var cols = new[] { C("#8c4a3c"), C("#3f5c6b"), C("#8a7440"),
-                           C("#6b7a4a"), C("#a9a08a"), C("#5b4a6b") };
+        // 卡通书堆：高饱和六色轮换（原 #8c4a3c / #3f5c6b / #a9a08a 一堆灰褐）
+        var cols = new[] { C("#e0554a"), C("#4a9ac8"), C("#f0b03c"),
+                           C("#6cc06a"), C("#a86ad8"), C("#e08a4a") };
         for (int i = 0; i < n; i++)
             Part(p, pos + new Vector3(0f, i * 0.055f, 0f),
                  new Vector3(0.42f, 0.05f, 0.30f), cols[i % cols.Length], 0.5f);
     }
 
-    static void TableLamp(Transform p, Vector3 pos, string shade = "#e3d3a8")
+    static void TableLamp(Transform p, Vector3 pos, string shade = "#f0d8a8")
     {
-        Part(p, pos, new Vector3(0.18f, 0.04f, 0.18f), C("#6f5540"), 0.5f);
-        Part(p, pos + new Vector3(0f, 0.18f, 0f), new Vector3(0.035f, 0.34f, 0.035f), C("#8d8d94"), 1f);
-        Part(p, pos + new Vector3(0f, 0.38f, 0f), new Vector3(0.28f, 0.16f, 0.28f), C(shade), 1f);
-        Part(p, pos + new Vector3(0f, 0.30f, 0f), new Vector3(0.30f, 0.02f, 0.30f), C("#8a7440"), 1f);
+        PartC(p, pos, new Vector3(0.18f, 0.04f, 0.18f), CB("#c98a4e"), 0.008f, 0.5f);
+        Part(p, pos + new Vector3(0f, 0.18f, 0f), new Vector3(0.035f, 0.34f, 0.035f), C("#c8d0d8"), 1f);
+        PartC(p, pos + new Vector3(0f, 0.38f, 0f), new Vector3(0.30f, 0.18f, 0.30f), CB(shade), 0.014f, 1f);
+        Part(p, pos + new Vector3(0f, 0.30f, 0f), new Vector3(0.32f, 0.02f, 0.32f), CB("#e08a4a"), 1f);
     }
 
     // 吊灯（暖光）：y 是灯罩中心，吊杆自动接到天花板底，且不会把灯罩埋进吊顶
-    static void Pendant(Transform p, float x, float y, float z, float drop, string shade = "#d8c8a8")
+    static void Pendant(Transform p, float x, float y, float z, float drop, string shade = "#f0d0a0")
     {
         if (_ceilY > 0f) y = Mathf.Min(y, _ceilY - 0.75f);
         y = HangY(y, 0.10f);
         float rodBottom = y + 0.10f;
         float rodTop = _ceilY > rodBottom + 0.05f ? _ceilY : rodBottom + Mathf.Max(drop, 0.2f);
         Part(p, new Vector3(x, (rodBottom + rodTop) * 0.5f, z),
-             new Vector3(0.025f, rodTop - rodBottom, 0.025f), C("#2f3338"), 1f);
-        Part(p, new Vector3(x, y, z), new Vector3(0.52f, 0.20f, 0.52f), C(shade), 1f);
+             new Vector3(0.025f, rodTop - rodBottom, 0.025f), CB("#5a626e"), 1f);
+        // 灯罩倒角成梯形感：卡通吊灯是一个大色块 + 一圈亮描边
+        PartC(p, new Vector3(x, y, z), new Vector3(0.54f, 0.22f, 0.54f), CB(shade), 0.040f, 1f);
         // 发光面朝下并嵌进灯罩底 1cm（原来放在罩顶 1.5cm 处，看着像灯罩上又多扣了一块白板）
-        Part(p, new Vector3(x, y - 0.115f, z), new Vector3(0.42f, 0.03f, 0.42f), C("#fff2d6"), 1f);
+        Part(p, new Vector3(x, y - 0.115f, z), new Vector3(0.44f, 0.03f, 0.44f), C("#fff2d6"), 1f);
         var go = new GameObject("pendantlight");
         go.transform.SetParent(p, false);
         go.transform.localPosition = new Vector3(x, y - 0.10f, z);
@@ -121,9 +129,11 @@ public static partial class InteriorBuilder
 
     static void Stool(Transform p, Interior it, float x, float z, Material seat)
     {
-        Part(p, new Vector3(x, 0.62f, z), new Vector3(0.40f, 0.06f, 0.40f), seat, 0.8f);
-        Part(p, new Vector3(x, 0.31f, z), new Vector3(0.06f, 0.62f, 0.06f), C("#7a7f86"), 1f);
-        Part(p, new Vector3(x, 0.03f, z), new Vector3(0.30f, 0.06f, 0.30f), C("#5a6068"), 1f);
+        // 圆凳：倒角坐面 + 中柱 + 底盘（原来是一块 0.40 见方的坐板 + 一根细杆 + 一个小盘）
+        PartC(p, new Vector3(x, 0.62f, z), new Vector3(0.42f, 0.07f, 0.42f), seat, 0.026f, 0.8f);
+        Part(p, new Vector3(x, 0.575f, z), new Vector3(0.36f, 0.03f, 0.36f), Darker(seat, 0.78f), 1f);
+        Part(p, new Vector3(x, 0.31f, z), new Vector3(0.07f, 0.62f, 0.07f), CB("#a8b0b8"), 1f);
+        PartC(p, new Vector3(x, 0.04f, z), new Vector3(0.32f, 0.07f, 0.32f), CB("#8a949e"), 0.016f, 1f);
         Reg(it, x, z, 0.42f, 0.42f);
     }
 
@@ -131,26 +141,26 @@ public static partial class InteriorBuilder
     static void WallSign(Transform p, float x, float y, float wallZ, int face, string label,
                          float w = 2.2f, float h = 0.62f, Material plate = null, float textH = 0.030f)
     {
-        plate ??= C("#2f4a3a");
+        plate ??= CB("#3f9a6a");
         float z = wallZ + face * 0.16f;
-        Part(p, new Vector3(x, y, z), new Vector3(w, h, 0.05f), plate, 1f);
+        PartC(p, new Vector3(x, y, z), new Vector3(w, h, 0.05f), plate, 0.016f, 1f);
         Part(p, new Vector3(x, y, z + face * 0.035f),
-             new Vector3(w - 0.20f, h - 0.14f, 0.012f), C("#dfe6dc"), 1f);
+             new Vector3(w - 0.20f, h - 0.14f, 0.012f), C("#f2fbf4"), 1f);
         SignText(p, new Vector3(x, y, z + face * 0.055f), face > 0 ? 180f : 0f,
-                 label, textH, MatLib.Hex("#1f3428"));
+                 label, textH, MatLib.Hex("#12402a"));
     }
 
     // 吊牌（吊杆接天花板，朝 face 方向）
     static void HangingSign(Transform p, float x, float y, float z, int face, string label,
                             float w = 1.7f, float h = 0.42f, Material plate = null, float textH = 0.028f)
     {
-        plate ??= C("#2f4a3a");
+        plate ??= CB("#3f9a6a");
         y = HangY(y, h * 0.5f);
-        Part(p, new Vector3(x, y, z), new Vector3(w, h, 0.05f), plate, 1f);
+        PartC(p, new Vector3(x, y, z), new Vector3(w, h, 0.05f), plate, 0.014f, 1f);
         Part(p, new Vector3(x, y, z + face * 0.035f),
-             new Vector3(w - 0.16f, h - 0.12f, 0.012f), C("#dfe6dc"), 1f);
+             new Vector3(w - 0.16f, h - 0.12f, 0.012f), C("#f2fbf4"), 1f);
         SignText(p, new Vector3(x, y, z + face * 0.055f), face > 0 ? 180f : 0f,
-                 label, textH, MatLib.Hex("#1f3428"));
+                 label, textH, MatLib.Hex("#12402a"));
         HangRods(p, x, y + h * 0.5f, z, w);
     }
 
@@ -189,12 +199,12 @@ public static partial class InteriorBuilder
 
     static void DoorFrame(Transform p, Interior it, float x, float z, float halfW, float h, int face)
     {
-        var fr = C("#6f5540");
-        Part(p, new Vector3(x - halfW - 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 1f);
-        Part(p, new Vector3(x + halfW + 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 1f);
-        Part(p, new Vector3(x, h + 0.09f, z), new Vector3(halfW * 2f + 0.36f, 0.18f, 0.34f), fr, 1f);
-        Part(p, new Vector3(x, 0.06f, z + face * 0.55f),
-             new Vector3(halfW * 2f - 0.1f, 0.04f, 0.9f), C("#8d9aa6"), 1f);
+        var fr = CB("#c98a4e");
+        PartC(p, new Vector3(x - halfW - 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(x + halfW + 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(x, h + 0.09f, z), new Vector3(halfW * 2f + 0.36f, 0.18f, 0.34f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(x, 0.06f, z + face * 0.55f),
+              new Vector3(halfW * 2f - 0.1f, 0.04f, 0.9f), C("#b8c8d4"), 0.010f, 1f);
 
         // 门内侧小灯：门口不发黑
         var dl = new GameObject("doorlight");
@@ -207,7 +217,9 @@ public static partial class InteriorBuilder
         li.color = MatLib.Hex("#ffe3b0");
         li.shadows = LightShadows.None;
         Part(p, new Vector3(x, h - 0.33f, z + face * 0.55f),
-             new Vector3(0.34f, 0.12f, 0.34f), C("#ffe9bf"), 1f);
+             new Vector3(0.40f, 0.14f, 0.40f), C("#e0a860"), 1f);
+        Part(p, new Vector3(x, h - 0.36f, z + face * 0.55f),
+             new Vector3(0.32f, 0.10f, 0.32f), C("#fff2d6"), 1f);
 
         // 门扇盖满门洞：宽度压住两侧门框，高度压住门楣
         if (halfW > 2f)
@@ -216,7 +228,7 @@ public static partial class InteriorBuilder
             DoorLeaf(p, it, x + halfW * 0.5f, z, halfW + 0.02f, h + 0.02f, face, -1);
             // 双开门中缝压条：盖住两扇重叠处的亮缝
             Part(p, new Vector3(x, h * 0.5f, z + face * 0.21f),
-                 new Vector3(0.10f, h, 0.03f), C("#8f6d50"), 1f);
+                 new Vector3(0.10f, h, 0.03f), CB("#b8743c"), 1f);
         }
         else
         {
@@ -229,10 +241,10 @@ public static partial class InteriorBuilder
     {
         const float t = 0.07f;
         float zLeaf = z + face * 0.16f;
-        var leaf = C("#8f6d50");
-        var panel = C("#73573f");
-        var trim = C("#5a4432");
-        var brass = C("#d3b97a");
+        var leaf = CB("#c98a4e");
+        var panel = CB("#a8703c");
+        var trim = CB("#8a5a34");
+        var brass = CB("#f0d060");
 
         SolidPart(p, it, new Vector3(cx, h * 0.5f, zLeaf), new Vector3(w, h, t), leaf, 1f, true);
 
@@ -254,36 +266,37 @@ public static partial class InteriorBuilder
     // 收银台（长轴沿 X；face=+1 顾客在 +z 侧）
     static void Checkout(Transform p, Interior it, float x, float z, int face)
     {
-        var white = C("#e6e6e2");
-        var stone = C("#d9d3c6");
-        Part(p, new Vector3(x, 0.48f, z), new Vector3(2.4f, 0.92f, 0.85f), white, 1f);
-        Part(p, new Vector3(x, 0.96f, z), new Vector3(2.5f, 0.07f, 0.9f), stone, 1f);
+        var white = C("#fdfaf0");
+        var stone = CB("#8fb0c8");
+        PartC(p, new Vector3(x, 0.48f, z), new Vector3(2.4f, 0.92f, 0.85f), white, 0.028f, 1f);
+        PartC(p, new Vector3(x, 0.96f, z), new Vector3(2.5f, 0.07f, 0.9f), stone, 0.014f, 1f);
         Part(p, new Vector3(x - face * 0.12f, 1.00f, z + face * 0.20f),
-             new Vector3(1.5f, 0.035f, 0.28f), C("#3a3f47"), 1f);
-        Part(p, new Vector3(x + 0.82f, 1.20f, z - face * 0.10f),
-             new Vector3(0.46f, 0.30f, 0.30f), C("#2f3338"), 1f);
+             new Vector3(1.5f, 0.035f, 0.28f), C("#4a5260"), 1f);
+        PartC(p, new Vector3(x + 0.82f, 1.20f, z - face * 0.10f),
+              new Vector3(0.46f, 0.30f, 0.30f), CB("#4a5260"), 0.014f, 1f);
         Part(p, new Vector3(x + 0.82f, 1.38f, z - face * 0.22f),
-             new Vector3(0.38f, 0.22f, 0.02f), C("#a8c0c8"), 1f);
+             new Vector3(0.38f, 0.22f, 0.02f), C("#a8e0f0"), 1f);
         Part(p, new Vector3(x - 0.78f, 1.04f, z - face * 0.15f),
-             new Vector3(0.24f, 0.08f, 0.18f), C("#8d8d94"), 1f);
+             new Vector3(0.24f, 0.08f, 0.18f), C("#b8c4d0"), 1f);
         Part(p, new Vector3(x - 0.78f, 1.14f, z - face * 0.15f),
-             new Vector3(0.16f, 0.12f, 0.02f), C("#d8e4e8"), 1f);
+             new Vector3(0.16f, 0.12f, 0.02f), C("#e0f4f8"), 1f);
         Reg(it, x, z, 2.5f, 0.9f);
     }
 
     // 生鲜台：木台 + 三个斜口货箱 + 彩色果蔬块
     static void ProduceTable(Transform p, Interior it, float x, float z, float w, float d)
     {
-        var wood = C("#8a6a4a");
-        Part(p, new Vector3(x, 0.42f, z), new Vector3(w, 0.84f, d), wood, 1f);
-        Part(p, new Vector3(x, 0.87f, z), new Vector3(w + 0.08f, 0.06f, d + 0.08f), C("#b08a5e"), 1f);
-        var cols = new[] { C("#7a3c32"), C("#5f7a3f"), C("#c07a32"), C("#9a5a6a"), C("#d0a848") };
+        var wood = CB("#c98a4e");
+        PartC(p, new Vector3(x, 0.42f, z), new Vector3(w, 0.84f, d), wood, 0.030f, 1f);
+        PartC(p, new Vector3(x, 0.87f, z), new Vector3(w + 0.08f, 0.06f, d + 0.08f), CB("#e0a860"), 0.012f, 1f);
+        // 卡通果蔬：高饱和五色（原 #7a3c32 / #5f7a3f 这些在 cel shading 下像烂菜）
+        var cols = new[] { C("#e0554a"), C("#6cc06a"), C("#f0b03c"), C("#a86ad8"), C("#ff8a3c") };
         int n = Mathf.Max(2, Mathf.FloorToInt(w / 0.95f));
         for (int i = 0; i < n; i++)
         {
             float cx = x - w * 0.5f + (i + 0.5f) * w / n;
-            Part(p, new Vector3(cx, 0.96f, z), new Vector3(w / n - 0.10f, 0.16f, d - 0.16f), C("#9c7a52"), 0.7f);
-            Part(p, new Vector3(cx, 1.06f, z), new Vector3(w / n - 0.18f, 0.08f, d - 0.26f), cols[i % cols.Length], 0.4f);
+            PartC(p, new Vector3(cx, 0.96f, z), new Vector3(w / n - 0.10f, 0.16f, d - 0.16f), CB("#b8743c"), 0.014f, 0.7f);
+            PartC(p, new Vector3(cx, 1.06f, z), new Vector3(w / n - 0.18f, 0.08f, d - 0.26f), cols[i % cols.Length], 0.012f, 0.4f);
             for (int k = 0; k < 3; k++)
                 Part(p, new Vector3(cx - 0.18f + k * 0.18f, 1.14f, z + (k % 2 == 0 ? -0.10f : 0.10f)),
                      new Vector3(0.13f, 0.13f, 0.13f), cols[(i + k) % cols.Length], 0.3f);
@@ -294,22 +307,23 @@ public static partial class InteriorBuilder
     // 冷藏柜（沿东墙，正面朝 -x）
     static void Cooler(Transform p, Interior it, float x, float z, float w = 1.7f)
     {
-        var white = C("#e8e8e4");
+        var white = C("#f0f8fc");
+        var frame = CB("#8fb0c8");
         // 开放式冷柜：背板 + 顶底 + 侧板，前方留空露商品，避免实心白盒/不透明玻璃
-        Part(p, new Vector3(x + 0.32f, 1.10f, z), new Vector3(0.06f, 2.20f, w), white, 1f);
-        Part(p, new Vector3(x, 2.18f, z), new Vector3(0.70f, 0.06f, w), white, 1f);
-        Part(p, new Vector3(x, 0.02f, z), new Vector3(0.70f, 0.06f, w), white, 1f);
+        PartC(p, new Vector3(x + 0.32f, 1.10f, z), new Vector3(0.06f, 2.20f, w), white, 0.012f, 1f);
+        PartC(p, new Vector3(x, 2.18f, z), new Vector3(0.70f, 0.06f, w), white, 0.012f, 1f);
+        PartC(p, new Vector3(x, 0.02f, z), new Vector3(0.70f, 0.06f, w), white, 0.012f, 1f);
         foreach (float ez in new[] { z - w * 0.5f + 0.03f, z + w * 0.5f - 0.03f })
-            Part(p, new Vector3(x, 1.10f, ez), new Vector3(0.70f, 2.20f, 0.06f), white, 1f);
-        Part(p, new Vector3(x - 0.34f, 2.10f, z), new Vector3(0.05f, 0.08f, w - 0.10f), C("#b8c4c8"), 1f);
-        Part(p, new Vector3(x - 0.34f, 0.30f, z), new Vector3(0.05f, 0.08f, w - 0.10f), C("#b8c4c8"), 1f);
+            PartC(p, new Vector3(x, 1.10f, ez), new Vector3(0.70f, 2.20f, 0.06f), white, 0.012f, 1f);
+        Part(p, new Vector3(x - 0.34f, 2.10f, z), new Vector3(0.05f, 0.08f, w - 0.10f), frame, 1f);
+        Part(p, new Vector3(x - 0.34f, 0.30f, z), new Vector3(0.05f, 0.08f, w - 0.10f), frame, 1f);
         foreach (float ez in new[] { z - w * 0.5f + 0.08f, z + w * 0.5f - 0.08f })
-            Part(p, new Vector3(x - 0.34f, 1.20f, ez), new Vector3(0.05f, 1.75f, 0.05f), C("#b8c4c8"), 1f);
-        var cols = new[] { C("#7a3c32"), C("#3f5c6b"), C("#6b7a4a"), C("#d0a848"), C("#8a5a6a"), C("#c8c4ba") };
+            Part(p, new Vector3(x - 0.34f, 1.20f, ez), new Vector3(0.05f, 1.75f, 0.05f), frame, 1f);
+        var cols = new[] { C("#e0554a"), C("#4a9ac8"), C("#6cc06a"), C("#f0b03c"), C("#a86ad8"), C("#ff8a3c") };
         for (int r = 0; r < 4; r++)
         {
             float y = 0.30f + r * 0.44f;
-            Part(p, new Vector3(x - 0.18f, y - 0.03f, z), new Vector3(0.30f, 0.03f, w - 0.22f), C("#c9ced3"), 1f);
+            PartC(p, new Vector3(x - 0.18f, y - 0.03f, z), new Vector3(0.30f, 0.03f, w - 0.22f), CB("#c8d8e4"), 0.008f, 1f);
             for (int i = 0; i < 7; i++)
             {
                 float bz = z - w * 0.5f + 0.16f + i * (w - 0.32f) / 6f;

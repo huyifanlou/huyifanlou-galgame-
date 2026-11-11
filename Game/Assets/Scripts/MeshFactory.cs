@@ -608,4 +608,193 @@ public static class MeshFactory
         m.RecalculateBounds();
         return m;
     }
+
+    // ========================================================================
+    // 卡通渲染专用网格（2026-11-10 美术重做新增）
+    //
+    // 卡通渲染的造型语言和写实完全不同：
+    //   · 圆润 > 尖锐：树冠是「球」，不是方块；屋顶有弧度；家具要倒角
+    //   · 大块面 > 细节：一个形体由 2~4 个可读的大面构成，不要一堆小碎块
+    //   · 轮廓优先：因为要画描边，形体外轮廓必须清楚可辨
+    // ========================================================================
+
+    // 卡通树冠：低多边形球（8~10 面），比 Sphere 更「块」但比 Box 更「圆」
+    // lump 让球面略微不规则，避免看起来像气球
+    public static Mesh ToonCanopy(float radius, int sectors = 10, int rings = 7, float lump = 0.08f, float seed = 0f)
+    {
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+        for (int i = 0; i <= rings; i++)
+        {
+            float theta = i * Mathf.PI / rings;
+            float sinT = Mathf.Sin(theta), cosT = Mathf.Cos(theta);
+            for (int j = 0; j <= sectors; j++)
+            {
+                float phi = j * Mathf.PI * 2f / sectors;
+                var d = new Vector3(sinT * Mathf.Cos(phi), cosT, sinT * Mathf.Sin(phi));
+                // 低频扰动：让球形不是完美的球
+                float n = Mathf.PerlinNoise(d.x * 1.4f + seed, d.z * 1.4f + seed * 1.3f) - 0.5f;
+                float rr = radius * (1f + lump * n * 2f);
+                var p = d * rr;
+                p.y = Mathf.Max(p.y, -radius * 0.35f);   // 底部略平，坐下树冠不悬空
+                verts.Add(p);
+                uvs.Add(new Vector2((float)j / sectors, 1f - (float)i / rings));
+            }
+        }
+        int row = sectors + 1;
+        for (int i = 0; i < rings; i++)
+        {
+            for (int j = 0; j < sectors; j++)
+            {
+                int a = i * row + j, b = (i + 1) * row + j, c = (i + 1) * row + j + 1, d2 = i * row + j + 1;
+                tris.Add(a); tris.Add(c); tris.Add(b);
+                tris.Add(a); tris.Add(d2); tris.Add(c);
+            }
+        }
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 卡通坡屋顶：四面坡（四坡顶 / hip roof），檐口外挑，屋脊是一条线
+    // 这是卡通建筑最关键的一件：写实版用的双坡 + 薄板，卡通版要厚实、外挑明显
+    public static Mesh HipRoof(float w, float d, float h, float overhang, float texMeters = 2f)
+    {
+        float hw = w / 2f + overhang, hd = d / 2f + overhang;
+        // 屋脊沿 X 方向，长度 = w - d*0.6（四坡顶的典型比例）
+        float ridgeLen = Mathf.Max(0.4f, w - d * 0.55f) / 2f;
+        float eaveY = 0f, ridgeY = h;
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+
+        Vector3 BL = new Vector3(-hw, eaveY, hd);
+        Vector3 BR = new Vector3(hw, eaveY, hd);
+        Vector3 FL = new Vector3(-hw, eaveY, -hd);
+        Vector3 FR = new Vector3(hw, eaveY, -hd);
+        Vector3 R1 = new Vector3(-ridgeLen, ridgeY, 0f);
+        Vector3 R2 = new Vector3(ridgeLen, ridgeY, 0f);
+
+        void Tri(Vector3 a, Vector3 b, Vector3 c, float uvScale)
+        {
+            int i = verts.Count;
+            verts.Add(a); verts.Add(b); verts.Add(c);
+            // UV 按世界尺寸展开（保持密度）
+            for (int k = 0; k < 3; k++)
+            {
+                var p = verts[i + k];
+                uvs.Add(new Vector2(p.x / texMeters, p.z / texMeters + p.y / texMeters));
+            }
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+        }
+
+        // 南坡（+Z）：BL → BR → 屋脊
+        Tri(BL, BR, R2, texMeters); Tri(BL, R2, R1, texMeters);
+        // 北坡（−Z）：FR → FL → 屋脊
+        Tri(FR, FL, R1, texMeters); Tri(FR, R1, R2, texMeters);
+        // 东坡（+X）：BR → FR → R2
+        Tri(BR, FR, R2, texMeters);
+        // 西坡（−X）：FL → BL → R1
+        Tri(FL, BL, R1, texMeters);
+        // 底面（封口，避免从下方看到内部）
+        int bi = verts.Count;
+        verts.Add(BL); verts.Add(FL); verts.Add(FR); verts.Add(BR);
+        uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(0, 1));
+        uvs.Add(new Vector2(1, 1)); uvs.Add(new Vector2(1, 0));
+        tris.Add(bi); tris.Add(bi + 2); tris.Add(bi + 1);
+        tris.Add(bi); tris.Add(bi + 3); tris.Add(bi + 2);
+
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
+
+    // 倒角盒：卡通家具/道具的主力形状。8 个角切掉，轮廓在描边下更像「圆角方块」
+    public static Mesh BevelBox(Vector3 size, float bevel, float texMeters = 1f)
+    {
+        float hx = size.x / 2f, hy = size.y / 2f, hz = size.z / 2f;
+        float b = Mathf.Min(bevel, Mathf.Min(hx, Mathf.Min(hy, hz)) * 0.9f);
+        var verts = new List<Vector3>();
+        var uvs = new List<Vector2>();
+        var tris = new List<int>();
+
+        void Quad(Vector3 a, Vector3 bb, Vector3 c, Vector3 d)
+        {
+            int i = verts.Count;
+            verts.Add(a); verts.Add(bb); verts.Add(c); verts.Add(d);
+            // 简易世界尺度 UV
+            float uw = Vector3.Distance(a, bb) / texMeters;
+            float vh = Vector3.Distance(bb, c) / texMeters;
+            uvs.Add(new Vector2(0, 0)); uvs.Add(new Vector2(uw, 0));
+            uvs.Add(new Vector2(uw, vh)); uvs.Add(new Vector2(0, vh));
+            tris.Add(i); tris.Add(i + 1); tris.Add(i + 2);
+            tris.Add(i); tris.Add(i + 2); tris.Add(i + 3);
+        }
+
+        // 六个主面（每个面缩进 bevel）
+        // +Y 顶
+        Quad(new Vector3(-hx + b, hy, hz - b), new Vector3(hx - b, hy, hz - b),
+             new Vector3(hx - b, hy, -hz + b), new Vector3(-hx + b, hy, -hz + b));
+        // -Y 底
+        Quad(new Vector3(-hx + b, -hy, -hz + b), new Vector3(hx - b, -hy, -hz + b),
+             new Vector3(hx - b, -hy, hz - b), new Vector3(-hx + b, -hy, hz - b));
+        // +Z 前
+        Quad(new Vector3(-hx + b, -hy + b, hz), new Vector3(hx - b, -hy + b, hz),
+             new Vector3(hx - b, hy - b, hz), new Vector3(-hx + b, hy - b, hz));
+        // -Z 后
+        Quad(new Vector3(hx - b, -hy + b, -hz), new Vector3(-hx + b, -hy + b, -hz),
+             new Vector3(-hx + b, hy - b, -hz), new Vector3(hx - b, hy - b, -hz));
+        // +X 右
+        Quad(new Vector3(hx, -hy + b, hz - b), new Vector3(hx, -hy + b, -hz + b),
+             new Vector3(hx, hy - b, -hz + b), new Vector3(hx, hy - b, hz - b));
+        // -X 左
+        Quad(new Vector3(-hx, -hy + b, -hz + b), new Vector3(-hx, -hy + b, hz - b),
+             new Vector3(-hx, hy - b, hz - b), new Vector3(-hx, hy - b, -hz + b));
+
+        // 12 条棱的斜切面
+        // 顶面四条边
+        Quad(new Vector3(-hx + b, hy - b, hz), new Vector3(hx - b, hy - b, hz),
+             new Vector3(hx - b, hy, hz - b), new Vector3(-hx + b, hy, hz - b));
+        Quad(new Vector3(hx - b, hy - b, -hz), new Vector3(-hx + b, hy - b, -hz),
+             new Vector3(-hx + b, hy, -hz + b), new Vector3(hx - b, hy, -hz + b));
+        Quad(new Vector3(hx, hy - b, hz - b), new Vector3(hx, hy - b, -hz + b),
+             new Vector3(hx - b, hy, -hz + b), new Vector3(hx - b, hy, hz - b));
+        Quad(new Vector3(-hx, hy - b, -hz + b), new Vector3(-hx, hy - b, hz - b),
+             new Vector3(-hx + b, hy, hz - b), new Vector3(-hx + b, hy, -hz + b));
+        // 底面四条边
+        Quad(new Vector3(hx - b, -hy + b, hz), new Vector3(-hx + b, -hy + b, hz),
+             new Vector3(-hx + b, -hy, hz - b), new Vector3(hx - b, -hy, hz - b));
+        Quad(new Vector3(-hx + b, -hy + b, -hz), new Vector3(hx - b, -hy + b, -hz),
+             new Vector3(hx - b, -hy, -hz + b), new Vector3(-hx + b, -hy, -hz + b));
+        Quad(new Vector3(hx, -hy + b, -hz + b), new Vector3(hx, -hy + b, hz - b),
+             new Vector3(hx - b, -hy, hz - b), new Vector3(hx - b, -hy, -hz + b));
+        Quad(new Vector3(-hx, -hy + b, hz - b), new Vector3(-hx, -hy + b, -hz + b),
+             new Vector3(-hx + b, -hy, -hz + b), new Vector3(-hx + b, -hy, hz - b));
+        // 四条竖棱
+        Quad(new Vector3(hx - b, -hy + b, hz), new Vector3(hx, -hy + b, hz - b),
+             new Vector3(hx, hy - b, hz - b), new Vector3(hx - b, hy - b, hz));
+        Quad(new Vector3(-hx, -hy + b, hz - b), new Vector3(-hx + b, -hy + b, hz),
+             new Vector3(-hx + b, hy - b, hz), new Vector3(-hx, hy - b, hz - b));
+        Quad(new Vector3(-hx + b, -hy + b, -hz), new Vector3(-hx, -hy + b, -hz + b),
+             new Vector3(-hx, hy - b, -hz + b), new Vector3(-hx + b, hy - b, -hz));
+        Quad(new Vector3(hx, -hy + b, -hz + b), new Vector3(hx - b, -hy + b, -hz),
+             new Vector3(hx - b, hy - b, -hz), new Vector3(hx, hy - b, -hz + b));
+
+        var m = new Mesh();
+        m.SetVertices(verts);
+        m.SetUVs(0, uvs);
+        m.SetTriangles(tris, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
+    }
 }

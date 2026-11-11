@@ -50,11 +50,12 @@ public class Hud : MonoBehaviour
             _toast = Mk(15, TextAnchor.MiddleCenter, new Color(0.95f, 0.95f, 0.97f, 0.95f));
         }
         float W = Screen.width, H = Screen.height;
+        if (DialogueManager.Active || CharacterPicker.IsOpen) return;
 
         // 左上：标题 + 操作说明
         GUI.Label(new Rect(16, 10, 900, 28), "他山之石", _title);
         GUI.Label(new Rect(16, 36, 1100, 24),
-            "WASD 移动 ｜ Shift 跑 ｜ 拖拽 或 Q/E 视角 ｜ 滚轮 缩放 ｜ F11 全屏 ｜ F10 帧率 ｜ M 地图 ｜ V 视角 ｜ F 交互 ｜ 0/1/2/3 时间 ｜ T +12h ｜ Y 天气", _hint);
+            "WASD 移动 ｜ Shift 跑 ｜ 拖拽 或 Q/E 视角 ｜ 滚轮 缩放 ｜ F11 全屏 ｜ F10 帧率 ｜ M 地图 ｜ V 视角 ｜ C 选人 ｜ B 剧情 ｜ F 交互 ｜ 0/1/2/3 时间 ｜ T +12h ｜ Y 天气 ｜ H 按键侧栏", _hint);
 
         // 右上：时间刻度（第 N 天 · ☀/🌙 HH:MM · 速度）
         float h = Time.Hour;

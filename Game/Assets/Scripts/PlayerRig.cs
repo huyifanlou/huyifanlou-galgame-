@@ -22,6 +22,7 @@ public class PlayerRig : MonoBehaviour
     bool _distForced, _pitchForced;   // 命令行显式给了 -dist / -pitch（截图验收），进出室内不覆盖
     InteriorManager _im;        // 室内（家/教学楼）进出与碰撞
     Minimap _mm;                // 小地图（第一人称开图时让位鼠标）
+    public CharacterPicker Picker;   // C 键人物自选菜单（WorldBuilder 绑定）
     InteriorManager Im => _im;
     bool _indoor;
     float _yawTarget = float.NaN;
@@ -44,6 +45,7 @@ public class PlayerRig : MonoBehaviour
         _cam = Camera.main;
         _player = w.Player;
         _avatar = w.Player != null ? w.Player.GetComponentInChildren<PlayerAvatar>() : null;
+        if (Args.Has("-cycle") && _avatar != null) _avatar.Cycle();   // 验收钩子：启动即切一次人物
 
         // TimeOfDay 已启用程序化天空时保留 Skybox；否则退回原来的纯色背景
         _cam.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
@@ -200,6 +202,21 @@ public class PlayerRig : MonoBehaviour
     void Update()
     {
         if (_cam == null || _player == null || IntroScreen.Live) return;
+
+        // C：打开人物自选菜单（六人卡片，点选/数字键切换）。
+        // 放在对话锁之前——剧情播放中也允许换人；DialogueManager 会在菜单打开时冻结推进。
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            if (Picker != null) Picker.Toggle();
+            else if (_avatar != null)
+            {
+                _avatar.Cycle();
+                if (_time != null) _time.ShowToast("人物模型：" + _avatar.Label);
+            }
+            return;
+        }
+
+        if (DialogueManager.Active || CharacterPicker.IsOpen) return;   // 对话/选人菜单期间锁移动与相机
         float dt = Time.deltaTime;
         var p = _player.position;
 
@@ -289,6 +306,17 @@ public class PlayerRig : MonoBehaviour
         }
 
         if (Input.GetKeyUp(KeyCode.M)) _lastMapClose = Time.unscaledTime;
+
+        // C：打开人物自选菜单（六人卡片，点选/数字键切换）；无菜单组件时退回盲循环
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            if (Picker != null) Picker.Toggle();
+            else if (_avatar != null)
+            {
+                _avatar.Cycle();
+                if (_time != null) _time.ShowToast("人物模型：" + _avatar.Label);
+            }
+        }
 
         // V：第一 / 第三人称切换
         if (Input.GetKeyDown(KeyCode.V))

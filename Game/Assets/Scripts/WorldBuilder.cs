@@ -127,16 +127,23 @@ public class WorldBuilder : MonoBehaviour
         }
         return m;
     }
-    // 樱花冠材质：叶簇贴图 × 花色 + 少量自发光，避免仰视时整团花冠发黑
+    // 樱花冠材质（2026-11-10 卡通重做）：
+    // 上一版是「leaves 贴图 × 粉色 tint」——但 leaves 贴图本身是深绿底，相乘后粉色被压成脏褐色
+    // （这就是截图里樱花看起来像枯树的原因）。卡通渲染的樱花应该是「纯色大块粉」，
+    // 所以改用 MatLib.LitColorBold（纯色 + 粗描边），并把暗面调暖，避免粉冠发灰。
     Material CherryMat(string hex)
     {
         string k = "CH|" + hex;
         if (!_cache.TryGetValue(k, out var m))
         {
-            m = MatLib.Lit("leaves", 2.5f, 2.5f);
-            m.color = MatLib.Hex(hex);
+            m = MatLib.LitColorBold(MatLib.Hex(hex), 0.0055f);
+            // 樱花：暗面偏暖粉（不要冷紫，否则花瓣发灰）
+            m.SetColor("_ShadowTint", new Color(0.86f, 0.62f, 0.72f, 1f));
+            m.SetFloat("_RimStrength", 0.35f);
+            m.SetColor("_RimColor", new Color(1f, 0.92f, 0.96f, 1f));
+            // 轻微自发光：仰视/背光时花冠不会整团发黑
             m.EnableKeyword("_EMISSION");
-            m.SetColor("_EmissionColor", MatLib.Hex(hex) * 0.30f);
+            m.SetColor("_EmissionColor", MatLib.Hex(hex) * 0.22f);
             m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
             _cache[k] = m;
             if (!LeafMats.Contains(m)) LeafMats.Add(m);
@@ -490,7 +497,9 @@ public class WorldBuilder : MonoBehaviour
                         var stone = LitTex("bridge_stone");
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.4f, 0.8f, 5.4f), 2.4f), new Vector3(0f, 0.4f, 0f), stone);
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.6f, 4.4f, 4.6f), 2.4f), new Vector3(0f, 3.0f, 0f), stone);
-                        Face(grp, 1.7f, 2.7f, new Vector3(0f, 2.15f, 2.31f), ColMat("#26221f"));
+                        // 门洞：卡通渲染不用纯黑（会成黑洞），改用深蓝灰 + 门框 + 门板
+                        Face(grp, 1.9f, 2.9f, new Vector3(0f, 2.15f, 2.30f), ColMat("#3a4250"));
+                        Face(grp, 1.6f, 2.7f, new Vector3(0f, 2.15f, 2.32f), ColMat("#2a3240"));
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.3f, 0.28f, 0.3f), 2.4f), new Vector3(0f, 3.6f, 2.4f), stone);
                         MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.3f, 0.3f, 5.3f), 2.4f), new Vector3(0f, 5.35f, 0f), stone);
                         MeshObj(grp, MeshFactory.TaperedBox(4.0f, 4.0f, 3.3f, 3.3f, 5.6f, 2.4f), new Vector3(0f, 5.5f, 0f), stone);
@@ -980,6 +989,17 @@ public class WorldBuilder : MonoBehaviour
         if (hud != null) hud.Init(tod);
         var shot = GetComponent<ShotMode>();
         if (shot != null) shot.Init();
+
+        // 对话系统（-scenario / B 键）+ C 键人物自选菜单
+        var dlg = GetComponent<DialogueManager>();
+        if (dlg == null) dlg = gameObject.AddComponent<DialogueManager>();
+        dlg.Init(tod);
+        var picker = GetComponent<CharacterPicker>();
+        if (picker == null) picker = gameObject.AddComponent<CharacterPicker>();
+        picker.Init(Player != null ? Player.GetComponentInChildren<PlayerAvatar>() : null, tod);
+        if (rig != null) rig.Picker = picker;
+        // 按键侧边栏最后挂：OnGUI 压在剧情压暗层与人物菜单之上
+        if (GetComponent<HelpSidebar>() == null) gameObject.AddComponent<HelpSidebar>();
 
         // 天气（雨/雪）：Y 键循环；-weather 直接指定
         var wth = GetComponent<Weather>();
@@ -1827,38 +1847,21 @@ public class WorldBuilder : MonoBehaviour
             }
             else if (b.style == "gable" || b.style == "collegiate" || b.style == "library" || b.style == "hall" || b.style == "dorm")
             {
-                // 双坡：檐低脊高；山墙三角从墙顶封到屋脊；檐口/博风板收边
-                const float ang = 0.45f;
-                const float overD = 0.7f;
-                float halfD = d / 2f + overD;
-                float slope = halfD / Mathf.Cos(ang);
-                float eaveY = h / 2f + 0.32f;
-                float ridgeY = eaveY + halfD * Mathf.Tan(ang);
-                float midY = (eaveY + ridgeY) / 2f;
-                MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 1.2f, 0.24f, slope), 4f, 2f),
-                    new Vector3(0f, midY, halfD / 2f), tile, new Vector3(ang * Mathf.Rad2Deg, 0f, 0f));
-                MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 1.2f, 0.24f, slope), 4f, 2f),
-                    new Vector3(0f, midY, -halfD / 2f), tile, new Vector3(-ang * Mathf.Rad2Deg, 0f, 0f));
-                Box(grp, new Vector3(0f, ridgeY + 0.1f, 0f), new Vector3(w + 1.4f, 0.22f, 0.4f), ColMat("#33363f"));
-                float gH = ridgeY - h / 2f;
-                foreach (int s2 in new[] { -1, 1 })
-                {
-                    var tri = NewGo("gable", grp).transform;
-                    tri.localPosition = new Vector3(s2 * (w / 2f - 0.02f), h / 2f, 0f);
-                    tri.localEulerAngles = new Vector3(0f, 90f, 0f);
-                    MeshObj(tri, MeshFactory.Triangle(d + 2f * overD, gH), Vector3.zero, ColMat(b.wall));
-                    // 博风板（沿两端斜边）
-                    Box(grp, new Vector3(s2 * (w / 2f + 0.58f), midY, halfD / 2f), new Vector3(0.16f, 0.3f, slope),
-                        ColMat(b.trim), new Vector3(ang * Mathf.Rad2Deg, 0f, 0f));
-                    Box(grp, new Vector3(s2 * (w / 2f + 0.58f), midY, -halfD / 2f), new Vector3(0.16f, 0.3f, slope),
-                        ColMat(b.trim), new Vector3(-ang * Mathf.Rad2Deg, 0f, 0f));
-                }
-                // 檐口封板 + 檐下 soffit（前后各一条，封住屋顶与墙之间的空隙）
-                foreach (int sz in new[] { -1, 1 })
-                {
-                    Box(grp, new Vector3(0f, eaveY - 0.05f, sz * halfD), new Vector3(w + 1.2f, 0.2f, 0.2f), ColMat(b.trim));
-                    Box(grp, new Vector3(0f, eaveY - 0.02f, sz * (d / 2f + overD / 2f)), new Vector3(w + 0.9f, 0.07f, overD), ColMat(b.trim));
-                }
+                // 卡通四坡屋顶（2026-11-10 重做）：
+                // 上一版是「两片 0.24m 薄板斜搭 + 三角山墙」，写实但单薄；卡通渲染要的是
+                // 「厚实、外挑明显、轮廓清楚」的屋顶 —— 换成整块 HipRoof 网格。
+                float overD = 0.85f;                                    // 檐口外挑（卡通要比写实更大）
+                float ridgeH = Mathf.Min(d * 0.42f, h * 0.30f) + 0.35f; // 屋脊高度随进深走
+                float eaveY = h / 2f + 0.06f;
+                MeshObj(grp, MeshFactory.HipRoof(w + 0.5f, d + 0.5f, ridgeH, overD, 2f),
+                    new Vector3(0f, eaveY, 0f), tile);
+                // 檐口封板（一圈，卡通屋顶的「厚度」靠它读出来）
+                float eaveHalfW = (w + 0.5f) / 2f + overD;
+                float eaveHalfD = (d + 0.5f) / 2f + overD;
+                Box(grp, new Vector3(0f, eaveY - 0.10f, 0f), new Vector3(eaveHalfW * 2f, 0.20f, eaveHalfD * 2f), ColMat(b.trim));
+                // 屋脊压条（一条深色脊瓦）
+                float ridgeLen = Mathf.Max(0.4f, (w + 0.5f) - (d + 0.5f) * 0.55f) + 0.3f;
+                Box(grp, new Vector3(0f, eaveY + ridgeH + 0.08f, 0f), new Vector3(ridgeLen, 0.18f, 0.34f), ColMat("#4a3f3a"));
             }
             else if (b.style == "gym")
             {
@@ -2047,7 +2050,7 @@ public class WorldBuilder : MonoBehaviour
                 float hedgeW = Mathf.Max(1.6f, w * 0.32f);
                 foreach (int sgn in new[] { -1, 1 })
                     MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
-                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LitTinted("leaves", "#356b33"));
+                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LeafMat("#356b33"));
             }
             if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
             if (b.style != "shrine") BuildWindowGlow(grp, b, w, h, d);
@@ -2825,60 +2828,112 @@ public class WorldBuilder : MonoBehaviour
         trunkCol.radius = 0.34f;
         if (v == 6)
         {
-            BarkBox(grp, new Vector3(0, 0.4f, 0), new Vector3(0.36f, 0.8f, 0.36f), "#6b4a2f");
-            LeafCone(grp, 1.05f, 1.2f, 1.15f - 0.6f, "#2f6231");
-            LeafCone(grp, 0.85f, 1.1f, 1.85f - 0.55f, "#356e37");
-            LeafCone(grp, 0.62f, 1.0f, 2.5f - 0.5f, "#3d7a3f");
+            // 针叶树（卡通）：一根干 + 三层锥（锥在卡通里很干净）
+            BarkBox(grp, new Vector3(0, 0.5f, 0), new Vector3(0.32f, 1.0f, 0.32f), "#7a5a3a");
+            LeafCone(grp, 1.25f, 1.5f, 0.65f, "#2f6231");
+            LeafCone(grp, 1.00f, 1.4f, 1.55f, "#356e37");
+            LeafCone(grp, 0.72f, 1.2f, 2.45f, "#3d7a3f");
         }
         else if (v == 7)
         {
-            BarkBox(grp, new Vector3(0, 0.3f, 0), new Vector3(0.3f, 0.6f, 0.3f), "#5c4630");
-            LeafCone(grp, 0.55f, 3.0f, 1.9f - 1.5f, "#284f2b");
+            // 细高柏（卡通）：细长锥
+            BarkBox(grp, new Vector3(0, 0.3f, 0), new Vector3(0.26f, 0.6f, 0.26f), "#6b4a2f");
+            LeafCone(grp, 0.62f, 3.4f, 0.4f, "#284f2b");
         }
         else if (v == 8)
         {
-            BarkBox(grp, new Vector3(0, 0.8f, 0), new Vector3(0.44f, 1.6f, 0.44f), "#6d4a2f");
-            LeafBox(grp, new Vector3(0, 2.1f, 0), new Vector3(2.4f, 1.5f, 2.4f), "#4f9448");
-            LeafBox(grp, new Vector3(0, 3.05f, 0), new Vector3(1.6f, 0.9f, 1.6f), "#5da04f");
+            // 圆冠树（卡通）：一团大圆冠
+            BarkBox(grp, new Vector3(0, 1.0f, 0), new Vector3(0.38f, 2.0f, 0.38f), "#7a5a3a");
+            MeshObj(grp, MeshFactory.ToonCanopy(1.5f, 10, 7, 0.10f, x * 0.43f), new Vector3(0, 2.55f, 0),
+                LeafMat("#4f9448"));
+            MeshObj(grp, MeshFactory.ToonCanopy(0.95f, 8, 6, 0.12f, z * 0.67f), new Vector3(0.55f, 3.35f, -0.35f),
+                LeafMat("#5da04f"));
         }
         else if (v == 9)
         {
-            // 柳树：高干 + 三层浅绿垂冠（池畔）
-            BarkBox(grp, new Vector3(0, 1.5f, 0), new Vector3(0.4f, 3f, 0.4f), "#7a6a45");
-            LeafBox(grp, new Vector3(0, 2.6f, 0), new Vector3(2.4f, 0.7f, 2.4f), "#7fa84f");
-            LeafBox(grp, new Vector3(0, 3.4f, 0), new Vector3(2.8f, 0.6f, 2.8f), "#8fb35a");
-            LeafBox(grp, new Vector3(0, 4.05f, 0), new Vector3(1.9f, 0.6f, 1.9f), "#9cc06a");
+            // 柳树（卡通）：高干 + 三层扁圆冠（池畔）
+            BarkBox(grp, new Vector3(0, 1.5f, 0), new Vector3(0.36f, 3f, 0.36f), "#8a7550");
+            for (int s = 0; s < 3; s++)
+                MeshObj(grp, MeshFactory.ToonCanopy(1.5f - s * 0.30f, 9, 6, 0.14f, x * 0.31f + s * 1.7f),
+                    new Vector3(0, 2.6f + s * 0.62f, 0), LeafMat(MatLib.Shade("#7fa84f", 1f + s * 0.12f)));
         }
         else if (v >= 10 && v <= 13)
         {
-            // 樱花：《我的世界》式体素树（0.2m 叶块/原木块），只做 90° 转向和轻微尺寸差
+            // 樱花（2026-11-10 卡通重做）：
+            // 上一版是《我的世界》体素叶块（0.2m 立方体拼的冠），MC 味极重，与卡通渲染的圆润语汇冲突。
+            // 卡通樱花的画法：一根干 + 几团错落的粉色圆冠 + 顶部亮色团，整体像「云」。
             float hash = Mathf.Repeat(x * 7.31f + z * 11.93f, 1f);
+            float sizeK = 0.94f + hash * 0.22f;                 // 尺寸差异（替代原 localScale 的随机）
             grp.localEulerAngles = new Vector3(0f, Mathf.Floor(hash * 4f) * 90f, 0f);
-            grp.localScale = Vector3.one * (0.92f + Mathf.Repeat(x * 3.17f + z * 5.71f, 1f) * 0.16f);
-            for (int s = 0; s < 3; s++)
-            {
-                var m = _cherryCrowns[v - 10, s];
-                if (m != null) MeshObj(grp, m, Vector3.zero, CherryMat(CherryHex(v, s)));
-            }
-            MeshObj(grp, _cherryBarks[v - 10], Vector3.zero, LitTinted("bark", "#6d4a2f"));
+            // 树干：略弯（用两段错位方块模拟），卡通树干不需要笔直
+            BarkBox(grp, new Vector3(0, 0.85f * sizeK, 0), new Vector3(0.34f * sizeK, 1.7f * sizeK, 0.34f * sizeK), "#7a5a42");
+            BarkBox(grp, new Vector3(0.16f * sizeK, 1.85f * sizeK, 0.1f * sizeK),
+                new Vector3(0.24f * sizeK, 0.9f * sizeK, 0.24f * sizeK), "#6d4c38");
+            // 主冠：一大团粉
+            float cy = 2.9f * sizeK;
+            string c0 = CherryHex(v, 0), c1 = CherryHex(v, 1), c2 = CherryHex(v, 2);
+            MeshObj(grp, MeshFactory.ToonCanopy(1.45f * sizeK, 10, 7, 0.13f, x * 0.29f + z * 0.61f),
+                new Vector3(0, cy, 0), CherryMat(c0));
+            // 侧冠三团（错落，制造蓬松感）
+            MeshObj(grp, MeshFactory.ToonCanopy(0.95f * sizeK, 9, 6, 0.15f, z * 0.47f),
+                new Vector3(1.05f * sizeK, cy - 0.30f * sizeK, 0.35f * sizeK), CherryMat(c2));
+            MeshObj(grp, MeshFactory.ToonCanopy(0.88f * sizeK, 9, 6, 0.15f, x * 0.83f),
+                new Vector3(-0.85f * sizeK, cy - 0.12f * sizeK, -0.65f * sizeK), CherryMat(c2));
+            MeshObj(grp, MeshFactory.ToonCanopy(0.78f * sizeK, 8, 6, 0.14f, x * 1.3f + z * 0.9f),
+                new Vector3(0.15f * sizeK, cy + 0.55f * sizeK, -0.75f * sizeK), CherryMat(c1));
+            // 顶冠：最亮的一团（受光顶）
+            MeshObj(grp, MeshFactory.ToonCanopy(0.72f * sizeK, 8, 6, 0.12f, z * 1.9f),
+                new Vector3(-0.20f * sizeK, cy + 1.00f * sizeK, 0.30f * sizeK), CherryMat(c1));
         }
         else
         {
+            // 普通树（2026-11-10 卡通重做）：
+            // 上一版是三层「叶簇贴图方块」叠起来，MC 味很重；卡通渲染的树要「一团圆冠 + 一根干」。
+            // 用 ToonCanopy（低多边形球）替掉方块，冠形随树种变化。
             bool tall = v == 1, wide = v == 2;
-            float trunkH = tall ? 1.5f : 1f;
-            Vector3 crown = wide ? new Vector3(2f, 1.4f, 2f) : tall ? new Vector3(1.4f, 1.8f, 1.4f) : new Vector3(1.5f, 1.3f, 1.5f);
-            BarkBox(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.36f, trunkH, 0.36f), "#6d4a2f");
-            // 双色调树冠：暗底 + 主色 + 亮顶（立体受光感）+ 叶簇纹理
+            float trunkH = tall ? 2.0f : 1.4f;
+            float crownR = wide ? 1.35f : tall ? 1.05f : 1.15f;
             string baseHex = TREE_CROWNS[v % TREE_CROWNS.Length];
-            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.3f - 0.1f, 0), new Vector3(crown.x * 0.98f, crown.y * 0.6f, crown.z * 0.98f), MatLib.Shade(baseHex, 0.78f));
-            LeafBox(grp, new Vector3(0, trunkH + crown.y * 0.74f - 0.1f, 0), new Vector3(crown.x * 0.92f, crown.y * 0.5f, crown.z * 0.92f), baseHex);
-            LeafBox(grp, new Vector3(0, trunkH + crown.y - 0.18f, 0), new Vector3(crown.x * 0.6f, crown.y * 0.28f, crown.z * 0.6f), MatLib.Shade(baseHex, 1.2f));
+            // 树干：细一点的圆柱感（用 BoxUV 但收窄），卡通树干不需要方
+            BarkBox(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.30f, trunkH, 0.30f), "#7a5a3a");
+            // 主冠：一团圆球
+            float crownY = trunkH + crownR * 0.72f;
+            MeshObj(grp, MeshFactory.ToonCanopy(crownR, 10, 7, 0.10f, x * 0.37f + z * 0.71f),
+                new Vector3(0, crownY, 0), LeafMat(baseHex));
+            // 副冠：偏上偏侧一小团，制造「蓬松」而不是「一个球」
+            MeshObj(grp, MeshFactory.ToonCanopy(crownR * 0.62f, 8, 6, 0.12f, z * 0.53f),
+                new Vector3(crownR * 0.42f, crownY + crownR * 0.52f, -crownR * 0.3f),
+                LeafMat(MatLib.Shade(baseHex, 1.18f)));
+            // 底部暗冠：让树冠有「下沿」，避免像气球
+            MeshObj(grp, MeshFactory.ToonCanopy(crownR * 0.72f, 8, 5, 0.08f, x * 0.91f),
+                new Vector3(-crownR * 0.25f, crownY - crownR * 0.42f, crownR * 0.28f),
+                LeafMat(MatLib.Shade(baseHex, 0.80f)));
         }
     }
 
     // 树冠块：世界尺度 UV（每面密度恒定 160px/米）+ 叶簇贴图 × 颜色
     GameObject LeafBox(Transform p, Vector3 pos, Vector3 size, string hex)
-        => MeshObj(p, MeshFactory.BoxUV(size, TexScale.LeafMeters), pos, LitTinted("leaves", hex));
+        => MeshObj(p, MeshFactory.BoxUV(size, TexScale.LeafMeters), pos, LeafMat(hex));
+
+    // 卡通树叶材质（2026-11-10 重做）：
+    // 上一版是「leaves 贴图 × tint」，但贴图是深绿底噪点，相乘后所有树都发暗发脏。
+    // 卡通渲染的树冠应该是「纯色大块」——叶子的层次交给 shader 的 ramp 和冠团错落，
+    // 而不是贴图噪点。所以改成纯色材质，只保留一点点叶簇贴图的不规则感。
+    Material LeafMat(string hex)
+    {
+        string k = "LF|" + hex;
+        if (!_cache.TryGetValue(k, out var m))
+        {
+            m = MatLib.LitColor(MatLib.Hex(hex), 0f);
+            // 叶面：描边细一点，暗面偏冷绿（避免整团黑）
+            m.SetFloat("_OutlineWidth", 0.0028f);
+            m.SetColor("_ShadowTint", new Color(0.55f, 0.72f, 0.55f, 1f));
+            m.SetFloat("_RimStrength", 0.22f);
+            _cache[k] = m;
+            if (!LeafMats.Contains(m)) LeafMats.Add(m);
+        }
+        return m;
+    }
 
     string CherryHex(int v, int shade)
     {
@@ -2896,7 +2951,7 @@ public class WorldBuilder : MonoBehaviour
 
     // 松/柏的锥形树冠：锥面 UV 按周长/高度展开（密度同为 160px/米）
     void LeafCone(Transform p, float radius, float height, float baseY, string hex)
-        => MeshObj(p, MeshFactory.Cone(radius, height, 6, true, TexScale.LeafMeters), new Vector3(0, baseY, 0), LitTinted("leaves", hex));
+        => MeshObj(p, MeshFactory.Cone(radius, height, 6, true, TexScale.LeafMeters), new Vector3(0, baseY, 0), LeafMat(hex));
 
     void EnsureCherryCrowns()
     {
@@ -3544,7 +3599,7 @@ public class WorldBuilder : MonoBehaviour
             float fx = -hw + 0.62f + (i % 6) * (w - 1.24f) / 5f;
             float fz = (row == 0 ? -1f : 1f) * hd * 0.30f;
             float s = 0.78f + (i % 3) * 0.10f;
-            var leaf = MeshObj(grp, _bloomCanopyA, new Vector3(fx, 0.16f, fz), LitTinted("leaves", "#4b7a46", 2.5f, 2.5f));
+            var leaf = MeshObj(grp, _bloomCanopyA, new Vector3(fx, 0.16f, fz), LeafMat("#4b7a46"));
             leaf.transform.localScale = new Vector3(0.36f * s, 0.20f * s, 0.32f * s);
             var bloom = MeshObj(grp, _bloomCanopyB, new Vector3(fx + 0.03f, 0.29f, fz - 0.02f), CherryMat(fc[i % fc.Length]));
             bloom.transform.localScale = new Vector3(0.30f * s, 0.17f * s, 0.26f * s);
@@ -3561,10 +3616,52 @@ public class WorldBuilder : MonoBehaviour
     // ── 樱花林中央巨樱：粗干/主枝/十几团花冠 + 落叶毯 + 接林道步石 ──
     void GiantCherry(Transform grp)
     {
-        EnsureCherryCrowns();
-        for (int s = 0; s < 3; s++)
-            MeshObj(grp, _giantCrowns[s], Vector3.zero, CherryMat(GiantHex(s)));
-        MeshObj(grp, _giantBark, Vector3.zero, LitTinted("bark", "#6d4a2f"));
+        // 卡通重做（2026-11-10）：原来的体素巨樱（0.2m 立方体堆成的树冠 + 树干）在卡通渲染下
+        // 变成一团巨大的黑色方块 —— 体素块的背面法线朝内，描边 pass 把它们全涂黑了。
+        // 改为「一根粗圆柱干 + 几团大粉冠」，与周围卡通樱花树同一语汇。
+        const float H = 9.5f;      // 主干高
+        const float R = 4.6f;      // 主冠半径（巨樱的「大」靠冠径，不靠体素数量）
+
+        // 主干：上细下粗（TaperedBox 换成正圆柱更圆润）
+        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        var tc = trunk.GetComponent<Collider>();
+        if (tc != null) Destroy(tc);
+        trunk.transform.SetParent(grp, false);
+        trunk.transform.localPosition = new Vector3(0f, H * 0.5f, 0f);
+        trunk.transform.localScale = new Vector3(1.35f, H * 0.5f, 1.35f);
+        trunk.GetComponent<MeshRenderer>().sharedMaterial = LitTinted("bark", "#8a6448");
+
+        // 主枝：四条斜向圆柱
+        for (int i = 0; i < 4; i++)
+        {
+            float ang = i * Mathf.PI * 0.5f + 0.4f;
+            var br = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            var bc = br.GetComponent<Collider>();
+            if (bc != null) Destroy(bc);
+            br.transform.SetParent(grp, false);
+            br.transform.localPosition = new Vector3(Mathf.Cos(ang) * 1.6f, H * 0.72f, Mathf.Sin(ang) * 1.6f);
+            br.transform.localEulerAngles = new Vector3(Mathf.Sin(ang) * 48f, 0f, -Mathf.Cos(ang) * 48f);
+            br.transform.localScale = new Vector3(0.42f, 2.4f, 0.42f);
+            br.GetComponent<MeshRenderer>().sharedMaterial = LitTinted("bark", "#7a5a42");
+        }
+
+        // 主冠：一团超大粉冠 + 六团环绕副冠（错落高度，像一把撑开的伞）
+        string[] shades = { GiantHex(0), GiantHex(1), GiantHex(2) };
+        MeshObj(grp, MeshFactory.ToonCanopy(R, 12, 8, 0.10f, 3.7f), new Vector3(0f, H + R * 0.55f, 0f),
+            CherryMat(shades[1]));
+        for (int i = 0; i < 6; i++)
+        {
+            float ang = i * Mathf.PI / 3f + 0.25f;
+            float dist = R * 0.72f;
+            float hh = H + R * 0.30f + Mathf.Sin(i * 1.7f) * 0.9f;
+            MeshObj(grp, MeshFactory.ToonCanopy(R * 0.55f, 9, 7, 0.12f, i * 2.3f),
+                new Vector3(Mathf.Cos(ang) * dist, hh, Mathf.Sin(ang) * dist), CherryMat(shades[i % 2]));
+        }
+        // 顶冠：最亮的一团
+        MeshObj(grp, MeshFactory.ToonCanopy(R * 0.62f, 10, 7, 0.10f, 9.1f),
+            new Vector3(0.4f, H + R * 1.20f, -0.3f), CherryMat(shades[1]));
+        MeshObj(grp, MeshFactory.ToonCanopy(R * 0.45f, 8, 6, 0.12f, 4.4f),
+            new Vector3(-1.1f, H + R * 1.05f, 0.9f), CherryMat(shades[0]));
         // 落叶毯：三色小瓣片合并成 3 个网格
         var petal = MeshFactory.Quad(0.22f, 0.11f);
         string[] pcs = { "#efb3c7", "#e29ab2", "#f6d2dd" };
@@ -3612,7 +3709,7 @@ public class WorldBuilder : MonoBehaviour
         if (W.AZALEAS == null || W.AZALEAS.Length == 0) return;
         var g = NewGo("Azaleas", Root).transform;
         string[] fc = { "#d76b8f", "#e88ba8", "#f2aec4", "#f7e3ea", "#c45f80" };
-        var leafMat = LitTinted("leaves", "#3f6b3c", 2.5f, 2.5f);
+        var leafMat = LeafMat("#3f6b3c");
         for (int i = 0; i < W.AZALEAS.Length; i++)
         {
             var a = W.AZALEAS[i];
@@ -3777,7 +3874,7 @@ public class WorldBuilder : MonoBehaviour
         pcap.height = 1.8f;
         pcap.radius = 0.32f;
 
-        PlayerAvatar.Create(grp);
+        PlayerAvatar.Create(grp, CharacterDef.FromId(Args.Str("-avatar")));
 
         var sh = NewGo("shadow", grp).transform;
         sh.localPosition = new Vector3(0f, 0.036f, 0f);   // 高于抬高后的钟楼广场（0.030）

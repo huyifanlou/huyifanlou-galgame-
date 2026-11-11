@@ -28,8 +28,11 @@ public static class Bootstrap
             "Legacy Shaders/Particles/Alpha Blended",
             "Legacy Shaders/Particles/Additive",
             "Legacy Shaders/Transparent/Diffuse",
-            "Campus/PostFX",
+            "Campus/Toon",              // 2026-11-10 卡通渲染主着色器
+            "Campus/ToonPostFX",        // 卡通后处理
+            "Campus/PostFX",            // 旧写实后处理（保留占位，便于回退对比）
             "Campus/Water",
+            "Campus/TextSign",
             "Skybox/Procedural",
         };
         foreach (var sn in shaderNames)
@@ -72,10 +75,42 @@ public static class Bootstrap
         em.SetColor("_EmissionColor", Color.white);
         em.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
         EditorUtility.SetDirty(em);
+
+        // 卡通渲染的占位：让 _EMISSION 与 _ALPHATEST_ON 两个变体都被编进构建
+        // （运行时才 EnableKeyword 的材质，若构建里没有该变体，会静默失效 → 夜里窗户不亮 / 精灵不裁剪）
+        var toonPath = holderDir + "/Campus_Toon.mat";
+        var toonMat = AssetDatabase.LoadAssetAtPath<Material>(toonPath);
+        if (toonMat == null)
+        {
+            toonMat = new Material(Shader.Find("Campus/Toon"));
+            AssetDatabase.CreateAsset(toonMat, toonPath);
+        }
+        toonMat.EnableKeyword("_EMISSION");
+        toonMat.SetColor("_EmissionColor", Color.white);
+        toonMat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+        toonMat.EnableKeyword("_ALPHATEST_ON");
+        toonMat.SetFloat("_Cutoff", 0.4f);
+        EditorUtility.SetDirty(toonMat);
+
+        // 带 _ALPHATEST_ON 的第二份（精灵/Cutout 用）：Unity 的变体收集按材质关键字决定，
+        // 一份材质没法同时保证两个变体都在，所以再来一份只开 ALPHATEST 的。
+        var toonClipPath = holderDir + "/Campus_ToonCutout.mat";
+        var toonClip = AssetDatabase.LoadAssetAtPath<Material>(toonClipPath);
+        if (toonClip == null)
+        {
+            toonClip = new Material(Shader.Find("Campus/Toon"));
+            AssetDatabase.CreateAsset(toonClip, toonClipPath);
+        }
+        toonClip.DisableKeyword("_EMISSION");
+        toonClip.EnableKeyword("_ALPHATEST_ON");
+        toonClip.SetFloat("_Cutoff", 0.4f);
+        toonClip.renderQueue = 2450;
+        EditorUtility.SetDirty(toonClip);
+
         AssetDatabase.SaveAssets();
 
         AssetDatabase.SaveAssets();
-        Debug.Log("[Bootstrap] Shader 占位材质完成（Standard 已按 Cutout 变体配置）");
+        Debug.Log("[Bootstrap] Shader 占位材质完成（Standard 已按 Cutout 变体配置，Toon 已备 EMISSION/ALPHATEST 变体）");
 
         // ── 2) 项目设置 ──
         PlayerSettings.productName = "他山之石";
@@ -186,8 +221,30 @@ public static class Bootstrap
         PlayerSettings.defaultScreenHeight = 900;
         PlayerSettings.colorSpace = ColorSpace.Linear;   // 每次构建都确保线性空间（写实光照）
         SetupIntroTextures();
+        SyncScenario();
         AssetDatabase.SaveAssets();
     }
+
+    // 剧本同步：把仓库 Scenario/第一卷-初遇 的 8 章正文拷进 StreamingAssets/Scenario（运行时 File.ReadAllText 读）。
+    // 源文件不动，这里只是构建期拷贝；每次构建自动保鲜，也可单独跑 SyncScenarioBatch。
+    [MenuItem("Campus/1d. 同步剧本到 StreamingAssets")]
+    public static void SyncScenario()
+    {
+        var repoRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
+        var src = Path.Combine(repoRoot, "Scenario", "第一卷-初遇");
+        var dst = Path.Combine(Application.dataPath, "StreamingAssets", "Scenario");
+        if (!Directory.Exists(src)) { Debug.LogWarning("[Bootstrap] 剧本源目录不存在：" + src); return; }
+        Directory.CreateDirectory(dst);
+        int n = 0;
+        foreach (var f in Directory.GetFiles(src, "0*.md"))
+        {
+            File.Copy(f, Path.Combine(dst, Path.GetFileName(f)), true);
+            n++;
+        }
+        AssetDatabase.Refresh();
+        Debug.Log($"[Bootstrap] 剧本同步完成：{n} 章 → Assets/StreamingAssets/Scenario");
+    }
+    public static void SyncScenarioBatch() => SyncScenario();
 
     // 开场 logo 素材（Resources/intro/*.png）是烘好的隶书字与剪影，不是像素贴图：
     // 必须 Bilinear + 无 mipmap，否则非整数倍缩放时字缘会锯齿/闪动（docs/92）

@@ -19,7 +19,7 @@ public class IntroScreen : MonoBehaviour
     {
         _freeze = Args.F("-intro") ?? -1f;
         bool shot = !string.IsNullOrEmpty(Args.Str("-shot"));
-        if (Args.Has("-nointro") || (shot && _freeze < 0f)) { enabled = false; return; }
+        if (Args.Has("-nointro") || Args.Has("-scenario") || (shot && _freeze < 0f)) { enabled = false; return; }
 
         for (int i = 0; i < 4; i++) _chars[i] = Resources.Load<Texture2D>($"intro/intro-char{i}");
         _ridge = Resources.Load<Texture2D>("intro/intro-ridge");

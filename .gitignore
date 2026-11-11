@@ -38,3 +38,8 @@ desktop.ini
 # —— 构建产物（本工作区） ——
 shots/
 Build/
+
+# —— 本工作区专用（AGENTS.md：不要提交）——
+.workbuddy-ai/
+.dsh-tool-vision/
+

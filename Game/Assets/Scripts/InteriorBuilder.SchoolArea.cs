@@ -63,23 +63,30 @@ public static partial class InteriorBuilder
         g.SetParent(p, false);
         g.localPosition = new Vector3(x, 0f, z);
         g.localEulerAngles = new Vector3(0f, ry, 0f);
+        var edge = Darker(frame, 0.78f);
 
+        // 卡通上床下桌：四立柱 + 床架 + 床垫 + 被子 + 枕头 + 桌面 + 梯子，全部倒角
         for (int i = 0; i < 4; i++)
-            Part(g, new Vector3(i % 2 == 0 ? -0.45f : 0.45f, 0.9f, i < 2 ? -0.95f : 0.95f),
-                 new Vector3(0.08f, 1.8f, 0.08f), frame, 0.8f);
-        Part(g, new Vector3(0f, 1.55f, 0f), new Vector3(1.0f, 0.12f, 2.0f), frame, 1f);
-        Part(g, new Vector3(0f, 1.66f, 0f), new Vector3(0.92f, 0.12f, 1.86f), mattress, 1.2f);
-        Part(g, new Vector3(0f, 1.77f, -0.68f), new Vector3(0.72f, 0.09f, 0.32f), C("#e8e2d4"), 1f);
+            PartC(g, new Vector3(i % 2 == 0 ? -0.45f : 0.45f, 0.9f, i < 2 ? -0.95f : 0.95f),
+                  new Vector3(0.08f, 1.8f, 0.08f), frame, 0.012f, 0.8f);
+        PartC(g, new Vector3(0f, 1.55f, 0f), new Vector3(1.0f, 0.12f, 2.0f), frame, 0.016f, 1f);
+        PartC(g, new Vector3(0f, 1.66f, 0f), new Vector3(0.92f, 0.12f, 1.86f), mattress, 0.020f, 1.2f);
+        // 被子（压住床垫后半段）+ 枕头：卡通床必须有这两块，否则就是一块白板
+        PartC(g, new Vector3(0f, 1.76f, 0.34f), new Vector3(0.94f, 0.14f, 1.16f), Darker(mattress, 0.82f), 0.018f, 1.2f);
+        PartC(g, new Vector3(0f, 1.77f, -0.68f), new Vector3(0.72f, 0.09f, 0.32f), C("#fff6e2"), 0.016f, 1f);
+        // 床沿护栏：比床架外凸 2cm，卡通渲染里是一条独立亮线
+        Part(g, new Vector3(0f, 1.70f, 0.99f), new Vector3(1.04f, 0.16f, 0.03f), edge, 1f);
         // 桌下书桌 + 桌腿
-        Part(g, new Vector3(0f, 0.74f, 0f), new Vector3(0.92f, 0.06f, 1.72f), desk, 1f);
+        PartC(g, new Vector3(0f, 0.74f, 0f), new Vector3(0.92f, 0.06f, 1.72f), desk, 0.012f, 1f);
+        PartC(g, new Vector3(0f, 0.68f, 0f), new Vector3(0.80f, 0.07f, 1.58f), Darker(desk, 0.80f), 0.010f, 1f);
         for (int i = 0; i < 4; i++)
-            Part(g, new Vector3(i % 2 == 0 ? -0.40f : 0.40f, 0.36f, i < 2 ? -0.76f : 0.76f),
-                 new Vector3(0.06f, 0.72f, 0.06f), frame, 0.6f);
+            PartC(g, new Vector3(i % 2 == 0 ? -0.40f : 0.40f, 0.36f, i < 2 ? -0.76f : 0.76f),
+                  new Vector3(0.06f, 0.72f, 0.06f), frame, 0.010f, 0.6f);
         // 梯子
-        Part(g, new Vector3(0.55f, 0.35f, 0.62f), new Vector3(0.10f, 0.70f, 0.10f), frame, 0.6f);
+        PartC(g, new Vector3(0.55f, 0.35f, 0.62f), new Vector3(0.10f, 0.70f, 0.10f), frame, 0.010f, 0.6f);
         for (int i = 0; i < 3; i++)
-            Part(g, new Vector3(0.55f, 0.55f + i * 0.34f, 0.48f + i * 0.10f),
-                 new Vector3(0.34f, 0.05f, 0.10f), frame, 0.6f);
+            PartC(g, new Vector3(0.55f, 0.55f + i * 0.34f, 0.48f + i * 0.10f),
+                  new Vector3(0.34f, 0.05f, 0.10f), edge, 0.008f, 0.6f);
         TableLamp(g, new Vector3(0.18f, 0.77f, -0.55f), "#f0dfb8");
 
         bool swap = Mathf.Abs(Mathf.Sin(ry * Mathf.Deg2Rad)) > 0.5f;
@@ -89,14 +96,14 @@ public static partial class InteriorBuilder
     // 室内门：门套 + 开向房间一侧的门扇（只做视觉，不参与碰撞，保证可通行）
     static void DormDoor(Transform p, float doorX, float zWall, int dir, Material leaf)
     {
-        var fr = C("#6f5540");
-        Part(p, new Vector3(doorX - 0.79f, 1.11f, zWall), new Vector3(0.14f, 2.22f, 0.30f), fr, 1f);
-        Part(p, new Vector3(doorX + 0.79f, 1.11f, zWall), new Vector3(0.14f, 2.22f, 0.30f), fr, 1f);
-        Part(p, new Vector3(doorX, 2.29f, zWall), new Vector3(1.72f, 0.14f, 0.30f), fr, 1f);
-        Part(p, new Vector3(doorX - 0.74f, 1.05f, zWall + dir * 0.56f),
-             new Vector3(0.06f, 2.06f, 0.94f), leaf, 1f);
+        var fr = CB("#c98a4e");
+        PartC(p, new Vector3(doorX - 0.79f, 1.11f, zWall), new Vector3(0.14f, 2.22f, 0.30f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(doorX + 0.79f, 1.11f, zWall), new Vector3(0.14f, 2.22f, 0.30f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(doorX, 2.29f, zWall), new Vector3(1.72f, 0.14f, 0.30f), fr, 0.014f, 1f);
+        PartC(p, new Vector3(doorX - 0.74f, 1.05f, zWall + dir * 0.56f),
+              new Vector3(0.06f, 2.06f, 0.94f), leaf, 0.014f, 1f);
         Part(p, new Vector3(doorX - 0.70f, 1.02f, zWall + dir * 0.98f),
-             new Vector3(0.05f, 0.05f, 0.12f), C("#c8a05a"), 1f);
+             new Vector3(0.05f, 0.05f, 0.12f), CB("#f0d060"), 1f);
     }
 
     // 一间四人间：四张上床下桌，左墙两张 / 右墙两张相对，中间 4~6m 通道；
@@ -110,15 +117,15 @@ public static partial class InteriorBuilder
         float cx = (x0 + x1) * 0.5f;
 
         // 门套/开着的门/门牌
-        DormDoor(p, doorX, zWall, dir, C("#8f6d50"));
-        WallSign(p, doorX + 1.14f, 2.46f, zWall, -dir, label, 0.72f, 0.34f, C("#2f4a3a"), 0.026f);
+        DormDoor(p, doorX, zWall, dir, CB("#c98a4e"));
+        WallSign(p, doorX + 1.14f, 2.46f, zWall, -dir, label, 0.72f, 0.34f, CB("#3f9a6a"), 0.026f);
 
         // 四张上床下桌：左两张、右两张
         float[] bz = { zFace + dir * 4.0f, zFace + dir * 6.6f };
         foreach (float z in bz)
         {
-            LoftBed(p, it, x0 + 0.55f, z, 0f, frame, desk, C("#e8e2d4"));
-            LoftBed(p, it, x1 - 0.55f, z, 0f, frame, desk, C("#e8e2d4"));
+            LoftBed(p, it, x0 + 0.55f, z, 0f, frame, desk, C("#f4f8fc"));
+            LoftBed(p, it, x1 - 0.55f, z, 0f, frame, desk, C("#f4f8fc"));
             Chair(p, it, new Vector3(x0 + 1.38f, 0f, z), 270f, frame, true);
             Chair(p, it, new Vector3(x1 - 1.38f, 0f, z), 90f, frame, true);
         }
@@ -129,9 +136,10 @@ public static partial class InteriorBuilder
         {
             float wx = doorX + sx * 1.58f;
             float wz = zFace + dir * 0.32f;
-            Part(p, new Vector3(wx, 1.0f, wz), new Vector3(1.3f, 2.0f, 0.62f), frame, 1f);
-            Part(p, new Vector3(wx, 1.0f, wz + dir * 0.325f), new Vector3(1.14f, 1.9f, 0.03f), C("#8a7a66"), 1f);
-            Part(p, new Vector3(wx, 1.02f, wz + dir * 0.345f), new Vector3(0.03f, 0.07f, 0.11f), C("#c8a05a"), 1f);
+            PartC(p, new Vector3(wx, 1.0f, wz), new Vector3(1.3f, 2.0f, 0.62f), frame, 0.028f, 1f);
+            PartC(p, new Vector3(wx, 1.0f, wz + dir * 0.325f), new Vector3(1.14f, 1.9f, 0.03f), CB("#d8a860"), 0.012f, 1f);
+            Part(p, new Vector3(wx, 1.02f, wz + dir * 0.345f), new Vector3(0.03f, 0.07f, 0.11f), CB("#f0d060"), 1f);
+            Part(p, new Vector3(wx, 1.0f, wz + dir * 0.35f), new Vector3(0.04f, 1.86f, 0.02f), CB("#a8703c"), 1f);
             Reg(it, wx, wz, 1.3f, 0.62f);
         }
 
@@ -141,19 +149,21 @@ public static partial class InteriorBuilder
         Reg(it, x0 + 0.55f, zLiv, 1.0f, 2.2f);
         Table(p, new Vector3(x0 + 2.55f, 0f, zLiv), 1.4f, 0.8f, 0.42f, desk);
         Reg(it, x0 + 2.55f, zLiv, 1.4f, 0.8f);
-        TableLamp(p, new Vector3(x0 + 2.55f, 0.42f, zLiv + 0.2f), "#e8d6ae");
-        Rug(p, new Vector3(cx + 0.3f, 0.056f, zLiv), 5.0f, 4.4f, C("#8a7a66"));
+        TableLamp(p, new Vector3(x0 + 2.55f, 0.42f, zLiv + 0.2f), "#f0d8a8");
+        Rug(p, new Vector3(cx + 0.3f, 0.056f, zLiv), 5.0f, 4.4f, CB("#e8a878"));
 
-        Part(p, new Vector3(x1 - 0.30f, 0.30f, zLiv), new Vector3(0.52f, 0.60f, 2.5f), desk, 1f);
+        // 电视柜：倒角 + 台面压条（原来是一整块 0.52×0.60×2.5 的板）
+        PartC(p, new Vector3(x1 - 0.30f, 0.30f, zLiv), new Vector3(0.52f, 0.60f, 2.5f), desk, 0.024f, 1f);
+        PartC(p, new Vector3(x1 - 0.30f, 0.62f, zLiv), new Vector3(0.58f, 0.05f, 2.56f), Darker(desk, 0.78f), 0.012f, 1f);
         Reg(it, x1 - 0.30f, zLiv, 0.52f, 2.5f);
-        Part(p, new Vector3(x1 - 0.20f, 1.35f, zLiv), new Vector3(0.08f, 1.05f, 1.85f), C("#1f2126"), 1f);
-        Part(p, new Vector3(x1 - 0.24f, 1.35f, zLiv), new Vector3(0.02f, 0.92f, 1.70f), C("#2a3f52"), 1f);
-        Part(p, new Vector3(x1 - 0.60f, 1.05f, zLiv), new Vector3(0.05f, 0.08f, 0.50f), C("#3a3f47"), 1f);
+        PartC(p, new Vector3(x1 - 0.20f, 1.35f, zLiv), new Vector3(0.08f, 1.05f, 1.85f), CB("#3a3f50"), 0.014f, 1f);
+        Part(p, new Vector3(x1 - 0.24f, 1.35f, zLiv), new Vector3(0.02f, 0.92f, 1.70f), C("#4a90c8"), 1f);
+        Part(p, new Vector3(x1 - 0.60f, 1.05f, zLiv), new Vector3(0.05f, 0.08f, 0.50f), CB("#5a6470"), 1f);
 
         float zShelf = zFace + dir * 15.7f;
         ShelfWallZ(p, it, x1 - 0.28f, Mathf.Min(zShelf - 1.1f, zShelf + 1.1f),
-                   Mathf.Max(zShelf - 1.1f, zShelf + 1.1f), -1, frame,
-                   new[] { C("#8c4a3c"), C("#3f5c6b"), C("#8a7440"), C("#6b7a4a"), C("#a9a08a") }, 2.1f);
+                   Mathf.Max(zShelf - 1.1f, zShelf + 1.1f), -1, CB("#c98a4e"),
+                   new[] { C("#e0554a"), C("#4a9ac8"), C("#f0b03c"), C("#6cc06a"), C("#a86ad8") }, 2.1f);
         Plant(p, new Vector3(x1 - 0.85f, 0.02f, zWin + dir * 0.75f), 1.0f);
 
         // 窗 / 挂画 / 主灯
@@ -171,8 +181,8 @@ public static partial class InteriorBuilder
         float zWin = dir < 0 ? -19.38f : 19.38f;
         float cx = (x0 + x1) * 0.5f;
 
-        DormDoor(p, doorX, zWall, dir, C("#7b8798"));
-        WallSign(p, doorX + 1.14f, 2.46f, zWall, -dir, label, 0.72f, 0.34f, C("#3a4a62"), 0.026f);
+        DormDoor(p, doorX, zWall, dir, CB("#8fb0c8"));
+        WallSign(p, doorX + 1.14f, 2.46f, zWall, -dir, label, 0.72f, 0.34f, CB("#4a9ac8"), 0.026f);
 
         // 瓷砖地
         Part(p, new Vector3(cx, 0.036f, (zFace + zWin) * 0.5f),
@@ -182,63 +192,64 @@ public static partial class InteriorBuilder
         for (int i = 0; i < 3; i++)
         {
             float z = zFace + dir * (1.15f + i * 0.95f);
-            Part(p, new Vector3(x0 + 0.55f, 0.48f, z), new Vector3(0.80f, 0.96f, 0.82f), C("#d8dde0"), 1f);
-            Part(p, new Vector3(x0 + 0.96f, 0.50f, z), new Vector3(0.03f, 0.52f, 0.52f), C("#3a4a58"), 1f);
-            Part(p, new Vector3(x0 + 0.55f, 0.99f, z), new Vector3(0.86f, 0.06f, 0.88f), C("#b9c0c4"), 1f);
+            PartC(p, new Vector3(x0 + 0.55f, 0.48f, z), new Vector3(0.80f, 0.96f, 0.82f), CB("#e8f4fa"), 0.024f, 1f);
+            Part(p, new Vector3(x0 + 0.96f, 0.50f, z), new Vector3(0.03f, 0.52f, 0.52f), C("#4a8ac8"), 1f);
+            PartC(p, new Vector3(x0 + 0.55f, 0.99f, z), new Vector3(0.86f, 0.06f, 0.88f), CB("#b8c8d4"), 0.012f, 1f);
             Reg(it, x0 + 0.55f, z, 0.86f, 0.88f);
 
-            Part(p, new Vector3(x1 - 0.55f, 0.48f, z), new Vector3(0.80f, 0.96f, 0.82f), C("#cdd4d8"), 1f);
-            Part(p, new Vector3(x1 - 0.96f, 0.50f, z), new Vector3(0.03f, 0.52f, 0.52f), C("#4a4f58"), 1f);
-            Part(p, new Vector3(x1 - 0.55f, 0.99f, z), new Vector3(0.86f, 0.06f, 0.88f), C("#aeb6ba"), 1f);
+            PartC(p, new Vector3(x1 - 0.55f, 0.48f, z), new Vector3(0.80f, 0.96f, 0.82f), CB("#dceaf4"), 0.024f, 1f);
+            Part(p, new Vector3(x1 - 0.96f, 0.50f, z), new Vector3(0.03f, 0.52f, 0.52f), C("#5a6470"), 1f);
+            PartC(p, new Vector3(x1 - 0.55f, 0.99f, z), new Vector3(0.86f, 0.06f, 0.88f), CB("#a8b8c4"), 0.012f, 1f);
             Reg(it, x1 - 0.55f, z, 0.86f, 0.88f);
         }
 
         // 厕所隔间（西侧 4 间）
+        var stall = CB("#a8c0d0");
         for (int i = 0; i < 4; i++)
         {
             float zc = zFace + dir * (5.4f + i * 1.35f);
-            Part(p, new Vector3(x0 + 1.45f, 1.0f, zc), new Vector3(0.05f, 2.0f, 1.30f), C("#8a929a"), 1f);
-            Part(p, new Vector3(x0 + 0.50f, 0.22f, zc), new Vector3(0.62f, 0.42f, 0.70f), C("#eef2f2"), 1f);
-            Part(p, new Vector3(x0 + 0.50f, 0.62f, zc - 0.32f), new Vector3(0.58f, 0.40f, 0.11f), C("#dfe6e6"), 1f);
+            PartC(p, new Vector3(x0 + 1.45f, 1.0f, zc), new Vector3(0.05f, 2.0f, 1.30f), stall, 0.014f, 1f);
+            PartC(p, new Vector3(x0 + 0.50f, 0.22f, zc), new Vector3(0.62f, 0.42f, 0.70f), C("#f8fcfc"), 0.016f, 1f);
+            PartC(p, new Vector3(x0 + 0.50f, 0.62f, zc - 0.32f), new Vector3(0.58f, 0.40f, 0.11f), C("#e0eef2"), 0.012f, 1f);
             Reg(it, x0 + 0.50f, zc, 0.64f, 0.72f);
         }
-        Part(p, new Vector3(x0 + 1.45f, 1.0f, zFace + dir * 7.5f), new Vector3(0.05f, 2.0f, 4.2f), C("#8a929a"), 1f);
+        PartC(p, new Vector3(x0 + 1.45f, 1.0f, zFace + dir * 7.5f), new Vector3(0.05f, 2.0f, 4.2f), stall, 0.014f, 1f);
 
         // 淋浴间（东侧 4 间）
         for (int i = 0; i < 4; i++)
         {
             float zc = zFace + dir * (5.4f + i * 1.35f);
-            Part(p, new Vector3(x1 - 0.55f, 0.10f, zc), new Vector3(1.0f, 0.18f, 1.15f), C("#c8d0d4"), 1f);
+            PartC(p, new Vector3(x1 - 0.55f, 0.10f, zc), new Vector3(1.0f, 0.18f, 1.15f), CB("#c8d8e4"), 0.016f, 1f);
             Part(p, new Vector3(x1 - 1.08f, 1.1f, zc), new Vector3(0.03f, 2.0f, 1.15f), Glass(), 1f);
-            Part(p, new Vector3(x1 - 0.55f, 2.15f, zc), new Vector3(0.05f, 0.05f, 0.70f), C("#8d99a6"), 1f);
-            Part(p, new Vector3(x1 - 0.55f, 2.02f, zc), new Vector3(0.22f, 0.04f, 0.22f), C("#dfe6dc"), 1f);
+            Part(p, new Vector3(x1 - 0.55f, 2.15f, zc), new Vector3(0.05f, 0.05f, 0.70f), CB("#b8c8d8"), 1f);
+            Part(p, new Vector3(x1 - 0.55f, 2.02f, zc), new Vector3(0.22f, 0.04f, 0.22f), C("#fff6e2"), 1f);
             Reg(it, x1 - 0.55f, zc, 1.02f, 1.17f);
         }
         Part(p, new Vector3(x1 - 1.08f, 1.1f, zFace + dir * 7.5f), new Vector3(0.03f, 2.0f, 4.2f), Glass(), 1f);
 
         // 尽端洗手台 + 镜子 + 晾衣架 + 长凳
         float zSink = zWin - dir * 0.55f;
-        Part(p, new Vector3(cx, 0.84f, zSink), new Vector3(3.8f, 0.10f, 0.62f), C("#dfe6dc"), 1f);
-        Part(p, new Vector3(cx, 0.42f, zSink), new Vector3(3.6f, 0.76f, 0.50f), C("#c8d0d4"), 1f);
+        PartC(p, new Vector3(cx, 0.84f, zSink), new Vector3(3.8f, 0.10f, 0.62f), C("#f8fcfc"), 0.014f, 1f);
+        PartC(p, new Vector3(cx, 0.42f, zSink), new Vector3(3.6f, 0.76f, 0.50f), CB("#b8c8d4"), 0.026f, 1f);
         for (int i = 0; i < 3; i++)
         {
             float sx = cx - 1.2f + i * 1.2f;
-            Part(p, new Vector3(sx, 0.90f, zSink), new Vector3(0.62f, 0.08f, 0.42f), C("#eef2f2"), 1f);
+            PartC(p, new Vector3(sx, 0.90f, zSink), new Vector3(0.62f, 0.08f, 0.42f), C("#e0eef2"), 0.012f, 1f);
             Part(p, new Vector3(sx, 1.55f, zWin - dir * 0.14f), new Vector3(0.64f, 0.86f, 0.03f), Glass(), 1f);
         }
         Reg(it, cx, zSink, 3.8f, 0.62f);
 
-        Part(p, new Vector3(cx, 0.24f, zFace + dir * 11.2f), new Vector3(2.0f, 0.10f, 0.52f), C("#8a6a4a"), 1f);
-        Part(p, new Vector3(cx, 0.12f, zFace + dir * 11.2f), new Vector3(0.12f, 0.24f, 0.46f), C("#6f5540"), 1f);
+        PartC(p, new Vector3(cx, 0.24f, zFace + dir * 11.2f), new Vector3(2.0f, 0.10f, 0.52f), CB("#c98a4e"), 0.014f, 1f);
+        Part(p, new Vector3(cx, 0.12f, zFace + dir * 11.2f), new Vector3(0.12f, 0.24f, 0.46f), CB("#a06a3c"), 1f);
         Reg(it, cx, zFace + dir * 11.2f, 2.0f, 0.52f);
 
-        Part(p, new Vector3(cx, 1.05f, zFace + dir * 13.0f), new Vector3(2.2f, 0.06f, 0.06f), C("#8d99a6"), 1f);
+        Part(p, new Vector3(cx, 1.05f, zFace + dir * 13.0f), new Vector3(2.2f, 0.06f, 0.06f), CB("#b8c8d8"), 1f);
         for (int i = 0; i < 2; i++)
             Part(p, new Vector3(cx - 1.0f + i * 2.0f, 1.05f, zFace + dir * 13.0f),
-                 new Vector3(0.06f, 2.0f, 0.06f), C("#8d99a6"), 1f);
+                 new Vector3(0.06f, 2.0f, 0.06f), CB("#b8c8d8"), 1f);
         for (int i = 0; i < 4; i++)
             Part(p, new Vector3(cx - 0.75f + i * 0.5f, 0.82f, zFace + dir * 13.0f),
-                 new Vector3(0.34f, 0.46f, 0.03f), C("#c8d8e0"), 1f);
+                 new Vector3(0.34f, 0.46f, 0.03f), CB(new[] { "#8ad8f0", "#e8a878", "#a8e0a8", "#f0d88a" }[i]), 1f);
 
         Window(p, new Vector3(cx, 2.55f, zWin - dir * 0.16f), 3.2f, 1.2f, 0f);
         Lamp(p, new Vector3(cx, 3.22f, zFace + dir * 3.6f), 14f, 1.3f);
@@ -250,16 +261,17 @@ public static partial class InteriorBuilder
         const float X = 29f, Z = 19.5f, W = 3.6f;
         var wall = T("in_wall2");
         var it = Shell(parent, "dorm", "宿舍楼", DORM_X, X, Z, W, 1.6f, 2.6f,
-                       wall, T("in_floor"), T("in_ceil"), wall, C("#6f4a32"), 0.60f);
+                       wall, T("in_floor"), T("in_ceil"), wall, CB("#b8743c"), 0.60f);
         var p = it.Root.transform;
-        var frame = C("#8a5a3c");
-        var desk = C("#a87a52");
-        var accent = C("#8a9a7a");
+        // 卡通配色（docs/103）：原 #8a5a3c 框架 / #a87a52 桌面 / #8a9a7a 灰绿布艺全部提亮提饱和
+        var frame = CB("#d8903c");
+        var desk = CB("#f0c46a");
+        var accent = CB("#5fc0a8");
 
         // 中央走廊 z=-2..2；两端外墙
-        Part(p, new Vector3(DORM_X, 0.044f, 0f), new Vector3(56.0f, 0.012f, 3.2f), C("#8a7a66"), 1.6f);
-        Rug(p, new Vector3(DORM_X - 14f, 0.062f, 0f), 25.0f, 1.8f, C("#7a8a6a"));
-        Rug(p, new Vector3(DORM_X + 14f, 0.062f, 0f), 25.0f, 1.8f, C("#7a8a6a"));
+        Part(p, new Vector3(DORM_X, 0.044f, 0f), new Vector3(56.0f, 0.012f, 3.2f), C("#e0b078"), 1.6f);
+        Rug(p, new Vector3(DORM_X - 14f, 0.062f, 0f), 25.0f, 1.8f, CB("#6fc08a"));
+        Rug(p, new Vector3(DORM_X + 14f, 0.062f, 0f), 25.0f, 1.8f, CB("#6fc08a"));
 
         // 北侧 8 间：7 间四人间 + 1 间盥洗/洗衣
         var north = new[] {
@@ -312,51 +324,51 @@ public static partial class InteriorBuilder
         // 宿管坐在桌子南侧，面向来开门方向的来访者（Chair 靠背在局部 -Z → ry=0 人朝 +Z）
         Chair(p, it, new Vector3(DORM_X - 2.6f, 0f, 5.75f), 0f, frame, true);
         // 值班牌立在桌面上、靠来访者一侧（桌面顶 0.78，牌子下沉 0.5cm 免得和桌面共面闪面）
-        Part(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.86f), new Vector3(0.8f, 0.24f, 0.03f), C("#6f4a32"), 1f);
-        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.88f), 180f, "宿管值班", 0.019f, MatLib.Hex("#f3e9d2"));
-        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.84f), 0f, "宿管值班", 0.019f, MatLib.Hex("#f3e9d2"));
+        Part(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.86f), new Vector3(0.8f, 0.24f, 0.03f), CB("#b8743c"), 1f);
+        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.88f), 180f, "宿管值班", 0.019f, MatLib.Hex("#fff2d6"));
+        SignText(p, new Vector3(DORM_X - 2.6f, 0.89f, 6.84f), 0f, "宿管值班", 0.019f, MatLib.Hex("#fff2d6"));
         // 登记本平放桌面（原来是一块 0.9×0.3 的白板悬在牌子后面，看着像牌子多了一层虚影）
-        Part(p, new Vector3(DORM_X - 3.35f, 0.795f, 6.5f), new Vector3(0.34f, 0.03f, 0.24f), C("#d8d2c4"), 1f);
-        Part(p, new Vector3(DORM_X - 3.35f, 0.815f, 6.5f), new Vector3(0.30f, 0.01f, 0.20f), C("#f3efe4"), 1f);
+        Part(p, new Vector3(DORM_X - 3.35f, 0.795f, 6.5f), new Vector3(0.34f, 0.03f, 0.24f), C("#f0e8d8"), 1f);
+        Part(p, new Vector3(DORM_X - 3.35f, 0.815f, 6.5f), new Vector3(0.30f, 0.01f, 0.20f), C("#fffdf8"), 1f);
 
-        Sofa(p, new Vector3(DORM_X + 3.25f, 0f, lz), 2.2f, 270f, C("#7a5a6a"));
+        Sofa(p, new Vector3(DORM_X + 3.25f, 0f, lz), 2.2f, 270f, CB("#c07ad8"));
         Reg(it, DORM_X + 3.25f, lz, 1.0f, 2.2f);
         Table(p, new Vector3(DORM_X + 1.55f, 0f, lz), 1.2f, 0.7f, 0.38f, desk);
         Reg(it, DORM_X + 1.55f, lz, 1.2f, 0.7f);
-        Rug(p, new Vector3(DORM_X + 1.2f, 0.058f, lz), 4.6f, 4.2f, C("#8a6a5a"));
+        Rug(p, new Vector3(DORM_X + 1.2f, 0.058f, lz), 4.6f, 4.2f, C("#e8a878"));
 
         // 公告板（西墙）
-        Part(p, new Vector3(DORM_X - 3.86f, 1.65f, 4.4f), new Vector3(0.05f, 1.2f, 2.2f), C("#8a6a4a"), 1f);
+        PartC(p, new Vector3(DORM_X - 3.86f, 1.65f, 4.4f), new Vector3(0.05f, 1.2f, 2.2f), CB("#c98a4e"), 0.014f, 1f);
         for (int i = 0; i < 6; i++)
         {
             float pz = 3.5f + (i % 3) * 0.6f;
             float py = 1.25f + (i / 3) * 0.55f;
             Part(p, new Vector3(DORM_X - 3.82f, py, pz), new Vector3(0.02f, 0.36f, 0.42f),
-                 C(i % 2 == 0 ? "#e8e2d0" : "#c8d8c8"), 1f);
+                 C(i % 2 == 0 ? "#fff6e2" : "#a8e0c8"), 1f);
         }
 
         // 快递/储物架（西墙近门，避开净空）
         for (int i = 0; i < 2; i++)
         {
             float rz = 14.4f + i * 1.8f;
-            Part(p, new Vector3(DORM_X - 3.55f, 0.9f, rz), new Vector3(0.55f, 1.8f, 1.6f), C("#6f5540"), 1f);
+            PartC(p, new Vector3(DORM_X - 3.55f, 0.9f, rz), new Vector3(0.55f, 1.8f, 1.6f), CB("#b8743c"), 0.026f, 1f);
             for (int j = 0; j < 3; j++)
-                Part(p, new Vector3(DORM_X - 3.55f, 0.28f + j * 0.56f, rz), new Vector3(0.50f, 0.04f, 1.5f), C("#8a7a66"), 1f);
+                PartC(p, new Vector3(DORM_X - 3.55f, 0.28f + j * 0.56f, rz), new Vector3(0.50f, 0.04f, 1.5f), CB("#e0a860"), 0.008f, 1f);
             Reg(it, DORM_X - 3.55f, rz, 0.55f, 1.6f);
         }
-        Part(p, new Vector3(DORM_X + 3.45f, 0.95f, 16.2f), new Vector3(0.85f, 1.9f, 0.8f), C("#c8ced4"), 1f);
-        Part(p, new Vector3(DORM_X + 3.45f, 1.25f, 15.78f), new Vector3(0.62f, 0.75f, 0.03f), C("#3f6a8a"), 1f);
+        PartC(p, new Vector3(DORM_X + 3.45f, 0.95f, 16.2f), new Vector3(0.85f, 1.9f, 0.8f), CB("#c8d8e4"), 0.026f, 1f);
+        Part(p, new Vector3(DORM_X + 3.45f, 1.25f, 15.78f), new Vector3(0.62f, 0.75f, 0.03f), C("#4a90c8"), 1f);
         Reg(it, DORM_X + 3.45f, 16.2f, 0.85f, 0.8f);
         Plant(p, new Vector3(DORM_X - 3.3f, 0.02f, 18.0f), 0.9f);
         Plant(p, new Vector3(DORM_X + 3.3f, 0.02f, 3.2f), 0.9f);
-        Part(p, new Vector3(DORM_X, 0.06f, 18.6f), new Vector3(2.6f, 0.02f, 1.4f), C("#5a4a3a"), 1f);
-        Rug(p, new Vector3(DORM_X, 0.072f, 16.0f), 5.2f, 3.4f, C("#6a3a3c"));
+        Part(p, new Vector3(DORM_X, 0.06f, 18.6f), new Vector3(2.6f, 0.02f, 1.4f), C("#b8743c"), 1f);
+        Rug(p, new Vector3(DORM_X, 0.072f, 16.0f), 5.2f, 3.4f, C("#e0724a"));
 
         // 门厅东墙：长凳 + 挂画 + 挂钟
-        Part(p, new Vector3(DORM_X + 3.38f, 0.40f, 12.8f), new Vector3(0.55f, 0.10f, 1.8f), C("#8a6a4a"), 1f);
+        PartC(p, new Vector3(DORM_X + 3.38f, 0.40f, 12.8f), new Vector3(0.55f, 0.10f, 1.8f), CB("#c98a4e"), 0.014f, 1f);
         for (int i = 0; i < 2; i++)
             Part(p, new Vector3(DORM_X + 3.38f, 0.20f, 12.8f + (i == 0 ? -0.75f : 0.75f)),
-                 new Vector3(0.10f, 0.40f, 0.44f), C("#6f5540"), 1f);
+                 new Vector3(0.10f, 0.40f, 0.44f), CB("#a06a3c"), 1f);
         Reg(it, DORM_X + 3.38f, 12.8f, 0.55f, 1.8f);
         Picture(p, new Vector3(DORM_X + 3.86f, 2.10f, 7.6f), 1.5f, 0.95f, 270f);
         WallClock(p, new Vector3(DORM_X - 3.86f, 2.55f, 8.2f), 90f);
@@ -365,19 +377,20 @@ public static partial class InteriorBuilder
         foreach (float sx in new[] { -1f, 1f })
         {
             float bx = DORM_X + sx * 7.5f;
-            Part(p, new Vector3(bx, 1.62f, -1.84f), new Vector3(2.0f, 1.0f, 0.04f), C("#6f5540"), 1f);
-            Part(p, new Vector3(bx, 1.62f, -1.81f), new Vector3(1.86f, 0.86f, 0.012f), C("#2f4a3a"), 1f);
-            SignText(p, new Vector3(bx, 1.62f, -1.79f), 180f, "宿舍公告", 0.030f, MatLib.Hex("#f3e9d2"));
+            PartC(p, new Vector3(bx, 1.62f, -1.84f), new Vector3(2.04f, 1.04f, 0.04f), CB("#c98a4e"), 0.014f, 1f);
+            Part(p, new Vector3(bx, 1.62f, -1.81f), new Vector3(1.86f, 0.86f, 0.012f), CB("#3f9a6a"), 1f);
+            SignText(p, new Vector3(bx, 1.62f, -1.79f), 180f, "宿舍公告", 0.030f, MatLib.Hex("#fff2d6"));
         }
-        WallClock(p, new Vector3(DORM_X + 20.9f, 2.55f, -1.84f), 0f);        foreach (float bx in new[] { -10.6f, 10.6f })
+        WallClock(p, new Vector3(DORM_X + 20.9f, 2.55f, -1.84f), 0f);
+        foreach (float bx in new[] { -10.6f, 10.6f })
         {
-            Part(p, new Vector3(DORM_X + bx, 0.42f, 1.52f), new Vector3(2.0f, 0.08f, 0.48f), C("#8a6a4a"), 1f);
-            Part(p, new Vector3(DORM_X + bx, 0.22f, 1.52f), new Vector3(0.10f, 0.44f, 0.42f), C("#6f5540"), 1f);
+            PartC(p, new Vector3(DORM_X + bx, 0.42f, 1.52f), new Vector3(2.0f, 0.08f, 0.48f), CB("#c98a4e"), 0.014f, 1f);
+            Part(p, new Vector3(DORM_X + bx, 0.22f, 1.52f), new Vector3(0.10f, 0.44f, 0.42f), CB("#a06a3c"), 1f);
             Reg(it, DORM_X + bx, 1.52f, 2.0f, 0.48f);
         }
         foreach (float sx in new[] { -1f, 1f })
         {
-            Part(p, new Vector3(DORM_X + sx * 28.3f, 0.85f, 1.55f), new Vector3(0.35f, 1.1f, 0.5f), C("#a83a32"), 1f);
+            PartC(p, new Vector3(DORM_X + sx * 28.3f, 0.85f, 1.55f), new Vector3(0.35f, 1.1f, 0.5f), CB("#e0554a"), 0.014f, 1f);
             Reg(it, DORM_X + sx * 28.3f, 1.55f, 0.35f, 0.5f);
             Plant(p, new Vector3(DORM_X + sx * 27.8f, 0.02f, -1.2f), 1.2f);
         }
