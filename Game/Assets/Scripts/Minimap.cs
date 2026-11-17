@@ -17,7 +17,8 @@ public class Minimap : MonoBehaviour
     readonly List<(string name, float x, float z, bool major)> _dest =
         new List<(string name, float x, float z, bool major)>();
     int _pending = -1;
-    public bool Indoor { get; set; }   // 室内：地图可看，传送禁用
+    public bool Indoor { get; set; }   // 室内：传送经 ProgressManager 正常出门
+    public void Toggle(){_large=!_large;ResetView();_rig?.UnlockCursor();}
     public bool LargeOpen => _large;   // 大地图是否打开（第一人称让位鼠标用）
 
     float _zoom = 1f, _viewCx, _viewCz;
@@ -136,6 +137,8 @@ public class Minimap : MonoBehaviour
                 Rect(p.x - 0.9f, p.z - 0.9f, p.x + 0.9f, p.z + 0.9f, stall);
         }
 
+        if(_w.W.RIVER!=null&&ClosedAreas.AmusementClosed)
+            for(int y=PZ(ClosedAreas.Z1);y<=PZ(ClosedAreas.Z2);y++)for(int x=PX(ClosedAreas.X1);x<=PX(ClosedAreas.X2);x++)SetPx(x,y,(x+y)%24<5?Hex("#b5a568"):Hex("#50615a"));
         _mapBase = new Texture2D(BaseRes, BaseRes, TextureFormat.RGBA32, false);
         _mapBase.wrapMode = TextureWrapMode.Clamp;
         _mapBase.filterMode = FilterMode.Bilinear;
@@ -204,6 +207,7 @@ public class Minimap : MonoBehaviour
         void AddB(string label, string id, bool major = false)
         {
             var b = Find(id);
+            if(b!=null&&ClosedAreas.AmusementClosed&&b.id.StartsWith("f_"))return;
             if (b != null) _dest.Add((label, b.pos[0] + b.FrontOffsetX(1.7f), b.pos[1] + b.FrontOffsetZ(1.7f), major));
         }
         if (w.VILLA != null)
@@ -304,23 +308,25 @@ public class Minimap : MonoBehaviour
     {
         if (_stTitle != null && _stLarge == _large) return;
         _stLarge = _large;
-        _stTitle = new GUIStyle(GUI.skin.label) { fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
+        _stTitle = new GUIStyle(GUI.skin.label) { font=GameFonts.Map, fontSize = _large ? 14 : 11, alignment = TextAnchor.MiddleLeft };
         _stTitle.normal.textColor = new Color(1f, 0.95f, 0.85f);
-        _stMajor = new GUIStyle(GUI.skin.label) { fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
+        _stMajor = new GUIStyle(GUI.skin.label) { font=GameFonts.Map, fontSize = _large ? 12 : 10, alignment = TextAnchor.MiddleLeft };
         _stMajor.normal.textColor = new Color(0.9f, 0.97f, 1f, 1f);
         _stMinor = new GUIStyle(_stMajor);
         _stMinor.normal.textColor = new Color(0.92f, 0.88f, 0.74f, 1f);
-        _stIndoor = new GUIStyle(GUI.skin.label) { fontSize = 13, alignment = TextAnchor.MiddleCenter };
+        _stIndoor = new GUIStyle(GUI.skin.label) { font=GameFonts.Map, fontSize = 13, alignment = TextAnchor.MiddleCenter };
         _stIndoor.normal.textColor = new Color(1f, 0.9f, 0.7f);
-        _stAsk = new GUIStyle(GUI.skin.label) { fontSize = 16, alignment = TextAnchor.MiddleCenter };
+        _stAsk = new GUIStyle(GUI.skin.label) { font=GameFonts.Map, fontSize = 16, alignment = TextAnchor.MiddleCenter };
         _stAsk.normal.textColor = new Color(1f, 0.95f, 0.85f);
-        _stAskSub = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleCenter };
+        _stAskSub = new GUIStyle(GUI.skin.label) { font=GameFonts.Map, fontSize = 11, alignment = TextAnchor.MiddleCenter };
         _stAskSub.normal.textColor = new Color(0.82f, 0.8f, 0.74f);
     }
 
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.M))
+        if(ProgressManager.MenuOpen||ProgressManager.Loading||ProgressManager.TrackingOpen||HelpSidebar.IsOpen)return;
+        if(_large&&GameInput.Cancel()){_large=false;_pending=-1;return;}
+        if (GameInput.Down("Map"))
         {
             _large = !_large;
             ResetView();
@@ -369,7 +375,6 @@ public class Minimap : MonoBehaviour
     // 空白处：第一次单击只记录，第二次（0.36s 内且位置相近）才传送
     void HandleClick(Vector2 m)
     {
-        if (Indoor) return;
         int hit = HitDest(m);
         if (hit >= 0)
         {
@@ -391,7 +396,8 @@ public class Minimap : MonoBehaviour
         float span = ViewSpan;
         float wx = _viewCx + ((m.x - _rectX) / _rectSize - 0.5f) * span;
         float wz = _viewCz + ((m.y - _rectTop) / _rectSize - 0.5f) * span;
-        _rig.Teleport(wx, wz);
+        GetComponent<ProgressManager>()?.TravelMap(wx,wz);
+        _large=false;
     }
 
     void DrawPending()
@@ -406,7 +412,8 @@ public class Minimap : MonoBehaviour
         if (GUI.Button(new Rect(pr.x + 60f, pr.y + 92f, 100f, 36f), "确认"))
         {
             var d = _dest[_pending];
-            _rig.Teleport(d.x, d.z);
+            GetComponent<ProgressManager>()?.TravelMap(d.x,d.z);
+            _large=false;
             _pending = -1;
         }
         if (GUI.Button(new Rect(pr.x + 200f, pr.y + 92f, 100f, 36f), "取消")) _pending = -1;
@@ -414,7 +421,7 @@ public class Minimap : MonoBehaviour
 
     void OnGUI()
     {
-        if (_map == null || _rig == null || Args.NoHud || IntroScreen.Live || DialogueManager.Active || CharacterPicker.IsOpen) return;
+        if (_map == null || _rig == null || Args.NoHud || IntroScreen.Live || DialogueManager.Active || CharacterPicker.IsOpen || ProgressManager.MenuOpen || ProgressManager.Loading || ProgressManager.TrackingOpen || HelpSidebar.IsOpen) return;
         EnsureStyles();
         float size = _large ? Mathf.Min(Screen.width, Screen.height) * 0.82f : Mathf.Min(272f, Screen.height * 0.33f);
         float x = _large ? (Screen.width - size) / 2f : Screen.width - size - 20f;
@@ -438,12 +445,10 @@ public class Minimap : MonoBehaviour
         GUI.DrawTexture(mapRect, _ring, ScaleMode.StretchToFill);
         GUI.color = Color.white;
 
-        if (Indoor)
-            GUI.Label(new Rect(0, 40f, Screen.width, 24f), "室内 · 地图仅查看（出门后再传送）", _stIndoor);
 
         GUI.Label(new Rect(x, y, size, 18f),
-            _large ? "拖拽平移 · 滚轮缩放 · 单击地标确认 · 双击空白传送"
-                   : "小镇地图（M 放大 · 地标确认传送）", _stTitle);
+            _large ? "小镇全图"
+                   : "小镇地图", _stTitle);
 
         _usedLabels.Clear();
         var usedLabels = _usedLabels;
@@ -480,8 +485,21 @@ public class Minimap : MonoBehaviour
             usedLabels.Add(lr);
         }
 
+        var progress=GetComponent<ProgressManager>();
+        if(progress!=null&&progress.HasObjective)
+        {
+            var destination=progress.MapDestination;Project(destination.x,destination.z,out float sx,out float sy);
+            if((new Vector2(sx,sy)-center).sqrMagnitude<radius*radius&&mapRect.Contains(new Vector2(sx,sy)))
+            {GUI.color=new Color(1f,.76f,.2f);GUI.DrawTexture(new Rect(sx-7,sy-7,14,14),Texture2D.whiteTexture);
+             GUI.color=Color.white;if(_large)GUI.Label(new Rect(sx+10,sy-25,120,22),"主线剧情",_stMajor);}
+        }
+
+        if(_large&&_w.W.RIVER!=null&&ClosedAreas.AmusementClosed)
+        {Project((ClosedAreas.X1+ClosedAreas.X2)/2,(ClosedAreas.Z1+ClosedAreas.Z2)/2,out float closedX,out float closedY);GUI.Label(new Rect(closedX-80,closedY-10,170,24),"游乐场 · 维护中",_stMajor);}
         // 玩家自己：随相机朝向旋转的箭头（始终压在地标之上）
         var pp = _rig.Position;
+        var interior=GetComponent<InteriorManager>();
+        if(Indoor&&interior?.Current!=null&&interior.ExteriorDoor(interior.Current.Name,out var exteriorDoor,out var exteriorNormal))pp=new Vector3(exteriorDoor.x,0,exteriorDoor.y);
         Project(pp.x, pp.z, out float mx, out float mz);
         if ((new Vector2(mx, mz) - center).sqrMagnitude <= radius * radius)
         {
@@ -494,6 +512,8 @@ public class Minimap : MonoBehaviour
             GUI.color = Color.white;
         }
 
+        if(_large&&progress!=null&&progress.HasObjective&&GUI.Button(new Rect(x,top+size+8,size,34),"前往主线并继续"))
+        {progress.TravelStory();_large=false;_pending=-1;return;}
         var e = Event.current;
         bool inside = mapRect.Contains(mousePos) &&
                       (mousePos - center).sqrMagnitude <= radius * radius;
@@ -535,10 +555,10 @@ public class Minimap : MonoBehaviour
         if (_large && _dragging && e.type == EventType.MouseUp && e.button == 0)
         {
             _dragging = false;
-            if (!Indoor && _dragMoved < 4f && inside) HandleClick(mousePos);
+            if (_dragMoved < 4f && inside) HandleClick(mousePos);
             e.Use();
         }
-        if (!Indoor && !_large && e.type == EventType.MouseDown && e.button == 0 && inside)
+        if (!_large && e.type == EventType.MouseDown && e.button == 0 && inside)
         {
             int hit = HitDest(mousePos);
             if (hit >= 0) { _pending = hit; e.Use(); }

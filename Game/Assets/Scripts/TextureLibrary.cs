@@ -21,6 +21,17 @@ using UnityEngine;
 // ============================================================================
 public static class TextureLibrary
 {
+    public const int FacadeCell = 128, FacadeBottom = 96;
+    static Rect FacadeWindowPixels(int col, int row)
+        => new Rect(col * FacadeCell + 28, row * FacadeCell + 52, 72, 64);
+
+    // 贴图与夜间亮窗片共用坐标；UV 从左下起，绘图画布从左上起。
+    public static Rect WindowGlassUV(int col, int row, int cols, int rows)
+    {
+        var rect = FacadeWindowPixels(col, row);
+        float w = cols * FacadeCell, h = rows * FacadeCell + FacadeBottom;
+        return new Rect(rect.x / w, 1f - rect.yMax / h, rect.width / w, rect.height / h);
+    }
     // ── mulberry32（保留：少量地方仍需确定性随机，如瓦垄错位）──
     class Rand
     {
@@ -198,13 +209,13 @@ public static class TextureLibrary
     static Px Grass()
     {
         var p = new Px(256, 256);
-        var baseCol = C("#7cb342");       // 高饱和草绿
-        var lightCol = C("#8bc34a");
-        var darkCol = C("#689f38");
+        var baseCol = C("#8a9d73");
+        var lightCol = C("#94a67e");
+        var darkCol = C("#82966c");
         p.FillRect(0, 0, 256, 256, baseCol);
         // 规则草簇：每 32px 一个，错位排列（卡通草地的经典画法）
-        for (int gy = 0; gy < 256; gy += 32)
-            for (int gx = 0; gx < 256; gx += 32)
+        for (int gy = 0; gy < 256; gy += 64)
+            for (int gx = 0; gx < 256; gx += 64)
             {
                 int ox = (gy / 32) % 2 == 0 ? 0 : 16;
                 int x = (gx + ox) % 256;
@@ -225,8 +236,8 @@ public static class TextureLibrary
     static Px PathTex()
     {
         var p = new Px(128, 128);
-        p.FillRect(0, 0, 128, 128, C("#cfc6b4"));   // 缝色（底色）
-        Color a = C("#e0d7c4"), b = C("#d6ccb8");
+        p.FillRect(0, 0, 128, 128, C("#a9a69b"));
+        Color a = C("#b7b4a8"), b = C("#b1aea3");
         for (int by = 0; by < 2; by++)
             for (int bx = 0; bx < 2; bx++)
             {
@@ -234,9 +245,9 @@ public static class TextureLibrary
                 int x = (bx * 64 + ox) % 128;
                 p.FillRect(x + 4, by * 64 + 4, 56, 56, (bx + by) % 2 == 0 ? a : b);
                 // 高光边（卡通石板：左上一条亮线）
-                p.FillRect(x + 4, by * 64 + 4, 56, 6, C("#ece5d6"));
+                p.FillRect(x + 4, by * 64 + 4, 56, 2, C("#c4c0b4"));
                 // 阴影边
-                p.FillRect(x + 4, by * 64 + 54, 56, 6, C("#c4baa6"));
+                p.FillRect(x + 4, by * 64 + 58, 56, 2, C("#a7a497"));
             }
         return p;
     }
@@ -254,8 +265,8 @@ public static class TextureLibrary
                        float wMeters, float hMeters)
     {
         // 逻辑画布：每层 128 高，每列 128 宽（比上一版的 256 更简洁，卡通不需要那么多细节）
-        const int cell = 128;
-        float aw = cols * cell, ah = rows * cell + 96f;
+        const int cell = FacadeCell;
+        float aw = cols * cell, ah = rows * cell + FacadeBottom;
         float D = FacadeDensity(wMeters, hMeters);
         var p = new Px(Mathf.Max(8, Mathf.RoundToInt(wMeters * D)), Mathf.Max(8, Mathf.RoundToInt(hMeters * D)));
         float sx = p.W / aw, sy = p.H / ah;
@@ -284,8 +295,8 @@ public static class TextureLibrary
             for (int c2 = 0; c2 < cols; c2++)
             {
                 bool isLit = R.Next() < lit;
-                float wx = c2 * cell + 28, wy = r * cell + 52;
-                float ww = 72, wh = 64;
+                var window = FacadeWindowPixels(c2, r);
+                float wx = window.x, wy = window.y, ww = window.width, wh = window.height;
                 // 窗框（外凸硬边）
                 Draw(wx - 6, wy - 6, ww + 12, wh + 12, frameCol);
                 // 玻璃
@@ -641,8 +652,8 @@ public static class TextureLibrary
         {
             // 主街石板：256px / 1.6m = 160px/米（4×4 大石板，单块 0.4m）
             var p = new Px(256, 256);
-            p.FillRect(0, 0, 256, 256, C("#bdb2a0"));
-            Color a = C("#cec3b0"), b = C("#c5b9a6");
+            p.FillRect(0, 0, 256, 256, C("#969b98"));
+            Color a = C("#adb0a9"), b = C("#a7aba5");
             for (int by = 0; by < 4; by++)
                 for (int bx = 0; bx < 4; bx++)
                 {
@@ -650,8 +661,8 @@ public static class TextureLibrary
                     int x = (bx * 64 + ox) % 256;
                     p.FillRect(x + 4, by * 64 + 4, 56, 56, (bx + by) % 2 == 0 ? a : b);
                     // 卡通石板：左上亮边 / 右下暗边（硬边，不做渐变）
-                    p.FillRect(x + 4, by * 64 + 4, 56, 5, C("#ece5d6"));
-                    p.FillRect(x + 4, by * 64 + 55, 56, 5, C("#c4baa6"));
+                    p.FillRect(x + 4, by * 64 + 4, 56, 2, C("#bec0b6"));
+                    p.FillRect(x + 4, by * 64 + 58, 56, 2, C("#9da19a"));
                 }
             return p;
         }
@@ -697,12 +708,12 @@ public static class TextureLibrary
     static Px FloorWood()
     {
         var p = new Px(64, 64);
-        p.FillRect(0, 0, 64, 64, C("#c69c6d"));
+        p.FillRect(0, 0, 64, 64, C("#ae9578"));
         for (int y = 0; y < 64; y += 16)
         {
-            p.FillRect(0, y, 64, 2, C("#a0784f"));
+            p.FillRect(0, y, 64, 1, C("#947f69"));
             int ox = (y / 16) % 2 == 0 ? 0 : 32;
-            p.FillRect(ox, y, 2, 16, C("#a0784f"));
+            p.FillRect(ox, y, 1, 16, C("#947f69"));
         }
         return p;
     }
@@ -710,11 +721,8 @@ public static class TextureLibrary
     static Px WallPaper()
     {
         var p = new Px(32, 32);
-        p.FillRect(0, 0, 32, 32, C("#fff3e0"));
-        // 卡通壁纸：规则小花点
-        for (int y = 8; y < 32; y += 16)
-            for (int x = 8; x < 32; x += 16)
-                p.FillCircle(x, y, 2, C("#ffcc80"));
+        p.FillRect(0, 0, 32, 32, C("#e3ddd0"));
+        p.FillRect(0, 0, 1, 32, C("#dfd9cd"));
         return p;
     }
 
@@ -732,9 +740,8 @@ public static class TextureLibrary
     static Px Ceiling()
     {
         var p = new Px(32, 32);
-        p.FillRect(0, 0, 32, 32, C("#fafafa"));
-        p.FillRect(0, 15, 32, 2, C("#e0e0e0"));
-        p.FillRect(15, 0, 2, 32, C("#e0e0e0"));
+        p.FillRect(0, 0, 32, 32, C("#e6e3dc"));
+        p.FillRect(0, 0, 32, 1, C("#dcdad3"));
         return p;
     }
 
@@ -753,20 +760,16 @@ public static class TextureLibrary
     static Px WallPaperBlue()
     {
         var p = new Px(32, 32);
-        p.FillRect(0, 0, 32, 32, C("#e3f2fd"));
-        for (int y = 8; y < 32; y += 16)
-            for (int x = 8; x < 32; x += 16)
-                p.FillCircle(x, y, 2, C("#90caf9"));
+        p.FillRect(0, 0, 32, 32, C("#cdd8d8"));
+        p.FillRect(0, 0, 1, 32, C("#c7d2d3"));
         return p;
     }
 
     static Px WallPaperWarm()
     {
         var p = new Px(32, 32);
-        p.FillRect(0, 0, 32, 32, C("#fff8e1"));
-        for (int y = 8; y < 32; y += 16)
-            for (int x = 8; x < 32; x += 16)
-                p.FillCircle(x, y, 2, C("#ffcc80"));
+        p.FillRect(0, 0, 32, 32, C("#ddd1be"));
+        p.FillRect(0, 0, 1, 32, C("#d6cab7"));
         return p;
     }
 

@@ -67,26 +67,29 @@ public static partial class InteriorBuilder
 
         // 卡通上床下桌：四立柱 + 床架 + 床垫 + 被子 + 枕头 + 桌面 + 梯子，全部倒角
         for (int i = 0; i < 4; i++)
-            PartC(g, new Vector3(i % 2 == 0 ? -0.45f : 0.45f, 0.9f, i < 2 ? -0.95f : 0.95f),
-                  new Vector3(0.08f, 1.8f, 0.08f), frame, 0.012f, 0.8f);
-        PartC(g, new Vector3(0f, 1.55f, 0f), new Vector3(1.0f, 0.12f, 2.0f), frame, 0.016f, 1f);
-        PartC(g, new Vector3(0f, 1.66f, 0f), new Vector3(0.92f, 0.12f, 1.86f), mattress, 0.020f, 1.2f);
+            PartC(g, new Vector3(i % 2 == 0 ? -0.45f : 0.45f, 1.06f, i < 2 ? -0.95f : 0.95f),
+                  new Vector3(0.08f, 2.12f, 0.08f), frame, 0.012f, 0.8f);
+        PartC(g, new Vector3(0f, 1.82f, 0f), new Vector3(1.0f, 0.12f, 2.0f), frame, 0.016f, 1f);
+        PartC(g, new Vector3(0f, 1.93f, 0f), new Vector3(0.92f, 0.12f, 1.86f), mattress, 0.020f, 1.2f);
         // 被子（压住床垫后半段）+ 枕头：卡通床必须有这两块，否则就是一块白板
-        PartC(g, new Vector3(0f, 1.76f, 0.34f), new Vector3(0.94f, 0.14f, 1.16f), Darker(mattress, 0.82f), 0.018f, 1.2f);
-        PartC(g, new Vector3(0f, 1.77f, -0.68f), new Vector3(0.72f, 0.09f, 0.32f), C("#fff6e2"), 0.016f, 1f);
+        PartC(g, new Vector3(0f, 2.03f, 0.34f), new Vector3(0.94f, 0.14f, 1.16f), Darker(mattress, 0.82f), 0.018f, 1.2f);
+        PartC(g, new Vector3(0f, 2.04f, -0.68f), new Vector3(0.72f, 0.09f, 0.32f), C("#fff6e2"), 0.016f, 1f);
         // 床沿护栏：比床架外凸 2cm，卡通渲染里是一条独立亮线
-        Part(g, new Vector3(0f, 1.70f, 0.99f), new Vector3(1.04f, 0.16f, 0.03f), edge, 1f);
+        Part(g, new Vector3(0f, 1.97f, 0.99f), new Vector3(1.04f, 0.16f, 0.03f), edge, 1f);
         // 桌下书桌 + 桌腿
         PartC(g, new Vector3(0f, 0.74f, 0f), new Vector3(0.92f, 0.06f, 1.72f), desk, 0.012f, 1f);
         PartC(g, new Vector3(0f, 0.68f, 0f), new Vector3(0.80f, 0.07f, 1.58f), Darker(desk, 0.80f), 0.010f, 1f);
         for (int i = 0; i < 4; i++)
             PartC(g, new Vector3(i % 2 == 0 ? -0.40f : 0.40f, 0.36f, i < 2 ? -0.76f : 0.76f),
                   new Vector3(0.06f, 0.72f, 0.06f), frame, 0.010f, 0.6f);
-        // 梯子
-        PartC(g, new Vector3(0.55f, 0.35f, 0.62f), new Vector3(0.10f, 0.70f, 0.10f), frame, 0.010f, 0.6f);
-        for (int i = 0; i < 3; i++)
-            PartC(g, new Vector3(0.55f, 0.55f + i * 0.34f, 0.48f + i * 0.10f),
-                  new Vector3(0.34f, 0.05f, 0.10f), edge, 0.008f, 0.6f);
+        // Paired continuous ladder rails face the aisle; rungs span both rails.
+        var steel=DetailSurface.Mat("metal","#73817b");var ladder=new RegionMeshBatch();
+        foreach(float zz in new[]{.43f,.91f})ladder.Cylinder(steel,new Vector3(.84f,.03f,zz),new Vector3(.51f,2.19f,zz),.025f);
+        for(int i=0;i<7;i++){float y=.24f+i*.29f,offsetX=Mathf.Lerp(.84f,.51f,y/2.19f);ladder.Cylinder(steel,new Vector3(offsetX,y,.43f),new Vector3(offsetX,y,.91f),.022f);}
+        foreach(int side in new[]{-1,1}){ladder.Cylinder(steel,new Vector3(side*.48f,2.33f,-.94f),new Vector3(side*.48f,2.33f,side==1?.25f:.94f),.022f);for(int i=0;i<4;i++){float zz=-.9f+i*.42f;if(side==1&&zz>.25f)continue;ladder.Cylinder(steel,new Vector3(side*.48f,1.86f,zz),new Vector3(side*.48f,2.33f,zz),.018f);}}
+        foreach(float zz in new[]{.43f,.91f})ladder.Bevel(DetailSurface.Mat("rubber","#515c58"),new Vector3(.84f,.05f,zz),new Vector3(.10f,.06f,.10f),.015f);
+        ladder.Flush(g);
+        for(int i=0;i<3;i++)PartC(g,new Vector3(-.25f+i*.24f,.80f,-.50f),new Vector3(.18f,.06f,.30f),DetailSurface.Mat("fabric",i==0?"#9aaea7":"#b8a58d"),.01f,1);
         TableLamp(g, new Vector3(0.18f, 0.77f, -0.55f), "#f0dfb8");
 
         bool swap = Mathf.Abs(Mathf.Sin(ry * Mathf.Deg2Rad)) > 0.5f;
@@ -125,9 +128,9 @@ public static partial class InteriorBuilder
         foreach (float z in bz)
         {
             LoftBed(p, it, x0 + 0.55f, z, 0f, frame, desk, C("#f4f8fc"));
-            LoftBed(p, it, x1 - 0.55f, z, 0f, frame, desk, C("#f4f8fc"));
-            Chair(p, it, new Vector3(x0 + 1.38f, 0f, z), 270f, frame, true);
-            Chair(p, it, new Vector3(x1 - 1.38f, 0f, z), 90f, frame, true);
+            LoftBed(p, it, x1 - 0.55f, z, 180f, frame, desk, C("#f4f8fc"));
+            Chair(p, it, new Vector3(x0 + 1.65f, 0f, z-.45f), 270f, frame, true);
+            Chair(p, it, new Vector3(x1 - 1.65f, 0f, z+.45f), 90f, frame, true);
         }
         Rug(p, new Vector3(cx, 0.055f, zFace + dir * 5.3f), 4.2f, 4.0f, accent);
 
@@ -264,9 +267,9 @@ public static partial class InteriorBuilder
                        wall, T("in_floor"), T("in_ceil"), wall, CB("#b8743c"), 0.60f);
         var p = it.Root.transform;
         // 卡通配色（docs/103）：原 #8a5a3c 框架 / #a87a52 桌面 / #8a9a7a 灰绿布艺全部提亮提饱和
-        var frame = CB("#d8903c");
-        var desk = CB("#f0c46a");
-        var accent = CB("#5fc0a8");
+        var frame = InteriorWood();
+        var desk = DetailSurface.Mat("timber","#c4ad8c");
+        var accent = DetailSurface.Mat("fabric","#96a18e");
 
         // 中央走廊 z=-2..2；两端外墙
         Part(p, new Vector3(DORM_X, 0.044f, 0f), new Vector3(56.0f, 0.012f, 3.2f), C("#e0b078"), 1.6f);

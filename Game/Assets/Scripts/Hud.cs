@@ -1,85 +1,29 @@
 using UnityEngine;
-
-// HUD：IMGUI 纯代码界面（对齐 web 版布局：左上标题/操作、右上时间刻度、底部交互提示、右下版本号、toast）
-// 迭代后再替换为正式 UI（UI Toolkit / UGUI）
-public class Hud : MonoBehaviour
+public class Hud:MonoBehaviour
 {
-    public const string BUILD_VERSION = "u0.1";
-    public TimeOfDay Time;
-
-    Font _font;
-    GUIStyle _title, _hint, _clock, _prompt, _ver, _toast;
-
-    public void Init(TimeOfDay time)
-    {
-        Time = time;
-        _font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "Arial" }, 16);
-    }
-
-    GUIStyle Mk(int size, TextAnchor anchor, Color color, bool bg = false)
-    {
-        var s = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = size,
-            alignment = anchor,
-            wordWrap = false,
-        };
-        if (_font != null) s.font = _font;
-        s.normal.textColor = color;
-        if (bg)
-        {
-            var tex = new Texture2D(1, 1);
-            tex.SetPixel(0, 0, new Color(0.06f, 0.08f, 0.11f, 0.72f));
-            tex.Apply();
-            s.normal.background = tex;
-            s.padding = new RectOffset(10, 10, 4, 4);
-        }
-        return s;
-    }
-
+    public const string BUILD_VERSION="u0.3";public TimeOfDay Time;Texture2D topFade,bottomFade;
+    public void Init(TimeOfDay time){Time=time;topFade=GameUI.Fade(.68f,0);bottomFade=GameUI.Fade(0,.50f);}
+    static string K(string action)=>GameInput.Name(GameInput.Find(action).Key);
     void OnGUI()
     {
-        if (Time == null || Args.NoHud || IntroScreen.Live) return;
-        if (_title == null)
-        {
-            _title = Mk(18, TextAnchor.UpperLeft, new Color(0.91f, 0.91f, 0.93f));
-            _hint = Mk(14, TextAnchor.UpperLeft, new Color(0.85f, 0.87f, 0.9f, 0.85f));
-            _clock = Mk(15, TextAnchor.UpperRight, new Color(0.92f, 0.93f, 0.95f));
-            _prompt = Mk(16, TextAnchor.MiddleCenter, new Color(0.95f, 0.95f, 0.97f), true);
-            _ver = Mk(12, TextAnchor.LowerRight, new Color(0.8f, 0.83f, 0.88f, 0.55f));
-            _toast = Mk(15, TextAnchor.MiddleCenter, new Color(0.95f, 0.95f, 0.97f, 0.95f));
-        }
-        float W = Screen.width, H = Screen.height;
-        if (DialogueManager.Active || CharacterPicker.IsOpen) return;
-
-        // 左上：标题 + 操作说明
-        GUI.Label(new Rect(16, 10, 900, 28), "他山之石", _title);
-        GUI.Label(new Rect(16, 36, 1100, 24),
-            "WASD 移动 ｜ Shift 跑 ｜ 拖拽 或 Q/E 视角 ｜ 滚轮 缩放 ｜ F11 全屏 ｜ F10 帧率 ｜ M 地图 ｜ V 视角 ｜ C 选人 ｜ B 剧情 ｜ F 交互 ｜ 0/1/2/3 时间 ｜ T +12h ｜ Y 天气 ｜ H 按键侧栏", _hint);
-
-        // 右上：时间刻度（第 N 天 · ☀/🌙 HH:MM · 速度）
-        float h = Time.Hour;
-        string icon = h >= 5.5f && h < 18.5f ? "☀" : "🌙";
-        int hh = Mathf.FloorToInt(h);
-        int mm = Mathf.FloorToInt(Time.GameMinutes % 60f);
-        string speed = Time.TimeSpeed <= 0f ? "暂停" : $"{Time.TimeSpeed}×";
-        string wname = string.IsNullOrEmpty(Time.WeatherName) ? "" : " · " + Time.WeatherName;
-        GUI.Label(new Rect(W - 420, 12, 400, 24), $"第 {Time.DayNum} 天 · {icon} {hh:D2}:{mm:D2} · {speed}{wname}", _clock);
-
-        // 底部中央：交互提示（室内给整句，室外给「按 F 进入」）
-        string prompt = !string.IsNullOrEmpty(Time.NearLabel) ? Time.NearLabel
-            : (!string.IsNullOrEmpty(Time.Near) ? $"按 F 进入「{Time.Near}」" : null);
-        if (prompt != null)
-        {
-            var size = _prompt.CalcSize(new GUIContent(prompt));
-            GUI.Label(new Rect((W - size.x) / 2f, H - 74 - size.y, size.x, size.y), prompt, _prompt);
-        }
-
-        // 右下：版本号
-        GUI.Label(new Rect(W - 260, H - 26, 246, 18), BUILD_VERSION + " · 2026-10-15", _ver);
-
-        // toast
-        if (!string.IsNullOrEmpty(Time.Toast))
-            GUI.Label(new Rect(0, H - 126, W, 24), Time.Toast, _toast);
+        if(Time==null||Args.NoHud||IntroScreen.Live||DialogueManager.Active||CharacterPicker.IsOpen||HelpSidebar.IsOpen||ProgressManager.TrackingOpen||ProgressManager.MenuOpen)return;
+        GameUI.Begin(-5);
+        GUI.DrawTexture(new Rect(0,0,1600,84),topFade,ScaleMode.StretchToFill);
+        GameUI.FloatingText(new Rect(26,12,300,34),"他山之石",25,GameUI.Paper,true);
+        GameUI.FloatingText(new Rect(28,48,340,18),"STONES FROM ANOTHER HILL",10,GameUI.Gold);
+        GameUI.FloatingText(new Rect(425,22,330,30),"第 "+Time.DayNum+" 天   "+Mathf.FloorToInt(Time.Hour).ToString("00")+":"+Mathf.FloorToInt(Time.GameMinutes%60).ToString("00")+"   "+(string.IsNullOrEmpty(Time.WeatherName)?"晴":Time.WeatherName),17,GameUI.Paper);
+        if(GameUI.FlatAction(new Rect(810,15,155,43),"回顾  "+K("Log")))GetComponent<DialogueManager>().OpenArchive();
+        if(GameUI.FlatAction(new Rect(982,15,120,43),"地图  "+K("Map")))GetComponent<Minimap>().Toggle();
+        if(GameUI.FlatAction(new Rect(1124,15,120,43),"手记  "+K("Journal")))GetComponent<QuestJournal>().Open();
+        if(GameUI.FlatAction(new Rect(1266,15,120,43),"存档  "+K("Saves")))GetComponent<ProgressManager>().OpenSaves();
+        if(GameUI.FlatAction(new Rect(1408,15,165,43),"设置  Esc"))HelpSidebar.Live.OpenSettings();
+        GUI.DrawTexture(new Rect(0,838,1600,62),bottomFade,ScaleMode.StretchToFill);
+        string movement=K("Forward")+"/"+K("Left")+"/"+K("Back")+"/"+K("Right");
+        GameUI.FloatingText(new Rect(26,857,1530,27),"移动 "+movement+"   鼠标环顾   交互 "+K("Interact")+"   剧情 "+K("Story")+"   手记 "+K("Journal")+"   图鉴 "+K("Characters")+"   天气 "+K("Weather")+"   Esc 设置",15,GameUI.Paper);
+        var interiors=GetComponent<InteriorManager>();
+        string prompt=interiors.Indoor?(interiors.NearExit?"离开「"+interiors.Current.Name+"」":null):Time.Near==null||!interiors.CanEnter(Time.Near)?null:"进入「"+Time.Near+"」";
+        if(prompt!=null&&GameUI.FlatAction(new Rect(630,788,340,42),K("Interact")+"  "+prompt)){if(interiors.Indoor)interiors.Exit();else interiors.Enter(Time.Near);}
+        if(!string.IsNullOrEmpty(Time.Toast))GameUI.FloatingText(new Rect(400,748,800,34),Time.Toast,17,GameUI.Paper,false,true);
+        GameUI.End();
     }
 }

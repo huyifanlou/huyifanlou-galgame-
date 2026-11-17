@@ -3,7 +3,7 @@ using UnityEngine;
 
 // 世界构建器：把 world.json + 导出的 PNG 还原成 web v0.40 的校园（几何/材质配比逐条对位）
 // 所有尺寸/坐标/颜色均取自 web 版 CampusScene.jsx 的实参；改动请同步 docs/01 与迁移说明。
-public class WorldBuilder : MonoBehaviour
+public partial class WorldBuilder : MonoBehaviour
 {
     public WorldData W { get; private set; }
     public Transform Root { get; private set; }
@@ -11,89 +11,37 @@ public class WorldBuilder : MonoBehaviour
     public Renderer PlayerShadow { get; private set; }
     public Material LampGlass { get; private set; }
     public Material LampPool { get; private set; }
-    public Material SkyDayMat { get; private set; }
-    public GameObject SkyDayGo { get; private set; }
-    public Material SkyNightMat { get; private set; }
-    public Transform SkyNightTr { get; private set; }
+    public Material WorldSkyMat { get; private set; }
     // 昼夜双窗户：{material, 白天贴图名, 夜晚贴图名}——由 TimeOfDay 在夜里切换
-    public readonly List<string[]> WindowMats = new List<string[]>();
-    public readonly List<Material> WindowMatRefs = new List<Material>();
     public readonly List<Material> LeafMats = new List<Material>();   // 叶簇材质（天气：雪天覆白）
     public readonly List<Light> LampLights = new List<Light>();       // 路灯点光源（夜里由 TimeOfDay 点亮）
-    public Material WindowGlowMat;                                    // 亮窗发光片的共享材质
-    public readonly List<Renderer> WindowGlowRenders = new List<Renderer>();
-    public Material WindowGlassMat;                                   // 店铺橱窗玻璃（夜里透暖光）
-    public readonly List<Material> SignMatRefs = new List<Material>(); // 店铺招牌（夜里开自发光）
     public Material DoorLampMat;                                      // 门灯共享材质
     public Material LanternMat;                                       // 骑楼红灯笼（夜里发光）
     Material _warmLanternMat;                                         // 祭典暖白纸提灯（无光照常亮）
-    public readonly List<Renderer> SignGlowRenders = new List<Renderer>(); // 夜间招牌自发光片
     public readonly List<float> LampLightPower = new List<float>();         // 点光源夜间功率（骑楼灯比路灯亮）
-    public Transform WindowFXRoot;                                    // 窗玻璃/亮窗单独根，避免被建筑静态合批
+    public Transform SignRoot;                                    // 窗玻璃/亮窗单独根，避免被建筑静态合批
     public Material GrassMat;                                        // 草地材质（天气：雨天变暗）
     public Vector3 Spawn = new Vector3(0f, 0f, 4f);
 
     readonly Dictionary<string, Material> _cache = new Dictionary<string, Material>();
-    Mesh[,] _cherryCrowns;                  // 樱花树冠：[变体10-13, 0-2 色阶]，MC 式体素叶块
-    Mesh[] _cherryBarks;                    // 樱树树干+枝条（每变体一份，体素原木块）
-    Mesh[] _giantCrowns;                    // 中央巨樱叶块（3 色阶）
-    Mesh _giantBark;                        // 中央巨樱树干+主枝
-    Mesh _bloomCanopyA, _bloomCanopyB;      // 花坛小花团（不是树冠，保留低模圆团）
-    const float CherryVox = 0.2f;           // 樱花体素边长（原 0.8m 的 25%）
-    const int CherrySub = 4;                // 布局仍按 0.8m 逻辑块写，生成时细分成 0.2m 体素
-    // 《我的世界》大型樱花分枝：起点高度 / 水平角 / 长度 / 上升格数（逻辑 0.8m 块）
-    static readonly (int y, int ang, int len, int rise)[] GiantBranchDefs =
-    {
-        (5, 10, 10, 3), (6, 55, 8, 3), (7, 100, 9, 4), (9, 190, 8, 4), (10, 280, 8, 4)
-    };
-    // 冠团：与枝端冠一起叠成宽而蓬松的伞形冠（x / y / z / 半宽 / 盖顶）
-    static readonly (int x, int y, int z, int hw, bool peak)[] GiantCanopyBlobs =
-    {
-        (4, 13, 3, 3, false), (-5, 14, 3, 3, false), (-4, 15, -5, 3, false),
-        (4, 14, -4, 3, false), (0, 14, 0, 5, false),
-        (0, 17, 0, 7, false), (5, 19, 2, 4, false), (-5, 20, 1, 4, false),
-        (2, 20, -5, 4, false), (-2, 20, 4, 3, false),
-        (6, 19, 0, 4, false), (-6, 19, 0, 4, false),
-        (0, 19, 6, 4, false), (0, 19, -6, 4, false),
-        (7, 22, 2, 3, false), (-7, 22, -2, 3, false),
-        (2, 22, 7, 3, false), (-2, 22, -7, 3, false),
-        (3, 22, 3, 3, false), (-4, 22, -2, 3, false), (0, 22, 0, 4, false),
-        (2, 24, -2, 3, false), (-2, 24, 2, 2, false), (4, 24, 0, 2, false),
-        (0, 27, 1, 2, false), (-1, 27, -2, 2, false), (3, 27, -2, 1, false),
-        (0, 29, 0, 1, true)
-    };
+
     static readonly string[] TREE_CROWNS = { "#3b6b3a", "#457a42", "#4f8044", "#5a8845", "#c08fa5", "#ad9155" };
     static readonly string[] BUSH_GREENS = { "#3a6a3a", "#345f34", "#427a40", "#2e5a2f" };
     static readonly string[] ROCK_COLS = { "#8d8d94", "#7b7b82", "#9aa0a6", "#6f6f76", "#84848b" };
     static readonly string[] REED_COLS = { "#7a8a4a", "#6a7a42", "#85925a" };
     static readonly string[] REED_COLS2 = { "#85925a", "#7a8a4a", "#6a7a42" };
-    // 骑楼老街：这些店铺前加连续柱廊（数据仍是普通建筑，只在渲染时加构造）
-    static readonly HashSet<string> ArcadeIds = new HashSet<string>
-    { "o_silk", "o_tea", "o_grocery", "o_pharm", "o_post", "o_theater" };
     static readonly HashSet<string> ShopIds = new HashSet<string>
     { "o_silk", "o_tea", "o_grocery", "o_pharm", "o_post", "r_milktea", "r_market", "r_rest", "r_photo", "r_book", "r_conv" };
-    static string ShopStripeA(string id)
-    {
-        switch (id)
-        {
-            case "o_silk": return "#8a4438";
-            case "o_tea": return "#4a6a4a";
-            case "o_grocery": return "#8a6a3c";
-            case "o_pharm": return "#3f6a52";
-            case "o_post": return "#3f5a6a";
-            case "r_milktea": return "#c07aa8";
-            case "r_market": return "#3f6a9a";
-            case "r_rest": return "#c9553f";
-            case "r_photo": return "#5a5a72";
-            case "r_book": return "#8a5a3c";
-            case "r_conv": return "#4a8a4a";
-            default: return "#c9553f";
-        }
-    }
-
     // ── 材质缓存 ──────────────────────────────────────────────
     Material LitTex(string tex, float tu = 1f, float tv = 1f)
     {
+        if(tex=="water")
+        {
+            if(!_cache.TryGetValue("ParkWater",out var water)){water=new Material(Shader.Find("Campus/Water")){name="NaturalPondWater"};water.SetFloat("_UseVertexFoam",0);water.SetColor("_DeepColor",MatLib.Hex("#376b61"));water.SetColor("_ShallowColor",MatLib.Hex("#7b9c7e"));_cache["ParkWater"]=water;}return water;
+        }
+        if(tex=="path")return DetailSurface.Mat("paving","#c2bca9");
+        if(tex=="road_mainstone")return DetailSurface.Mat("cobble","#a1aaa3");
+        if(tex=="road_cobble")return DetailSurface.Mat("cobble","#a3a59c");
         string k = "L|" + tex + "|" + tu + "|" + tv;
         if (!_cache.TryGetValue(k, out var m)) { m = MatLib.Lit(tex, tu, tv); _cache[k] = m; }
         return m;
@@ -175,24 +123,7 @@ public class WorldBuilder : MonoBehaviour
     // ── 积雪层（半透明薄层，Alpha 由天气驱动；雪停时禁用渲染器避免全屏 overdraw）──
     Material _snowLayerMat;
     Renderer _snowLayerR;
-    void SnowLayer()
-    {
-        float gs = W.GROUND_SIZE > 10 ? W.GROUND_SIZE : 200f;
-        var go = NewGo("SnowLayer", Root);
-        _snowLayerMat = MatLib.Transparent("snow_ground", 0.18f, 0f);
-        if (W.RIVER != null)
-        {
-            // 雪层同样避开河道（水面不积雪）
-            MeshObj(go.transform, TerrainHoleMesh(TexScale.GrassPeriod, 0.028f), Vector3.zero, _snowLayerMat, default, false, false);
-        }
-        else
-        {
-            float reps = gs / TexScale.GrassPeriod;
-            MeshObj(go.transform, MeshFactory.Quad(gs, gs, reps, reps), new Vector3(0, 0.028f, 0), _snowLayerMat, default, false, false);
-        }
-        _snowLayerR = go.GetComponentInChildren<Renderer>();
-        if (_snowLayerR != null) _snowLayerR.enabled = false;
-    }
+
 
     // ── 原语 ──────────────────────────────────────────────────
     GameObject NewGo(string name, Transform parent)
@@ -211,8 +142,10 @@ public class WorldBuilder : MonoBehaviour
         go.transform.localPosition = pos;
         go.transform.localEulerAngles = euler;
         go.transform.localScale = size;
+        if(m!=null&&m.name.StartsWith("Detail_")){go.transform.localScale=Vector3.one;go.GetComponent<MeshFilter>().sharedMesh=PrecisionMesh.Box(size,.022f,2);}
         var r = go.GetComponent<MeshRenderer>();
         r.sharedMaterial = m;
+        MatLib.ConfigureSurface(r, size);
         if (!shadow) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         return go;
     }
@@ -240,6 +173,7 @@ public class WorldBuilder : MonoBehaviour
         go.AddComponent<MeshFilter>().sharedMesh = mesh;
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = m;
+        MatLib.ConfigureSurface(r, mesh.bounds.size);
         r.shadowCastingMode = shadow ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
         r.receiveShadows = receive;
         return go;
@@ -270,11 +204,14 @@ public class WorldBuilder : MonoBehaviour
     void Props()
     {
         var g = NewGo("Props", Root).transform;
+        BuildRegionalPaving(g);
         foreach (var p in W.PROPS)
         {
+            if (RegionalPlaza(p)) continue;
             var grp = NewGo(p.type, g).transform;
             grp.localPosition = new Vector3(p.x, 0f, p.z);
             grp.localEulerAngles = new Vector3(0f, p.ry * Mathf.Rad2Deg, 0f);
+            if (TryGardenProp(p, grp)) continue;
             if (p.type == "ride_wheel") grp.gameObject.AddComponent<ProximityHide>().Radius = 10f;
             else if (p.type == "ride_carousel") grp.gameObject.AddComponent<ProximityHide>().Radius = 6.5f;
             else if (p.type == "ride_tent") grp.gameObject.AddComponent<ProximityHide>().Radius = 9f;
@@ -322,10 +259,7 @@ public class WorldBuilder : MonoBehaviour
                     Box(grp, new Vector3(0.78f, 7.3f, 0.02f), new Vector3(0.6f, 0.5f, 0.03f), MatLib.UnlitColor(MatLib.Hex("#f5d04e")), default, false);
                     break;
                 case "bench":
-                    Box(grp, new Vector3(0, 0.45f, 0), new Vector3(1.8f, 0.09f, 0.5f), ColMat("#a87e52"));
-                    Box(grp, new Vector3(0, 0.75f, -0.24f), new Vector3(1.8f, 0.55f, 0.08f), ColMat("#b98d5e"));
-                    Box(grp, new Vector3(-0.75f, 0.22f, 0), new Vector3(0.12f, 0.44f, 0.44f), ColMat("#6b6b70"));
-                    Box(grp, new Vector3(0.75f, 0.22f, 0), new Vector3(0.12f, 0.44f, 0.44f), ColMat("#6b6b70"));
+                    CraftedBench(grp);
                     break;
                 case "bin":
                     {
@@ -357,16 +291,7 @@ public class WorldBuilder : MonoBehaviour
                     }
                     break;
                 case "planter":
-                    {
-                        float hw = p.w / 2f, hd = p.d / 2f;
-                        Box(grp, new Vector3(0, 0.16f, -hd + 0.1f), new Vector3(p.w, 0.32f, 0.2f), ColMat("#9c9484"));
-                        Box(grp, new Vector3(0, 0.16f, hd - 0.1f), new Vector3(p.w, 0.32f, 0.2f), ColMat("#9c9484"));
-                        Box(grp, new Vector3(-hw + 0.1f, 0.16f, 0), new Vector3(0.2f, 0.32f, p.d), ColMat("#9c9484"));
-                        Box(grp, new Vector3(hw - 0.1f, 0.16f, 0), new Vector3(0.2f, 0.32f, p.d), ColMat("#9c9484"));
-                        Box(grp, new Vector3(0, 0.3f, 0), new Vector3(p.w - 0.3f, 0.22f, p.d - 0.3f), ColMat("#3f7239"));
-                        Box(grp, new Vector3(0, 0.44f, 0), new Vector3(p.w - 0.6f, 0.14f, p.d - 0.6f),
-                            ColMat(p.kind == "green" ? "#4a8743" : "#e8748a"));
-                    }
+                    CraftedPlanter(grp,p.w,p.d,p.kind=="green");
                     break;
                 case "fountain":
                     Fountain(grp, p.r);
@@ -436,8 +361,8 @@ public class WorldBuilder : MonoBehaviour
                         Box(grp, new Vector3(-3.6f, 2.6f, 0), new Vector3(0.9f, 5.2f, 0.9f), ColMat("#c9c3b6"));
                         Box(grp, new Vector3(3.6f, 2.6f, 0), new Vector3(0.9f, 5.2f, 0.9f), ColMat("#c9c3b6"));
                         Box(grp, new Vector3(0, 5.55f, 0), new Vector3(8.6f, 0.7f, 0.9f), ColMat("#8f8a80"));
-                        Face(grp, 4.8f, 1.1f, new Vector3(0, 4.6f, 0.5f), LitTex("sign_gate"));
-                        Face(grp, 4.8f, 1.1f, new Vector3(0, 4.6f, -0.5f), LitTex("sign_gate"), 180f);
+                        SchoolFontSign(grp,4.8f,1.1f,new Vector3(0,4.6f,.5f),0);
+                        SchoolFontSign(grp,4.8f,1.1f,new Vector3(0,4.6f,-.5f),180);
                     }
                     else
                     {
@@ -494,26 +419,26 @@ public class WorldBuilder : MonoBehaviour
                 case "clocktower":
                     {
                         // 三段收分石塔：基座拱门 → 塔身（四棱台）→ 钟楼层 + 四棱锥顶
-                        var stone = LitTex("bridge_stone");
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.4f, 0.8f, 5.4f), 2.4f), new Vector3(0f, 0.4f, 0f), stone);
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.6f, 4.4f, 4.6f), 2.4f), new Vector3(0f, 3.0f, 0f), stone);
-                        // 门洞：卡通渲染不用纯黑（会成黑洞），改用深蓝灰 + 门框 + 门板
-                        Face(grp, 1.9f, 2.9f, new Vector3(0f, 2.15f, 2.30f), ColMat("#3a4250"));
-                        Face(grp, 1.6f, 2.7f, new Vector3(0f, 2.15f, 2.32f), ColMat("#2a3240"));
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(2.3f, 0.28f, 0.3f), 2.4f), new Vector3(0f, 3.6f, 2.4f), stone);
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(5.3f, 0.3f, 5.3f), 2.4f), new Vector3(0f, 5.35f, 0f), stone);
+                        var stone = new Material(DetailSurface.Mat("brick","#c4bca9")) { name = "clocktower_stone" };
+                        stone.SetFloat("_OutlineWidth", 0f);
+                        stone.SetFloat("_RimStrength", 0f);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(5.4f, 0.8f, 5.4f), 2.4f), new Vector3(0f, 0.4f, 0f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(4.6f, 4.4f, 4.6f), 2.4f), new Vector3(0f, 3.0f, 0f), stone);
+                        ClockTowerDoor(grp);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(2.3f, 0.28f, 0.3f), 2.4f), new Vector3(0f, 3.6f, 2.4f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(5.3f, 0.3f, 5.3f), 2.4f), new Vector3(0f, 5.35f, 0f), stone);
                         MeshObj(grp, MeshFactory.TaperedBox(4.0f, 4.0f, 3.3f, 3.3f, 5.6f, 2.4f), new Vector3(0f, 5.5f, 0f), stone);
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.1f, 0.26f, 4.1f), 2.4f), new Vector3(0f, 11.2f, 0f), stone);
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.3f, 3.1f, 3.3f), 2.4f), new Vector3(0f, 12.85f, 0f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(4.1f, 0.26f, 4.1f), 2.4f), new Vector3(0f, 11.2f, 0f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(3.3f, 3.1f, 3.3f), 2.4f), new Vector3(0f, 12.85f, 0f), stone);
                         var clockMat = ClockMat();
                         foreach (var (px, pz, ry) in new[] { (0f, 1.70f, 0f), (0f, -1.70f, 180f), (1.70f, 0f, 90f), (-1.70f, 0f, -90f) })
                             Face(grp, 1.62f, 1.62f, new Vector3(px, 13.1f, pz), clockMat, ry);
                         // 钟楼下小阳台
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(3.9f, 0.12f, 3.9f), 2.4f), new Vector3(0f, 11.45f, 0f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(3.9f, 0.12f, 3.9f), 2.4f), new Vector3(0f, 11.45f, 0f), stone);
                         for (float x = -1.7f; x <= 1.71f; x += 0.85f)
                             foreach (int sz in new[] { -1, 1 })
                                 Box(grp, new Vector3(x, 11.85f, sz * 1.85f), new Vector3(0.08f, 0.75f, 0.08f), MatMetal("#4a4f58"));
-                        MeshObj(grp, MeshFactory.BoxUV(new Vector3(4.1f, 0.24f, 4.1f), 2.4f), new Vector3(0f, 14.5f, 0f), stone);
+                        MeshObj(grp, PrecisionMesh.StoneBox(new Vector3(4.1f, 0.24f, 4.1f), 2.4f), new Vector3(0f, 14.5f, 0f), stone);
                         MeshObj(grp, MeshFactory.Cone(3.0f, 3.6f, 4, true), new Vector3(0f, 14.62f, 0f), ColMat("#3d444e"), new Vector3(0f, 45f, 0f));
                         Box(grp, new Vector3(0f, 18.55f, 0f), new Vector3(0.12f, 1.3f, 0.12f), MatMetal("#9aa2ac"));
                         Box(grp, new Vector3(0.28f, 18.9f, 0f), new Vector3(0.55f, 0.06f, 0.06f), MatMetal("#c9a24a"));
@@ -956,13 +881,14 @@ public class WorldBuilder : MonoBehaviour
     // ── 入口 ──────────────────────────────────────────────────
     void Start()
     {
+        gameObject.AddComponent<FontSystemDriver>();
         // 叙事游戏不需要失控帧率：硬锁 60。
         // 不能用 vSync=1：165Hz 等高分屏上垂直同步会让 Unity 忽略 targetFrameRate，直接按刷新率跑。
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
         if (string.IsNullOrEmpty(Args.Str("-shot")))
             Screen.SetResolution(1600, 900, FullScreenMode.Windowed);   // 默认窗口，可拖动边缘调整；F11 切全屏
-        QualitySettings.shadowDistance = 140f;
+        QualitySettings.shadowDistance = 90f;QualitySettings.shadowCascades=4;QualitySettings.shadowCascade4Split=new Vector3(.08f,.22f,.50f);QualitySettings.pixelLightCount=4;
 
         var w = BuildWorld();
         if (w == null) return;
@@ -1008,16 +934,30 @@ public class WorldBuilder : MonoBehaviour
         {
             LitTex("path"), LitTex("road_mainstone"), LitTex("road_cobble"),
             LitTex("track"), LitTex("court_basket"), LitTex("court_tennis"), LitTex("concrete"),
-            LitTex("roadband_v"), LitTex("roadband_h"), LitTex("bridge_stone"), LitTex("wood"), LitTex("water"), GrassMat,
+            LitTex("roadband_v"), LitTex("roadband_h"), LitTex("bridge_stone"), LitTex("wood"), GrassMat,
         };
         wth.Init(Player, tod, wet, LeafMats, _snowLayerR, _snowLayerMat);
+        if(Args.Has("-menumotioncheck"))gameObject.AddComponent<MenuWaterReview>();
+        if(Args.Has("-renewalcheck"))gameObject.AddComponent<RenewalReview>();
+        if(Args.Has("-menuroutecheck"))gameObject.AddComponent<MenuRouteReview>();
+        if(Args.Has("-submissioncapture"))gameObject.AddComponent<SubmissionCapture>();
 
         // 室内（家 / 教学楼）：一次建好并隐藏，走到门口按 F 进入
         var im = GetComponent<InteriorManager>();
         if (im == null) im = gameObject.AddComponent<InteriorManager>();
         if (rig != null) rig.BindInterior(im);   // 先绑定：im.Init 里 -indoor 会直接进房
         im.Init(this, rig, tod, wth, mm);
+        var progress=gameObject.AddComponent<ProgressManager>();progress.Init(this, rig, tod, dlg, im);
+        gameObject.AddComponent<QuestJournal>().Init(this,rig,dlg,progress,im);
+        gameObject.AddComponent<StandeeDisplay>().Init(this,rig,im);
+        if(Args.Has("-standeecheck")||Args.Has("-standeepreview"))gameObject.AddComponent<StandeeAudit>().Init(this,rig,dlg,im);
+        if(Args.Has("-precisionaudit"))StartCoroutine(DumpPrecisionAfterFrame(im));
+        if (Args.Has("-audit-school")) SceneEntityAudit.DumpSchool(this, Args.Str("-audit-school"));
+        if (Args.Has("-audit-residential")) SceneEntityAudit.DumpResidential(this, Args.Str("-audit-residential"));
     }
+
+    System.Collections.IEnumerator DumpPrecisionAfterFrame(InteriorManager im)
+    {yield return new WaitForEndOfFrame();PrecisionAudit.Dump(this,im,Args.Str("-precisionaudit"));}
 
     public WorldData BuildWorld()
     {
@@ -1026,15 +966,13 @@ public class WorldBuilder : MonoBehaviour
         W = campus ? CampusData.Build() : TownData.Build();
         if (W == null) return null;
         TextureLibrary.SetWorld(W);
+        _residentialEntryPaths = ResidentialExterior.EntryPaths(W);
         if (W.RIVER != null) Spawn = new Vector3(-17f, 0f, -4f);   // 钟楼广场
         Root = NewGo("World", transform).transform;
 
-        WindowGlowMat = MatLib.UnlitColor(MatLib.Hex("#ffcf8a"));
-        // 店铺橱窗玻璃（立面窗格由贴图渐变表现，这块只给橱窗用）
-        WindowGlassMat = MatLib.LitColor(MatLib.Hex("#6f8798"), 0.50f);
         DoorLampMat = MatLib.LitColor(MatLib.Hex("#ffdf9a"), 0.40f);
         LanternMat = MatLib.LitColor(MatLib.Hex("#b8352f"), 0.20f);
-        WindowFXRoot = NewGo("WindowFX", Root).transform;
+        SignRoot = NewGo("Signage", Root).transform;
         Sky();
         GroundAndPaths();
         River();
@@ -1047,13 +985,16 @@ public class WorldBuilder : MonoBehaviour
         Lamps();
         Props();
         Buildings();
-        Debug.Log($"[Exterior] 亮窗 {WindowGlowRenders.Count} / 招牌 {SignGlowRenders.Count} / 静态合批已启用");
+        BuildAmusementClosure();
+        Debug.Log("[Exterior] 实体立面与单层昼夜玻璃；旧立面覆盖路径已退役");
         Villa();
         Trees();
         ForestBelt();
+        if(Args.Has("-treecheck"))gameObject.AddComponent<TreeReview>();
+        if(Args.Has("-gardencheck"))gameObject.AddComponent<GardenReview>();
+        if(Args.Has("-weathercheck"))gameObject.AddComponent<WeatherReview>();
         RailTunnels();
         Distant();
-        SnowLayer();
         Rockeries();
         Rocks();
         Bushes();
@@ -1074,28 +1015,17 @@ public class WorldBuilder : MonoBehaviour
         return W;
     }
 
-    // 天空：双穹交叉淡化（内看球），夜穹初始透明
+    // 单层天空：角度渐变和小尺度云，不再把 64×128 的云贴图放大成灰色巨片。
     void Sky()
     {
-        var day = NewGo("SkyDay", Root);
-        SkyDayGo = day;
+        var day = NewGo("WorldSky", Root);
         day.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Dome(420f, 32, 20);
         var dr = day.AddComponent<MeshRenderer>();
-        SkyDayMat = MatLib.Fade("sky_day", new Color(0.5f, 0.5f, 0.5f, 1f));   // Legacy 粒子着色器自带 ×2 色彩倍增，0.5 抵消
-        SkyDayMat.renderQueue = 3000;   // 昼穹先画
-        dr.sharedMaterial = SkyDayMat;
+        WorldSkyMat = new Material(Resources.Load<Shader>("Shaders/WorldSky"));
+        dr.sharedMaterial = WorldSkyMat;
         dr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         dr.receiveShadows = false;
 
-        var night = NewGo("SkyNight", Root);
-        night.AddComponent<MeshFilter>().sharedMesh = MeshFactory.Dome(418f, 32, 20);
-        var nr = night.AddComponent<MeshRenderer>();
-        SkyNightMat = MatLib.Fade("sky_night", new Color(0.5f, 0.5f, 0.5f, 0f));
-        SkyNightMat.renderQueue = 3001;   // 夜穹后画（双穹同距，透明排序不确定，必须显式定序）
-        nr.sharedMaterial = SkyNightMat;
-        nr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        nr.receiveShadows = false;
-        SkyNightTr = night.transform;
     }
 
     void GroundAndPaths()
@@ -1104,7 +1034,7 @@ public class WorldBuilder : MonoBehaviour
         if (W.RIVER != null)
         {
             // 小镇：地形在河道处断开（下沉河床），UV 由网格按世界坐标给出
-            GrassMat = LitTinted("grass", "#aebd8f");
+            GrassMat = LandscapeSurface.Create(W);
             var groundMesh = TerrainHoleMesh(TexScale.GrassPeriod, 0f);
             var groundGo = MeshObj(Root, groundMesh, Vector3.zero, GrassMat);
             var groundCol = groundGo.AddComponent<MeshCollider>();
@@ -1113,7 +1043,7 @@ public class WorldBuilder : MonoBehaviour
         else
         {
             var greps = TexScale.Repeat(gs, gs, TexScale.GrassPeriod);
-            GrassMat = LitTinted("grass", "#aebd8f", greps.x, greps.y);
+            GrassMat = LandscapeSurface.Create(W);
             Flat(Root, gs, gs, 0f, GrassMat, greps.x, greps.y);
         }
         // 路网：路面 + 路缘石 + 抬高人行道（12cm，人物可站上去）
@@ -1132,6 +1062,18 @@ public class WorldBuilder : MonoBehaviour
                     spans.Add((zc + W.RIVER.width / 2f + 0.6f, r.to));
                 }
             }
+            // 路口只保留横向路面；纵向面在同一位置切开，消除两套砖纹共面闪烁。
+            if (r.axis == "z")
+            {
+                var cuts = new List<(float, float)>();
+                foreach (var cross in W.ROADS)
+                    if (cross.axis == "x" && r.at >= cross.from && r.at <= cross.to)
+                        cuts.Add((cross.at - cross.width / 2f, cross.at + cross.width / 2f));
+                cuts.Sort((a, b) => a.Item1.CompareTo(b.Item1));
+                var clear = new List<(float, float)>();
+                foreach (var span in spans) clear.AddRange(SplitByGaps(span.a, span.b, cuts));
+                spans = clear;
+            }
             string tex = r.kind == "mainstone" ? "road_mainstone" : (r.kind == "cobble" ? "road_cobble" : "path");
             var roadMat = LitTex(tex);
             var crossGaps = r.sidewalk ? XRoadGaps(r) : new List<(float, float)>();
@@ -1141,7 +1083,7 @@ public class WorldBuilder : MonoBehaviour
                 float len = b - a;
                 if (len < 0.3f) continue;
                 float mid = (a + b) / 2f;
-                float y = r.axis == "z" ? 0.02f : 0.024f;
+                float y = 0.024f;
                 var go = NewGo(r.id, g);
                 var rep = TexScale.Repeat(r.width, len, TexScale.RoadPeriod(r.kind));
                 var mesh = r.axis == "z"
@@ -1237,12 +1179,15 @@ public class WorldBuilder : MonoBehaviour
     // 可站立高度：桥面 > 人行道 12cm > 车行道 > 草地 0 —— 人物脚底跟随，不再穿进路缘
     public float GroundY(float x, float z)
     {
+        float entryHeight = Mathf.Max(EntranceGroundY(x, z), ResidentialPathHeight(x, z));
+        if(StandAccess.TryHeight(W.BUILDINGS,x,z,out float standHeight))return Mathf.Max(entryHeight,standHeight);
+        foreach(var pavilion in W.BUILDINGS)if(PavilionFootprint.Uses(pavilion)&&Mathf.Abs(x-pavilion.pos[0])<pavilion.HalfWX&&Mathf.Abs(z-pavilion.pos[1])<pavilion.HalfWZ)return Mathf.Max(.08f,entryHeight);
         if (W.RIVER != null)
             foreach (var b in W.RIVER.bridges)
             {
                 float span = W.RIVER.width + 1.6f;
                 if (Mathf.Abs(x - b.x) <= b.width / 2f + 0.2f && Mathf.Abs(z - RZ(b.x)) <= span / 2f + 1.2f)
-                    return 0.05f;
+                    return Mathf.Max(0.05f, entryHeight);
             }
         foreach (var r in W.ROADS)
         {
@@ -1250,7 +1195,7 @@ public class WorldBuilder : MonoBehaviour
             float perp = r.axis == "z" ? x - r.at : z - r.at;
             if (along < r.from - 0.3f || along > r.to + 0.3f) continue;
             float ap = Mathf.Abs(perp);
-            if (ap <= r.width / 2f + 0.03f) return r.axis == "z" ? 0.02f : 0.024f;
+            if (ap <= r.width / 2f + 0.03f) return Mathf.Max(0.024f, entryHeight);
             if (!r.sidewalk || ap > r.width / 2f + 1.48f) continue;
             bool gap = false;
             foreach (var o in W.ROADS)
@@ -1259,7 +1204,7 @@ public class WorldBuilder : MonoBehaviour
                 if (r.at < o.from - 1f || r.at > o.to + 1f) continue;
                 if (along > o.at - o.width / 2f - 1.4f && along < o.at + o.width / 2f + 1.4f) { gap = true; break; }
             }
-            if (!gap) return 0.12f;
+            if (!gap) return Mathf.Max(0.12f, entryHeight);
         }
         // 图书馆/礼堂柱廊：台面 0.45m + 三级踏步（由内向外 0.48/0.35/0.22），可以直接走上门廊
         foreach (var b in W.BUILDINGS)
@@ -1276,7 +1221,7 @@ public class WorldBuilder : MonoBehaviour
                 return t < 3.47f ? 0.48f : t < 3.87f ? 0.35f : 0.22f;
             if (t >= 0f && t < 3.0f && Mathf.Abs(lx) <= pw) return 0.45f;
         }
-        return 0f;
+        return entryHeight;
     }
 
     // ── 河道（小镇）：下沉河床 + 石护岸 + 滨河步道 + 三座桥 ──
@@ -1641,9 +1586,10 @@ public class WorldBuilder : MonoBehaviour
             go.transform.localPosition = new Vector3(def.pos[0], 0.02f, def.pos[1]);
             // 操场：透明裁切贴片（内场透出地形草，边缘没有「贴上去的方片」接缝）；球场仍是实心面
             bool field = def.id == "playground";
-            string tex = field ? "track" : (def.kind == "tennis" ? "court_tennis" : "court_basket");
+            if(field){SchoolTrack.Build(go.transform,def.size[0],def.size[1],DetailSurface.Mat("rubber","#a76255"));continue;}
+            string tex = def.kind == "tennis" ? "court_tennis" : "court_basket";
             MeshObj(go.transform, MeshFactory.Quad(def.size[0], def.size[1], 1f, 1f), Vector3.zero,
-                field ? MatCutout(tex) : LitTex(tex));
+                LitTex(tex));
         }
     }
 
@@ -1657,8 +1603,8 @@ public class WorldBuilder : MonoBehaviour
         {
             // 小镇池塘：椭圆水面（世界 UV，与河水同密度）+ 石沿环 + 岸边点石
             float rx = p.r, rz = p.r * 0.7f;
-            MeshObj(t, MeshFactory.Disc(rx, rz, 56, 4f), new Vector3(0f, 0.012f, 0f), LitTex("water"), default, false, true);
-            MeshObj(t, MeshFactory.Ring(rx, rz, rx + 0.65f, rz + 0.65f, 56, 2.4f), new Vector3(0f, 0.024f, 0f), LitTex("bridge_stone"));
+            EllipseWater(t,rx,rz,.012f);
+            CraftedShore(t,rx,rz);
             // 环塘步道（2.2m 宽）
             MeshObj(t, MeshFactory.Ring(rx + 3.2f, rz + 3.2f, rx + 5.4f, rz + 5.4f, 64, 2.4f), new Vector3(0f, 0.012f, 0f), LitTex("path"));
             // 睡莲
@@ -1675,22 +1621,9 @@ public class WorldBuilder : MonoBehaviour
             {
                 var lt = NewGo("pond_lantern", t).transform;
                 lt.localPosition = new Vector3(sgn * (rx + 7.2f), 0f, 0f);
-                Box(lt, new Vector3(0f, 0.14f, 0f), new Vector3(0.7f, 0.28f, 0.7f), ColMat("#8d8d94"));
-                Box(lt, new Vector3(0f, 0.66f, 0f), new Vector3(0.28f, 0.8f, 0.28f), ColMat("#84848b"));
-                Box(lt, new Vector3(0f, 1.14f, 0f), new Vector3(0.62f, 0.36f, 0.62f), ColMat("#8d8d94"));
-                Box(lt, new Vector3(0f, 1.14f, 0.32f), new Vector3(0.3f, 0.22f, 0.04f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
-                Box(lt, new Vector3(0f, 1.4f, 0f), new Vector3(0.76f, 0.16f, 0.76f), ColMat("#6f6f76"));
+                StoneLantern(lt);
             }
-            // 南岸木观景台
-            var deck = NewGo("pond_deck", t).transform;
-            deck.localPosition = new Vector3(-10f, 0f, rz + 9.5f);
-            MeshObj(deck, MeshFactory.BoxUV(new Vector3(6.4f, 0.24f, 3.2f), 2f), new Vector3(0f, 0.12f, 0f), LitTex("wood"));
-            foreach (int dx in new[] { -2.8f, 2.8f })
-                foreach (int dz in new[] { -1.3f, 1.3f })
-                    MeshObj(deck, MeshFactory.BoxUV(new Vector3(0.24f, 0.8f, 0.24f), 2f), new Vector3(dx, -0.3f, dz), LitTex("wood"));
-            MeshObj(deck, MeshFactory.BoxUV(new Vector3(6.4f, 0.1f, 0.14f), 1.2f), new Vector3(0f, 0.85f, 1.55f), ColMat("#a87e52"));
-            for (float dx = -3f; dx <= 3f; dx += 1f)
-                Box(deck, new Vector3(dx, 0.55f, 1.55f), new Vector3(0.08f, 0.7f, 0.08f), ColMat("#8a6a48"));
+            CraftedDeck(t,rx,rz);
             for (int i = 0; i < 5; i++)
             {
                 float a = i / 5f * Mathf.PI * 2f + 0.4f;
@@ -1708,15 +1641,9 @@ public class WorldBuilder : MonoBehaviour
 
     void Flowers()
     {
-        var g = NewGo("Flowers", Root).transform;
-        foreach (var f in W.FLOWERS)
-        {
-            var go = NewGo("f", g);
-            go.transform.localPosition = new Vector3(f.x, 0.012f, f.z);
-            // 花坛：cutout 材质（边缘抖动透明，与地形草自然过渡）
-            MeshObj(go.transform, MeshFactory.Quad(1.7f, 1.7f), Vector3.zero, MatCutout("flower"));
-        }
-        StaticBatchingUtility.Combine(g.gameObject);
+        var root=NewGo("Flowers",Root).transform;var batch=new RegionMeshBatch();int i=0;
+        foreach(var f in W.FLOWERS){if(NearGrovePath(f.x,f.z,.4f))continue;GardenDetail.Wildflowers(batch,new Vector3(f.x,GroundY(f.x,f.z)+.015f,f.z),i++);}
+        batch.Flush(root);
     }
 
     void DirtPatches()
@@ -1775,46 +1702,31 @@ public class WorldBuilder : MonoBehaviour
 
     void Lamps()
     {
-        // 灯罩玻璃：用受光材质（阴天/雨雪里不会凭空发白），夜里由 TimeOfDay 改成暖色 + 泛光
-        LampGlass = MatLib.LitColor(MatLib.Hex("#d5dbe4"), 0.35f);
-        LampPool = MatLib.Additive("lamp_glow", new Color(1f, 1f, 1f, 0f));
-        var g = NewGo("Lamps", Root).transform;
-        foreach (var l in W.LAMPS)
+        if(LampGlass==null)LampGlass=MatLib.LitColor(MatLib.Hex("#d5dbe4"),.35f);LampGlass.name="StreetLampDiffuser";
+        var root=NewGo("Lamps",Root).transform;
+        foreach(var l in W.LAMPS)
         {
-            var lamp = NewGo("lamp", g).transform;
-            float gy = W.RIVER != null ? GroundY(l.x, l.z) : 0f;   // 人行道上不埋进地面
-            lamp.localPosition = new Vector3(l.x, gy, l.z);
-            lamp.localEulerAngles = new Vector3(0f, l.r * Mathf.Rad2Deg, 0f);
-            Box(lamp, new Vector3(0f, 0.16f, 0f), new Vector3(0.42f, 0.32f, 0.42f), MatMetal("#4a4f58"));
-            Box(lamp, new Vector3(0f, 1.85f, 0f), new Vector3(0.16f, 3.4f, 0.16f), MatMetal("#3a3f4a"));
-            Box(lamp, new Vector3(0.42f, 3.48f, 0f), new Vector3(0.9f, 0.12f, 0.12f), MatMetal("#3a3f4a"));
-            Box(lamp, new Vector3(0.8f, 3.36f, 0f), new Vector3(0.46f, 0.16f, 0.36f), MatMetal("#2f333c"));
-            var glass = Box(lamp, new Vector3(0.8f, 3.26f, 0f), new Vector3(0.38f, 0.1f, 0.3f), LampGlass, default, false);
-            glass.GetComponent<MeshRenderer>().sharedMaterial = LampGlass;
-            var pool = NewGo("pool", lamp);
-            pool.transform.localPosition = new Vector3(0.78f, 0.015f, 0f);
-            MeshObj(pool.transform, MeshFactory.Quad(5.4f, 5.4f), Vector3.zero, LampPool, default, false, false);
-            // 真实点光源（无阴影，夜里由 TimeOfDay 调亮度）
-            var lg = new GameObject("light");
-            lg.transform.SetParent(lamp, false);
-            lg.transform.localPosition = new Vector3(0.8f, 3.15f, 0f);
-            var li = lg.AddComponent<Light>();
-            li.type = LightType.Point;
-            li.color = MatLib.Hex("#ffcf8a");
-            li.range = 7f;
-            li.intensity = 0f;
-            li.shadows = LightShadows.None;
-            li.renderMode = LightRenderMode.Auto;
-            LampLights.Add(li);
-            LampLightPower.Add(1f);
+            var lamp=NewGo("lamp",root).transform;lamp.localPosition=new Vector3(l.x,W.RIVER!=null?GroundY(l.x,l.z):0,l.z);
+            // Axially symmetric pendant: no reversed outreach arm, diffuser and light share one axis.
+            var b=new RegionMeshBatch();var steel=DetailSurface.Mat("metal","#435953");var stone=DetailSurface.Mat("stone","#92988b");
+            b.Bevel(stone,new Vector3(0,.12f,0),new Vector3(.38f,.24f,.38f),.035f);
+            b.Branch(steel,new Vector3(0,.18f,0),new Vector3(0,3.45f,0),.067f);
+            foreach(float y in new[]{.28f,.42f,3.25f})b.Cylinder(steel,new Vector3(0,y,0),new Vector3(0,y+.065f,0),.10f);
+            b.Cylinder(steel,new Vector3(0,3.43f,0),new Vector3(0,3.68f,0),.24f);
+            b.Cylinder(steel,new Vector3(0,3.69f,0),new Vector3(0,3.76f,0),.34f);
+            b.Cylinder(LampGlass,new Vector3(0,3.405f,0),new Vector3(0,3.435f,0),.21f);
+            for(int i=0;i<8;i++){float a=i*Mathf.PI/4;var radial=new Vector3(Mathf.Cos(a),0,Mathf.Sin(a));b.Cylinder(steel,radial*.215f+Vector3.up*3.44f,radial*.215f+Vector3.up*3.68f,.012f);}
+            b.Flush(lamp);
+            var lightGo=NewGo("shielded_downlight",lamp);lightGo.transform.localPosition=new Vector3(0,3.39f,0);lightGo.transform.localRotation=Quaternion.Euler(90,0,0);
+            var li=lightGo.AddComponent<Light>();li.type=LightType.Spot;li.spotAngle=118;li.innerSpotAngle=72;li.range=10;li.color=MatLib.Hex("#ffdda5");li.intensity=0;li.shadows=LightShadows.None;li.shadowBias=.025f;li.shadowNormalBias=.12f;li.shadowCustomResolution=1024;li.renderMode=LightRenderMode.ForcePixel;
+            LampLights.Add(li);LampLightPower.Add(2.7f);
         }
-        StaticBatchingUtility.Combine(g.gameObject);
     }
 
     // ── 四栋建筑（平顶/坡顶/公共；含屋顶设备/侧翼/雨棚/招牌/大门等全部附加件）──
     void Buildings()
     {
-        if (WindowFXRoot == null) WindowFXRoot = NewGo("WindowFX", Root).transform;
+        if (SignRoot == null) SignRoot = NewGo("Signage", Root).transform;
         var g = NewGo("Buildings", Root).transform;
         foreach (var b in W.BUILDINGS)
         {
@@ -1825,558 +1737,14 @@ public class WorldBuilder : MonoBehaviour
             var bodyCol = grp.gameObject.AddComponent<BoxCollider>();
             bodyCol.center = Vector3.zero;
             bodyCol.size = new Vector3(w, h, d);
+            if(PavilionFootprint.Uses(b)){bodyCol.enabled=false;Destroy(bodyCol);}
             if (b.style == "shrine") { ShrineHall(grp, b); continue; }
+            if (SchoolExterior.Uses(b)) { BuildSchoolBuilding(grp, b); continue; }
+            if (ResidentialExterior.Uses(b)) { BuildResidence(grp, b); continue; }
 
-            bool plain = b.style == "plain" || b.style == "stand";   // 摊亭/站台/看台这类：无窗立面
-            var wallMat = plain ? ColMat(b.wall) : LitTex("wall_" + b.id + "_day");
-            if (!plain) wallMat.name = "wall_" + b.id + "_day";   // 便于定位材质
-            // 世界尺度 UV：贴图覆盖 w×h 米 → 正/背/侧四面同密度（侧面显示立面左侧裁切，不再被拉伸）
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(w, h, d), plain ? 2.4f : w, plain ? 2.4f : h), Vector3.zero, wallMat);
-            if (!plain)
-            {
-                WindowMatRefs.Add(wallMat);
-                WindowMats.Add(new[] { "wall_" + b.id + "_day", "wall_" + b.id + "_night" });
-            }
-            if (b.style == "stand") { Bleacher(grp, b, w, h, d); continue; }
-
-            var tile = plain ? ColMat(b.roof) : LitTex("roof_" + b.id, 4f, 2f);
-
-            if (plain)
-            {
-                Box(grp, new Vector3(0, h / 2f + 0.14f, 0), new Vector3(w + 0.35f, 0.28f, d + 0.35f), ColMat(b.roof));
-            }
-            else if (b.style == "gable" || b.style == "collegiate" || b.style == "library" || b.style == "hall" || b.style == "dorm")
-            {
-                // 卡通四坡屋顶（2026-11-10 重做）：
-                // 上一版是「两片 0.24m 薄板斜搭 + 三角山墙」，写实但单薄；卡通渲染要的是
-                // 「厚实、外挑明显、轮廓清楚」的屋顶 —— 换成整块 HipRoof 网格。
-                float overD = 0.85f;                                    // 檐口外挑（卡通要比写实更大）
-                float ridgeH = Mathf.Min(d * 0.42f, h * 0.30f) + 0.35f; // 屋脊高度随进深走
-                float eaveY = h / 2f + 0.06f;
-                MeshObj(grp, MeshFactory.HipRoof(w + 0.5f, d + 0.5f, ridgeH, overD, 2f),
-                    new Vector3(0f, eaveY, 0f), tile);
-                // 檐口封板（一圈，卡通屋顶的「厚度」靠它读出来）
-                float eaveHalfW = (w + 0.5f) / 2f + overD;
-                float eaveHalfD = (d + 0.5f) / 2f + overD;
-                Box(grp, new Vector3(0f, eaveY - 0.10f, 0f), new Vector3(eaveHalfW * 2f, 0.20f, eaveHalfD * 2f), ColMat(b.trim));
-                // 屋脊压条（一条深色脊瓦）
-                float ridgeLen = Mathf.Max(0.4f, (w + 0.5f) - (d + 0.5f) * 0.55f) + 0.3f;
-                Box(grp, new Vector3(0f, eaveY + ridgeH + 0.08f, 0f), new Vector3(ridgeLen, 0.18f, 0.34f), ColMat("#4a3f3a"));
-            }
-            else if (b.style == "gym")
-            {
-                // 大跨度体育馆：主体 + 半圆筒拱顶（圆柱沿 x 轴，下半埋入主体）
-                var arch = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                var ac = arch.GetComponent<Collider>();
-                if (ac != null) Destroy(ac);
-                arch.transform.SetParent(grp, false);
-                arch.transform.localPosition = new Vector3(0f, h / 2f, 0f);
-                arch.transform.localEulerAngles = new Vector3(0f, 0f, 90f);
-                arch.transform.localScale = new Vector3(d, w / 2f, d);
-                arch.GetComponent<MeshRenderer>().sharedMaterial = ColMat(b.roof);
-            }
-            else if (b.style == "grand")
-            {
-                Box(grp, new Vector3(0, -h / 2f + 0.25f, 0), new Vector3(w + 1.8f, 0.5f, d + 1.8f), ColMat(b.plinth));
-                Box(grp, new Vector3(-(w / 2f - 0.9f), -h / 2f + h * 0.42f + 0.5f, d / 2f + 0.55f), new Vector3(0.5f, h * 0.84f, 0.5f), ColMat(b.trim));
-                Box(grp, new Vector3(w / 2f - 0.9f, -h / 2f + h * 0.42f + 0.5f, d / 2f + 0.55f), new Vector3(0.5f, h * 0.84f, 0.5f), ColMat(b.trim));
-                Box(grp, new Vector3(0, h / 2f + 0.18f, 0), new Vector3(w + 1.2f, 0.32f, d + 1.2f), ColMat(b.roof));
-                Box(grp, new Vector3(0, h / 2f + 0.72f, 0), new Vector3(w * 0.55f, 0.8f, d * 0.55f), ColMat(b.roof));
-            }
-            else
-            {
-                // 平屋顶：深色防水屋面 + 四周女儿墙（不再是整块浅色板）
-                Box(grp, new Vector3(0, h / 2f + 0.14f, 0), new Vector3(w + 0.5f, 0.28f, d + 0.5f), ColMat("#4a4e56"));
-                float py = h / 2f + 0.42f;
-                Box(grp, new Vector3(0, py, d / 2f + 0.12f), new Vector3(w + 0.7f, 0.42f, 0.24f), ColMat(b.plinth));
-                Box(grp, new Vector3(0, py, -d / 2f - 0.12f), new Vector3(w + 0.7f, 0.42f, 0.24f), ColMat(b.plinth));
-                Box(grp, new Vector3(w / 2f + 0.12f, py, 0), new Vector3(0.24f, 0.42f, d + 0.7f), ColMat(b.plinth));
-                Box(grp, new Vector3(-w / 2f - 0.12f, py, 0), new Vector3(0.24f, 0.42f, d + 0.7f), ColMat(b.plinth));
-            }
-
-            if (!plain)
-            {
-                // 四角壁柱（竖向划分）
-                foreach (int sx in new[] { -1, 1 })
-                    foreach (int sz in new[] { -1, 1 })
-                        Box(grp, new Vector3(sx * (w / 2f - 0.16f), 0f, sz * (d / 2f - 0.16f)),
-                            new Vector3(0.3f, h, 0.3f), ColMat(b.trim));
-                // 层间线脚（四面一圈，增加水平层次）
-                float floorH = h / Mathf.Max(1, b.rows);
-                for (int f = 1; f < b.rows; f++)
-                {
-                    float yy = -h / 2f + f * floorH;
-                    Box(grp, new Vector3(0f, yy, d / 2f + 0.05f), new Vector3(w + 0.12f, 0.12f, 0.1f), ColMat(b.trim));
-                    Box(grp, new Vector3(0f, yy, -d / 2f - 0.05f), new Vector3(w + 0.12f, 0.12f, 0.1f), ColMat(b.trim));
-                    Box(grp, new Vector3(w / 2f + 0.05f, yy, 0f), new Vector3(0.1f, 0.12f, d), ColMat(b.trim));
-                    Box(grp, new Vector3(-w / 2f - 0.05f, yy, 0f), new Vector3(0.1f, 0.12f, d), ColMat(b.trim));
-                }
-                // 坡顶烟囱
-                if (b.style == "gable")
-                {
-                    Box(grp, new Vector3(w * 0.3f, h / 2f + 1.15f, -d * 0.15f), new Vector3(0.66f, 1.5f, 0.66f), ColMat(b.plinth));
-                    Box(grp, new Vector3(w * 0.3f, h / 2f + 1.95f, -d * 0.15f), new Vector3(0.84f, 0.14f, 0.84f), ColMat("#3a3a3e"));
-                }
-            }
-            if (b.roofProps)
-            {
-                var rp = NewGo("roofProps", grp).transform;
-                rp.localPosition = new Vector3(0, h / 2f + 0.6f, 0);
-                Box(rp, new Vector3(-w * 0.22f, 0f, -d * 0.12f), new Vector3(1.7f, 0.75f, 1.2f), MatMetal("#a8adb5"));
-                Box(rp, new Vector3(w * 0.24f, 0.03f, d * 0.1f), new Vector3(1f, 0.55f, 0.8f), MatMetal("#9aa2ac"));
-                Box(rp, new Vector3(w * 0.24f, -0.28f, d * 0.1f), new Vector3(1.1f, 0.16f, 0.9f), MatMetal("#7d838c"));
-            }
-            if (b.vent)
-            {
-                var v = NewGo("vent", grp).transform;
-                v.localPosition = new Vector3(w * 0.28f, h / 2f + 1.05f, 0f);
-                Box(v, Vector3.zero, new Vector3(0.28f, 2f, 0.28f), MatMetal("#8a9099"));
-                Box(v, new Vector3(0, 1.05f, 0), new Vector3(0.62f, 0.22f, 0.62f), MatMetal("#6f757e"));
-            }
-            if (b.wing)
-            {
-                float ww = 4.6f, wh = h * 0.72f;
-                var wg = NewGo("wing", grp).transform;
-                // 侧翼贴着地面（原点放地面，避免盒子悬空——此前从楼体半高继承导致浮空 0.7m）
-                wg.localPosition = new Vector3(w / 2f + ww / 2f, -h / 2f, 0.6f);
-                var wingMat = LitTex("wing_" + b.id + "_day");
-                MeshObj(wg, MeshFactory.BoxUV(new Vector3(ww, wh, d * 0.8f), ww, wh), new Vector3(0, wh / 2f, 0), wingMat);
-                WindowMatRefs.Add(wingMat);
-                WindowMats.Add(new[] { "wing_" + b.id + "_day", "wing_" + b.id + "_night" });
-                Box(wg, new Vector3(0, wh + 0.14f, 0), new Vector3(ww + 0.5f, 0.28f, d * 0.8f + 0.5f), ColMat(b.roof));
-            }
-            if (b.antenna)
-            {
-                var a = NewGo("antenna", grp).transform;
-                a.localPosition = new Vector3(-w / 4f, h / 2f + 0.9f, 0f);
-                Box(a, Vector3.zero, new Vector3(0.14f, 1.7f, 0.14f), MatMetal("#9aa2ac"));
-                Box(a, new Vector3(0, 0.95f, 0), new Vector3(0.3f, 0.24f, 0.3f), ColMat("#c9553f"));
-            }
-            if (b.tank)
-                Box(grp, new Vector3(w / 4f, h / 2f + 0.75f, 0f), new Vector3(1.7f, 0.95f, 1.3f), MatMetal("#9aa2ac"));
-            if (b.awning)
-                Box(grp, new Vector3(0, -h / 2f + 2.3f, d / 2f + 0.55f), new Vector3(w * 0.62f, 0.24f, 1.3f), LitTex("awning"));
-
-            // 校园新样式：学院风入口山墙 / 图书馆柱廊+钟亭 / 礼堂柱廊 / 实验楼玻璃门厅 / 宿舍阳台
-            if (b.style == "collegiate") CollegiateFront(grp, b, w, h, d, wallMat);
-            else if (b.style == "library")
-            {
-                Portico(grp, b, h, d, Mathf.Min(8f, w * 0.4f), 5.4f, 4, 1.8f);
-                LibraryCupola(grp, b, h, d);
-            }
-            else if (b.style == "hall") Portico(grp, b, h, d, 11f, 6.2f, 6, 2.2f);
-            else if (b.style == "modern") ModernFront(grp, b, w, h, d);
-            else if (b.style == "dorm") DormDetail(grp, b, w, h, d);
-
-            // 招牌 + 大门 + 台阶 + 门灯 + 雨落管 + 门前绿篱（纯色体块不配这些）
-            if (plain) continue;
-            // 校舍不挂名称门牌（作者要求）；校门“学校”横匾单独保留
-            string signId = b.id.StartsWith("s_") ? null : SignIdFor(b.id);
-            var signTex = string.IsNullOrEmpty(signId) ? null : TextureLibrary.ByName("sign_" + signId, false, false);
-            if (signTex != null)
-            {
-                var signMat = MatLib.LitTexture(signTex, 1f, 1f, 0.12f);
-                Face(grp, 3.3f, 0.83f, new Vector3(0, SignY(b), d / 2f + SignFront(b)), signMat);
-                SignMatRefs.Add(signMat);
-            }
-            float entranceZ = d / 2f + b.EntranceExtra;
-            // 图书馆/礼堂的门开在柱廊台面上：门整体抬高 0.45m，底部与台面齐平
-            float porchLift = b.style == "library" || b.style == "hall" ? 0.45f : 0f;
-            Face(grp, 1.5f, 2.1f, new Vector3(0, -h / 2f + 1.08f + porchLift, entranceZ + 0.035f), LitTex("door"));
-            if (porchLift == 0f)
-                MeshObj(grp, MeshFactory.BoxUV(new Vector3(1.9f, 0.16f, 0.9f), TexScale.PathPeriod), new Vector3(0, -h / 2f + 0.08f, entranceZ + 0.5f), LitTex("path"));   // 石阶（铺装同材质）
-            Box(grp, new Vector3(-1.05f, -h / 2f + 2.32f + porchLift, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
-            Box(grp, new Vector3(1.05f, -h / 2f + 2.32f + porchLift, entranceZ + 0.06f), new Vector3(0.2f, 0.28f, 0.14f), DoorLampMat, default, false);
-            Box(grp, new Vector3(-(w / 2f - 0.35f), 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
-            Box(grp, new Vector3(w / 2f - 0.35f, 0f, d / 2f + 0.08f), new Vector3(0.16f, h - 0.5f, 0.16f), ColMatGloss(b.plinth, 0.22f));
-            // 店铺：雨棚 + 悬挂小招牌；骑楼店铺用横匾
-            if (ShopIds.Contains(b.id))
-            {
-                if (ArcadeIds.Contains(b.id))
-                {
-                    Box(grp, new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.15f), new Vector3(w * 0.8f, 0.5f, 0.14f), ColMat(b.trim));
-                    Box(grp, new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.23f), new Vector3(w * 0.55f, 0.22f, 0.03f), ColMat("#c9a24a"), default, false);
-                }
-                else
-                {
-                    var awnMat = MatLib.LitTexture(TextureLibrary.Stripes2(ShopStripeA(b.id), "#f2ead8"), 1f, 1f, 0.1f);
-                    float aw = Mathf.Max(2f, w * 0.62f);
-                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(aw, 0.07f, 1.3f), 1f),
-                        new Vector3(0f, -h / 2f + 2.7f, d / 2f + 0.8f), awnMat, new Vector3(14f, 0f, 0f));
-                    foreach (int sx in new[] { -1, 1 })
-                        Box(grp, new Vector3(sx * (aw / 2f - 0.1f), -h / 2f + 2.32f, d / 2f + 1.32f),
-                            new Vector3(0.06f, 0.72f, 0.06f), MatMetal("#8a9099"));
-                }
-                Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.45f), new Vector3(0.08f, 0.85f, 0.5f), ColMat(b.trim));
-                Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.25f, d / 2f + 0.72f), new Vector3(0.05f, 0.5f, 0.3f), ColMat("#c9a24a"), default, false);
-
-                // 店铺类型差异（茶楼/绸缎药铺/书店照相馆/超市便利店）
-                string sid = b.id;
-                if (sid == "o_tea" || sid == "r_rest")
-                {
-                    // 二层挑台 + 栏杆 + 红灯笼（茶楼/餐馆）
-                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(w * 0.8f, 0.16f, 0.85f), 2f),
-                        new Vector3(0f, -h / 2f + 3.75f, d / 2f + 0.5f), LitTex("wood"));
-                    for (float rx = -w * 0.34f; rx <= w * 0.36f; rx += Mathf.Max(1f, w * 0.17f))
-                        Box(grp, new Vector3(rx, -h / 2f + 4.2f, d / 2f + 0.9f), new Vector3(0.08f, 0.9f, 0.08f), ColMat("#8a6a48"));
-                    Box(grp, new Vector3(0f, -h / 2f + 4.65f, d / 2f + 0.9f), new Vector3(w * 0.75f, 0.1f, 0.12f), ColMat("#a87e52"));
-                    Cylinder(grp, new Vector3(-w * 0.3f, -h / 2f + 3.0f, d / 2f + 0.75f), 0.16f, 0.42f, ColMat("#b8352f"));
-                    Cylinder(grp, new Vector3(w * 0.3f, -h / 2f + 3.0f, d / 2f + 0.75f), 0.16f, 0.42f, ColMat("#b8352f"));
-                }
-                else if (sid == "o_silk" || sid == "o_pharm" || sid == "r_book" || sid == "r_photo")
-                {
-                    // 展示橱窗 + 格子（绸缎庄/药铺/书店/照相馆），避开门洞
-                    foreach (int sx in new[] { -1, 1 })
-                    {
-                        Face(grp, Mathf.Max(1.4f, w * 0.26f), 1.7f,
-                            new Vector3(sx * w * 0.3f, -h / 2f + 1.75f, d / 2f + 0.045f),
-                            WindowGlassMat);
-                        for (int gi = 0; gi < 4; gi++)
-                            Box(grp, new Vector3(sx * w * 0.3f - w * 0.11f + gi * w * 0.073f, -h / 2f + 1.75f, d / 2f + 0.09f),
-                                new Vector3(0.05f, 1.7f, 0.05f), ColMat(b.trim));
-                    }
-                    Box(grp, new Vector3(w / 2f - 0.5f, -h / 2f + 2.3f, d / 2f + 0.42f), new Vector3(0.08f, 1.1f, 0.5f), ColMat("#2f3a34"));
-                }
-                else if (sid == "r_market" || sid == "r_conv")
-                {
-                    // 横条招牌（超市/便利店，看板建筑）
-                    Box(grp, new Vector3(0f, -h / 2f + 3.05f, d / 2f + 0.35f), new Vector3(w * 0.85f, 0.55f, 0.16f), ColMat("#3f7a52"));
-                    Box(grp, new Vector3(0f, -h / 2f + 3.05f, d / 2f + 0.44f), new Vector3(w * 0.7f, 0.24f, 0.03f), ColMat("#f2efe6"), default, false);
-                }
-            }
-            // 门前绿篱（神社/柱廊建筑不种）
-            if (!b.id.StartsWith("k_") && b.style != "library" && b.style != "hall")
-            {
-                float hedgeW = Mathf.Max(1.6f, w * 0.32f);
-                foreach (int sgn in new[] { -1, 1 })
-                    MeshObj(grp, MeshFactory.BoxUV(new Vector3(hedgeW, 0.5f, 0.6f), TexScale.LeafMeters),
-                        new Vector3(sgn * (w * 0.3f), -h / 2f + 0.27f, d / 2f + 0.42f), LeafMat("#356b33"));
-            }
-            if (ArcadeIds.Contains(b.id)) Arcade(grp, b);
-            if (b.style != "shrine") BuildWindowGlow(grp, b, w, h, d);
-        }
-        // 建筑静态合批（窗玻璃/亮窗已移到 WindowFX，不参与）
-        StaticBatchingUtility.Combine(g.gameObject);
-    }
-
-    static string SignIdFor(string id)
-    {
-        switch (id)
-        {
-            case "s_teach": return "teach";
-            case "s_lib": return "library";
-            case "s_lab": return "labs";
-            case "s_dorm": return "dorm";
-            case "s_canteen": return "canteen";
-            case "s_center": return "center";
-            case "s_gate": return "guardN";
-            default: return id;
-        }
-    }
-
-    static float SignFront(BuildingDef b)
-    {
-        switch (b.style)
-        {
-            case "library": return 3.22f;   // 柱廊山花
-            case "collegiate": return 1.08f;
-            case "modern": return 1.20f;
-            case "dorm": return 0.96f;
-            default: return 0.04f;
-        }
-    }
-
-    static float SignY(BuildingDef b)
-    {
-        if (b.style == "library") return 0.55f;
-        if (b.style == "collegiate" || b.style == "modern") return -b.size[1] / 2f + 4.0f;
-        if (b.style == "dorm") return -b.size[1] / 2f + 3.4f;
-        return b.size[1] * 0.28f;
-    }
-
-    // 学院风：红砖主体 + 石材入口凸出体 + 时钟山墙 + 雨棚
-    void CollegiateFront(Transform grp, BuildingDef b, float w, float h, float d, Material wallMat)
-    {
-        float baseY = -h / 2f, front = d / 2f;
-        float bayW = Mathf.Min(8f, w * 0.3f);
-        const float bayD = 1.05f;
-        MeshObj(grp, MeshFactory.BoxUV(new Vector3(bayW, h, bayD), w, h),
-            new Vector3(0f, 0f, front + bayD / 2f), wallMat);
-        // 门前裙板分左右两段，中间留门洞，避免挡住门扇下半截
-        const float doorGap = 2.3f;
-        float segW = (bayW + 0.4f - doorGap) / 2f;
-        foreach (int sx in new[] { -1, 1 })
-            Box(grp, new Vector3(sx * (doorGap / 2f + segW / 2f), baseY + 0.45f, front + bayD + 0.03f),
-                new Vector3(segW, 0.9f, 0.14f), ColMat(b.plinth));
-        foreach (int sx in new[] { -1, 1 })
-        {
-            Box(grp, new Vector3(sx * (bayW / 2f - 0.12f), 0f, front + bayD + 0.05f),
-                new Vector3(0.34f, h, 0.18f), ColMat(b.trim));
-            Box(grp, new Vector3(sx * (bayW / 2f - 0.02f), 0f, front + bayD - 0.08f),
-                new Vector3(0.24f, h, 0.16f), ColMat(b.trim));
-        }
-        float floorH = h / Mathf.Max(1, b.rows);
-        for (int f = 1; f < b.rows; f++)
-            Box(grp, new Vector3(0f, baseY + f * floorH, front + bayD + 0.06f),
-                new Vector3(bayW + 0.2f, 0.12f, 0.1f), ColMat(b.trim));
-        float pedY = h / 2f + 0.06f;
-        Box(grp, new Vector3(0f, pedY - 0.08f, front + bayD + 0.04f),
-            new Vector3(bayW + 0.8f, 0.2f, 0.2f), ColMat(b.trim));
-        MeshObj(grp, MeshFactory.Triangle(bayW + 0.6f, 1.9f),
-            new Vector3(0f, pedY, front + bayD + 0.04f), ColMat(b.trim));
-        Box(grp, new Vector3(0f, h / 2f - 2.2f, front + bayD + 0.02f),
-            new Vector3(2.4f, 2.4f, 0.1f), ColMat(b.plinth));
-        // 钟面比底座前脸再前移 2cm，避免共面 z-fighting 造成的“虚影”
-        Face(grp, 2.0f, 2.0f, new Vector3(0f, h / 2f - 2.2f, front + bayD + 0.09f), ClockMat());
-        Box(grp, new Vector3(0f, baseY + 3.45f, front + bayD + 0.95f),
-            new Vector3(bayW * 0.72f, 0.18f, 1.9f), ColMat(b.roof));
-        foreach (int sx in new[] { -1, 1 })
-            Box(grp, new Vector3(sx * (bayW * 0.3f), baseY + 1.72f, front + bayD + 1.55f),
-                new Vector3(0.22f, 3.44f, 0.22f), ColMat(b.trim));
-    }
-
-    // 古典柱廊：台阶 + 柱列 + 檐部 + 三角山花（图书馆/礼堂共用）
-    void Portico(Transform grp, BuildingDef b, float h, float d,
-        float porticoW, float colH, int nCols, float pedH)
-    {
-        float baseY = -h / 2f, front = d / 2f;
-        const float depth = 3f;
-        var stone = ColMat(b.trim);
-        var roofMat = LitTex("roof_" + b.id, 4f, 2f);
-        // 三级台阶：最高一级贴柱廊平台，逐级向外降低；宽度不超过柱廊平台，避免左右凸出
-        for (int i = 0; i < 3; i++)
-            Box(grp, new Vector3(0f, baseY + 0.36f - i * 0.13f, front + depth + 0.25f + i * 0.4f),
-                new Vector3(porticoW - 0.4f + i * 0.2f, 0.24f, 0.44f), ColMat(b.plinth));
-        Box(grp, new Vector3(0f, baseY + 0.34f, front + depth / 2f + 0.35f),
-            new Vector3(porticoW, 0.22f, depth + 0.7f), stone);
-        for (int i = 0; i < nCols; i++)
-        {
-            float x = Mathf.Lerp(-porticoW / 2f + 0.8f, porticoW / 2f - 0.8f,
-                nCols == 1 ? 0.5f : i / (float)(nCols - 1));
-            float cz = front + depth - 0.45f;
-            Cyl(grp, new Vector3(x, baseY + 0.5f + colH / 2f, cz), 0.24f, colH, stone);
-            Box(grp, new Vector3(x, baseY + 0.6f, cz), new Vector3(0.62f, 0.2f, 0.62f), stone);
-            Box(grp, new Vector3(x, baseY + 0.5f + colH - 0.12f, cz), new Vector3(0.66f, 0.24f, 0.66f), stone);
-        }
-        float topY = baseY + 0.5f + colH;
-        Box(grp, new Vector3(0f, topY + 0.3f, front + depth - 0.35f),
-            new Vector3(porticoW + 0.8f, 0.6f, 1.0f), stone);
-        MeshObj(grp, MeshFactory.Triangle(porticoW + 0.9f, pedH),
-            new Vector3(0f, topY + 0.6f, front + depth + 0.16f), ColMat(b.trim));
-        float ang = Mathf.Atan2(pedH, (porticoW + 0.9f) / 2f);
-        float slope = (porticoW + 0.9f) / 2f / Mathf.Cos(ang) + 0.25f;
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * (porticoW + 0.9f) / 4f, topY + 0.6f + pedH / 2f, front + depth / 2f + 0.55f),
-                new Vector3(slope, 0.18f, depth + 0.6f), roofMat, new Vector3(0f, 0f, -s * ang * Mathf.Rad2Deg));
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * (porticoW / 2f - 0.7f), topY - 0.18f, front + depth + 0.02f),
-                new Vector3(0.18f, 0.26f, 0.12f), DoorLampMat, default, false);
-        if (b.style == "hall")
-        {
-            // 礼堂山花校徽：金色圆盘 + 朱红圆心
-            Cylinder(grp, new Vector3(0f, topY + 0.6f + pedH * 0.42f, front + depth + 0.2f),
-                0.85f, 0.06f, ColMatGloss("#c9a24a", 0.5f), new Vector3(90f, 0f, 0f));
-            Cylinder(grp, new Vector3(0f, topY + 0.6f + pedH * 0.42f, front + depth + 0.25f),
-                0.5f, 0.08f, ColMat("#b8352f"), new Vector3(90f, 0f, 0f));
-        }
-    }
-
-    // 图书馆钟亭：八角锥顶 + 四面钟
-    void LibraryCupola(Transform grp, BuildingDef b, float h, float d)
-    {
-        float halfD = d / 2f + 0.7f;
-        float ridgeY = h / 2f + 0.32f + halfD * Mathf.Tan(0.45f);
-        var cu = NewGo("cupola", grp).transform;
-        cu.localPosition = new Vector3(0f, ridgeY - 0.15f, 0f);
-        Box(cu, new Vector3(0f, 0.6f, 0f), new Vector3(2.7f, 2.1f, 2.7f), ColMat(b.trim));
-        Box(cu, new Vector3(0f, 1.72f, 0f), new Vector3(3.1f, 0.18f, 3.1f), ColMat(b.plinth));
-        MeshObj(cu, MeshFactory.Cone(2.25f, 2.0f, 8, true, 4f),
-            new Vector3(0f, 1.8f, 0f), LitTex("roof_" + b.id, 4f, 2f));
-        Cylinder(cu, new Vector3(0f, 4.0f, 0f), 0.09f, 0.8f, MatMetal("#c9a24a"));
-        foreach (var (dx, dz, ry) in new[] { (0f, 1f, 0f), (1f, 0f, 90f), (0f, -1f, 180f), (-1f, 0f, -90f) })
-            Face(cu, 1.35f, 1.35f, new Vector3(dx * 1.39f, 0.7f, dz * 1.39f), ClockMat(), ry);
-    }
-
-    // 现代实验楼：玻璃门厅 + 水平遮阳带 + 屋顶设备
-    void ModernFront(Transform grp, BuildingDef b, float w, float h, float d)
-    {
-        float baseY = -h / 2f, front = d / 2f;
-        float tw = 3.4f, th = h * 0.86f, td = 1.1f;
-        MeshObj(grp, MeshFactory.BoxUV(new Vector3(tw, th, td), 2f),
-            new Vector3(0f, baseY + th / 2f, front + td / 2f), WindowGlassMat);
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * (tw / 2f - 0.08f), baseY + th / 2f, front + td + 0.04f),
-                new Vector3(0.16f, th, 0.1f), ColMat("#eef1f4"));
-        float floorH = h / Mathf.Max(1, b.rows);
-        for (int r = 1; r < b.rows; r++)
-        {
-            Box(grp, new Vector3(0f, baseY + floorH * r, front + td + 0.05f),
-                new Vector3(tw, 0.12f, 0.08f), ColMat("#eef1f4"));
-            Box(grp, new Vector3(0f, baseY + floorH * r + 0.35f, front + 0.42f),
-                new Vector3(w * 0.92f, 0.1f, 0.8f), ColMat(b.trim));
-        }
-        Box(grp, new Vector3(0f, baseY + th + 0.1f, front + td / 2f),
-            new Vector3(tw + 0.4f, 0.22f, td + 0.4f), ColMat("#dfe3e8"));
-        Box(grp, new Vector3(0f, baseY + 3.4f, front + td + 0.9f),
-            new Vector3(4.6f, 0.16f, 2.0f), ColMat("#dfe3e8"));
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * 2.0f, baseY + 1.7f, front + td + 1.8f),
-                new Vector3(0.12f, 3.2f, 0.12f), MatMetal("#9aa2ac"));
-        Box(grp, new Vector3(-w * 0.25f, h / 2f + 0.85f, 0f), new Vector3(2.2f, 1.1f, 1.6f), MatMetal("#a8adb5"));
-        Box(grp, new Vector3(w * 0.25f, h / 2f + 0.7f, 0f), new Vector3(1.2f, 0.8f, 1.2f), MatMetal("#8a9099"));
-    }
-
-    // 宿舍楼：两侧外挑阳台 + 空调机 + 入口雨棚
-    void DormDetail(Transform grp, BuildingDef b, float w, float h, float d)
-    {
-        float baseY = -h / 2f, front = d / 2f;
-        float floorH = h / Mathf.Max(1, b.rows);
-        float bw = Mathf.Min(4.4f, w * 0.24f);
-        for (int r = 1; r < b.rows; r++)
-        {
-            float y = baseY + floorH * r + 0.35f;
-            foreach (int g in new[] { -1, 1 })
-            {
-                float bx = g * (w * 0.3f);
-                Box(grp, new Vector3(bx, y, front + 0.5f), new Vector3(bw, 0.14f, 1.0f), ColMat(b.trim));
-                Box(grp, new Vector3(bx, y + 0.52f, front + 0.98f), new Vector3(bw, 0.06f, 0.06f), ColMat("#6f757e"));
-                for (int i = 0; i < 4; i++)
-                    Box(grp, new Vector3(bx - bw / 2f + 0.08f + i * (bw - 0.16f) / 3f, y + 0.28f, front + 0.98f),
-                        new Vector3(0.05f, 0.5f, 0.05f), ColMat("#6f757e"));
-                foreach (int sx in new[] { -1, 1 })
-                    Box(grp, new Vector3(bx + sx * bw / 2f, y + 0.28f, front + 0.5f),
-                        new Vector3(0.05f, 0.5f, 0.95f), ColMat("#6f757e"));
-                if (r % 2 == 1)
-                    Box(grp, new Vector3(bx + bw * 0.3f, y + 0.25f, front + 0.25f),
-                        new Vector3(0.6f, 0.45f, 0.4f), MatMetal("#b8bcc2"));
-            }
-        }
-        Box(grp, new Vector3(0f, baseY + 2.95f, front + 1.0f), new Vector3(5.6f, 0.2f, 2.0f), ColMat(b.roof));
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * 2.4f, baseY + 1.45f, front + 1.9f),
-                new Vector3(0.2f, 3.0f, 0.2f), ColMat(b.trim));
-    }
-
-    // 看台：低平台 + 五级座席 + 背墙栏杆；s_stand 中央留 5m 升旗台，踏步朝跑道
-    void Bleacher(Transform grp, BuildingDef b, float w, float h, float d)
-    {
-        float baseY = -h / 2f;
-        bool flagStand = b.id == "s_stand";
-        Box(grp, new Vector3(0f, baseY + 1.2f, -d / 2f + 0.25f),
-            new Vector3(w, 2.4f, 0.5f), ColMat(b.wall));
-        int n = 5;
-        for (int i = 0; i < n; i++)
-        {
-            float y = baseY + 0.3f + i * 0.38f;
-            float z = d / 2f - 0.5f - i * (d - 1.0f) / (n - 1);
-            var mat = ColMat(i % 2 == 0 ? b.trim : b.wall);
-            if (flagStand)
-            {
-                const float halfGap = 2.5f;
-                float segW = (w - 0.5f - halfGap * 2f) / 2f;
-                float cx = halfGap + segW / 2f;
-                Box(grp, new Vector3(-cx, y, z), new Vector3(segW, 0.38f, 0.8f), mat);
-                Box(grp, new Vector3(cx, y, z), new Vector3(segW, 0.38f, 0.8f), mat);
-            }
-            else
-            {
-                Box(grp, new Vector3(0f, y, z), new Vector3(w - 0.5f, 0.38f, 0.8f), mat);
-            }
-        }
-        if (flagStand)
-        {
-            // 中央升旗台：台面 1.2m，三级踏步朝跑道（局部 +Z）
-            Box(grp, new Vector3(0f, baseY + 0.6f, -0.5f), new Vector3(5f, 1.2f, 4f), ColMat(b.trim));
-            for (int s = 0; s < 3; s++)
-            {
-                float sh = 0.4f * (s + 1);
-                float sz = 2.335f - s * 0.33f;
-                Box(grp, new Vector3(0f, baseY + sh / 2f, sz), new Vector3(5f, sh, 0.33f), ColMat(b.plinth));
-            }
-        }
-        foreach (int s in new[] { -1, 1 })
-            Box(grp, new Vector3(s * (w / 2f - 0.2f), baseY + 0.9f, 0f),
-                new Vector3(0.3f, 1.8f, d * 0.9f), ColMat(b.plinth));
-        Box(grp, new Vector3(0f, baseY + 2.45f, -d / 2f + 0.25f),
-            new Vector3(w, 0.1f, 0.1f), MatMetal("#7a8088"));
-        for (float x = -w / 2f + 1f; x <= w / 2f - 1f; x += 3f)
-            Box(grp, new Vector3(x, baseY + 2.2f, -d / 2f + 0.25f),
-                new Vector3(0.08f, 0.5f, 0.08f), MatMetal("#7a8088"));
-        Box(grp, new Vector3(0f, baseY + 0.1f, d / 2f - 0.1f),
-            new Vector3(w, 0.2f, 0.3f), ColMat(b.plinth));
-    }
-
-    // ── 夜间亮窗：按立面窗格生成一层发光片（不依赖贴图/变体，稳定可见）──
-    void BuildWindowGlow(Transform grp, BuildingDef b, float w, float h, float d)
-    {
-        float aw = b.cols * 256f, ah = b.rows * 256f + 320f;
-        var verts = new List<Vector3>();
-        var uvs = new List<Vector2>();
-        var tris = new List<int>();
-        int hash = b.id.GetHashCode() & 0x7fffffff;
-        for (int r = 0; r < b.rows; r++)
-            for (int c = 0; c < b.cols; c++)
-            {
-                if (((hash + c * 37 + r * 91) % 100) >= 55) continue;
-                float u = (c * 256f + 136f) / aw;
-                float v = 1f - (r * 256f + 160f) / ah;
-                float px = (u - 0.5f) * w, py = (v - 0.5f) * h;
-                if (r == 0 && Mathf.Abs(px) < 1.3f) continue;          // 门洞位置不放
-                float ww = 160f / aw * w * 0.74f, hh = 160f / ah * h * 0.72f;
-                // 拆成 2×2 四格玻璃，保留窗框/中梃
-                for (int gx = 0; gx < 2; gx++)
-                    for (int gy = 0; gy < 2; gy++)
-                    {
-                        float cx = px + (gx == 0 ? -0.25f : 0.25f) * ww;
-                        float cy = py + (gy == 0 ? -0.25f : 0.25f) * hh;
-                        float gwc = ww * 0.44f, ghc = hh * 0.44f;
-                        int i0 = verts.Count;
-                        verts.Add(new Vector3(cx - gwc / 2f, cy - ghc / 2f, d / 2f + 0.022f));
-                        verts.Add(new Vector3(cx + gwc / 2f, cy - ghc / 2f, d / 2f + 0.022f));
-                        verts.Add(new Vector3(cx + gwc / 2f, cy + ghc / 2f, d / 2f + 0.022f));
-                        verts.Add(new Vector3(cx - gwc / 2f, cy + ghc / 2f, d / 2f + 0.022f));
-                        uvs.Add(new Vector2(0f, 0f)); uvs.Add(new Vector2(1f, 0f));
-                        uvs.Add(new Vector2(1f, 1f)); uvs.Add(new Vector2(0f, 1f));
-                        tris.Add(i0); tris.Add(i0 + 1); tris.Add(i0 + 2);
-                        tris.Add(i0); tris.Add(i0 + 2); tris.Add(i0 + 3);
-                    }
-            }
-        if (verts.Count == 0) return;
-        var mesh = new Mesh();
-        mesh.SetVertices(verts);
-        mesh.SetUVs(0, uvs);
-        mesh.SetTriangles(tris, 0);
-        mesh.RecalculateNormals();
-        // 窗片挂到独立 FX 根：建筑本体可以静态合批，窗玻璃/亮窗夜里要单独开关
-        var fx = NewGo("fx_" + b.id, WindowFXRoot).transform;
-        fx.localPosition = grp.localPosition;
-        fx.localEulerAngles = grp.localEulerAngles;
-
-        var go = NewGo("win_glow", fx);
-        go.AddComponent<MeshFilter>().sharedMesh = mesh;
-        var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = WindowGlowMat;
-        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows = false;
-        WindowGlowRenders.Add(mr);
-
-        // 夜间招牌：用招牌贴图本身做一块 Unlit 发光片（比材质 Emission 更稳）；校舍不挂
-        string signId = b.id.StartsWith("s_") ? null : SignIdFor(b.id);
-        var signTex = string.IsNullOrEmpty(signId) ? null : TextureLibrary.ByName("sign_" + signId, false, false);
-        if (signTex != null)
-        {
-            var sgMat = new Material(Shader.Find("Unlit/Texture"));
-            sgMat.mainTexture = signTex;
-            var sgGo = MeshObj(fx, MeshFactory.QuadZ(3.3f, 0.83f),
-                new Vector3(0f, SignY(b), d / 2f + SignFront(b) + 0.03f), sgMat, default, false, false);
-            SignGlowRenders.Add(sgGo.GetComponent<MeshRenderer>());
-        }
-        else if (ShopIds.Contains(b.id) && ArcadeIds.Contains(b.id))
-        {
-            // 小镇骑楼横匾没有招牌贴图：夜里用暖色发光条代替，撑起店面亮度
-            var stripGo = MeshObj(fx, MeshFactory.QuadZ(w * 0.55f, 0.22f),
-                new Vector3(0f, -h / 2f + 3.75f, d / 2f + 1.26f), WindowGlowMat, default, false, false);
-            SignGlowRenders.Add(stripGo.GetComponent<MeshRenderer>());
+            if(b.id.StartsWith("f_")&&ClosedAreas.AmusementClosed)
+            {Box(grp,Vector3.zero,new Vector3(w,h,d),DetailSurface.Mat("plaster",b.wall));Box(grp,new Vector3(0,h/2+.10f,0),new Vector3(w+.2f,.2f,d+.2f),DetailSurface.Mat("roof",b.roof));continue;}
+            BuildPrecisionArchitecture(grp,b);
         }
     }
 
@@ -2385,11 +1753,11 @@ public class WorldBuilder : MonoBehaviour
     {
         float w = b.size[0], h = b.size[1], d = b.size[2];
         float baseY = -h / 2f;
-        var stone = LitTex("bridge_stone");
-        var wood = ColMat("#7a4a34");
-        var woodDark = ColMat("#5a3226");
-        var roof = LitTex("roof_" + b.id);
-        var shoji = LitTex("villa");
+        var stone = DetailSurface.Mat("stone","#a69f8e");
+        var wood = DetailSurface.Mat("timber","#8c6047");
+        var woodDark = DetailSurface.Mat("timber","#674535");
+        var roof = DetailSurface.Mat("roof",b.roof);
+        var shoji = DetailSurface.Mat("wallpaper","#dfd8c4");
 
         // 基坛 + 木地板 + 正面三级踏步
         MeshObj(grp, MeshFactory.BoxUV(new Vector3(w + 2.4f, 0.55f, d + 2.4f), 2.4f), new Vector3(0f, baseY + 0.275f, 0f), stone);
@@ -2527,90 +1895,15 @@ public class WorldBuilder : MonoBehaviour
         }
     }
 
-    // ── 主角家：日式二层独栋（双层大屋檐 + 山墙端封 + 玄关雨棚 + 石灯笼 + 竹丛 + 砂石院 + 前院木篱）──
+    // 主角家与居民区共用实体门窗构造，避免保留第二套旧立面。
     void Villa()
     {
-        var def = W.VILLA;
-        float w = def.w, h = def.h, d = def.d;
-        var tile = LitTex("roof_villa", 4f, 2f);
-        var body = LitTex("villa");
-        var grp = NewGo("Villa", Root).transform;
-        grp.localPosition = new Vector3(def.x, h / 2f, def.z);
-        grp.localEulerAngles = new Vector3(0f, def.face == 1 ? 0f : 180f, 0f);
-        var villaCol = grp.gameObject.AddComponent<BoxCollider>();
-        villaCol.center = Vector3.zero;
-        villaCol.size = new Vector3(w, h, d);
-
-        const float a1 = 0.46f, a2 = 0.52f;
-        float slope1 = d / 2f / Mathf.Cos(a1) + 1.3f;
-        float y1 = h / 2f + 0.28f;
-        float slope2 = (d * 0.3f) / Mathf.Cos(a2) + 0.6f;
-        float y2 = h / 2f + 1.5f;
-
-        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w, h, d), w, h), Vector3.zero, body);
-        Box(grp, new Vector3(0, y1, d / 4f + 0.15f), new Vector3(w + 2.6f, 0.26f, slope1), tile, new Vector3(a1 * Mathf.Rad2Deg, 0, 0));
-        Box(grp, new Vector3(0, y1, -d / 4f - 0.15f), new Vector3(w + 2.6f, 0.26f, slope1), tile, new Vector3(-a1 * Mathf.Rad2Deg, 0, 0));
-        MeshObj(grp, MeshFactory.BoxUV(new Vector3(w * 0.72f, 1.22f, d * 0.6f), w, h), new Vector3(0, y1 + 0.6f, 0), body);
-
-        foreach (int s in new[] { -1, 1 })
-        {
-            var tri = NewGo("vg", grp).transform;
-            tri.localPosition = new Vector3(s * (w / 2f - 0.05f), h / 2f, 0f);
-            tri.localEulerAngles = new Vector3(0f, 90f, 0f);
-            MeshObj(tri, MeshFactory.Triangle(d + 0.2f, (d / 4f + 0.15f) * Mathf.Tan(a1) + 0.26f), Vector3.zero, ColMat("#e2dccc"));
-        }
-        foreach (int s in new[] { -1, 1 })
-        {
-            var tri = NewGo("vg2", grp).transform;
-            tri.localPosition = new Vector3(s * (w * 0.36f - 0.05f), y1 + 1.22f, 0f);
-            tri.localEulerAngles = new Vector3(0f, 90f, 0f);
-            MeshObj(tri, MeshFactory.Triangle(d * 0.6f, (d * 0.12f + 0.05f) * Mathf.Tan(a2) + 0.34f), Vector3.zero, ColMat("#e2dccc"));
-        }
-        Box(grp, new Vector3(0, y2, d * 0.12f + 0.05f), new Vector3(w * 0.72f + 1.6f, 0.22f, slope2), tile, new Vector3(a2 * Mathf.Rad2Deg, 0, 0));
-        Box(grp, new Vector3(0, y2, -d * 0.12f - 0.05f), new Vector3(w * 0.72f + 1.6f, 0.22f, slope2), tile, new Vector3(-a2 * Mathf.Rad2Deg, 0, 0));
-        Box(grp, new Vector3(0, y2 + 0.42f, 0), new Vector3(w * 0.72f + 1.7f, 0.16f, 0.3f), ColMat("#2b3038"));
-
-        // 玄关雨棚 + 木柱 + 石阶 + 砂石院
-        Box(grp, new Vector3(0, -h / 2f + 2.5f, d / 2f + 0.85f), new Vector3(3f, 0.14f, 1.7f), tile, new Vector3(28.6f, 0, 0));
-        Box(grp, new Vector3(-1.35f, -h / 2f + 1.2f, d / 2f + 1.35f), new Vector3(0.16f, 2.4f, 0.16f), ColMat("#8a6a48"));
-        Box(grp, new Vector3(1.35f, -h / 2f + 1.2f, d / 2f + 1.35f), new Vector3(0.16f, 2.4f, 0.16f), ColMat("#8a6a48"));
-        Box(grp, new Vector3(0, -h / 2f + 0.08f, d / 2f + 0.55f), new Vector3(2f, 0.16f, 1f), ColMat("#b8b0a2"));
-        var gravel = NewGo("gravel", grp);
-        gravel.transform.localPosition = new Vector3(0.6f, -h / 2f + 0.006f, d / 2f + 1.9f);
-        MeshObj(gravel.transform, MeshFactory.Quad(4.2f, 2.4f), Vector3.zero, ColMat("#cfc9ba"));
-
-        // 石灯笼（暖光窗）
-        var lt = NewGo("lantern", grp).transform;
-        lt.localPosition = new Vector3(2.9f, -h / 2f, d / 2f + 1.1f);
-        Box(lt, new Vector3(0, 0.12f, 0), new Vector3(0.5f, 0.24f, 0.5f), ColMat("#8d8d94"));
-        Box(lt, new Vector3(0, 0.55f, 0), new Vector3(0.22f, 0.62f, 0.22f), ColMat("#84848b"));
-        Box(lt, new Vector3(0, 0.95f, 0), new Vector3(0.5f, 0.34f, 0.5f), ColMat("#8d8d94"));
-        Box(lt, new Vector3(0, 0.95f, 0.26f), new Vector3(0.26f, 0.2f, 0.04f), MatLib.UnlitColor(MatLib.Hex("#ffdf9a")), default, false);
-        Box(lt, new Vector3(0, 1.2f, 0), new Vector3(0.62f, 0.16f, 0.62f), ColMat("#6f6f76"));
-
-        // 竹丛（三杆 + 枝叶）
-        float[] bx = { -w / 2f - 0.8f, -w / 2f - 0.5f, -w / 2f - 1.05f };
-        float[] bh = { 3.8f, 3.1f, 4.3f };
-        string[] bc = { "#5a8a4a", "#4a7a3e", "#639455" };
-        for (int i = 0; i < 3; i++)
-        {
-            var bg = NewGo("bamboo" + i, grp).transform;
-            bg.localPosition = new Vector3(bx[i], -h / 2f, d / 2f - 1.2f + i * 0.6f);
-            Box(bg, new Vector3(0, bh[i] / 2f, 0), new Vector3(0.12f, bh[i], 0.12f), ColMat(bc[i % 3]));
-            Box(bg, new Vector3(0.3f, bh[i] - 0.5f, 0), new Vector3(0.6f, 0.16f, 0.16f), ColMat("#4a7a3e"));
-            Box(bg, new Vector3(-0.28f, bh[i] - 0.9f, 0.1f), new Vector3(0.5f, 0.14f, 0.14f), ColMat("#5a8a4a"));
-        }
-
-        // 前院木篱（两横杆 + 立柱；正中留出进出家门的口子，不与门前通路冲突）
-        foreach (float px in new[] { -3.0f, -2.0f, -1.0f, 1.0f, 2.0f, 3.0f })
-            Box(grp, new Vector3(px, -h / 2f + 0.45f, d / 2f + 3f), new Vector3(0.14f, 0.9f, 0.14f), ColMat("#a87e52"));
-        for (int i = 0; i < 2; i++)
-        {
-            float cx = i == 0 ? -2f : 2f;
-            float len = 2.2f;
-            Box(grp, new Vector3(cx, -h / 2f + 0.72f, d / 2f + 3f), new Vector3(len, 0.1f, 0.08f), ColMat("#b98d5e"));
-            Box(grp, new Vector3(cx, -h / 2f + 0.38f, d / 2f + 3f), new Vector3(len, 0.1f, 0.08f), ColMat("#b98d5e"));
-        }
+        var def=W.VILLA;if(def==null)return;
+        var root=NewGo("Villa",Root).transform;
+        root.localPosition=new Vector3(def.x,def.h/2,def.z);
+        root.localEulerAngles=new Vector3(0,def.face==1?0:180,0);
+        root.gameObject.AddComponent<BoxCollider>().size=new Vector3(def.w,def.h,def.d);
+        BuildResidence(root,ResidentialExterior.Home(def),true);
     }
 
     // ── 边界密林：134~262m 环带，6 种树（松/阔叶/杉/樱/落叶/灌木），每种合并成 1 个网格 ──
@@ -2618,84 +1911,24 @@ public class WorldBuilder : MonoBehaviour
     {
         if (W.RIVER == null) return;
         var g = NewGo("ForestBelt", Root).transform;
-        var cone = MeshFactory.Cone(1f, 1f, 8, false, 0f);
-        var canopy = MeshFactory.Canopy(1f, 12, 8, 0.22f);
-        var trunk = MeshFactory.BoxUV(new Vector3(1f, 1f, 1f), 2f);
-        const int SP = 7;
-        var lists = new List<CombineInstance>[SP];
-        for (int i = 0; i < SP; i++) lists[i] = new List<CombineInstance>();
-        var rnd = new System.Random(20261022);
-
-        void Trunk(int sp, float x, float y, float z, float h, float frac)
+        var prototypes=new GameObject[4];
+        for(int i=0;i<4;i++)
         {
-            float w = Mathf.Max(0.16f, h * 0.042f);
-            lists[sp].Add(new CombineInstance
-            {
-                mesh = trunk,
-                transform = Matrix4x4.TRS(new Vector3(x, y + h * frac * 0.5f, z), Quaternion.identity, new Vector3(w, h * frac, w))
-            });
+            var prototype=NewGo("林带原型_"+i,g);NaturalTree.Build(prototype.transform,i==1?1:i==2?2:0,137+i,true,false,i==3?"#a29260":null);prototype.SetActive(false);prototypes[i]=prototype;
         }
-        void Cone(int sp, float x, float y, float z, float rad, float hh)
+        var groups=new Dictionary<string,List<CombineInstance>>();var materials=new Dictionary<string,Material>();
+        var rnd=new System.Random(20261022);
+        void Add(float x,float z,float h)
         {
-            lists[sp].Add(new CombineInstance
+            float roll=(float)rnd.NextDouble();int type=roll<.45f?1:roll<.77f?0:roll<.85f?2:3;
+            float scale=h/(type==1?4.9f:type==2?5.4f:4.25f);
+            var transform=Matrix4x4.TRS(new Vector3(x,RimH(x,z),z),Quaternion.Euler(0,(float)rnd.NextDouble()*360,0),Vector3.one*scale);
+            foreach(var filter in prototypes[type].GetComponentsInChildren<MeshFilter>(true))
             {
-                mesh = cone,
-                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(rad, hh, rad))
-            });
-        }
-        void Ball(int sp, float x, float y, float z, float rad, float sy = 0.9f)
-        {
-            float rot = (float)rnd.NextDouble() * 360f;   // 每个冠随机转一圈，同一个网格也有不同轮廓
-            lists[sp].Add(new CombineInstance
-            {
-                mesh = canopy,
-                transform = Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.Euler(0f, rot, 0f), new Vector3(rad, rad * sy, rad))
-            });
-        }
-
-        void Add(float x, float z, float h)
-        {
-            float y = RimH(x, z);
-            float aDeg = Mathf.Atan2(z, x) * Mathf.Rad2Deg;
-            bool shrineSide = Mathf.Abs(Mathf.DeltaAngle(aDeg, -38f)) < 26f;   // 神社一带多种樱
-            float roll = (float)rnd.NextDouble();
-            if (shrineSide) roll = roll * 0.72f;                                // 神社一带樱的比例翻倍
-            if (roll < 0.30f)                                                   // 0 松
-            {
-                Trunk(0, x, y, z, h, 0.34f);
-                Cone(0, x, y + h * 0.16f, z, h * 0.27f, h * 0.52f);
-                Cone(0, x, y + h * 0.40f, z, h * 0.20f, h * 0.44f);
-                Cone(0, x, y + h * 0.60f, z, h * 0.13f, h * 0.38f);
-            }
-            else if (roll < 0.54f)                                              // 1 阔叶
-            {
-                Trunk(1, x, y, z, h, 0.56f);
-                Ball(1, x, y + h * 0.62f, z, h * 0.29f, 0.95f);
-                Ball(1, x + h * 0.12f, y + h * 0.75f, z - h * 0.08f, h * 0.18f, 0.95f);
-            }
-            else if (roll < 0.74f)                                              // 2 杉（窄高）
-            {
-                Trunk(2, x, y, z, h, 0.22f);
-                Cone(2, x, y + h * 0.12f, z, h * 0.17f, h * 0.80f);
-                Cone(2, x, y + h * 0.66f, z, h * 0.10f, h * 0.34f);
-            }
-            else if (roll < 0.80f)                                              // 3 樱
-            {
-                Trunk(3, x, y, z, h, 0.50f);
-                Ball(3, x, y + h * 0.62f, z, h * 0.26f, 0.84f);
-                Ball(3, x - h * 0.13f, y + h * 0.74f, z + h * 0.07f, h * 0.16f, 0.84f);
-            }
-            else if (roll < 0.88f)                                              // 4 落叶乔木（细高、冠小）
-            {
-                Trunk(4, x, y, z, h, 0.68f);
-                Ball(4, x, y + h * 0.76f, z, h * 0.20f, 1.05f);
-                Ball(4, x + h * 0.09f, y + h * 0.87f, z, h * 0.12f, 1.0f);
-            }
-            else                                                                // 6 秋色阔叶（橙黄，打散一片绿）
-            {
-                Trunk(6, x, y, z, h, 0.54f);
-                Ball(6, x, y + h * 0.62f, z, h * 0.28f, 0.92f);
-                Ball(6, x - h * 0.11f, y + h * 0.74f, z + h * 0.09f, h * 0.17f, 0.92f);
+                var mat=filter.GetComponent<Renderer>().sharedMaterial;
+                string key=Mathf.FloorToInt(x/40)+"_"+Mathf.FloorToInt(z/40)+"_"+mat.name;
+                if(!groups.TryGetValue(key,out var parts)){groups[key]=parts=new List<CombineInstance>();materials[key]=mat;}
+                parts.Add(new CombineInstance{mesh=filter.sharedMesh,transform=transform*filter.transform.localToWorldMatrix});
             }
         }
 
@@ -2733,41 +1966,13 @@ public class WorldBuilder : MonoBehaviour
             }
         }
 
-        // 5 灌木：贴着林缘的低矮丛，三球一丛，压住树干与草地的接缝
-        for (float r0 = 131f; r0 < 152f; r0 += 2.4f)
+        foreach(var entry in groups)
         {
-            int n = Mathf.Max(20, Mathf.RoundToInt(2f * Mathf.PI * r0 / 3.6f));
-            for (int k = 0; k < n; k++)
-            {
-                if (rnd.NextDouble() < 0.52) continue;
-                float a = (k + (float)rnd.NextDouble() * 0.9f) / n * Mathf.PI * 2f;
-                float rr = r0 + ((float)rnd.NextDouble() - 0.5f) * 3.2f;
-                float x = Mathf.Cos(a) * rr, z = Mathf.Sin(a) * rr;
-                if (Mathf.Abs(z - RZ(x)) < 12f) continue;
-                if (Mathf.Abs(x) < 140f && Mathf.Abs(z - 104f) < 8f) continue;
-                float y = RimH(x, z);
-                float rad = 0.62f + (float)rnd.NextDouble() * 0.45f;
-                Ball(5, x, y + rad * 0.52f, z, rad, 0.66f);
-                Ball(5, x + rad * 0.9f, y + rad * 0.36f, z + rad * 0.5f, rad * 0.66f, 0.66f);
-                Ball(5, x - rad * 0.7f, y + rad * 0.30f, z + rad * 0.8f, rad * 0.55f, 0.66f);
-            }
+            var mesh=new Mesh{name="林带枝叶_"+entry.Key,indexFormat=UnityEngine.Rendering.IndexFormat.UInt32};mesh.CombineMeshes(entry.Value.ToArray(),true,true);mesh.RecalculateBounds();
+            var go=NewGo("林带分区_"+entry.Key,g);go.AddComponent<MeshFilter>().sharedMesh=mesh;var renderer=go.AddComponent<MeshRenderer>();renderer.sharedMaterial=materials[entry.Key];renderer.shadowCastingMode=UnityEngine.Rendering.ShadowCastingMode.Off;
         }
-
-        var cols = new[] { "#3d6b44", "#4f7d52", "#355f3c", "#b58a9a", "#517a55", "#4a7050", "#a88a4f" };
-        var names = new[] { "pine", "broad", "fir", "cherry", "decid", "bush", "autumn" };
-        for (int i = 0; i < SP; i++)
-        {
-            if (lists[i].Count == 0) continue;
-            var m = new Mesh();
-            m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-            m.CombineMeshes(lists[i].ToArray(), true, true);
-            m.RecalculateBounds();
-            var go = NewGo(names[i], g);
-            go.AddComponent<MeshFilter>().sharedMesh = m;
-            var mr = go.AddComponent<MeshRenderer>();
-            mr.sharedMaterial = ColMat(cols[i]);
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        }
+        foreach(var prototype in prototypes){foreach(var filter in prototype.GetComponentsInChildren<MeshFilter>(true))Destroy(filter.sharedMesh);Destroy(prototype);}
+        Debug.Log("[TreeRebuild] distant forest / shared branch-and-leaf prototypes / spatial batches "+groups.Count);
     }
 
     // ── 铁路收口：两端石砌洞门 + 洞内暗腔，铁轨不再通向世界外 ──
@@ -2808,107 +2013,16 @@ public class WorldBuilder : MonoBehaviour
     void Trees()
     {
         var g = NewGo("Trees", Root).transform;
-        EnsureCherryCrowns();
         foreach (var t in W.TREES) Tree(g, t.x, t.z, t.v);
         // 小镇的边界树改由 ForestBelt 统一生成（更密、合并网格）；校园世界仍用数据里的环带
         if (W.RIVER == null) foreach (var t in W.BORDER_TREES) Tree(g, t.x, t.z, t.v);
     }
 
-    void Tree(Transform parent, float x, float z, int v)
+    void Tree(Transform parent,float x,float z,int v)
     {
-        // 硬排除：神社前庭/参道口、河面与桥面，避免任何来源的树卡在建筑或水里
-        if (Mathf.Abs(x - 79f) < 13f && Mathf.Abs(z + 57f) < 16f) return;
-        if (W.RIVER != null && Mathf.Abs(z - RZ(x)) < 10f) return;
-        var grp = NewGo("tree", parent).transform;
-        grp.localPosition = new Vector3(x, 0f, z);
-        grp.gameObject.AddComponent<ProximityHide>().Radius = 3.2f;
-        var trunkCol = grp.gameObject.AddComponent<CapsuleCollider>();
-        trunkCol.center = new Vector3(0f, 1.6f, 0f);
-        trunkCol.height = 3.2f;
-        trunkCol.radius = 0.34f;
-        if (v == 6)
-        {
-            // 针叶树（卡通）：一根干 + 三层锥（锥在卡通里很干净）
-            BarkBox(grp, new Vector3(0, 0.5f, 0), new Vector3(0.32f, 1.0f, 0.32f), "#7a5a3a");
-            LeafCone(grp, 1.25f, 1.5f, 0.65f, "#2f6231");
-            LeafCone(grp, 1.00f, 1.4f, 1.55f, "#356e37");
-            LeafCone(grp, 0.72f, 1.2f, 2.45f, "#3d7a3f");
-        }
-        else if (v == 7)
-        {
-            // 细高柏（卡通）：细长锥
-            BarkBox(grp, new Vector3(0, 0.3f, 0), new Vector3(0.26f, 0.6f, 0.26f), "#6b4a2f");
-            LeafCone(grp, 0.62f, 3.4f, 0.4f, "#284f2b");
-        }
-        else if (v == 8)
-        {
-            // 圆冠树（卡通）：一团大圆冠
-            BarkBox(grp, new Vector3(0, 1.0f, 0), new Vector3(0.38f, 2.0f, 0.38f), "#7a5a3a");
-            MeshObj(grp, MeshFactory.ToonCanopy(1.5f, 10, 7, 0.10f, x * 0.43f), new Vector3(0, 2.55f, 0),
-                LeafMat("#4f9448"));
-            MeshObj(grp, MeshFactory.ToonCanopy(0.95f, 8, 6, 0.12f, z * 0.67f), new Vector3(0.55f, 3.35f, -0.35f),
-                LeafMat("#5da04f"));
-        }
-        else if (v == 9)
-        {
-            // 柳树（卡通）：高干 + 三层扁圆冠（池畔）
-            BarkBox(grp, new Vector3(0, 1.5f, 0), new Vector3(0.36f, 3f, 0.36f), "#8a7550");
-            for (int s = 0; s < 3; s++)
-                MeshObj(grp, MeshFactory.ToonCanopy(1.5f - s * 0.30f, 9, 6, 0.14f, x * 0.31f + s * 1.7f),
-                    new Vector3(0, 2.6f + s * 0.62f, 0), LeafMat(MatLib.Shade("#7fa84f", 1f + s * 0.12f)));
-        }
-        else if (v >= 10 && v <= 13)
-        {
-            // 樱花（2026-11-10 卡通重做）：
-            // 上一版是《我的世界》体素叶块（0.2m 立方体拼的冠），MC 味极重，与卡通渲染的圆润语汇冲突。
-            // 卡通樱花的画法：一根干 + 几团错落的粉色圆冠 + 顶部亮色团，整体像「云」。
-            float hash = Mathf.Repeat(x * 7.31f + z * 11.93f, 1f);
-            float sizeK = 0.94f + hash * 0.22f;                 // 尺寸差异（替代原 localScale 的随机）
-            grp.localEulerAngles = new Vector3(0f, Mathf.Floor(hash * 4f) * 90f, 0f);
-            // 树干：略弯（用两段错位方块模拟），卡通树干不需要笔直
-            BarkBox(grp, new Vector3(0, 0.85f * sizeK, 0), new Vector3(0.34f * sizeK, 1.7f * sizeK, 0.34f * sizeK), "#7a5a42");
-            BarkBox(grp, new Vector3(0.16f * sizeK, 1.85f * sizeK, 0.1f * sizeK),
-                new Vector3(0.24f * sizeK, 0.9f * sizeK, 0.24f * sizeK), "#6d4c38");
-            // 主冠：一大团粉
-            float cy = 2.9f * sizeK;
-            string c0 = CherryHex(v, 0), c1 = CherryHex(v, 1), c2 = CherryHex(v, 2);
-            MeshObj(grp, MeshFactory.ToonCanopy(1.45f * sizeK, 10, 7, 0.13f, x * 0.29f + z * 0.61f),
-                new Vector3(0, cy, 0), CherryMat(c0));
-            // 侧冠三团（错落，制造蓬松感）
-            MeshObj(grp, MeshFactory.ToonCanopy(0.95f * sizeK, 9, 6, 0.15f, z * 0.47f),
-                new Vector3(1.05f * sizeK, cy - 0.30f * sizeK, 0.35f * sizeK), CherryMat(c2));
-            MeshObj(grp, MeshFactory.ToonCanopy(0.88f * sizeK, 9, 6, 0.15f, x * 0.83f),
-                new Vector3(-0.85f * sizeK, cy - 0.12f * sizeK, -0.65f * sizeK), CherryMat(c2));
-            MeshObj(grp, MeshFactory.ToonCanopy(0.78f * sizeK, 8, 6, 0.14f, x * 1.3f + z * 0.9f),
-                new Vector3(0.15f * sizeK, cy + 0.55f * sizeK, -0.75f * sizeK), CherryMat(c1));
-            // 顶冠：最亮的一团（受光顶）
-            MeshObj(grp, MeshFactory.ToonCanopy(0.72f * sizeK, 8, 6, 0.12f, z * 1.9f),
-                new Vector3(-0.20f * sizeK, cy + 1.00f * sizeK, 0.30f * sizeK), CherryMat(c1));
-        }
-        else
-        {
-            // 普通树（2026-11-10 卡通重做）：
-            // 上一版是三层「叶簇贴图方块」叠起来，MC 味很重；卡通渲染的树要「一团圆冠 + 一根干」。
-            // 用 ToonCanopy（低多边形球）替掉方块，冠形随树种变化。
-            bool tall = v == 1, wide = v == 2;
-            float trunkH = tall ? 2.0f : 1.4f;
-            float crownR = wide ? 1.35f : tall ? 1.05f : 1.15f;
-            string baseHex = TREE_CROWNS[v % TREE_CROWNS.Length];
-            // 树干：细一点的圆柱感（用 BoxUV 但收窄），卡通树干不需要方
-            BarkBox(grp, new Vector3(0, trunkH / 2f, 0), new Vector3(0.30f, trunkH, 0.30f), "#7a5a3a");
-            // 主冠：一团圆球
-            float crownY = trunkH + crownR * 0.72f;
-            MeshObj(grp, MeshFactory.ToonCanopy(crownR, 10, 7, 0.10f, x * 0.37f + z * 0.71f),
-                new Vector3(0, crownY, 0), LeafMat(baseHex));
-            // 副冠：偏上偏侧一小团，制造「蓬松」而不是「一个球」
-            MeshObj(grp, MeshFactory.ToonCanopy(crownR * 0.62f, 8, 6, 0.12f, z * 0.53f),
-                new Vector3(crownR * 0.42f, crownY + crownR * 0.52f, -crownR * 0.3f),
-                LeafMat(MatLib.Shade(baseHex, 1.18f)));
-            // 底部暗冠：让树冠有「下沿」，避免像气球
-            MeshObj(grp, MeshFactory.ToonCanopy(crownR * 0.72f, 8, 5, 0.08f, x * 0.91f),
-                new Vector3(-crownR * 0.25f, crownY - crownR * 0.42f, crownR * 0.28f),
-                LeafMat(MatLib.Shade(baseHex, 0.80f)));
-        }
+        var root=NewGo("tree",parent).transform;root.localPosition=new Vector3(x,0,z);
+        if(v>=10&&v<=13){BuildCherryTree(root,x,z,v);return;}
+        RefinedTree(root,v,x*.37f+z*.23f);
     }
 
     // 树冠块：世界尺度 UV（每面密度恒定 160px/米）+ 叶簇贴图 × 颜色
@@ -2935,16 +2049,6 @@ public class WorldBuilder : MonoBehaviour
         return m;
     }
 
-    string CherryHex(int v, int shade)
-    {
-        if (v == 11) return shade == 0 ? "#ee9fba" : shade == 1 ? "#f6c3d4" : "#df89a8";
-        if (v == 12) return shade == 0 ? "#cf6f94" : shade == 1 ? "#e08fae" : "#b85b80";
-        return shade == 0 ? "#e58fae" : shade == 1 ? "#f2b5ca" : "#d87b9c";
-    }
-
-    string GiantHex(int shade)
-        => shade == 0 ? "#e88fac" : shade == 1 ? "#f3bccd" : "#d87b9c";
-
     // 树干块：树皮贴图 × 树色
     GameObject BarkBox(Transform p, Vector3 pos, Vector3 size, string hex)
         => MeshObj(p, MeshFactory.BoxUV(size, TexScale.BarkMeters), pos, LitTinted("bark", hex));
@@ -2953,358 +2057,19 @@ public class WorldBuilder : MonoBehaviour
     void LeafCone(Transform p, float radius, float height, float baseY, string hex)
         => MeshObj(p, MeshFactory.Cone(radius, height, 6, true, TexScale.LeafMeters), new Vector3(0, baseY, 0), LeafMat(hex));
 
-    void EnsureCherryCrowns()
-    {
-        if (_cherryCrowns != null) return;
-        _cherryCrowns = new Mesh[4, 3];
-        _cherryBarks = new Mesh[4];
-        for (int v = 10; v <= 13; v++)
-        {
-            var leaves = CherryLeafBlocks(v);
-            for (int s = 0; s < 3; s++) _cherryCrowns[v - 10, s] = BuildVoxelMesh(leaves, s);
-            _cherryBarks[v - 10] = BuildCherryBark(v);
-        }
-        var giant = GiantLeafBlocks();
-        _giantCrowns = new Mesh[3];
-        for (int s = 0; s < 3; s++) _giantCrowns[s] = BuildVoxelMesh(giant, s);
-        _giantBark = BuildGiantBark();
-    }
 
-    void EnsureBloomCanopies()
-    {
-        if (_bloomCanopyA == null) _bloomCanopyA = MeshFactory.Canopy(1f, 12, 8, 0.22f);
-        if (_bloomCanopyB == null) _bloomCanopyB = MeshFactory.Canopy(1f, 12, 8, 0.32f, 5.3f);
-    }
-
-    // ── 樱花体素树：与《我的世界》一致，叶块/原木块 0.2m、轴对齐、按层分色 ──
-    // 布局按 0.8m 逻辑块书写，Subdivide 统一细分成 4×4×4 个 0.2m 体素
-    // 先按体素网格摆出树干/主枝，再用“底层缺角 + 中层满 + 顶层收分”的叶团铺冠；
-    // 所有块都是等大立方体，不做任意角度旋转，避免“乱拼长方体”的观感。
-    Vector3 VoxCenter(float x, float y, float z)
-        => new Vector3(x * CherryVox, y * CherryVox + CherryVox * 0.5f, z * CherryVox);
-
-    static Vector2Int BranchTip(int ang, int len)
-    {
-        float a = ang * Mathf.Deg2Rad;
-        return new Vector2Int(Mathf.RoundToInt(Mathf.Cos(a) * len), Mathf.RoundToInt(Mathf.Sin(a) * len));
-    }
-
-    void AddVoxelCube(List<CombineInstance> list, Mesh cube, float x, float y, float z)
-        => list.Add(new CombineInstance
-        {
-            mesh = cube,
-            transform = Matrix4x4.TRS(VoxCenter(x, y, z), Quaternion.identity, Vector3.one)
-        });
-
-    // 叶团：直接按 0.2m 体素逐层堆，平面圆角矩形、上下各收 3 层，可选 0.8m 小盖顶
-    void LeafBlob(HashSet<Vector3Int> set, int cx, int cy, int cz, int hw, int hd, bool peak)
-    {
-        int rx = (2 * hw + 1) * CherrySub / 2;
-        int rz = (2 * hd + 1) * CherrySub / 2;
-        int ox = cx * CherrySub + CherrySub / 2;
-        int oz = cz * CherrySub + CherrySub / 2;
-        int y0 = cy * CherrySub;
-        int layers = peak ? 16 : 12;
-        float tx = (2f * hw - 1f) / (2f * hw + 1f);   // 顶层收分比例，与旧的 hw-1 一致
-        float tz = (2f * hd - 1f) / (2f * hd + 1f);
-        for (int ly = 0; ly < layers; ly++)
-        {
-            float fx = 1f, fz = 1f;
-            if (peak && ly >= 12) { fx = 0.34f; fz = 0.34f; }
-            else if (ly > 8)
-            {
-                float u = (ly - 8) / 3f;   // 顶部 3 层按 0.2m 台阶收分
-                fx = Mathf.Lerp(1f, tx, u);
-                fz = Mathf.Lerp(1f, tz, u);
-            }
-            int mx = Mathf.Max(2, Mathf.RoundToInt(rx * fx));
-            int mz = Mathf.Max(2, Mathf.RoundToInt(rz * fz));
-            bool cut = ly < CherrySub || ly > 8;   // 底/顶层四角各缺一个 0.8m 逻辑块
-            int y = y0 + ly;
-            for (int ix = -mx; ix < mx; ix++)
-                for (int iz = -mz; iz < mz; iz++)
-                {
-                    if (cut && mx > CherrySub && mz > CherrySub
-                        && Mathf.Abs(ix + 0.5f) > mx - CherrySub
-                        && Mathf.Abs(iz + 0.5f) > mz - CherrySub) continue;
-                    set.Add(new Vector3Int(ox + ix, y, oz + iz));
-                }
-        }
-    }
-
-    HashSet<Vector3Int> CherryLeafBlocks(int v)
-    {
-        var set = new HashSet<Vector3Int>();
-        if (v == 12)
-        {
-            // 八重樱：树干矮、冠幅最大，前后左右各探出一团
-            LeafBlob(set, 0, 6, 0, 2, 1, true);
-            LeafBlob(set, -2, 6, 0, 1, 1, false);
-            LeafBlob(set, 2, 6, 0, 1, 1, false);
-            LeafBlob(set, 0, 6, -2, 1, 1, false);
-            LeafBlob(set, 0, 6, 2, 1, 1, false);
-        }
-        else if (v == 11)
-        {
-            // 白粉樱：树干高、冠窄，中央再叠一层形成层次
-            LeafBlob(set, 0, 8, 0, 1, 1, true);
-            LeafBlob(set, -2, 8, 0, 1, 1, false);
-            LeafBlob(set, 2, 8, 0, 1, 1, false);
-            LeafBlob(set, 0, 8, 2, 1, 1, false);
-            LeafBlob(set, 0, 9, 0, 1, 1, false);
-        }
-        else if (v == 13)
-        {
-            // 垂枝樱：宽冠 + 四边低垂两格叶块
-            LeafBlob(set, 0, 7, 0, 2, 1, true);
-            LeafBlob(set, -2, 7, 0, 1, 1, false);
-            LeafBlob(set, 2, 7, 0, 1, 1, false);
-            LeafBlob(set, 0, 7, -2, 1, 1, false);
-            LeafBlob(set, 0, 7, 2, 1, 1, false);
-            foreach (var (dx, dz) in new[] { (-2, 0), (2, 0), (0, -2), (0, 2) })
-            {
-                set.Add(new Vector3Int(dx, 6, dz));
-                set.Add(new Vector3Int(dx, 5, dz));
-            }
-        }
-        else
-        {
-            // 染井吉野：宽冠、三向主枝对应三团侧冠
-            LeafBlob(set, 0, 7, 0, 2, 1, true);
-            LeafBlob(set, -2, 7, 0, 1, 1, false);
-            LeafBlob(set, 2, 7, -1, 1, 1, false);
-            LeafBlob(set, 0, 7, 2, 1, 1, false);
-        }
-        return set;
-    }
-
-    HashSet<Vector3Int> GiantLeafBlocks()
-    {
-        var set = new HashSet<Vector3Int>();
-        // 《我的世界》大型樱花：直立粗干 + 五根不等高、不等长的分枝，
-        // 枝端各顶一团冠，再用错落的冠团叠成宽而蓬松的伞形冠，不做同心分层
-        foreach (var (by, ang, len, rise) in GiantBranchDefs)
-        {
-            var tip = BranchTip(ang, len);
-            int hw = len >= 9 ? 4 : 3;
-            LeafBlob(set, tip.x, by + rise + 1, tip.y, hw, hw, true);
-        }
-        // 填充冠团 + 顶冠：宽底收顶到 26.4m
-        foreach (var (x, y, z, hw, peak) in GiantCanopyBlobs)
-            LeafBlob(set, x, y, z, hw, hw, peak);
-        // 树干穿过的叶块挖掉，避免共面闪烁
-        for (int y = 0; y < 18 * CherrySub; y++)
-            for (int x = -CherrySub; x < 2 * CherrySub; x++)
-                for (int z = -CherrySub; z < 2 * CherrySub; z++)
-                    set.Remove(new Vector3Int(x, y, z));
-        return set;
-    }
-
-    // 0.8m 逻辑块 → 4×4×4 个 0.2m 体素，树的外形尺寸不变、组成单位缩到 25%
-    HashSet<Vector3Int> Subdivide(HashSet<Vector3Int> logical)
-    {
-        var fine = new HashSet<Vector3Int>();
-        foreach (var b in logical)
-            for (int dx = 0; dx < CherrySub; dx++)
-                for (int dy = 0; dy < CherrySub; dy++)
-                    for (int dz = 0; dz < CherrySub; dz++)
-                        fine.Add(new Vector3Int(b.x * CherrySub + dx, b.y * CherrySub + dy, b.z * CherrySub + dz));
-        return fine;
-    }
-
-    // 六面都有邻居的体素画不出来，跳过可省掉树干/树冠内部的大量面
-    bool Enclosed(HashSet<Vector3Int> set, Vector3Int b)
-        => set.Contains(new Vector3Int(b.x - 1, b.y, b.z))
-        && set.Contains(new Vector3Int(b.x + 1, b.y, b.z))
-        && set.Contains(new Vector3Int(b.x, b.y - 1, b.z))
-        && set.Contains(new Vector3Int(b.x, b.y + 1, b.z))
-        && set.Contains(new Vector3Int(b.x, b.y, b.z - 1))
-        && set.Contains(new Vector3Int(b.x, b.y, b.z + 1));
-
-    // 每色阶合并成 1 个网格；叶块下方没有叶子则最深、上方没有叶子则最亮，中间用主色
-    Mesh BuildVoxelMesh(HashSet<Vector3Int> blocks, int shade)
-    {
-        var cubes = new Mesh[4];
-        for (int i = 0; i < 4; i++)
-            cubes[i] = MeshFactory.BoxUV(new Vector3(CherryVox, CherryVox, CherryVox), TexScale.LeafMeters, TexScale.LeafMeters, i * 0.25f, (i % 2) * 0.5f);
-        var list = new List<CombineInstance>();
-        foreach (var b in blocks)
-        {
-            if (Enclosed(blocks, b)) continue;
-            bool under = !blocks.Contains(new Vector3Int(b.x, b.y - 1, b.z));
-            bool over = !blocks.Contains(new Vector3Int(b.x, b.y + 1, b.z));
-            int s = under ? 2 : over ? 1 : 0;
-            if (s != shade) continue;
-            int v4 = ((b.x * 3 + b.y * 5 + b.z * 7) & 3);
-            AddVoxelCube(list, cubes[v4], b.x, b.y, b.z);
-        }
-        if (list.Count == 0) return null;
-        var m = new Mesh();
-        m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;   // 0.2m 体素细分后单色阶超 6.5 万顶点
-        m.CombineMeshes(list.ToArray(), true, true);
-        m.RecalculateBounds();
-        return m;
-    }
-
-    Mesh BuildBarkMesh(HashSet<Vector3Int> logs)
-    {
-        logs = Subdivide(logs);
-        var cube = MeshFactory.BoxUV(new Vector3(CherryVox, CherryVox, CherryVox), TexScale.BarkMeters);
-        var list = new List<CombineInstance>();
-        foreach (var b in logs)
-        {
-            if (Enclosed(logs, b)) continue;
-            AddVoxelCube(list, cube, b.x, b.y, b.z);
-        }
-        var m = new Mesh();
-        m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;   // 巨樱粗干细分后顶点数同样超上限
-        m.CombineMeshes(list.ToArray(), true, true);
-        m.RecalculateBounds();
-        return m;
-    }
-
-    // 樱树树干 + 三/四向主枝（原木块阶梯），冠底能看见分叉
-    Mesh BuildCherryBark(int v)
-    {
-        var logs = new HashSet<Vector3Int>();
-        int top = v == 12 ? 4 : v == 11 ? 6 : 5;
-        for (int y = 0; y <= top; y++) logs.Add(new Vector3Int(0, y, 0));
-        var dirs = v == 13
-            ? new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }
-            : new[] { (1, 0), (-1, 0), (0, 1) };
-        foreach (var (dx, dz) in dirs)
-        {
-            logs.Add(new Vector3Int(dx, top, dz));
-            logs.Add(new Vector3Int(dx * 2, top, dz * 2));
-            logs.Add(new Vector3Int(dx * 2, top + 1, dz * 2));
-        }
-        return BuildBarkMesh(logs);
-    }
-
-    // 巨樱：3x3 逻辑块粗干（2.4m）+ 三层主枝 + 四角阶梯短枝
-    Mesh BuildGiantBark()
-    {
-        var logs = new HashSet<Vector3Int>();
-        // 树干 18 块高（14.4m），3x3 格宽（2.4m）
-        for (int y = 0; y <= 17; y++)
-            for (int x = -1; x <= 1; x++)
-                for (int z = -1; z <= 1; z++)
-                    logs.Add(new Vector3Int(x, y, z));
-        // MC 式分枝：从不同高度斜向伸出，近干 2x2、梢部 1x1，枝端托住叶团
-        foreach (var (by, ang, len, rise) in GiantBranchDefs)
-            for (int d = 2; d <= len; d++)
-            {
-                var p = BranchTip(ang, d);
-                int y = by + Mathf.RoundToInt((d - 2) * rise / (float)(len - 2));
-                logs.Add(new Vector3Int(p.x, y, p.y));
-                if (d <= 5)
-                {
-                    logs.Add(new Vector3Int(p.x + 1, y, p.y));
-                    logs.Add(new Vector3Int(p.x, y, p.y + 1));
-                    logs.Add(new Vector3Int(p.x + 1, y, p.y + 1));
-                }
-            }
-        return BuildBarkMesh(logs);
-    }
 
     // ── 公园喷泉：三层石盘 +「樱之冠」五瓣花雕塑（参考 Bethesda Fountain 的水盘构图）──
-    void Fountain(Transform grp, float r)
-    {
-        Cyl(grp, new Vector3(0, 0.30f, 0), r, 0.60f, ColMat("#c6bfae"));
-        Cyl(grp, new Vector3(0, 0.80f, 0), r * 0.88f, 0.40f, ColMat("#bbb4a4"));
-        MeshObj(grp, MeshFactory.Disc(r * 0.76f, r * 0.76f, 40, 4f), new Vector3(0, 1.01f, 0), LitTex("water"), default, false, true);
-        Cyl(grp, new Vector3(0, 1.90f, 0), 1.15f, 1.80f, ColMat("#cbc4b4"));
-        Cyl(grp, new Vector3(0, 2.95f, 0), 2.60f, 0.30f, ColMat("#c3bcac"));
-        MeshObj(grp, MeshFactory.Disc(2.35f, 2.35f, 36, 4f), new Vector3(0, 3.11f, 0), LitTex("water"), default, false, true);
-        Cyl(grp, new Vector3(0, 4.00f, 0), 0.72f, 1.80f, ColMat("#cbc4b4"));
-        Cyl(grp, new Vector3(0, 5.00f, 0), 1.45f, 0.22f, ColMat("#d0c9b9"));
-        MeshObj(grp, MeshFactory.Disc(1.25f, 1.25f, 32, 4f), new Vector3(0, 5.12f, 0), LitTex("water"), default, false, true);
-
-        // 石柱托起五瓣樱花雕塑：花瓣尖端上翘、中心金蕊，远看是公园的粉色标志
-        Cyl(grp, new Vector3(0, 5.42f, 0), 0.52f, 0.28f, ColMat("#c3bcac"));
-        Cyl(grp, new Vector3(0, 6.18f, 0), 0.40f, 1.30f, ColMat("#cfc8b8"));
-        Cyl(grp, new Vector3(0, 6.90f, 0), 0.62f, 0.16f, ColMat("#d9b25e"));
-        var fl = NewGo("sakura_crown", grp).transform;
-        fl.localPosition = new Vector3(0f, 7.10f, 0f);
-        fl.localScale = Vector3.one * 1.12f;
-        string petalA = "#f7c6d7", petalB = "#f2acc2", petalC = "#fbdde8", gold = "#e8c36a";
-        Cyl(fl, new Vector3(0, 0.02f, 0), 0.72f, 0.26f, ColMat("#d9b25e"));
-        Cyl(fl, new Vector3(0, 0.16f, 0), 0.46f, 0.20f, ColMat("#c99f45"));
-        for (int i = 0; i < 7; i++)
-        {
-            float a = i * Mathf.PI * 2f / 7f;
-            Box(fl, new Vector3(Mathf.Cos(a) * 0.30f, 0.34f, Mathf.Sin(a) * 0.30f),
-                new Vector3(0.06f, 0.26f, 0.06f), ColMat(gold));
-            Box(fl, new Vector3(Mathf.Cos(a) * 0.30f, 0.49f, Mathf.Sin(a) * 0.30f),
-                new Vector3(0.10f, 0.08f, 0.10f), ColMat("#f6dfa0"));
-        }
-        for (int i = 0; i < 5; i++)
-        {
-            float aDeg = i * 72f + 18f;
-            var pt = NewGo("petal", fl).transform;
-            pt.localEulerAngles = new Vector3(-16f, aDeg, 0f);
-            Box(pt, new Vector3(0f, 0f, 0.82f), new Vector3(1.05f, 0.14f, 0.85f), CherryMat(petalA));
-            Box(pt, new Vector3(0f, 0.10f, 1.46f), new Vector3(0.82f, 0.12f, 0.66f), CherryMat(petalB));
-            Box(pt, new Vector3(-0.24f, 0.20f, 1.92f), new Vector3(0.34f, 0.10f, 0.46f), CherryMat(petalC));
-            Box(pt, new Vector3(0.24f, 0.20f, 1.92f), new Vector3(0.34f, 0.10f, 0.46f), CherryMat(petalC));
-        }
-        FountainPetals(grp);
-        FountainStreams(grp);
-        FountainSpray(grp);
-    }
+    void Fountain(Transform grp,float r)
+    {CraftedFountain(grp,r);}
 
     // 雕塑周围缓缓飘落的花瓣
-    void FountainPetals(Transform p)
-    {
-        var go = NewGo("petal_fall", p);
-        go.transform.localPosition = new Vector3(0f, 7.2f, 0f);
-        var ps = go.AddComponent<ParticleSystem>();
-        var main = ps.main;
-        main.loop = true; main.prewarm = true; main.playOnAwake = true;
-        main.startLifetime = 3.2f;
-        main.startSpeed = 0.45f;
-        main.startSize = new ParticleSystem.MinMaxCurve(0.10f, 0.20f);
-        main.startColor = new Color(0.99f, 0.80f, 0.88f, 0.95f);
-        main.gravityModifier = 0.055f;
-        main.maxParticles = 40;
-        main.simulationSpace = ParticleSystemSimulationSpace.Local;
-        var em = ps.emission; em.rateOverTime = 9f;
-        var sh = ps.shape;
-        sh.shapeType = ParticleSystemShapeType.Circle;
-        sh.radius = 2.0f;
-        sh.rotation = new Vector3(-90f, 0f, 0f);
-        var r = go.GetComponent<ParticleSystemRenderer>();
-        r.renderMode = ParticleSystemRenderMode.Billboard;
-        r.material = MatLib.Fade("snow_flake", new Color(0.99f, 0.80f, 0.88f, 0.90f));
-        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        r.receiveShadows = false;
-        ps.Play();
-    }
+
 
     // 两层水盘的落水串（细白条 + 粒子，远看能把三层水盘串起来）
-    void FountainStreams(Transform grp)
-    {
-        var wm = ColMat("#cfe8ee");
-        for (int i = 0; i < 8; i++)
-        {
-            float a = i * Mathf.PI / 4f;
-            Box(grp, new Vector3(Mathf.Cos(a) * 1.30f, 4.10f, Mathf.Sin(a) * 1.30f),
-                new Vector3(0.06f, 1.95f, 0.06f), wm, default, false);
-        }
-        for (int i = 0; i < 12; i++)
-        {
-            float a = i * Mathf.PI / 6f;
-            Box(grp, new Vector3(Mathf.Cos(a) * 2.40f, 2.05f, Mathf.Sin(a) * 2.40f),
-                new Vector3(0.07f, 2.05f, 0.07f), wm, default, false);
-        }
-    }
 
-    void FountainSpray(Transform p)
-    {
-        Spray(p, new Vector3(0, 5.13f, 0), 1.20f, 72f, 1.0f, 1.5f, 75, 0.13f);
-        Spray(p, new Vector3(0, 3.12f, 0), 2.30f, 76f, 0.9f, 1.6f, 95, 0.13f);
-        Spray(p, new Vector3(0, 5.48f, 0), 0.35f, 20f, 2.2f, 1.1f, 36, 0.10f);
-    }
+
+
 
     void Spray(Transform p, Vector3 pos, float radius, float angle, float speed, float life, int rate, float size)
     {
@@ -3568,166 +2333,25 @@ public class WorldBuilder : MonoBehaviour
 
     void StoneLantern(Transform grp)
     {
-        Box(grp, new Vector3(0, 0.12f, 0), new Vector3(0.72f, 0.24f, 0.72f), ColMat("#8d8d94"));
-        Box(grp, new Vector3(0, 0.58f, 0), new Vector3(0.24f, 0.92f, 0.24f), ColMat("#84848b"));
-        Box(grp, new Vector3(0, 1.14f, 0), new Vector3(0.56f, 0.34f, 0.56f), ColMat("#9c968c"));
-        var glow = MatLib.UnlitColor(MatLib.Hex("#ffdf9a"));
-        Box(grp, new Vector3(0, 1.14f, 0.29f), new Vector3(0.26f, 0.20f, 0.03f), glow, default, false);
-        Box(grp, new Vector3(0, 1.14f, -0.29f), new Vector3(0.26f, 0.20f, 0.03f), glow, default, false);
-        Box(grp, new Vector3(0.29f, 1.14f, 0), new Vector3(0.03f, 0.20f, 0.26f), glow, default, false);
-        Box(grp, new Vector3(-0.29f, 1.14f, 0), new Vector3(0.03f, 0.20f, 0.26f), glow, default, false);
-        Box(grp, new Vector3(0, 1.38f, 0), new Vector3(0.80f, 0.12f, 0.80f), ColMat("#6f6f76"));
-        Box(grp, new Vector3(0, 1.52f, 0), new Vector3(0.28f, 0.16f, 0.28f), ColMat("#8d8d94"));
+        if(LampGlass==null)LampGlass=MatLib.LitColor(MatLib.Hex("#d5dbe4"),.35f);
+        var b=new RegionMeshBatch();var stone=DetailSurface.Mat("stone","#969b8c");var cap=DetailSurface.Mat("stone","#787f73");
+        b.Bevel(stone,new Vector3(0,.10f,0),new Vector3(.72f,.20f,.72f),.045f);
+        b.Branch(stone,new Vector3(0,.2f,0),new Vector3(0,.95f,0),.17f);
+        b.Bevel(cap,new Vector3(0,.95f,0),new Vector3(.62f,.12f,.62f),.025f);
+        b.Bevel(LampGlass,new Vector3(0,1.15f,0),new Vector3(.40f,.30f,.40f),.018f);
+        foreach(int x in new[]{-1,1})foreach(int z in new[]{-1,1})b.Bevel(stone,new Vector3(x*.25f,1.15f,z*.25f),new Vector3(.09f,.36f,.09f),.014f);
+        b.Add(cap,MeshFactory.HipRoof(.80f,.80f,.23f,.04f,1),new Vector3(0,1.34f,0),Vector3.one,Quaternion.identity);
+        b.Cylinder(stone,new Vector3(0,1.55f,0),new Vector3(0,1.65f,0),.07f);b.Flush(grp);AddWarmLight(grp,new Vector3(0,1.15f,0),3.2f,.48f);
     }
 
-    void FlowerBed(Transform grp, float w, float d)
-    {
-        EnsureBloomCanopies();
-        if (w <= 0f) w = 5f;
-        if (d <= 0f) d = 2.2f;
-        float hw = w / 2f, hd = d / 2f;
-        Box(grp, new Vector3(0, 0.05f, 0), new Vector3(w - 0.2f, 0.10f, d - 0.2f), ColMat("#5b4a3a"));
-        Box(grp, new Vector3(0, 0.08f, -hd + 0.08f), new Vector3(w, 0.16f, 0.16f), ColMat("#b3ac9c"));
-        Box(grp, new Vector3(0, 0.08f, hd - 0.08f), new Vector3(w, 0.16f, 0.16f), ColMat("#b3ac9c"));
-        Box(grp, new Vector3(-hw + 0.08f, 0.08f, 0), new Vector3(0.16f, 0.16f, d), ColMat("#b3ac9c"));
-        Box(grp, new Vector3(hw - 0.08f, 0.08f, 0), new Vector3(0.16f, 0.16f, d), ColMat("#b3ac9c"));
-        string[] fc = { "#e8748a", "#f4b6c6", "#f5e6ec", "#d95f7a", "#f0c46a" };
-        // 花丛：圆冠绿托 + 双色花团，12 丛两排，避免方块花
-        for (int i = 0; i < 12; i++)
-        {
-            int row = i / 6;
-            float fx = -hw + 0.62f + (i % 6) * (w - 1.24f) / 5f;
-            float fz = (row == 0 ? -1f : 1f) * hd * 0.30f;
-            float s = 0.78f + (i % 3) * 0.10f;
-            var leaf = MeshObj(grp, _bloomCanopyA, new Vector3(fx, 0.16f, fz), LeafMat("#4b7a46"));
-            leaf.transform.localScale = new Vector3(0.36f * s, 0.20f * s, 0.32f * s);
-            var bloom = MeshObj(grp, _bloomCanopyB, new Vector3(fx + 0.03f, 0.29f, fz - 0.02f), CherryMat(fc[i % fc.Length]));
-            bloom.transform.localScale = new Vector3(0.30f * s, 0.17f * s, 0.26f * s);
-            bloom.transform.localEulerAngles = new Vector3(0f, i * 53f % 360f, 0f);
-            if (i % 2 == 0)
-            {
-                var bloom2 = MeshObj(grp, _bloomCanopyA, new Vector3(fx - 0.17f, 0.24f, fz + 0.11f),
-                    CherryMat(fc[(i + 2) % fc.Length]));
-                bloom2.transform.localScale = new Vector3(0.19f * s, 0.12f * s, 0.17f * s);
-            }
-        }
-    }
-
-    // ── 樱花林中央巨樱：粗干/主枝/十几团花冠 + 落叶毯 + 接林道步石 ──
-    void GiantCherry(Transform grp)
-    {
-        // 卡通重做（2026-11-10）：原来的体素巨樱（0.2m 立方体堆成的树冠 + 树干）在卡通渲染下
-        // 变成一团巨大的黑色方块 —— 体素块的背面法线朝内，描边 pass 把它们全涂黑了。
-        // 改为「一根粗圆柱干 + 几团大粉冠」，与周围卡通樱花树同一语汇。
-        const float H = 9.5f;      // 主干高
-        const float R = 4.6f;      // 主冠半径（巨樱的「大」靠冠径，不靠体素数量）
-
-        // 主干：上细下粗（TaperedBox 换成正圆柱更圆润）
-        var trunk = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        var tc = trunk.GetComponent<Collider>();
-        if (tc != null) Destroy(tc);
-        trunk.transform.SetParent(grp, false);
-        trunk.transform.localPosition = new Vector3(0f, H * 0.5f, 0f);
-        trunk.transform.localScale = new Vector3(1.35f, H * 0.5f, 1.35f);
-        trunk.GetComponent<MeshRenderer>().sharedMaterial = LitTinted("bark", "#8a6448");
-
-        // 主枝：四条斜向圆柱
-        for (int i = 0; i < 4; i++)
-        {
-            float ang = i * Mathf.PI * 0.5f + 0.4f;
-            var br = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            var bc = br.GetComponent<Collider>();
-            if (bc != null) Destroy(bc);
-            br.transform.SetParent(grp, false);
-            br.transform.localPosition = new Vector3(Mathf.Cos(ang) * 1.6f, H * 0.72f, Mathf.Sin(ang) * 1.6f);
-            br.transform.localEulerAngles = new Vector3(Mathf.Sin(ang) * 48f, 0f, -Mathf.Cos(ang) * 48f);
-            br.transform.localScale = new Vector3(0.42f, 2.4f, 0.42f);
-            br.GetComponent<MeshRenderer>().sharedMaterial = LitTinted("bark", "#7a5a42");
-        }
-
-        // 主冠：一团超大粉冠 + 六团环绕副冠（错落高度，像一把撑开的伞）
-        string[] shades = { GiantHex(0), GiantHex(1), GiantHex(2) };
-        MeshObj(grp, MeshFactory.ToonCanopy(R, 12, 8, 0.10f, 3.7f), new Vector3(0f, H + R * 0.55f, 0f),
-            CherryMat(shades[1]));
-        for (int i = 0; i < 6; i++)
-        {
-            float ang = i * Mathf.PI / 3f + 0.25f;
-            float dist = R * 0.72f;
-            float hh = H + R * 0.30f + Mathf.Sin(i * 1.7f) * 0.9f;
-            MeshObj(grp, MeshFactory.ToonCanopy(R * 0.55f, 9, 7, 0.12f, i * 2.3f),
-                new Vector3(Mathf.Cos(ang) * dist, hh, Mathf.Sin(ang) * dist), CherryMat(shades[i % 2]));
-        }
-        // 顶冠：最亮的一团
-        MeshObj(grp, MeshFactory.ToonCanopy(R * 0.62f, 10, 7, 0.10f, 9.1f),
-            new Vector3(0.4f, H + R * 1.20f, -0.3f), CherryMat(shades[1]));
-        MeshObj(grp, MeshFactory.ToonCanopy(R * 0.45f, 8, 6, 0.12f, 4.4f),
-            new Vector3(-1.1f, H + R * 1.05f, 0.9f), CherryMat(shades[0]));
-        // 落叶毯：三色小瓣片合并成 3 个网格
-        var petal = MeshFactory.Quad(0.22f, 0.11f);
-        string[] pcs = { "#efb3c7", "#e29ab2", "#f6d2dd" };
-        var rnd = new System.Random(20261030);
-        for (int c = 0; c < pcs.Length; c++)
-        {
-            var list = new List<CombineInstance>();
-            for (int i = 0; i < 110; i++)
-            {
-                float a = (float)rnd.NextDouble() * Mathf.PI * 2f;
-                float rr = Mathf.Sqrt((float)rnd.NextDouble()) * 11.0f;
-                list.Add(new CombineInstance
-                {
-                    mesh = petal,
-                    transform = Matrix4x4.TRS(new Vector3(Mathf.Cos(a) * rr, 0.012f, Mathf.Sin(a) * rr),
-                        Quaternion.Euler(0f, (float)rnd.NextDouble() * 360f, 0f), Vector3.one)
-                });
-            }
-            var m = new Mesh();
-            m.CombineMeshes(list.ToArray(), true, true);
-            m.RecalculateBounds();
-            MeshObj(grp, m, Vector3.zero, ColMat(pcs[c]), default, false, false);
-        }
-        // 从林道通往树下的步石
-        var stone = MeshFactory.Disc(0.55f, 0.5f, 12, 2.4f);
-        var stones = new List<CombineInstance>();
-        for (int i = 0; i < 7; i++)
-        {
-            float t = i / 6f;
-            stones.Add(new CombineInstance
-            {
-                mesh = stone,
-                transform = Matrix4x4.TRS(new Vector3(Mathf.Lerp(11.2f, 2.6f, t), 0.018f, Mathf.Sin(t * 5f) * 0.35f),
-                    Quaternion.Euler(0f, t * 70f, 0f), Vector3.one)
-            });
-        }
-        var sm = new Mesh();
-        sm.CombineMeshes(stones.ToArray(), true, true);
-        sm.RecalculateBounds();
-        MeshObj(grp, sm, Vector3.zero, LitTex("bridge_stone"));
-    }
+    void FlowerBed(Transform grp,float w,float d)
+    {CraftedPlanter(grp,w>0?w:5,d>0?d:2.2f);}
 
     void Azaleas()
     {
-        if (W.AZALEAS == null || W.AZALEAS.Length == 0) return;
-        var g = NewGo("Azaleas", Root).transform;
-        string[] fc = { "#d76b8f", "#e88ba8", "#f2aec4", "#f7e3ea", "#c45f80" };
-        var leafMat = LeafMat("#3f6b3c");
-        for (int i = 0; i < W.AZALEAS.Length; i++)
-        {
-            var a = W.AZALEAS[i];
-            var grp = NewGo("azalea", g).transform;
-            grp.localPosition = new Vector3(a.x, 0f, a.z);
-            grp.localEulerAngles = new Vector3(0f, (i * 47f) % 360f, 0f);
-            float s = 0.75f + (i * 37 % 100) / 100f * 0.35f;
-            string f = fc[i % fc.Length];
-            // 方块花丛：绿托 + 两层花块（不用球冠）
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.95f * s, 0.44f * s, 0.85f * s), TexScale.LeafMeters),
-                new Vector3(0f, 0.22f * s, 0f), leafMat, new Vector3(0f, 18f, 0f));
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.78f * s, 0.30f * s, 0.68f * s), TexScale.LeafMeters),
-                new Vector3(0.02f, 0.47f * s, -0.02f), CherryMat(f), new Vector3(0f, 32f, 0f));
-            MeshObj(grp, MeshFactory.BoxUV(new Vector3(0.46f * s, 0.20f * s, 0.42f * s), TexScale.LeafMeters),
-                new Vector3(0.30f * s, 0.38f * s, -0.15f * s),
-                CherryMat(i % 3 == 0 ? "#f7e3ea" : MatLib.Shade(f, 1.12f)), new Vector3(0f, 61f, 0f));
-        }
-        StaticBatchingUtility.Combine(g.gameObject);
+        GroveUnderstory();var root=NewGo("Azaleas",Root).transform;var batch=new RegionMeshBatch();int i=0;
+        foreach(var plant in W.AZALEAS){if(InCherryGrove(plant.x,plant.z))continue;GardenDetail.Shrub(batch,new Vector3(plant.x,GroundY(plant.x,plant.z),plant.z),i++,i%3==0?"#e1c7d0":"#c69aa9");}
+        batch.Flush(root);
     }
 
     // ── 远景建筑（平顶/坡顶/塔楼/公共 四风格 + 基座压地线）──
@@ -3772,39 +2396,13 @@ public class WorldBuilder : MonoBehaviour
     // ── 假山（三变体 + 灌木点缀）──
     void Rockeries()
     {
-        var g = NewGo("Rockeries", Root).transform;
-        for (int i = 0; i < W.ROCKERIES.Length; i++)
+        var root=NewGo("Rockeries",Root).transform;int seed=0;
+        foreach(var r in W.ROCKERIES)
         {
-            var r = W.ROCKERIES[i];
-            float s = r.s;
-            int v = i % 3;
-            var grp = NewGo("rk", g).transform;
-            grp.localPosition = new Vector3(r.x, 0f, r.z);
-            if (v == 1)
-            {
-                float[][] L = { new[] { 0f, 0.5f, 0f, 2f, 1f, 1.8f }, new[] { 0.2f, 1.35f, -0.1f, 1.5f, 0.8f, 1.3f }, new[] { -0.15f, 2.1f, 0.1f, 1f, 0.8f, 0.9f }, new[] { 0.05f, 2.75f, -0.05f, 0.6f, 0.6f, 0.55f } };
-                for (int k = 0; k < L.Length; k++)
-                    Box(grp, new Vector3(L[k][0] * s, L[k][1] * s, L[k][2] * s), new Vector3(L[k][3] * s, L[k][4] * s, L[k][5] * s), ColMat(ROCK_COLS[k % 4]), new Vector3(0, k * 0.7f * Mathf.Rad2Deg, 0));
-                Box(grp, new Vector3(0.9f * s, 0.5f * s, 0.4f * s), new Vector3(0.8f * s, 0.55f * s, 0.8f * s), ColMat("#3f7a3f"));
-            }
-            else if (v == 2)
-            {
-                float[][] L = { new[] { 0f, 0.3f, 0f, 3.2f, 0.6f, 2.6f }, new[] { 1.5f, 0.25f, 0.8f, 1.8f, 0.5f, 1.5f }, new[] { -1.6f, 0.22f, -0.6f, 1.5f, 0.45f, 1.3f } };
-                string[] cc = { "#8d8d94", "#9aa0a6", "#84848b" };
-                for (int k = 0; k < L.Length; k++)
-                    Box(grp, new Vector3(L[k][0] * s, L[k][1] * s, L[k][2] * s), new Vector3(L[k][3] * s, L[k][4] * s, L[k][5] * s), ColMat(cc[k % 3]), new Vector3(0, k * 1.1f * Mathf.Rad2Deg, 0));
-                Box(grp, new Vector3(0.6f * s, 0.75f * s, 0.3f * s), new Vector3(0.85f * s, 0.6f * s, 0.85f * s), ColMat("#4a8a48"));
-                Box(grp, new Vector3(-0.9f * s, 0.7f * s, 0.5f * s), new Vector3(0.7f * s, 0.5f * s, 0.7f * s), ColMat("#3d7a3f"));
-                Box(grp, new Vector3(0.2f * s, 0.68f * s, -0.7f * s), new Vector3(0.6f * s, 0.45f * s, 0.6f * s), ColMat("#356e37"));
-            }
-            else
-            {
-                float[][] L = { new[] { 0f, 0.5f, 0f, 2.6f, 1f, 2.2f, 0f }, new[] { 1.6f, 0.4f, 0.6f, 1.6f, 0.8f, 1.4f, 0.4f }, new[] { -1.5f, 0.35f, -0.5f, 1.4f, 0.7f, 1.2f, -0.5f }, new[] { 0.4f, 1.15f, -0.3f, 1.2f, 0.6f, 1f, 0.9f }, new[] { -0.6f, 0.9f, 0.5f, 0.9f, 0.5f, 0.8f, -0.8f } };
-                for (int k = 0; k < L.Length; k++)
-                    Box(grp, new Vector3(L[k][0] * s, L[k][1] * s, L[k][2] * s), new Vector3(L[k][3] * s, L[k][4] * s, L[k][5] * s), ColMat(ROCK_COLS[k % 5]), new Vector3(0, L[k][6] * Mathf.Rad2Deg, 0));
-                Box(grp, new Vector3(0.8f * s, 1f * s, 0.2f * s), new Vector3(0.9f * s, 0.7f * s, 0.9f * s), ColMat("#3f7a3f"));
-                Box(grp, new Vector3(-1f * s, 0.75f * s, -0.1f * s), new Vector3(0.7f * s, 0.55f * s, 0.7f * s), ColMat("#356e37"));
-            }
+            var g=NewGo("NaturalStoneGroup",root).transform;g.localPosition=new Vector3(r.x,0,r.z);var b=new RegionMeshBatch();
+            for(int k=0;k<5;k++)
+            {float a=k*2.39996f+seed;float size=(k==0?1.7f:.65f+(k%3)*.25f)*r.s;var at=new Vector3(k==0?0:Mathf.Cos(a)*1.25f*r.s,size*.28f,k==0?0:Mathf.Sin(a)*.86f*r.s);b.Add(DetailSurface.Mat("stone",k%2==0?"#9d9f8e":"#8e9586"),PrecisionMesh.Box(new Vector3(size,size*.68f,size*.77f),size*.17f,3),at,Vector3.one,Quaternion.Euler(k*7,seed*37+k*71,k*9));}
+            GardenDetail.Shrub(b,new Vector3(.7f*r.s,.10f,-.4f*r.s),seed,null,.65f*r.s);b.Flush(g);seed++;
         }
     }
 
@@ -3834,29 +2432,16 @@ public class WorldBuilder : MonoBehaviour
         StaticBatchingUtility.Combine(g.gameObject);
     }
 
-    void Bush(Transform parent, float x, float z, int i)
-    {
-        var grp = NewGo("bush", parent).transform;
-        grp.localPosition = new Vector3(x, 0f, z);
-        string g0 = BUSH_GREENS[i % 4];
-        Box(grp, new Vector3(0, 0.24f, 0), new Vector3(0.95f, 0.5f, 0.95f), ColMat(MatLib.Shade(g0, 0.82f)));
-        Box(grp, new Vector3(0.12f, 0.52f, -0.08f), new Vector3(0.55f, 0.36f, 0.55f), ColMat(BUSH_GREENS[(i + 1) % 4]));
-        Box(grp, new Vector3(0.06f, 0.66f, 0.04f), new Vector3(0.3f, 0.14f, 0.3f), ColMat(MatLib.Shade(BUSH_GREENS[(i + 1) % 4], 1.16f)));
-        if (i % 6 == 0)
-            Box(grp, new Vector3(0.1f, 0.72f, 0.1f), new Vector3(0.4f, 0.16f, 0.4f), ColMat("#c98099"));
-    }
+    void Bush(Transform parent,float x,float z,int i)
+    {var root=NewGo("bush",parent).transform;root.localPosition=new Vector3(x,0,z);RefinedBush(root,i);}
 
     // ── 池塘芦苇（池沿细杆丛，黄绿三色）──
     void Reeds()
     {
-        var g = NewGo("Reeds", Root).transform;
-        foreach (var r in W.REEDS)
-        {
-            var grp = NewGo("reed", g).transform;
-            grp.localPosition = new Vector3(r.x, 0f, r.z);
-            Box(grp, new Vector3(0, r.h / 2f, 0), new Vector3(0.12f, r.h, 0.12f), ColMat(REED_COLS[r.t]));
-            Box(grp, new Vector3(0.16f, r.h * 0.4f, 0.1f), new Vector3(0.1f, r.h * 0.8f, 0.1f), ColMat(REED_COLS2[r.t]), new Vector3(0, 0.6f * Mathf.Rad2Deg, 0.12f * Mathf.Rad2Deg));
-        }
+        var root=NewGo("Reeds",Root).transform;var batch=new RegionMeshBatch();int seed=0;
+        foreach(var reed in W.REEDS)
+        {for(int i=0;i<7;i++){float a=i*2.39996f+seed;var start=new Vector3(reed.x+Mathf.Cos(a)*.16f,GroundY(reed.x,reed.z),reed.z+Mathf.Sin(a)*.16f);var top=start+new Vector3(Mathf.Cos(a)*.14f,reed.h*(.65f+i*.055f),Mathf.Sin(a)*.14f);batch.Branch(GardenDetail.Mat("#87916a"),start,top,.009f);batch.Branch(GardenDetail.Mat("#9f8c62"),top-Vector3.up*.17f,top+Vector3.up*.06f,.024f,false);batch.Add(GardenDetail.Mat("#7b8b59"),NaturalTree.Spray(i,1),Vector3.Lerp(start,top,.5f),Vector3.one*.42f,Quaternion.Euler(0,a*Mathf.Rad2Deg,0));}seed++;}
+        batch.Flush(root);
     }
 
     // ── 角色（程序化 3D 低模 + 脚下圆影；位置由 PlayerRig 驱动）──
@@ -3876,10 +2461,7 @@ public class WorldBuilder : MonoBehaviour
 
         PlayerAvatar.Create(grp, CharacterDef.FromId(Args.Str("-avatar")));
 
-        var sh = NewGo("shadow", grp).transform;
-        sh.localPosition = new Vector3(0f, 0.036f, 0f);   // 高于抬高后的钟楼广场（0.030）
-        sh.gameObject.layer = 2;
-        MeshObj(sh, MeshFactory.Quad(0.84f, 0.84f), Vector3.zero, MatLib.Shadow(new Color(0f, 0f, 0f, 0.22f)), default, false, false);
-        PlayerShadow = sh.GetComponentInChildren<Renderer>();
+        // First-person viewpoint has neither a body mesh nor a fake character shadow.
+
     }
 }

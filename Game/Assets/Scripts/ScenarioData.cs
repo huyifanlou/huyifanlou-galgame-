@@ -20,6 +20,7 @@ public class ScenarioLine
     public string location;  // 来自最近一条【场景】
     public string bgm;       // 最近一条【BGM】
     public string sfx;       // 最近一条【音效】
+    public string protagonistPortraitId = "fanlou";
 }
 
 public class ScenarioChapter
@@ -85,6 +86,7 @@ public static class ScenarioData
                 Emit(ch, LineType.Dialogue, dm.Groups[1].Value.Trim(), dm.Groups[2].Value.Trim(), scene, location, bgm, sfx);
             // 其余（表格/清单/散文）一律跳过
         }
+        ScenarioAppearance.Apply(ch);
         return ch;
     }
 

@@ -174,7 +174,7 @@ public static partial class InteriorBuilder
         HangingSign(p, ox - 6.6f, 3.0f, -1.6f, 1, "堂食区", 1.2f, 0.36f, CB("#3f9a6a"), 0.026f);
         Plant(p, new Vector3(ox - 13.2f, 0.02f, 6.6f), 1.0f);
         Plant(p, new Vector3(ox + 13.2f, 0.02f, -4.4f), 1.0f);
-        WallClock(p, new Vector3(ox, 3.1f, -Z + 0.16f), 0f);
+        WallClock(p, new Vector3(ox+3.6f, 3.1f, -Z + 0.16f), 0f);
         Window(p, new Vector3(ox - 6f, 2.3f, -Z + 0.08f), 3.0f, 1.6f, 0f);
         Window(p, new Vector3(ox + 6f, 2.3f, -Z + 0.08f), 3.0f, 1.6f, 0f);
         return it;

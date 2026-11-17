@@ -183,13 +183,13 @@ public static partial class InteriorBuilder
         // 卡通配色（docs/103）：礼堂是全项目最大的室内（80×60、净高 8.5），原来 #8f2f32 暗红 +
         // #5a3f2c 深木 + #3a2a2a 近黑座基，在 cel shading 下整个观众厅是一团暗块。改成：
         // 正红椅面 / 明红靠背 / 深紫灰座基，金色全部提到 #f0b03c（卡通渲染里金色必须够亮才有金属感）。
-        var red = CB("#d8403c");
-        var darkRed = CB("#b02c30");
-        var gold = CB("#f0b03c");
+        var red = DetailSurface.Mat("fabric","#9c5759");
+        var darkRed = DetailSurface.Mat("fabric","#78484d");
+        var gold = DetailSurface.Mat("metal","#b7a077");
         var wood = InteriorWood();
         var darkWood = CB("#a8703c");
-        var seat = CB("#e05a4a");
-        var seatBack = CB("#c03a38");
+        var seat = DetailSurface.Mat("fabric","#9b6260");
+        var seatBack = DetailSurface.Mat("fabric","#824d51");
         var baseMat = CB("#6a5468");
 
         var it = Shell(parent, "auditorium", "礼堂", AUD_X, X, Z, W, 2.0f, 3.2f,
@@ -208,11 +208,11 @@ public static partial class InteriorBuilder
         WallSign(p, ox, 3.95f, 30f, 1, "礼堂", 2.6f, 0.68f, CB("#b02c30"), 0.040f);
 
         // ── 地面：观众厅红毯 + 通道 / 门厅地毯 ──
-        Part(p, new Vector3(ox, 0.050f, -1.0f), new Vector3(68f, 0.014f, 29.0f), C("#c85450"), 2f);
+        Part(p, new Vector3(ox, 0.050f, -1.0f), new Vector3(68f, 0.014f, 29.0f), DetailSurface.Mat("carpet","#8f6361"), 2f);
         foreach (float ax in new[] { -36f, -14f, 0f, 14f, 36f })
-            Part(p, new Vector3(ox + ax, 0.064f, -1.0f), new Vector3(2.2f, 0.012f, 29.0f), C("#e8b070"), 1f);
-        Part(p, new Vector3(ox, 0.050f, 22f), new Vector3(66f, 0.014f, 15.0f), C("#d86a5a"), 2f);
-        Part(p, new Vector3(ox, 0.064f, 22f), new Vector3(5.0f, 0.012f, 15.0f), C("#f0c88a"), 1f);
+            Part(p, new Vector3(ox + ax, 0.064f, -1.0f), new Vector3(2.2f, 0.012f, 29.0f), DetailSurface.Mat("carpet","#b4a083"), 1f);
+        Part(p, new Vector3(ox, 0.050f, 22f), new Vector3(66f, 0.014f, 15.0f), DetailSurface.Mat("carpet","#93716a"), 2f);
+        Part(p, new Vector3(ox, 0.064f, 22f), new Vector3(5.0f, 0.012f, 15.0f), DetailSurface.Mat("carpet","#c0ad90"), 1f);
 
         // ── 观众厅与门厅之间的隔墙 z=14，中间 12m 大开口 + 两侧 4m 出口 ──
         Wall(p, it, ox - 39.88f, 14f, ox - 28f, 14f, 0.02f, W, wall);
@@ -258,7 +258,7 @@ public static partial class InteriorBuilder
         PartC(p, new Vector3(ox, 4.15f, -25.32f), new Vector3(1.5f, 1.5f, 0.02f), gold, 0.016f, 1f);
 
         // 两侧幕布（多褶）+ 顶部檐幕
-        var curtainMat = CB("#e0403c");
+        var curtainMat = DetailSurface.Mat("fabric","#874d52");
         foreach (float sx in new[] { -1f, 1f })
             for (int i = 0; i < 5; i++)
             {

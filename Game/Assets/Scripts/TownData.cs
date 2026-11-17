@@ -41,6 +41,8 @@ public static class TownData
     const string W_WOOD = "#c09a6a", T_BEIGE = "#efe2cc", P_WOOD = "#8a6a4a";
     const string R_DARK = "#4a3a34", W_SHRINE = "#a8624a";
     const string TP = "#f2e4d6", SPT = "#6a3a2a";
+    // 家的模型、入口、碰撞与植被避让必须共用坐标，禁止保留旧址空气墙。
+    static readonly VillaDef Home = new VillaDef { x = -34f, z = 70f, w = 12f, h = 6f, d = 6f, face = 1 };
 
     static readonly BuildingDef[] Buildings =
     {
@@ -209,7 +211,7 @@ public static class TownData
         // 体育区篮球场：礼堂南侧，篮架面向场心
         P("hoop", -35, -82, ry: Mathf.PI / 2f), P("hoop", -21, -82, ry: -Mathf.PI / 2f),
         // 升旗台与操场看台结合：旗杆落在看台中央台面，三级踏步朝跑道
-        P("flag", -28, -23),
+        P("flag", -14.8f, -25.7f),
 
         // 广场 / 站前 / 停车
         P("plaza_round", -17, -12, r: 10f),                       // 钟楼广场
@@ -249,7 +251,7 @@ public static class TownData
         P("chochin_string", 93f, -46f, ry: Mathf.PI / 2f, len: 12f),
         P("nobori", 70.5f, -50.5f, kind: "red"), P("nobori", 87.5f, -50.5f, kind: "white"),
         P("nobori", 70.5f, -60.0f, kind: "white"), P("nobori", 87.5f, -60.0f, kind: "red"),
-        P("temizuya", 69f, -63.4f),
+        // 手水盆由 k_chozu 开放亭舍统一建模；旧独立水盆会堵住入口。
         P("ema", 72.0f, -68.2f, ry: Mathf.PI / 2f),
         P("omikuji", 86.0f, -68.2f, ry: -Mathf.PI / 2f),
         P("sake", 71.2f, -74.2f),
@@ -412,7 +414,7 @@ public static class TownData
         foreach (var b in Buildings)
             if (Mathf.Abs(x - b.pos[0]) < b.HalfWX + margin && Mathf.Abs(z - b.pos[1]) < b.HalfWZ + margin)
                 return true;
-        if (Mathf.Abs(x + 35.5f) < 6f + margin && Mathf.Abs(z - 66f) < 3f + margin) return true;
+        if (Mathf.Abs(x - Home.x) < Home.w / 2f + margin && Mathf.Abs(z - Home.z) < Home.d / 2f + margin) return true;
         return false;
     }
 
@@ -441,9 +443,9 @@ public static class TownData
             BRANCH_PATHS = new BranchPathDef[0],
             BUILDINGS = Buildings,
             GROUNDS = Grounds,
-            PROPS = Props,
+            PROPS = GardenPaths.Rebuild(Props,Roads),
             POND = new PondDef { pos = new[] { 34f, -40f }, r = 20f },
-            VILLA = new VillaDef { x = -34f, z = 70f, w = 12f, h = 6f, d = 6f, face = 1 },
+            VILLA = Home,
             FENCES = BuildSchoolWalls(),
             DISTANT_BUILDINGS = new DistantDef[0],
             ROCKERIES = new RockeryItem[0],
@@ -550,7 +552,7 @@ public static class TownData
             bool bad = false;
             foreach (var b in Buildings)
                 if (Mathf.Abs(t.x - b.pos[0]) < b.HalfWX + 2.6f && Mathf.Abs(t.z - b.pos[1]) < b.HalfWZ + 2.6f) { bad = true; break; }
-            if (!bad && Mathf.Abs(t.x + 35.5f) < 8.6f && Mathf.Abs(t.z - 66f) < 5.6f) bad = true;
+            if (!bad && Mathf.Abs(t.x - Home.x) < Home.w / 2f + 2.6f && Mathf.Abs(t.z - Home.z) < Home.d / 2f + 2.6f) bad = true;
             if (!bad)
                 foreach (var br in w.RIVER.bridges)
                     if (Mathf.Abs(t.x - br.x) < br.width / 2f + 3f &&
@@ -831,11 +833,11 @@ public static class TownData
         {
             foreach (var b in Buildings)
             {
-                float dx = b.pos[0] + b.FrontOffsetX(0.9f);
-                float dz = b.pos[1] + b.FrontOffsetZ(0.9f);
+                float dx = b.pos[0] + b.FrontOffsetX(b.EntranceExtra + 0.9f);
+                float dz = b.pos[1] + b.FrontOffsetZ(b.EntranceExtra + 0.9f);
                 if (Mathf.Abs(l.x - dx) < 2.8f && Mathf.Abs(l.z - dz) < 2.8f) return true;
             }
-            if (Mathf.Abs(l.x + 34f) < 3f && Mathf.Abs(l.z - 73.5f) < 3f) return true;   // 主角家门前
+            if (Mathf.Abs(l.x - Home.x) < 3f && Mathf.Abs(l.z - (Home.z + Home.face * (Home.d / 2f + 0.5f))) < 3f) return true;
             return false;
         });
         // 路口与桥头会被两条街各放一盏，两轮"让开车行道"外推后常常只差 1~3m（看着像双灯）：
@@ -898,10 +900,10 @@ public static class TownData
         foreach (var b in Buildings)
             spots.Add(new SpotDef
             {
-                name = b.name, x = b.pos[0] + b.FrontOffsetX(1.2f), z = b.pos[1] + b.FrontOffsetZ(1.2f),
+                name = b.name, x = b.pos[0] + b.FrontOffsetX(b.EntranceExtra + 1.2f), z = b.pos[1] + b.FrontOffsetZ(b.EntranceExtra + 1.2f),
                 r = Mathf.Clamp(b.size[0] / 2f, 2.2f, 4f)
             });
-        spots.Add(new SpotDef { name = "家", x = -35.5f, z = 66f + 3f + 1.2f, r = 3f });
+        spots.Add(new SpotDef { name = "家", x = Home.x, z = Home.z + Home.face * (Home.d / 2f + 1.2f), r = 2.5f });
         spots.Add(new SpotDef { name = "操场", x = -28f, z = -32f, r = 3f });
         spots.Add(new SpotDef { name = "篮球场", x = -28f, z = -82f, r = 2.5f });
         spots.Add(new SpotDef { name = "钟楼广场", x = -17f, z = -5f, r = 3.5f });
@@ -914,13 +916,31 @@ public static class TownData
         spots.Add(new SpotDef { name = "河畔", x = -14f, z = -2f, r = 3f });
         spots.Add(new SpotDef { name = "石拱桥", x = 0f, z = RiverZ(0) + 11f, r = 3f });
         spots.Add(new SpotDef { name = "廊桥", x = 28f, z = RiverZ(28) + 11f, r = 3f });
+        if(ClosedAreas.AmusementClosed)spots.RemoveAll(spot=>System.Array.Exists(Buildings,b=>b.id.StartsWith("f_")&&b.name==spot.name)||ClosedAreas.Contains(spot.x,spot.z)||spot.name=="游乐场"||spot.name=="摩天轮");
         w.SPOTS = spots.ToArray();
 
         // 碰撞：建筑 / 主角家 / 河面（桥位留口）/ 主要设施
         var bl = new List<BlockerDef>();
         foreach (var b in Buildings)
+        {
+            if(PavilionFootprint.Uses(b)||b.style=="stand")continue;
             bl.Add(new BlockerDef { x = b.pos[0], z = b.pos[1], hw = b.HalfWX, hd = b.HalfWZ });
-        bl.Add(new BlockerDef { x = -35.5f, z = 66f, hw = 6f, hd = 3f });
+            if (!SchoolExterior.Uses(b)) continue;
+            if (b.EntranceExtra > 0f)
+            {
+                var center = new Vector2(b.pos[0],b.pos[1]) + b.FrontNormal * (b.size[2]/2f+b.EntranceExtra/2f);
+                float width=2.5f;
+                bl.Add(new BlockerDef { x=center.x,z=center.y,hw=b.FacesX?b.EntranceExtra/2f:width/2f,hd=b.FacesX?width/2f:b.EntranceExtra/2f });
+            }
+            var rotation = Quaternion.Euler(0,b.Yaw,0);
+            foreach (var post in SchoolExterior.Posts(b))
+            {
+                var point = rotation*post+new Vector3(b.pos[0],0,b.pos[1]);
+                bl.Add(new BlockerDef { x=point.x,z=point.z,hw=.25f,hd=.25f });
+            }
+        }
+        bl.Add(new BlockerDef { x = Home.x, z = Home.z, hw = Home.w / 2f, hd = Home.d / 2f });
+        bl.AddRange(ResidentialExterior.HomeSolids(Home));
         for (float x = -104f; x <= 104f; x += 1.6f)
         {
             bool bridged = false;
@@ -1006,7 +1026,17 @@ public static class TownData
                     break;
             }
         }
+        foreach(var pavilion in w.BUILDINGS)
+        {
+            if(!PavilionFootprint.Uses(pavilion))continue;
+            foreach(var post in PavilionFootprint.Posts(pavilion))bl.Add(new BlockerDef{x=pavilion.pos[0]+post.x,z=pavilion.pos[1]+post.y,hw=.19f,hd=.19f});
+            if(pavilion.id=="k_chozu")bl.Add(new BlockerDef{x=pavilion.pos[0],z=pavilion.pos[1]-.45f,hw=.93f,hd=.40f});
+            else bl.Add(new BlockerDef{x=pavilion.pos[0],z=pavilion.pos[1]-pavilion.size[2]/2+.65f,hw=(pavilion.size[0]-.8f)/2,hd=.30f});
+        }
+        if(ClosedAreas.AmusementClosed)bl.Add(new BlockerDef{x=(ClosedAreas.X1+ClosedAreas.X2)/2,z=(ClosedAreas.Z1+ClosedAreas.Z2)/2,hw=(ClosedAreas.X2-ClosedAreas.X1)/2,hd=(ClosedAreas.Z2-ClosedAreas.Z1)/2});
         w.BLOCKERS = bl.ToArray();
+        VegetationPlanner.Apply(w);
+        w.LAMPS = TownLampPlanner.Rebuild(w,new List<LampItem>(w.LAMPS));
         return w;
     }
 }

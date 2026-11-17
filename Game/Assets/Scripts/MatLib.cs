@@ -89,6 +89,7 @@ public static class MatLib
             : new Material(Shader.Find("Standard"));
         if (m.shader.name == "Campus/Toon")
         {
+            m.SetFloat("_SurfaceModel",1);m.SetFloat("_Roughness",.82f);m.SetFloat("_RimStrength",.025f);
             m.SetColor("_ShadowTint", ShadowTint);
             m.SetColor("_OutlineColor", DefaultOutline);
             m.SetFloat("_OutlineWidth", 0.0035f);
@@ -372,8 +373,34 @@ public static class MatLib
     {
         var m = new Material(Shader.Find("Legacy Shaders/Transparent/Diffuse"));
         m.color = c;
+        var texture=new Texture2D(64,64,TextureFormat.RGBA32,false){name="SoftContactShadow",wrapMode=TextureWrapMode.Clamp,filterMode=FilterMode.Bilinear};
+        for(int y=0;y<64;y++)for(int x=0;x<64;x++)
+        {float radius=new Vector2((x-31.5f)/31.5f,(y-31.5f)/31.5f).magnitude;
+         texture.SetPixel(x,y,new Color(1,1,1,1-Mathf.SmoothStep(.18f,1f,radius)));}
+        texture.Apply();m.mainTexture=texture;
         return m;
     }
+
+    // 薄片不画反向外扩壳：墙皮/窗片/招牌原本会出现第二圈浮边。
+    // PropertyBlock 不复制材质，昼夜换窗与天气仍然作用于原共享材质。
+    static MaterialPropertyBlock _surfaceBlock;
+    static MaterialPropertyBlock SurfaceBlock=>_surfaceBlock??(_surfaceBlock=new MaterialPropertyBlock());
+    public static void ConfigureSurface(Renderer renderer, Vector3 size)
+    {
+        if (renderer == null || renderer.sharedMaterial == null
+            || renderer.sharedMaterial.shader.name != "Campus/Toon") return;
+        float thickness = Mathf.Min(Mathf.Abs(size.x), Mathf.Min(Mathf.Abs(size.y), Mathf.Abs(size.z)));
+        if (thickness >= 0.075f) return;
+        renderer.GetPropertyBlock(SurfaceBlock);
+        SurfaceBlock.SetFloat("_OutlineWidth", 0f);
+        SurfaceBlock.SetFloat("_RimStrength", 0f);
+        renderer.SetPropertyBlock(SurfaceBlock);
+        SurfaceBlock.Clear();
+    }
+
+    public static string SurfaceShineProperty(Material material)
+        => material != null && material.HasProperty("_SpecularStrength") ? "_SpecularStrength"
+         : material != null && material.HasProperty("_Glossiness") ? "_Glossiness" : null;
 
     public static Color Hex(string hex)
     {

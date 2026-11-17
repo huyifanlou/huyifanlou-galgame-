@@ -25,10 +25,13 @@ public class PlayerRig : MonoBehaviour
     public CharacterPicker Picker;   // C 键人物自选菜单（WorldBuilder 绑定）
     InteriorManager Im => _im;
     bool _indoor;
+    float _outdoorDist = 13f, _outdoorPitch = 0.38f;
     float _yawTarget = float.NaN;
     float _facing = Mathf.PI;   // 世界角：0=+z 南，π=北；默认背对镜头
     bool _alignPaused, _camInit, _dragging;
-    bool _firstPerson;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
+    bool _firstPerson=true;
+    bool _cursorReleased;
+    public bool FirstPerson=>true;          // V 键切换：第一人称（贴头）/ 第三人称（球坐标跟随）
     float _fpPitch;             // 第一人称俯仰（上正下负）
     float _lastMapClose;        // M 按下时刻，开图瞬间不抢回鼠标锁定
     float _groundY;             // 脚底高度（人行道/桥面）
@@ -50,8 +53,8 @@ public class PlayerRig : MonoBehaviour
         // TimeOfDay 已启用程序化天空时保留 Skybox；否则退回原来的纯色背景
         _cam.clearFlags = RenderSettings.skybox != null ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
         _cam.backgroundColor = MatLib.Hex("#10141c");
-        _cam.fieldOfView = 46f;
-        _cam.nearClipPlane = 0.5f;
+        _cam.fieldOfView = 62f;
+        _cam.nearClipPlane = 0.25f;
         _cam.farClipPlane = 560f;   // 覆盖天空穹顶（半径 420 + 玩家 128）与远景山脊，否则走远后天空出现黑幕
 
         var spawn = new Vector2(w.Spawn.x, w.Spawn.z);
@@ -73,7 +76,7 @@ public class PlayerRig : MonoBehaviour
         if (dist.HasValue && dist.Value > 22f && !pitch.HasValue) _pitch = Mathf.Max(_pitch, 1.0f);  // 远机位默认俯视（显式 -pitch 时尊重调用方）
         _distForced = dist.HasValue; _pitchForced = pitch.HasValue;
         if (Args.Str("-freeze") == "1") _alignPaused = true;
-        if (Args.Str("-fp") == "1")
+        if (true) // Fixed first-person mode, command-line flags cannot restore third person.
         {
             _firstPerson = true;                            // 验收：以第一人称启动
             var fpp = Args.F("-pitch");                     // 第一人称俯仰（负=往下看，室内看家具用）
@@ -90,6 +93,7 @@ public class PlayerRig : MonoBehaviour
             if (sp.Length == 2 && int.TryParse(sp[1], out var n)) { _simKey = sp[0].ToLowerInvariant(); _simFrames = n; }
         }
 
+        if(_w.W.RIVER!=null&&ClosedAreas.Contains(spawn.x,spawn.y)){spawn=ClosedAreas.SafeGate;Debug.Log("[Closure] 启动落点移至施工区外");}
         _player.position = new Vector3(spawn.x, 0f, spawn.y);
         var faceArg = Args.F("-facing");   // 验收：指定朝向（度，0=+z 南），配合 -freeze 拍正面受光
         _facing = faceArg.HasValue ? faceArg.Value * Mathf.Deg2Rad : Mathf.PI;
@@ -97,6 +101,13 @@ public class PlayerRig : MonoBehaviour
         SnapCamera();
     }
 
+    public void SaveView(ProgressSave data)
+    {data.yaw=_yaw;data.facing=_facing;data.distance=_dist;data.pitch=_pitch;data.fpPitch=_fpPitch;data.firstPerson=true;}
+    public void RestoreView(ProgressSave data)
+    {_yaw=data.yaw;_facing=data.facing;_dist=data.distance;_pitch=data.pitch;_fpPitch=data.fpPitch;
+     _firstPerson=true;_yawTarget=float.NaN;ApplyViewVisibility();SnapCamera();}
+    public void LookAtWorld(Vector3 point)
+    {var delta=point-(Position+Vector3.up*1.45f);_yaw=Mathf.Atan2(-delta.x,-delta.z);_fpPitch=Mathf.Clamp(Mathf.Atan2(delta.y,new Vector2(delta.x,delta.z).magnitude),-1.1f,1.1f);_yawTarget=float.NaN;_firstPerson=true;SnapCamera();}
     public Vector3 Position => _player != null ? _player.position : Vector3.zero;
     public float Yaw => _yaw;   // 相机朝向（小地图上的自己用）
 
@@ -104,9 +115,14 @@ public class PlayerRig : MonoBehaviour
     public void BindMinimap(Minimap mm) { _mm = mm; }
 
     // 进出室内：换机位距离 + 落点 + 脚底高度（室内是楼层函数，不是地形）
-    public void SetIndoorView(bool on, Vector2 at, float floorY)
+    public void SetIndoorView(bool on, Vector2 at, float floorY, float yaw = float.NaN, float facing = float.NaN)
     {
+        if (on && !_indoor) { _outdoorDist = _dist; _outdoorPitch = _pitch; }
         _indoor = on;
+        _yawTarget = float.NaN;
+        _dragging = false;
+        if (!float.IsNaN(yaw)) { _yaw = yaw; _facing = float.IsNaN(facing) ? yaw + Mathf.PI : facing; _fpPitch = 0f; }
+        _cam.nearClipPlane = on ? 0.12f : 0.25f;
         if (on)
         {
             _distMin = 3.2f;
@@ -114,18 +130,45 @@ public class PlayerRig : MonoBehaviour
             if (!_pitchForced) _pitch = 0.26f;
             _groundY = floorY;
             _player.position = new Vector3(at.x, floorY, at.y);
-            _alignPaused = false;
+            _alignPaused = !float.IsNaN(yaw);
         }
         else
         {
             _distMin = 6f;
-            _dist = 13f;
-            _pitch = 0.38f;
+            _dist = _outdoorDist;
+            _pitch = _outdoorPitch;
+            _alignPaused = !float.IsNaN(yaw);
             _groundY = _w != null ? _w.GroundY(at.x, at.y) : 0f;
             _player.position = new Vector3(at.x, _groundY, at.y);
         }
         _camInit = false;
+        Physics.SyncTransforms();
         SnapCamera();
+    }
+
+    // Require a clear walking segment so a display cannot appear behind a wall.
+    public bool CanPlacePortrait(Vector3 point)
+    {
+        if(!_indoor&&new Vector2(point.x,point.z).magnitude>_bound-1)return false;
+        if(_indoor&&_im?.Current!=null)
+        {var room=_im.Current;if(point.x<room.X1+.4f||point.x>room.X2-.4f||point.z<room.Z1+.4f||point.z>room.Z2-.4f)return false;}
+        Vector3 start=Position;int steps=Mathf.CeilToInt(Vector2.Distance(new Vector2(start.x,start.z),new Vector2(point.x,point.z))/.18f);
+        for(int i=1;i<=steps;i++){var sample=Vector3.Lerp(start,point,i/(float)steps);if(Collides(sample.x,sample.z))return false;}
+        return true;
+    }
+    public bool TryStandingPoint(Vector2 desired, out Vector2 safe)
+    {
+        safe = ClampRound(desired.x, desired.y, 1.5f);
+        if (!Collides(safe.x, safe.y)) return true;
+        for (float radius = 0.35f; radius <= 5f; radius += 0.35f)
+            for (int i = 0; i < 24; i++)
+            {
+                float angle = i * Mathf.PI / 12f;
+                var point = ClampRound(desired.x + Mathf.Cos(angle) * radius, desired.y + Mathf.Sin(angle) * radius, 1.5f);
+                if (Collides(point.x, point.y)) continue;
+                safe = point; return true;
+            }
+        return false;
     }
 
     // 圆形边界：世界是圆的（小地图也是圆的），方形四角会跑进边界山体里
@@ -150,6 +193,7 @@ public class PlayerRig : MonoBehaviour
     public bool Teleport(float x, float z)
     {
         if (_player == null || _w == null) return false;
+        if(_w.W.RIVER!=null&&ClosedAreas.Contains(x,z,.4f)){_time?.ShowToast("游乐场设施维护，暂不开放。");return false;}
         var c0 = ClampRound(x, z, 1.5f);
         x = c0.x; z = c0.y;
         if (Collides(x, z))
@@ -169,7 +213,7 @@ public class PlayerRig : MonoBehaviour
         _player.position = new Vector3(x, _groundY, z);
         _camInit = false;
         SnapCamera();
-        if (_time != null) _time.ShowToast("已传送（M 隐藏地图）");
+        if (_time != null) _time.ShowToast("已到达目的地");
         return true;
     }
 
@@ -187,46 +231,93 @@ public class PlayerRig : MonoBehaviour
         if (_avatar != null) _avatar.SetVisible(!_firstPerson);
     }
 
+    Vector3 CameraAnchor(Vector3 p) => p + Vector3.up * (_indoor ? 1.5f : 1.1f);
+
+    // 普通跟随和进出门吸附共用同一避障解算，过渡淡入期间也不会穿墙。
+    Vector3 CameraTarget(Vector3 p)
+    {
+        // 室内自适应俯仰：走廊只有 1.6m 宽，机位一贴墙就满屏墙纸。
+        // 先探一下当前俯仰下能退多远，太近就抬高机位改成俯视
+        float pitchUse = _pitch;
+        Vector3 head = new Vector3(p.x, p.y + (_indoor ? 1.5f : 1.1f), p.z);
+        if (_indoor || !_distForced)
+        {
+            var probe = new Vector3(Mathf.Sin(_yaw) * Mathf.Cos(_pitch), Mathf.Sin(_pitch),
+                                    Mathf.Cos(_yaw) * Mathf.Cos(_pitch)) * _dist;
+            if (Physics.SphereCast(head, 0.18f, probe.normalized, out var ph, probe.magnitude, ~(1 << 2), QueryTriggerInteraction.Ignore)
+                && ph.distance < (_indoor ? 2.8f : 5.5f))
+                pitchUse = Mathf.Min(1.15f, _pitch + (_indoor ? 0.45f : 0.38f));
+        }
+        float cx = p.x + Mathf.Sin(_yaw) * Mathf.Cos(pitchUse) * _dist;
+        float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(pitchUse) * _dist;
+        float cy = head.y + Mathf.Sin(pitchUse) * _dist;
+        // 相机避障：从头部向目标机位射线，撞到建筑/摊位就把相机拉到障碍前
+        Vector3 desired = new Vector3(cx, cy, cz);
+        Vector3 ray = desired - head;
+        float rayLen = ray.magnitude;
+        if (rayLen > 0.05f &&
+            Physics.SphereCast(head, 0.18f, ray / rayLen, out var hit, rayLen, ~(1 << 2), QueryTriggerInteraction.Ignore))
+        {
+            // 与障碍保持 2.5m：既不会钻进摊位棚下，也不会贴着墙
+            // 室内墙多，留 2.5m 会把镜头怼到角色脸上，收到 0.35m
+            float margin = _indoor ? 0.35f : 2.5f;
+            float safe = Mathf.Max(_indoor ? 0.45f : 1.2f, hit.distance - margin);
+            // 关键：绝不能超过障碍本身，否则镜头穿到墙外面（室内墙很近时会踩到）
+            safe = Mathf.Min(safe, Mathf.Max(0.25f, hit.distance - 0.1f));
+            desired = head + ray / rayLen * Mathf.Min(safe, rayLen);
+        }
+        return desired;
+    }
+
+    void FirstPersonCamera(Vector3 p)
+    {
+        _cam.transform.position = p + Vector3.up * 1.45f;
+        float cp = Mathf.Cos(_fpPitch);
+        _cam.transform.rotation = Quaternion.LookRotation(
+            new Vector3(-Mathf.Sin(_yaw) * cp, Mathf.Sin(_fpPitch), -Mathf.Cos(_yaw) * cp), Vector3.up);
+        _camInit = false;
+    }
+
     void SnapCamera()
     {
         if (_cam == null || _player == null) return;
         var p = _player.position;
-        _cam.transform.position = new Vector3(
-            p.x + Mathf.Sin(_yaw) * Mathf.Cos(_pitch) * _dist,
-            p.y + Mathf.Sin(_pitch) * _dist,
-            p.z + Mathf.Cos(_yaw) * Mathf.Cos(_pitch) * _dist);
-        _cam.transform.LookAt(new Vector3(p.x, p.y + (_indoor ? 1.5f : 1.1f), p.z));
+        _firstPerson=true;
+        if (_firstPerson) { FirstPersonCamera(p); return; }
+        _cam.transform.position = CameraTarget(p);
+        _cam.transform.LookAt(CameraAnchor(p));
         _camInit = true;
     }
 
     void Update()
     {
         if (_cam == null || _player == null || IntroScreen.Live) return;
+        if ((_im != null && _im.IsTransitioning)||ProgressManager.MenuOpen||ProgressManager.TrackingOpen||ProgressManager.Loading||HelpSidebar.IsOpen){_dragging=false;return;}
 
         // C：打开人物自选菜单（六人卡片，点选/数字键切换）。
         // 放在对话锁之前——剧情播放中也允许换人；DialogueManager 会在菜单打开时冻结推进。
-        if (Input.GetKeyDown(KeyCode.C))
+        if (GameInput.Down("Characters"))
         {
             if (Picker != null) Picker.Toggle();
             else if (_avatar != null)
             {
                 _avatar.Cycle();
-                if (_time != null) _time.ShowToast("人物模型：" + _avatar.Label);
+                if (_time != null) _time.ShowToast("人物：" + _avatar.Label);
             }
             return;
         }
 
-        if (DialogueManager.Active || CharacterPicker.IsOpen) return;   // 对话/选人菜单期间锁移动与相机
+        if (DialogueManager.Active || CharacterPicker.IsOpen || ProgressManager.MenuOpen || ProgressManager.Loading) return;   // 对话/选人菜单期间锁移动与相机
         float dt = Time.deltaTime;
         var p = _player.position;
 
         // Q / E：90° 步进平滑旋转（旋转中保持"背对镜头"）
-        if (Input.GetKeyDown(KeyCode.Q))
+        if (GameInput.Down("CameraLeft"))
         {
             _yawTarget = (float.IsNaN(_yawTarget) ? _yaw : _yawTarget) + Mathf.PI / 2f;
             _alignPaused = false;
         }
-        if (Input.GetKeyDown(KeyCode.E))
+        if (GameInput.Down("CameraRight") && !(GetComponent<ProgressManager>()?.CanInteract ?? false))
         {
             _yawTarget = (float.IsNaN(_yawTarget) ? _yaw : _yawTarget) - Mathf.PI / 2f;
             _alignPaused = false;
@@ -243,13 +334,14 @@ public class PlayerRig : MonoBehaviour
         bool mapOpen = _mm != null && _mm.enabled && _mm.LargeOpen;   // 大地图打开时鼠标交给地图
         if (_firstPerson)
         {
-            if (!mapOpen && Time.unscaledTime - _lastMapClose > 0.4f)
+            if (!mapOpen && !_cursorReleased && Time.unscaledTime - _lastMapClose > 0.4f)
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }
             _dragging = false;
-            if (!mapOpen)
+            if (_cursorReleased&&Input.GetMouseButtonDown(0)&&!GameUI.OverHud)_cursorReleased=false;
+            if (!mapOpen&&Cursor.lockState==CursorLockMode.Locked)
             {
                 float mx = Input.GetAxis("Mouse X") * FP_LOOK_SENS;   // 度
                 float my = Input.GetAxis("Mouse Y") * FP_LOOK_SENS;
@@ -260,12 +352,7 @@ public class PlayerRig : MonoBehaviour
                     _alignPaused = false;
                 }
             }
-            // 第一人称没拖拽，但保留 Esc 解锁（方便切窗口）
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+            // Escape belongs to the settings/menu router; opening it releases the cursor.
         }
         else
         {
@@ -277,7 +364,7 @@ public class PlayerRig : MonoBehaviour
             }
             else
             {
-                if (Input.GetMouseButtonDown(0))
+                if (Input.GetMouseButtonDown(0)&&!GameUI.OverHud)
                 {
                     _dragging = true;
                     _alignPaused = true;
@@ -297,7 +384,7 @@ public class PlayerRig : MonoBehaviour
         }
 
         // F11：窗口 / 全屏切换（窗口可拖动边缘调整尺寸）
-        if (Input.GetKeyDown(KeyCode.F11))
+        if (GameInput.Down("Fullscreen"))
         {
             if (Screen.fullScreenMode == FullScreenMode.FullScreenWindow)
                 Screen.SetResolution(1600, 900, FullScreenMode.Windowed);
@@ -305,40 +392,31 @@ public class PlayerRig : MonoBehaviour
                 Screen.SetResolution(Display.main.systemWidth, Display.main.systemHeight, FullScreenMode.FullScreenWindow);
         }
 
-        if (Input.GetKeyUp(KeyCode.M)) _lastMapClose = Time.unscaledTime;
+        if (GameInput.Up("Map")) _lastMapClose = Time.unscaledTime;
 
         // C：打开人物自选菜单（六人卡片，点选/数字键切换）；无菜单组件时退回盲循环
-        if (Input.GetKeyDown(KeyCode.C))
+        if (GameInput.Down("Characters"))
         {
             if (Picker != null) Picker.Toggle();
             else if (_avatar != null)
             {
                 _avatar.Cycle();
-                if (_time != null) _time.ShowToast("人物模型：" + _avatar.Label);
+                if (_time != null) _time.ShowToast("人物：" + _avatar.Label);
             }
-        }
-
-        // V：第一 / 第三人称切换
-        if (Input.GetKeyDown(KeyCode.V))
-        {
-            _firstPerson = !_firstPerson;
-            ApplyViewVisibility();
-            if (!_firstPerson) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
-            if (_time != null) _time.ShowToast(_firstPerson ? "第一人称视角（V 切回第三人称）" : "第三人称视角（V 切换）");
         }
 
         // 移动（WASD/方向键，相对镜头方向；X/Z 轴分开判定 → 沿墙滑动）
         // ⚠ Unity 是左手系：给定镜头朝向，屏幕右方 = 世界 -x（three.js 右手系为 +x），横移分量必须取反
         // 验收参数 -sim <键>,<帧数>：前 N 帧模拟按住某键（如 -sim d,40），用于移动方向自动验证
         bool simOn = _simFrames > 0 && Time.frameCount <= _simFrames;
-        bool holdW = Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow) || (simOn && _simKey == "w");
-        bool holdS = Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow) || (simOn && _simKey == "s");
-        bool holdA = Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow) || (simOn && _simKey == "a");
-        bool holdD = Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow) || (simOn && _simKey == "d");
-        float f = (holdW ? 1f : 0f) - (holdS ? 1f : 0f);
-        float r = (holdD ? 1f : 0f) - (holdA ? 1f : 0f);
+        bool holdW = GameInput.Held("Forward") || (simOn && _simKey == "w");
+        bool holdS = GameInput.Held("Back") || (simOn && _simKey == "s");
+        bool holdA = GameInput.Held("Left") || (simOn && _simKey == "a");
+        bool holdD = GameInput.Held("Right") || (simOn && _simKey == "d");
+        float f = (holdW ? 1f : 0f) - (holdS ? 1f : 0f) + SubmissionTour.Motion.y;
+        float r = (holdD ? 1f : 0f) - (holdA ? 1f : 0f) + SubmissionTour.Motion.x;
         bool moving = f != 0f || r != 0f;
-        bool running = moving && (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || _forceRun);
+        bool running = moving && (GameInput.Held("Run") || _forceRun);
         float dirX = 0f, dirZ = 0f;
         if (moving)
         {
@@ -391,68 +469,35 @@ public class PlayerRig : MonoBehaviour
             float dx = p.x - s.x, dz = p.z - s.z;
             float dd = dx * dx + dz * dz;
             if (dd > s.r * s.r || dd >= nearD2) continue;
+            if (_im != null && _im.CanEnter(s.name) && !_im.NearEntrance(s.name, p)) continue;
             nearD2 = dd;
             near = s.name;
         }
         if (_time != null)
         {
             _time.Near = near;
-            if (Input.GetKeyDown(KeyCode.F))
+            if (GameInput.Down("Interact"))
             {
                 if (_indoor)
                 {
                     // 室内：站在门口按 F 出去
-                    if (_im != null && _im.NearExit) _im.Exit();
+                    if (_im != null && _im.NearExit) { _im.Exit(); return; }
                 }
                 else if (!string.IsNullOrEmpty(near) && _im != null)
                 {
                     if (!_im.Enter(near)) _time.ShowToast($"「{near}」暂未开放内部");
+                    else return;
                 }
             }
         }
 
         // 跟随相机（球坐标；首帧已在 Init 吸附）
         // 相机：第一人称贴头 / 第三人称球坐标跟随
-        if (_firstPerson)
-        {
-            _cam.transform.position = new Vector3(p.x, p.y + 1.45f, p.z);
-            float cp = Mathf.Cos(_fpPitch);
-            var fwd = new Vector3(-Mathf.Sin(_yaw) * cp, Mathf.Sin(_fpPitch), -Mathf.Cos(_yaw) * cp);
-            _cam.transform.rotation = Quaternion.LookRotation(fwd, Vector3.up);
-            _camInit = false;   // 切回第三人称时重新吸附，避免从头部漫长插值
-            return;
-        }
-        // 室内自适应俯仰：走廊只有 1.6m 宽，机位一贴墙就满屏墙纸。
-        // 先探一下当前俯仰下能退多远，太近就抬高机位改成俯视
-        float pitchUse = _pitch;
-        Vector3 head = new Vector3(p.x, p.y + 1.35f, p.z);
-        if (_indoor)
-        {
-            var probe = new Vector3(Mathf.Sin(_yaw) * Mathf.Cos(_pitch), Mathf.Sin(_pitch),
-                                    Mathf.Cos(_yaw) * Mathf.Cos(_pitch)) * _dist;
-            if (Physics.Raycast(head, probe.normalized, out var ph, probe.magnitude, ~(1 << 2), QueryTriggerInteraction.Ignore)
-                && ph.distance < 2.8f)
-                pitchUse = Mathf.Min(1.15f, _pitch + 0.45f);
-        }
-        float cx = p.x + Mathf.Sin(_yaw) * Mathf.Cos(pitchUse) * _dist;
-        float cz = p.z + Mathf.Cos(_yaw) * Mathf.Cos(pitchUse) * _dist;
-        float cy = p.y + Mathf.Sin(pitchUse) * _dist;
+        _firstPerson=true;
+        if (_firstPerson) { FirstPersonCamera(p); return; }
+        Vector3 head = CameraAnchor(p);
         var cam = _cam.transform;
-        // 相机避障：从头部向目标机位射线，撞到建筑/摊位就把相机拉到障碍前
-        Vector3 desired = new Vector3(cx, cy, cz);
-        Vector3 ray = desired - head;
-        float rayLen = ray.magnitude;
-        if (rayLen > 0.05f &&
-            Physics.Raycast(head, ray / rayLen, out var hit, rayLen, ~(1 << 2), QueryTriggerInteraction.Ignore))
-        {
-            // 与障碍保持 2.5m：既不会钻进摊位棚下，也不会贴着墙
-            // 室内墙多，留 2.5m 会把镜头怼到角色脸上，收到 0.35m
-            float margin = _indoor ? 0.35f : 2.5f;
-            float safe = Mathf.Max(_indoor ? 0.45f : 1.2f, hit.distance - margin);
-            // 关键：绝不能超过障碍本身，否则镜头穿到墙外面（室内墙很近时会踩到）
-            safe = Mathf.Min(safe, Mathf.Max(0.25f, hit.distance - 0.1f));
-            desired = head + ray / rayLen * Mathf.Min(safe, rayLen);
-        }
+        Vector3 desired = CameraTarget(p);
         if (!_camInit) cam.position = desired;
         else
         {
@@ -473,18 +518,26 @@ public class PlayerRig : MonoBehaviour
         // 室内：只查当前房间、当前楼层的墙与家具
         if (_indoor && _im != null && _im.Current != null)
             return _im.Collides(x, z, _player.position.y);
+        if(_w.W.RIVER!=null&&ClosedAreas.Contains(x,z,.36f))return true;
         // 建筑按朝向换算占地（HalfWX/HalfWZ）；门厅凸出的部分也计入，保证能走到可见的门口
         const float pad = 0.45f;
         foreach (var b in _w.W.BUILDINGS)
         {
+            if(b.style=="stand"){if(StandAccess.Blocks(b,x,z))return true;continue;}
+            if(PavilionFootprint.Uses(b))continue;
             float x0 = b.pos[0] - b.HalfWX - pad, x1 = b.pos[0] + b.HalfWX + pad;
             float z0 = b.pos[1] - b.HalfWZ - pad, z1 = b.pos[1] + b.HalfWZ + pad;
-            float e = b.EntranceExtra;
-            if (b.face == 2) x1 += e;
-            else if (b.face == -2) x0 -= e;
-            else if (b.face == 1) z1 += e;
-            else if (b.face == -1) z0 -= e;
             if (x > x0 && x < x1 && z > z0 && z < z1) return true;
+            // 门厅只占中央 2.5 米，不再把整幅外墙前方延长成空气墙。
+            float e=b.EntranceExtra;
+            if(e>0)
+            {
+                float dx=x-b.pos[0],dz=z-b.pos[1];
+                float lateral=Mathf.Abs(b.face)==2?dz:dx;
+                float forward=b.face==2?dx:b.face==-2?-dx:b.face==-1?-dz:dz;
+                float front=Mathf.Abs(b.face)==2?b.HalfWX:b.HalfWZ;
+                if(Mathf.Abs(lateral)<1.25f+pad&&forward>front-pad&&forward<front+e+.12f+pad)return true;
+            }
         }
         foreach (var t in _w.W.TREES)
             if (Mathf.Abs(x - t.x) < 0.75f && Mathf.Abs(z - t.z) < 0.75f) return true;

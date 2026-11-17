@@ -62,6 +62,8 @@ public class WorldData
     public float FrontOffsetZ(float extra) => FrontZ + (face == 1 ? extra : face == -1 ? -extra : 0f);
     // 门厅/门斗向正门外凸出的深度（碰撞与门的位置共用，避免门口空气墙）
     public float EntranceExtra => style == "collegiate" ? 1.04f : style == "modern" ? 1.16f : 0f;
+    public Vector2 Door => new Vector2(pos[0] + FrontOffsetX(EntranceExtra), pos[1] + FrontOffsetZ(EntranceExtra));
+    public Vector2 FrontNormal => new Vector2(face == 2 ? 1f : face == -2 ? -1f : 0f, face == 1 ? 1f : face == -1 ? -1f : 0f);
 }
 
 [Serializable] public class GroundDef { public string id, name, kind; public float[] pos; public float[] size; }

@@ -169,6 +169,7 @@ public static class Bootstrap
         ti.textureCompression = TextureImporterCompression.Uncompressed;
         ti.npotScale = TextureImporterNPOTScale.None;
         ti.maxTextureSize = 256;
+        ti.isReadable = true;
         ti.SaveAndReimport();
         var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
         if (tex == null) { Debug.LogError("[Bootstrap] icon.png 导入失败"); return; }
@@ -179,6 +180,25 @@ public static class Bootstrap
         AssetDatabase.SaveAssets();     // 批量模式下必须显式落盘，否则 ProjectSettings 不会写进去
         var back = PlayerSettings.GetIcons(NamedBuildTarget.Standalone, IconKind.Application);
         Debug.Log($"[Bootstrap] 应用图标已设置：回读 {back?.Length ?? 0} 张，首张={(back != null && back.Length > 0 && back[0] != null ? back[0].name : "null")}");
+        WriteWindowsIcon(tex);
+    }
+    static void WriteWindowsIcon(Texture2D source)
+    {
+        int[] sizes={16,24,32,48,64,96,128,256};var images=new byte[sizes.Length][];
+        for(int i=0;i<sizes.Length;i++)
+        {
+            int size=sizes[i];var icon=new Texture2D(size,size,TextureFormat.RGBA32,false);
+            for(int y=0;y<size;y++)for(int x=0;x<size;x++)icon.SetPixel(x,y,source.GetPixelBilinear((x+.5f)/size,(y+.5f)/size));
+            icon.Apply();images[i]=icon.EncodeToPNG();Object.DestroyImmediate(icon);
+        }
+        Directory.CreateDirectory("Build/Win");
+        using(var file=File.Create("Build/Win/jingying-profile.ico"))using(var writer=new BinaryWriter(file))
+        {
+            writer.Write((ushort)0);writer.Write((ushort)1);writer.Write((ushort)sizes.Length);int offset=6+16*sizes.Length;
+            for(int i=0;i<sizes.Length;i++){writer.Write((byte)(sizes[i]==256?0:sizes[i]));writer.Write((byte)(sizes[i]==256?0:sizes[i]));writer.Write((byte)0);writer.Write((byte)0);writer.Write((ushort)1);writer.Write((ushort)32);writer.Write(images[i].Length);writer.Write(offset);offset+=images[i].Length;}
+            foreach(var bytes in images)writer.Write(bytes);
+        }
+        Debug.Log("[Bootstrap] Desktop icon generated: Build/Win/jingying-profile.ico / 8 sizes");
     }
     public static void SetAppIconBatch() => SetAppIcon();
 
@@ -220,7 +240,13 @@ public static class Bootstrap
         PlayerSettings.defaultScreenWidth = 1600;
         PlayerSettings.defaultScreenHeight = 900;
         PlayerSettings.colorSpace = ColorSpace.Linear;   // 每次构建都确保线性空间（写实光照）
-        SetupIntroTextures();
+        PlayerSettings.SplashScreen.show=false;
+        SetAppIcon();
+        Debug.Log($"[Bootstrap] Startup splash={PlayerSettings.SplashScreen.show}; heroine icon applied");
+        var title=AssetImporter.GetAtPath("Assets/Resources/Title/JingyingDusk.png") as TextureImporter;
+        if(title!=null){title.textureType=TextureImporterType.Default;title.mipmapEnabled=false;title.npotScale=TextureImporterNPOTScale.None;title.textureCompression=TextureImporterCompression.Uncompressed;title.maxTextureSize=2048;title.filterMode=FilterMode.Bilinear;title.SaveAndReimport();}
+        SetupBundledFonts();
+        SetupPortraitTextures();
         SyncScenario();
         AssetDatabase.SaveAssets();
     }
@@ -246,16 +272,29 @@ public static class Bootstrap
     }
     public static void SyncScenarioBatch() => SyncScenario();
 
-    // 开场 logo 素材（Resources/intro/*.png）是烘好的隶书字与剪影，不是像素贴图：
-    // 必须 Bilinear + 无 mipmap，否则非整数倍缩放时字缘会锯齿/闪动（docs/92）
-    static void SetupIntroTextures()
+    static void SetupBundledFonts()
     {
-        var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/intro" });
+        foreach(string path in new[]{"Assets/Resources/Fonts/MapSans.ttf","Assets/Resources/Fonts/StorySerif.ttf","Assets/Resources/Fonts/MapHeading.ttf"})
+        {var importer=AssetImporter.GetAtPath(path) as TrueTypeFontImporter;if(importer==null)throw new System.Exception("Missing font "+path);importer.fontTextureCase=FontTextureCase.Dynamic;importer.includeFontData=true;importer.fontRenderingMode=FontRenderingMode.Smooth;importer.SaveAndReimport();}
+        Debug.Log("[Fonts] bundled map sans and selectable story serif imported");
+    }
+
+    // UI 立绘：保留透明边缘，禁止通用贴图的压缩、mipmap 与非等比缩放。
+    // 在每次构建前统一执行，重新入库立绘也不会带回白边（docs/107）。
+    static void SetupPortraitTextures()
+    {
+        var guids = AssetDatabase.FindAssets("t:Texture2D", new[] { "Assets/Resources/Portraits" });
+        int count = 0;
         foreach (var guid in guids)
         {
             var path = AssetDatabase.GUIDToAssetPath(guid);
+            if (!path.EndsWith("-cut.png", System.StringComparison.OrdinalIgnoreCase)) continue;
             var ti = AssetImporter.GetAtPath(path) as TextureImporter;
             if (ti == null) continue;
+            bool changed = ti.mipmapEnabled || !ti.alphaIsTransparency
+                || ti.textureCompression != TextureImporterCompression.Uncompressed
+                || ti.npotScale != TextureImporterNPOTScale.None
+                || ti.filterMode != FilterMode.Bilinear || ti.wrapMode != TextureWrapMode.Clamp;
             ti.textureType = TextureImporterType.Default;
             ti.textureCompression = TextureImporterCompression.Uncompressed;
             ti.mipmapEnabled = false;
@@ -264,9 +303,12 @@ public static class Bootstrap
             ti.npotScale = TextureImporterNPOTScale.None;
             ti.alphaIsTransparency = true;
             ti.maxTextureSize = 2048;
-            ti.SaveAndReimport();
+            if (changed) ti.SaveAndReimport();
+            else AssetDatabase.ImportAsset(path,ImportAssetOptions.ForceUpdate);
+            count++;
         }
-        if (guids.Length > 0) Debug.Log($"[Bootstrap] 开场素材导入设置完成：{guids.Length} 张");
+        Debug.Log($"[Bootstrap] 透明立绘导入设置完成：{count} 张（无压缩 / 无 mipmap / 透明边缘）");
+        StandeeAssets.BuildBatch(); // Updating artwork must also refresh UI/world alpha framing.
     }
 
     // 构建 WebGL（部署上线用）

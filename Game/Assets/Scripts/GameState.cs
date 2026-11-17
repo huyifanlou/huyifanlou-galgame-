@@ -150,7 +150,7 @@ public class GameState : MonoBehaviour
             _white.Apply();
         }
         if (_font == null)
-            _font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "Arial" }, 16);
+            _font = GameFonts.Map;
         if (_head == null)
         {
             _head = new GUIStyle(GUI.skin.label) { fontSize = 17, alignment = TextAnchor.UpperLeft };

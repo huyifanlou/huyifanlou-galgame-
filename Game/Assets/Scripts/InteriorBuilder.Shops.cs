@@ -197,70 +197,56 @@ public static partial class InteriorBuilder
         RunZ(z1 + 0.16f, z2 - 0.16f, x2 - 0.16f, doorSide == 3);
     }
 
-    static void DoorFrame(Transform p, Interior it, float x, float z, float halfW, float h, int face)
+    static Material _exitMarker;
+    static void DoorFrame(Transform p,Interior it,float x,float z,float halfW,float h,int face)
     {
-        var fr = CB("#c98a4e");
-        PartC(p, new Vector3(x - halfW - 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 0.014f, 1f);
-        PartC(p, new Vector3(x + halfW + 0.09f, h * 0.5f, z), new Vector3(0.18f, h, 0.34f), fr, 0.014f, 1f);
-        PartC(p, new Vector3(x, h + 0.09f, z), new Vector3(halfW * 2f + 0.36f, 0.18f, 0.34f), fr, 0.014f, 1f);
-        PartC(p, new Vector3(x, 0.06f, z + face * 0.55f),
-              new Vector3(halfW * 2f - 0.1f, 0.04f, 0.9f), C("#b8c8d4"), 0.010f, 1f);
-
-        // 门内侧小灯：门口不发黑
-        var dl = new GameObject("doorlight");
-        dl.transform.SetParent(p, false);
-        dl.transform.localPosition = new Vector3(x, h - 0.25f, z + face * 0.55f);
-        var li = dl.AddComponent<Light>();
-        li.type = LightType.Point;
-        li.range = 5f;
-        li.intensity = 0.85f;
-        li.color = MatLib.Hex("#ffe3b0");
-        li.shadows = LightShadows.None;
-        Part(p, new Vector3(x, h - 0.33f, z + face * 0.55f),
-             new Vector3(0.40f, 0.14f, 0.40f), C("#e0a860"), 1f);
-        Part(p, new Vector3(x, h - 0.36f, z + face * 0.55f),
-             new Vector3(0.32f, 0.10f, 0.32f), C("#fff2d6"), 1f);
-
-        // 门扇盖满门洞：宽度压住两侧门框，高度压住门楣
-        if (halfW > 2f)
+        var root=new GameObject("PrecisionExitDoor").transform;root.SetParent(p,false);root.localPosition=new Vector3(x,0,z);root.localRotation=Quaternion.Euler(0,face>0?0:180,0);
+        var batch=new RegionMeshBatch();var frame=InteriorMood.DoorFrame;var gasket=DetailSurface.Mat("rubber","#343e3d");var stone=DetailSurface.Mat("stone","#b8b1a3");
+        foreach(int side in new[]{-1,1})
         {
-            DoorLeaf(p, it, x - halfW * 0.5f, z, halfW + 0.02f, h + 0.02f, face, +1);
-            DoorLeaf(p, it, x + halfW * 0.5f, z, halfW + 0.02f, h + 0.02f, face, -1);
-            // 双开门中缝压条：盖住两扇重叠处的亮缝
-            Part(p, new Vector3(x, h * 0.5f, z + face * 0.21f),
-                 new Vector3(0.10f, h, 0.03f), CB("#b8743c"), 1f);
+            batch.Bevel(frame,new Vector3(side*(halfW+.09f),h/2,0),new Vector3(.18f,h+.08f,.36f),.018f);
+            batch.Bevel(gasket,new Vector3(side*(halfW-.014f),h/2,.12f),new Vector3(.035f,h,.05f),.006f);
+            batch.Bevel(frame,new Vector3(side*(halfW+.16f),h/2,.20f),new Vector3(.08f,h+.16f,.06f),.012f);
         }
-        else
+        batch.Bevel(frame,new Vector3(0,h+.06f,.08f),new Vector3(halfW*2+.42f,.18f,.36f),.02f);
+        batch.Bevel(stone,new Vector3(0,.045f,.46f),new Vector3(halfW*2-.08f,.05f,.86f),.012f);
+        if(_exitMarker==null){_exitMarker=new Material(DetailSurface.Mat("paint","#34594a")){name="PrecisionExitMarker"};_exitMarker.EnableKeyword("_EMISSION");_exitMarker.SetColor("_EmissionColor",new Color(.04f,.10f,.06f));}
+        batch.Bevel(_exitMarker,new Vector3(0,h+.065f,.23f),new Vector3(.65f,.18f,.07f),.014f);
+        SignText(root,new Vector3(0,h+.065f,.272f),180,"出口",.022f,MatLib.Hex("#e6eddf"));
+        batch.Box(gasket,new Vector3(0,h/2,.025f),new Vector3(halfW*2+.02f,h,.05f));
+        float central=halfW>1.05f?Mathf.Min(halfW,1.26f):halfW;
+        if(halfW-central>.05f)
         {
-            DoorLeaf(p, it, x, z, halfW * 2f + 0.04f, h + 0.02f, face, +1);
+            var glass=DetailSurface.Mat("glass","#a6bdc0");float width=halfW-central;
+            foreach(int side in new[]{-1,1})
+            {float cx=side*(central+width/2);batch.Bevel(glass,new Vector3(cx,h*.56f,.12f),new Vector3(width-.075f,h*.82f,.05f),.008f);
+             foreach(int edge in new[]{-1,1})batch.Bevel(frame,new Vector3(cx+edge*(width/2-.018f),h/2,.15f),new Vector3(.055f,h,.09f),.009f);
+             batch.Bevel(frame,new Vector3(cx,.22f,.15f),new Vector3(width,.38f,.09f),.012f);}
         }
+        batch.Flush(root);
+        var collision=root.gameObject.AddComponent<BoxCollider>();collision.center=new Vector3(0,h/2,.085f);collision.size=new Vector3(halfW*2+.03f,h,.21f);
+        it.Solids.Add(new Solid(x-halfW,z+face*.085f-.105f,x+halfW,z+face*.085f+.105f,true));
+        if(halfW>1.05f){DoorLeaf(p,it,x-central/2,z,central-.018f,h,face,1);DoorLeaf(p,it,x+central/2,z,central-.018f,h,face,-1);}
+        else DoorLeaf(p,it,x,z,central*2-.035f,h,face,1);
+        var lamp=new GameObject("exit_warm_light");lamp.transform.SetParent(root,false);lamp.transform.localPosition=new Vector3(0,h-.1f,.45f);var light=lamp.AddComponent<Light>();light.type=LightType.Point;light.color=MatLib.Hex("#ffe6c3");light.range=4.2f;light.intensity=.65f;light.shadows=LightShadows.None;
     }
-
-    // 门扇：盖满门洞，碰撞按墙处理，出口仍由 F 触发
-    static void DoorLeaf(Transform p, Interior it, float cx, float z, float w, float h, int face, int handleSide)
+    static void DoorLeaf(Transform p,Interior it,float cx,float z,float w,float h,int face,int handleSide)
     {
-        const float t = 0.07f;
-        float zLeaf = z + face * 0.16f;
-        var leaf = CB("#c98a4e");
-        var panel = CB("#a8703c");
-        var trim = CB("#8a5a34");
-        var brass = CB("#f0d060");
-
-        SolidPart(p, it, new Vector3(cx, h * 0.5f, zLeaf), new Vector3(w, h, t), leaf, 1f, true);
-
-        float zFace = z + face * 0.20f;
-        Part(p, new Vector3(cx, h * 0.68f, zFace), new Vector3(w * 0.58f, h * 0.30f, 0.02f), panel, 1f);
-        Part(p, new Vector3(cx, h * 0.34f, zFace), new Vector3(w * 0.58f, h * 0.30f, 0.02f), panel, 1f);
-        Part(p, new Vector3(cx, h * 0.52f, zFace + face * 0.005f), new Vector3(w * 0.9f, 0.05f, 0.015f), trim, 1f);
-        Part(p, new Vector3(cx, 0.18f, zFace + face * 0.005f), new Vector3(w * 0.9f, 0.12f, 0.015f), trim, 1f);
-
-        float hx = cx + handleSide * (w * 0.5f - 0.14f);
-        Part(p, new Vector3(hx, 1.05f, zFace + face * 0.02f), new Vector3(0.12f, 0.22f, 0.03f), brass, 1f);
-        Part(p, new Vector3(hx, 1.05f, zFace + face * 0.06f), new Vector3(0.05f, 0.05f, 0.10f), brass, 1f);
-
-        float hgx = cx - handleSide * (w * 0.5f - 0.07f);
-        foreach (float hy in new[] { 0.45f, 1.95f })
-            Part(p, new Vector3(hgx, hy, zFace + face * 0.015f), new Vector3(0.07f, 0.16f, 0.06f), trim, 1f);
+        var root=new GameObject("PrecisionDoorLeaf").transform;root.SetParent(p,false);root.localPosition=new Vector3(cx,0,z+face*.12f);root.localRotation=Quaternion.Euler(0,face>0?0:180,0);
+        var body=InteriorMood.DoorBody;var trim=InteriorMood.DoorFrame;var metal=DetailSurface.Mat("metal",InteriorMood.Current.Metal);var glass=DetailSurface.Mat("glass","#7b979b");var batch=new RegionMeshBatch();
+        batch.Bevel(body,new Vector3(0,h/2,0),new Vector3(w,h,.12f),.024f,0,3);
+        foreach(float y in new[]{h*.72f,h*.28f})
+        {
+            float ph=h*(y>h*.5f?.31f:.27f),pw=w*.62f;
+            batch.Bevel(trim,new Vector3(0,y,.069f),new Vector3(pw+.11f,ph+.11f,.035f),.012f);
+            batch.Bevel(y>h*.5f?glass:body,new Vector3(0,y,.091f),new Vector3(pw,ph,.018f),.006f);
+        }
+        batch.Bevel(metal,new Vector3(0,.18f,.077f),new Vector3(w*.85f,.20f,.025f),.006f);
+        int localSide=handleSide*face;float hx=localSide*(w/2-.19f);batch.Bevel(metal,new Vector3(hx,1.04f,.095f),new Vector3(.10f,.23f,.045f),.018f);
+        batch.Cylinder(metal,new Vector3(hx,1.07f,.10f),new Vector3(hx,1.07f,.17f),.025f);
+        batch.Cylinder(metal,new Vector3(hx,1.07f,.17f),new Vector3(hx-localSide*.16f,1.07f,.17f),.018f);
+        foreach(float hy in new[]{.33f,h*.5f,h-.33f})batch.Cylinder(metal,new Vector3(-localSide*(w/2-.025f),hy-.07f,.02f),new Vector3(-localSide*(w/2-.025f),hy+.07f,.02f),.026f);
+        batch.Flush(root);
     }
 
     // 收银台（长轴沿 X；face=+1 顾客在 +z 侧）

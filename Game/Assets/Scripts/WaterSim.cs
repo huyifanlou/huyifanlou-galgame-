@@ -123,10 +123,10 @@ public class WaterSim : MonoBehaviour
         gameObject.AddComponent<MeshFilter>().sharedMesh = _mesh;
         var mr = gameObject.AddComponent<MeshRenderer>();
         var mat = new Material(Shader.Find("Campus/Water"));
-        mat.mainTexture = MatLib.Tex("water", false, true);
+        mat.SetColor("_DeepColor",MatLib.Hex("#376b61"));mat.SetColor("_ShallowColor",MatLib.Hex("#7b9c7e"));
         mr.sharedMaterial = mat;
         mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        mr.receiveShadows = false;
+        mr.receiveShadows = true;
         _weather = FindObjectOfType<Weather>();
     }
 

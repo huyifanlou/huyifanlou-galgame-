@@ -18,6 +18,7 @@ public class Interior
     public Vector2 Exit;
     public float ExitRadius = 1.7f;
     public float[] FloorY;
+    public float CeilingY;
     public GameObject Root;
     // 出口净空区（门内侧 4~5m、门宽范围）：家具不得压这条动线
     public float ClearX1, ClearX2, ClearZ1, ClearZ2;
@@ -94,7 +95,7 @@ public static partial class InteriorBuilder
     static void CeilingSlab(Transform p, float ox, float W, float w, float d, Material ceil)
     {
         _ceilY = W - 0.06f;
-        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(w, 0.06f, d), ceil, 2f);
+        Part(p, new Vector3(ox, W - 0.03f, 0f), new Vector3(w, 0.06f, d), ceil, 2f, default, true);
     }
 
     // 吊杆长度上限：大层高房间（礼堂 8.5m）把悬挂物整体抬高，而不是挂一根五米的细杆
@@ -118,23 +119,23 @@ public static partial class InteriorBuilder
 
     static Material T(string tex)
     {
-        if (!_cache.TryGetValue("T" + tex, out var m)) { m = MatLib.Lit(tex); _cache["T" + tex] = m; }
+        string key="T"+InteriorMood.Current.Id+tex;
+        if (!_cache.TryGetValue(key, out var m)) { m = InteriorMood.Surface(tex)??MatLib.Lit(tex); _cache[key] = m; }
         return m;
     }
 
-    // 室内木作统一走这块平涂色（docs/103）：
-    // TextureLibrary 的 wood 是 #a1887f 的灰褐木纹，写实风格下没问题，但卡通渲染的暗面会把它压成脏褐，
-    // 家具在画面里就「消失」了。室内家具量小、离镜头近，用高饱和平涂色 + 粗描边更符合卡通语言；
-    // 大面积的墙纸/地砖/天花仍然走贴图（保持墙面细节）。世界侧的木头不受影响（WorldBuilder 直接调 MatLib）。
+    // 近景木作用连续细木纹；与地板的拼板纹理分开，避免门和家具出现横向板缝。
     static Material InteriorWood()
     {
-        if (!_cache.TryGetValue("IW", out var m)) { m = CB("#f5c26a"); _cache["IW"] = m; }
+        string key="IW"+InteriorMood.Current.Id;
+        if (!_cache.TryGetValue(key, out var m)) { m = DetailSurface.Mat("timber",InteriorMood.Current.Wood); _cache[key] = m; }
         return m;
     }
 
     static Material C(string hex)
     {
-        if (!_cache.TryGetValue("C" + hex, out var m)) { m = MatLib.LitColor(MatLib.Hex(hex)); _cache["C" + hex] = m; }
+        hex=InteriorMood.Paint(hex);
+        if (!_cache.TryGetValue("C" + hex, out var m)) { m = DetailSurface.Mat("paint",hex); _cache["C" + hex] = m; }
         return m;
     }
 
@@ -144,7 +145,8 @@ public static partial class InteriorBuilder
     //   0.06m 的细杆配 0.0055 描边，黑色会吃掉杆本身，画面立刻变脏（Lead 已确认描边 18m 内满强度）。
     static Material CB(string hex)
     {
-        if (!_cache.TryGetValue("B" + hex, out var m)) { m = MatLib.LitColorBold(MatLib.Hex(hex)); _cache["B" + hex] = m; }
+        hex=InteriorMood.Paint(hex);
+        if (!_cache.TryGetValue("B" + hex, out var m)) { m = DetailSurface.Mat("paint",hex); _cache["B" + hex] = m; }
         return m;
     }
 
@@ -186,115 +188,6 @@ public static partial class InteriorBuilder
     // 明暗 ramp 也只有一个台阶，看上去像贴纸。倒角后每个转角多出一条 45° 窄面，
     // 会吃到相邻的第三个光照台阶，边缘立刻「硬」起来 —— 这是 cel shading 里最省成本的体积做法。
     // 碰撞仍然按原来的 AABB 走（PartC 不注册 Solid，Solid 由调用点各自 Reg），所以不影响走位。
-    static readonly Dictionary<string, Mesh> _chamfer = new Dictionary<string, Mesh>();
-
-    static Mesh ChamferMesh(Vector3 size, float b, float texMeters)
-    {
-        string key = size.x.ToString("F3") + "|" + size.y.ToString("F3") + "|" + size.z.ToString("F3")
-                   + "|" + b.ToString("F3") + "|" + texMeters.ToString("F2");
-        if (_chamfer.TryGetValue(key, out var cached)) return cached;
-
-        float[] half = { size.x * 0.5f, size.y * 0.5f, size.z * 0.5f };
-        b = Mathf.Min(b, Mathf.Min(half[0], Mathf.Min(half[1], half[2])) * 0.45f);
-        float[] inner = { half[0] - b, half[1] - b, half[2] - b };
-        if (texMeters < 0.01f) texMeters = 1f;
-
-        var verts = new List<Vector3>();
-        var norms = new List<Vector3>();
-        var uvs = new List<Vector2>();
-        var tris = new List<int>();
-
-        // 绕序不手写：按外向法线自动修正，写错也不会出现黑面
-        void Poly(Vector3 n, Vector3[] v)
-        {
-            bool flip = Vector3.Dot(Vector3.Cross(v[1] - v[0], v[2] - v[0]), n) < 0f;
-            int baseI = verts.Count;
-            float ax = Mathf.Abs(n.x), ay = Mathf.Abs(n.y), az = Mathf.Abs(n.z);
-            for (int i = 0; i < v.Length; i++)
-            {
-                verts.Add(v[i]);
-                norms.Add(n);
-                // UV 按法线主轴投影：每个面的像素密度与 MeshFactory.BoxUV 一致，不会拉花
-                Vector2 uv = (ax >= ay && ax >= az) ? new Vector2(v[i].z, v[i].y)
-                           : (ay >= az) ? new Vector2(v[i].x, v[i].z)
-                           : new Vector2(v[i].x, v[i].y);
-                uvs.Add(uv / texMeters);
-            }
-            for (int i = 1; i + 1 < v.Length; i++)
-            {
-                if (!flip) { tris.Add(baseI); tris.Add(baseI + i); tris.Add(baseI + i + 1); }
-                else { tris.Add(baseI); tris.Add(baseI + i + 1); tris.Add(baseI + i); }
-            }
-        }
-
-        // 6 个主面：法线轴取 ±half，另两轴取 ±inner
-        for (int a = 0; a < 3; a++)
-        {
-            int u = (a + 1) % 3, w = (a + 2) % 3;
-            for (int s = -1; s <= 1; s += 2)
-            {
-                var n = Vector3.zero; n[a] = s;
-                var q = new Vector3[4];
-                int k = 0;
-                foreach (var (cu, cw) in new[] { (-1f, -1f), (1f, -1f), (1f, 1f), (-1f, 1f) })
-                {
-                    var v = Vector3.zero;
-                    v[a] = s * half[a];
-                    v[u] = cu * inner[u];
-                    v[w] = cw * inner[w];
-                    q[k++] = v;
-                }
-                Poly(n, q);
-            }
-        }
-
-        // 12 条棱：45° 窄面（两端各接相邻两个主面的内缩边，必须排成凸四边形）
-        for (int a = 0; a < 3; a++)
-            for (int bb = a + 1; bb < 3; bb++)
-            {
-                int c = 3 - a - bb;
-                for (int sa = -1; sa <= 1; sa += 2)
-                    for (int sb = -1; sb <= 1; sb += 2)
-                    {
-                        var n = new Vector3(0f, 0f, 0f);
-                        n[a] = sa; n[bb] = sb;
-                        n.Normalize();
-                        Vector3 EdgeP(int sc, bool onA)
-                        {
-                            var v = Vector3.zero;
-                            v[c] = sc * inner[c];
-                            v[a] = sa * (onA ? half[a] : inner[a]);
-                            v[bb] = sb * (onA ? inner[bb] : half[bb]);
-                            return v;
-                        }
-                        Poly(n, new[] { EdgeP(-1, true), EdgeP(-1, false), EdgeP(1, false), EdgeP(1, true) });
-                    }
-            }
-
-        // 8 个角：三角形
-        for (int sx = -1; sx <= 1; sx += 2)
-            for (int sy = -1; sy <= 1; sy += 2)
-                for (int sz = -1; sz <= 1; sz += 2)
-                {
-                    var n = new Vector3(sx, sy, sz).normalized;
-                    Poly(n, new[]
-                    {
-                        new Vector3(sx * half[0], sy * inner[1], sz * inner[2]),
-                        new Vector3(sx * inner[0], sy * half[1], sz * inner[2]),
-                        new Vector3(sx * inner[0], sy * inner[1], sz * half[2]),
-                    });
-                }
-
-        var m = new Mesh();
-        m.SetVertices(verts);
-        m.SetNormals(norms);
-        m.SetUVs(0, uvs);
-        m.SetTriangles(tris, 0);
-        m.RecalculateBounds();
-        _chamfer[key] = m;
-        return m;
-    }
-
     // 倒角部件：位置/尺寸语义与 Part 完全一致（同一套坐标），只是网格换成倒角盒
     // 描边宽度按部件最小尺寸自动收（见 OutlineMat）：大块面粗描边，细窄件细描边，
     // 避免「小物件全用 Bold → 近景一片黑」（Lead 反馈，描边 18m 内满强度）。
@@ -305,8 +198,10 @@ public static partial class InteriorBuilder
         go.transform.SetParent(p, false);
         go.transform.localPosition = pos;
         go.transform.localEulerAngles = euler;
-        go.AddComponent<MeshFilter>().sharedMesh = ChamferMesh(size, bevel, texMeters);
-        go.AddComponent<MeshRenderer>().sharedMaterial = OutlineAdjusted(mat, size);
+        go.AddComponent<MeshFilter>().sharedMesh = PrecisionMesh.Box(size,bevel,3,texMeters);
+        var renderer = go.AddComponent<MeshRenderer>();
+        renderer.sharedMaterial = OutlineAdjusted(mat, size);
+        MatLib.ConfigureSurface(renderer, size);
         return go;
     }
 
@@ -330,9 +225,11 @@ public static partial class InteriorBuilder
         go.transform.SetParent(p, false);
         go.transform.localPosition = pos;
         go.transform.localEulerAngles = euler;
-        go.AddComponent<MeshFilter>().sharedMesh = MeshFactory.BoxUV(size, texMeters);
+        float min=Mathf.Min(size.x,Mathf.Min(size.y,size.z));
+        go.AddComponent<MeshFilter>().sharedMesh = !collider&&min>.012f&&Mathf.Max(size.x,Mathf.Max(size.y,size.z))<8?PrecisionMesh.Box(size,Mathf.Min(.018f,min*.18f),2,texMeters):MeshFactory.BoxUV(size,texMeters);
         var r = go.AddComponent<MeshRenderer>();
         r.sharedMaterial = OutlineAdjusted(mat, size);
+        MatLib.ConfigureSurface(r, size);
         if (collider)
         {
             var bc = go.AddComponent<BoxCollider>();
@@ -410,7 +307,7 @@ public static partial class InteriorBuilder
     static Material Glass()
     {
         // 卡通玻璃：高明度冷青，靠描边勾窗格；不再用低饱和灰蓝（卡通光照下会发脏）
-        if (_glass == null) _glass = MatLib.UnlitColor(MatLib.Hex("#cfeaf6"));
+        if (_glass == null) _glass = DetailSurface.Mat("glass","#a7c0c8");
         return _glass;
     }
 
@@ -422,7 +319,7 @@ public static partial class InteriorBuilder
         g.localPosition = pos;
         g.localEulerAngles = new Vector3(0f, ry, 0f);
         Part(g, Vector3.zero, new Vector3(w, h, 0.05f), Glass(), 1f);
-        var fr = CB("#c98a4e");
+        var fr = DetailSurface.Mat("timber","#b29b7c");
         PartC(g, new Vector3(0f, h * 0.5f, 0.02f), new Vector3(w + 0.16f, 0.10f, 0.10f), fr, 0.014f, 1f);
         PartC(g, new Vector3(0f, -h * 0.5f, 0.02f), new Vector3(w + 0.16f, 0.10f, 0.10f), fr, 0.014f, 1f);
         PartC(g, new Vector3(-w * 0.5f, 0f, 0.02f), new Vector3(0.10f, h, 0.10f), fr, 0.014f, 1f);
@@ -493,10 +390,14 @@ public static partial class InteriorBuilder
         g.localEulerAngles = new Vector3(0f, ry, 0f);
         PartC(g, Vector3.zero, new Vector3(0.44f, 0.44f, 0.05f), C("#fffdf5"), 0.020f, 1f);
         // 外圈：比表盘大 3cm，卡通描边把钟从墙纸上「抠」出来
-        Part(g, new Vector3(0f, 0f, -0.012f), new Vector3(0.50f, 0.50f, 0.02f), C("#e0724a"), 1f);
-        Part(g, new Vector3(0f, 0.07f, 0.032f), new Vector3(0.03f, 0.15f, 0.012f), C("#33384a"), 1f);
-        Part(g, new Vector3(0.05f, 0f, 0.034f), new Vector3(0.11f, 0.03f, 0.012f), C("#33384a"), 1f);
-        Part(g, new Vector3(0f, 0f, 0.036f), new Vector3(0.05f, 0.05f, 0.014f), C("#e0724a"), 1f);
+        Part(g, new Vector3(0f, 0f, 0.012f), new Vector3(0.50f, 0.50f, 0.02f), C("#e0724a"), 1f);
+        Part(g, new Vector3(0f, 0.07f, -0.032f), new Vector3(0.03f, 0.15f, 0.012f), C("#33384a"), 1f);
+        Part(g, new Vector3(0.05f, 0f, -0.034f), new Vector3(0.11f, 0.03f, 0.012f), C("#33384a"), 1f);
+        Part(g, new Vector3(0f, 0f, -0.036f), new Vector3(0.05f, 0.05f, 0.014f), C("#e0724a"), 1f);
+        SignText(g,new Vector3(0,.17f,-.045f),0,"12",.006f,MatLib.Hex("#445152"));
+        SignText(g,new Vector3(.17f,0,-.045f),0,"3",.006f,MatLib.Hex("#445152"));
+        SignText(g,new Vector3(0,-.17f,-.045f),0,"6",.006f,MatLib.Hex("#445152"));
+        SignText(g,new Vector3(-.17f,0,-.045f),0,"9",.006f,MatLib.Hex("#445152"));
     }
 
     static void Plant(Transform p, Vector3 pos, float s = 1f)
@@ -527,53 +428,59 @@ public static partial class InteriorBuilder
     }
 
     static void Rug(Transform p, Vector3 pos, float w, float d, Material mat)
-        => Part(p, pos, new Vector3(w, 0.02f, d), mat, 1f);
+    {
+        var theme=InteriorMood.Current;
+        string rugTint=theme.Accent;
+        if(theme.Id=="dorm")rugTint=new[]{"#a18eaa","#a99b84","#899ba4"}[Mathf.Abs(Mathf.RoundToInt(pos.x*3+pos.z))%3];
+        if(theme.Id=="labs")
+        {
+            Part(p,pos,new Vector3(w,.012f,d),DetailSurface.Mat("epoxy",rugTint));return;
+        }
+        PartC(p,pos,new Vector3(w,.016f,d),DetailSurface.Mat("fabric",rugTint),.003f);
+        var rug=new GameObject("DecorativeRug");rug.transform.SetParent(p,false);rug.transform.localPosition=pos+Vector3.up*.009f;
+        rug.AddComponent<MeshFilter>().sharedMesh=MeshFactory.Quad(w-.008f,d-.008f,1,1);
+        rug.AddComponent<MeshRenderer>().sharedMaterial=DecorativeRug.Material(theme.Id,rugTint,w,d);
+    }
 
     // 椅子：靠背在局部 -Z，所以 ry=0 人朝 +Z。摆在桌子南侧取 0、北侧 180、西侧 90、东侧 270。
     // 卡通造型（docs/103）：坐面倒角 + 靠背分两块（下横档 + 上靠板）+ 后腿通到靠背顶，
     // 这样从任何角度都能看到至少三条独立轮廓线，而不是一个「盒子 + 一片板」。
-    static void Chair(Transform p, Interior it, Vector3 seat, float ry, Material wood, bool solid = false)
+    static void Chair(Transform p,Interior it,Vector3 seat,float ry,Material wood,bool solid=false)
     {
-        var g = new GameObject("chair").transform;
-        g.SetParent(p, false);
-        g.localPosition = seat;
-        g.localEulerAngles = new Vector3(0f, ry, 0f);
-        var edge = Darker(wood, 0.80f);
-        PartC(g, new Vector3(0f, 0.44f, 0f), new Vector3(0.46f, 0.06f, 0.46f), wood, 0.018f, 0.8f);
-        // 坐面下的托框：比坐面内缩 3cm，给卡通描边留一条暗缝
-        PartC(g, new Vector3(0f, 0.39f, 0f), new Vector3(0.40f, 0.04f, 0.40f), edge, 0.012f, 0.8f);
-        // 靠背：下横档 + 上靠板（两块之间留 3cm 缝，避免共面）
-        PartC(g, new Vector3(0f, 0.60f, -0.19f), new Vector3(0.42f, 0.10f, 0.06f), edge, 0.012f, 0.8f);
-        PartC(g, new Vector3(0f, 0.80f, -0.19f), new Vector3(0.42f, 0.30f, 0.06f), wood, 0.016f, 0.8f);
-        // 靠背顶压条：比靠板外凸 5mm，描边勾出椅背顶端
-        PartC(g, new Vector3(0f, 0.955f, -0.19f), new Vector3(0.44f, 0.04f, 0.07f), edge, 0.010f, 0.8f);
-        for (int i = 0; i < 4; i++)
+        var g=new GameObject("PrecisionChair").transform;g.SetParent(p,false);g.localPosition=seat;g.localEulerAngles=new Vector3(0,ry,0);
+        if(StyledChair(g)){if(solid)Reg(it,seat.x,seat.z,.56f,.56f);return;}
+        var grain=DetailSurface.Mat("timber","#ad9576");var steel=DetailSurface.Mat("metal","#68716d");var rubber=DetailSurface.Mat("rubber","#3e4542");var batch=new RegionMeshBatch();
+        batch.Bevel(grain,new Vector3(0,.45f,0),new Vector3(.47f,.07f,.46f),.028f,0,3);
+        batch.Bevel(grain,new Vector3(0,.79f,-.20f),new Vector3(.45f,.29f,.07f),.025f,0,3);
+        foreach(int side in new[]{-1,1})
         {
-            bool rear = i >= 2;
-            Part(g, new Vector3(i % 2 == 0 ? -0.19f : 0.19f, rear ? 0.28f : 0.22f, i < 2 ? -0.19f : 0.19f),
-                 new Vector3(0.05f, rear ? 0.56f : 0.44f, 0.05f), edge, 0.6f);
+            batch.Cylinder(steel,new Vector3(side*.18f,.04f,-.18f),new Vector3(side*.18f,.90f,-.18f),.022f);
+            batch.Cylinder(steel,new Vector3(side*.18f,.04f,.18f),new Vector3(side*.18f,.42f,.18f),.022f);
+            batch.Cylinder(steel,new Vector3(side*.18f,.20f,-.18f),new Vector3(side*.18f,.20f,.18f),.014f);
+            foreach(int front in new[]{-1,1})batch.Bevel(rubber,new Vector3(side*.18f,.027f,front*.18f),new Vector3(.055f,.05f,.055f),.012f);
+            foreach(float y in new[]{.72f,.85f})batch.Cylinder(steel,new Vector3(side*.14f,y,-.244f),new Vector3(side*.14f,y,-.238f),.009f);
         }
-        if (solid) Reg(it, seat.x, seat.z, 0.56f, 0.56f);
+        batch.Cylinder(steel,new Vector3(-.18f,.40f,.18f),new Vector3(.18f,.40f,.18f),.018f);
+        batch.Flush(g);if(solid)Reg(it,seat.x,seat.z,.56f,.56f);
     }
-
-    // 桌子：台面倒角 + 台面下托边（比台面内缩 2cm）+ 横撑，腿顶伸进台面 4cm
-    static void Table(Transform p, Vector3 basePos, float w, float d, float h, Material wood)
+    static void Table(Transform p,Vector3 pos,float w,float d,float h,Material wood)
     {
-        var edge = Darker(wood, 0.80f);
-        PartC(p, new Vector3(basePos.x, basePos.y + h - 0.04f, basePos.z),
-              new Vector3(w, 0.08f, d), wood, 0.020f, 1.1f);
-        // 托边：台面正下方一圈，卡通渲染里这圈暗面把台面「压」在家具上
-        PartC(p, new Vector3(basePos.x, basePos.y + h - 0.10f, basePos.z),
-              new Vector3(w - 0.10f, 0.06f, d - 0.10f), edge, 0.014f, 1.0f);
-        for (int i = 0; i < 4; i++)
-            Part(p, new Vector3(basePos.x + (i % 2 == 0 ? -w * 0.5f + 0.12f : w * 0.5f - 0.12f),
-                                basePos.y + (h - 0.04f) * 0.5f,
-                                basePos.z + (i < 2 ? -d * 0.5f + 0.12f : d * 0.5f - 0.12f)),
-                 new Vector3(0.08f, h - 0.04f, 0.08f), wood, 0.7f);   // 腿顶伸进台面 4cm，不与板底共面
-        // 横撑：长边两道，让桌腿不是四条孤立柱子
-        foreach (int s in new[] { -1, 1 })
-            Part(p, new Vector3(basePos.x, basePos.y + 0.16f, basePos.z + s * (d * 0.5f - 0.12f)),
-                 new Vector3(w - 0.30f, 0.05f, 0.05f), edge, 0.7f);
+        var g=new GameObject("PrecisionTable").transform;g.SetParent(p,false);g.localPosition=pos;var batch=new RegionMeshBatch();
+        var mood=InteriorMood.Current;
+        var timber=DetailSurface.Mat(mood.Id=="milktea"?"stone":mood.Id=="photo"?"concrete":"timber",mood.Id=="milktea"?"#e5d9c5":mood.Wood);var edge=DetailSurface.Mat("timber",mood.Wood);var metal=DetailSurface.Mat("metal",mood.Metal);
+        batch.Bevel(timber,new Vector3(0,h-.035f,0),new Vector3(w,.07f,d),.025f,0,3);
+        foreach(int side in new[]{-1,1})
+        {
+            batch.Bevel(edge,new Vector3(0,h-.13f,side*(d/2-.09f)),new Vector3(w-.12f,.15f,.06f),.012f);
+            batch.Bevel(edge,new Vector3(side*(w/2-.09f),h-.13f,0),new Vector3(.06f,.15f,d-.12f),.012f);
+            foreach(int end in new[]{-1,1})
+            {
+                float x=side*(w/2-.11f),z=end*(d/2-.11f);
+                batch.Bevel(edge,new Vector3(x,(h-.08f)/2+.035f,z),new Vector3(.07f,h-.08f,.07f),.012f);
+                batch.Bevel(metal,new Vector3(x,.035f,z),new Vector3(.075f,.045f,.075f),.009f);
+            }
+        }
+        batch.Flush(g);
     }
 
     // 靠东墙的书架：书脊朝 -x，两段书架之间正好夹住窗户
@@ -617,8 +524,7 @@ public static partial class InteriorBuilder
     static void SignText(Transform p, Vector3 pos, float ry, string s, float h, Color color)
     {
         if (_signFont == null)
-            _signFont = Font.CreateDynamicFontFromOSFont(
-                new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "Arial" }, 72);
+            _signFont = GameFonts.Map;
         var go = new GameObject("signtext");
         go.transform.SetParent(p, false);
         go.transform.localPosition = pos;
@@ -653,35 +559,23 @@ public static partial class InteriorBuilder
     // 沙发：各面深度互相错开 ≥2cm —— 同材质的共平面（坐垫/扶手/靠背原来同一圈坐标）会闪面
     // 卡通造型：底座倒角 + 坐垫分两段（中间留 4cm 缝）+ 靠背三块靠枕 + 扶手圆角，
     // 远看是「大块面」，近看每条缝都是一条硬描边。
-    static void Sofa(Transform p, Vector3 pos, float len, float ry, Material fabric)
+    static void Sofa(Transform p,Vector3 pos,float len,float ry,Material fabric)
     {
-        var g = new GameObject("sofa").transform;
-        g.SetParent(p, false);
-        g.localPosition = pos;
-        g.localEulerAngles = new Vector3(0f, ry, 0f);
-        var dark = Darker(fabric, 0.74f);
-        PartC(g, new Vector3(0f, 0.11f, 0f), new Vector3(len - 0.16f, 0.22f, 0.78f), CB("#8a5a34"), 0.020f, 1f);  // 底座（内缩）
-        // 坐垫：按长度切 2~3 段，段间留 4cm 缝（卡通分件的核心手法）
-        int seg = len > 2.2f ? 3 : 2;
-        float segW = (len - 0.28f - (seg - 1) * 0.04f) / seg;
-        for (int i = 0; i < seg; i++)
+        var g=new GameObject("PrecisionSofa").transform;g.SetParent(p,false);g.localPosition=pos;g.localEulerAngles=new Vector3(0,ry,0);
+        string tint="#"+ColorUtility.ToHtmlStringRGB(fabric.color);var cloth=DetailSurface.Mat("fabric",tint);var seam=DetailSurface.Mat("fabric","#8d9c91");var timber=DetailSurface.Mat("timber","#76624f");var batch=new RegionMeshBatch();
+        batch.Bevel(timber,new Vector3(0,.14f,0),new Vector3(len-.18f,.20f,.76f),.035f);
+        foreach(int side in new[]{-1,1})foreach(int end in new[]{-1,1})batch.Cylinder(timber,new Vector3(side*(len/2-.20f),.02f,end*.31f),new Vector3(side*(len/2-.20f),.15f,end*.31f),.045f);
+        int count=len>2.2f?3:2;float width=(len-.30f-(count-1)*.035f)/count;
+        for(int i=0;i<count;i++)
         {
-            float cx2 = (i - (seg - 1) * 0.5f) * (segW + 0.04f);
-            PartC(g, new Vector3(cx2, 0.42f, 0.02f), new Vector3(segW, 0.44f, 0.86f), fabric, 0.028f, 1.2f);
-            // 坐垫前沿压条：比坐垫前凸 1cm，勾出座面轮廓
-            Part(g, new Vector3(cx2, 0.30f, 0.45f), new Vector3(segW - 0.02f, 0.10f, 0.02f), dark, 1.2f);
+            float x=(i-(count-1)/2f)*(width+.035f);
+            batch.Bevel(cloth,new Vector3(x,.43f,.045f),new Vector3(width,.36f,.84f),.075f,0,3);
+            batch.Bevel(cloth,new Vector3(x,.79f,-.34f),new Vector3(width,.56f,.24f),.055f,0,3);
+            batch.Cylinder(seam,new Vector3(x-width/2+.03f,.52f,.472f),new Vector3(x+width/2-.03f,.52f,.472f),.0035f);
+            batch.Cylinder(seam,new Vector3(x-width/2+.03f,.99f,-.211f),new Vector3(x+width/2-.03f,.99f,-.211f),.0035f);
         }
-        PartC(g, new Vector3(0f, 0.70f, -0.36f), new Vector3(len - 0.24f, 0.86f, 0.16f), fabric, 0.026f, 1.2f);  // 靠背
-        // 靠枕：两块，比靠背前凸 6cm（原来靠背是一整片，正面看没有任何分层）
-        for (int i = 0; i < 2; i++)
-            PartC(g, new Vector3((i - 0.5f) * (len * 0.42f), 0.78f, -0.26f),
-                  new Vector3(len * 0.36f, 0.44f, 0.14f), dark, 0.024f, 1.2f);
-        foreach (int s in new[] { -1, 1 })
-        {
-            PartC(g, new Vector3(s * (len * 0.5f - 0.1f), 0.62f, 0f), new Vector3(0.2f, 0.62f, 0.94f), fabric, 0.030f, 1.2f);
-            // 扶手顶压条
-            Part(g, new Vector3(s * (len * 0.5f - 0.1f), 0.94f, 0f), new Vector3(0.22f, 0.04f, 0.90f), dark, 1.2f);
-        }
+        foreach(int side in new[]{-1,1})batch.Bevel(cloth,new Vector3(side*(len/2-.09f),.62f,0),new Vector3(.21f,.64f,.96f),.055f,0,3);
+        batch.Flush(g);
     }
 
     // 出口门廊：室外地面 + 顶 + 柱 + 暖灯（出口不再是空白）
@@ -709,9 +603,11 @@ public static partial class InteriorBuilder
     public static List<Interior> Build(Transform parent)
     {
         _cache.Clear();
-        var list = new List<Interior> { Home(parent), School(parent), Library(parent), Restaurant(parent), Supermarket(parent), Canteen(parent), Dorm(parent), Auditorium(parent), Labs(parent),
-            MilkTea(parent), PhotoStudio(parent), Bookstore(parent), ConvStore(parent) };
-        foreach (var it in list) Validate(it);
+        var list=new List<Interior>();
+        var builders=new System.Func<Transform,Interior>[]{Home,School,Library,Restaurant,Supermarket,Canteen,Dorm,Auditorium,Labs,MilkTea,PhotoStudio,Bookstore,ConvStore};
+        string[] styles={"home","school","library","restaurant","supermarket","canteen","dorm","auditorium","labs","milktea","photo","book","conv"};
+        for(int i=0;i<builders.Length;i++)
+        {InteriorMood.Begin(styles[i]);var room=builders[i](parent);room.CeilingY=_ceilY;StyleArchitecture(room);InteriorMood.LightRoom(room);Validate(room);InteriorDetailBatch.Combine(room);list.Add(room);}
         return list;
     }
 
@@ -1129,7 +1025,7 @@ public static partial class InteriorBuilder
         var board = T("in_board");
         // 卡通配色（docs/103）：课桌原 #c9a878 偏灰黄、门套 #7a6248 偏暗，全部提亮提饱和
         var woodDark = CB("#a06a3c");
-        var deskTop = CB("#f0c46a");
+        var deskTop = DetailSurface.Mat("timber","#bfa787");
         var green = CB("#3f9a6a");
 
         const float W = 4.2f;
@@ -1213,7 +1109,7 @@ public static partial class InteriorBuilder
 
         // ── 墙纸 ──
         WallDeco(p, ox - 27.86f, ox + 27.86f, -14.86f, 0.02f, W, 0, 0.05f, wallB, 1.7f);
-        WallDeco(p, ox - 27.86f, ox + 27.86f, 14.86f, 0.02f, W, 0, 0.05f, wall, 1.7f);
+        WallDeco(p, ox - 27.86f, ox + 27.86f, 14.86f, 0.02f, W, 0, 0.05f, wall, 1.7f,new[]{(ox-2.52f,ox+2.52f)});
         WallDeco(p, -14.86f, 14.86f, ox - 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, -14.86f, 14.86f, ox + 27.86f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.11f, 0.02f, W, 0, 0.05f, wall, 1.7f,
@@ -1237,11 +1133,11 @@ public static partial class InteriorBuilder
             WallDeco(p, -14.86f, ZC0 + 0.09f, ox + xx + 0.11f, 0.02f, W, 1, 0.05f, wallB, 1.7f);
         }
         Skirt(p, ox - 27.86f, -14.84f, ox + 27.86f, -14.84f, 0.02f);
-        Skirt(p, ox - 27.86f, 14.84f, ox + 27.86f, 14.84f, 0.02f);
+        Skirt(p, ox - 27.86f, 14.84f, ox - 2.58f, 14.84f, 0.02f);
+        Skirt(p, ox + 2.58f, 14.84f, ox + 27.86f, 14.84f, 0.02f);
 
         // ── 门厅 ──
         PartC(p, new Vector3(ox + 4.5f, 0.6f, 12.8f), new Vector3(3.0f, 1.2f, 0.7f), woodDark, 0.024f, 1f);
-        PartC(p, new Vector3(ox + 4.5f, 1.23f, 12.8f), new Vector3(3.1f, 0.07f, 0.76f), C("#d8b07a"), 0.012f, 1f);
         // 公告栏：外框凸出 + 内白板（原来两块共面，远看像一块糊掉的绿板）
         PartC(p, new Vector3(ox - 8f, 1.75f, 14.79f), new Vector3(3.3f, 1.6f, 0.08f), green, 0.018f, 1f);
         Part(p, new Vector3(ox - 8f, 1.75f, 14.73f), new Vector3(3.1f, 1.4f, 0.02f), C("#f2fbf4"), 1f);
@@ -1345,7 +1241,7 @@ public static partial class InteriorBuilder
         WallDeco(p, ox - 27.86f, ox + 27.86f, ZC0 + 0.19f, 0.02f, 0.14f, 0, 0.06f, corFoot, 1.2f, cDoorN);
         // 南墙 x<+7.5 是敞开的门厅、根本没有墙 → 公告栏统一挂到连续的北墙，位置避开四个门洞
         var notice = CB("#3f9a6a");
-        var noticeCols = new[] { "#ffd88a", "#a8e0f0", "#ffb0b0" };
+        int noticeIndex=0;
         foreach (float dx in new[] { -24f, -15.6f, -7.2f, 3.0f, 9.6f, 18f, 26.4f })
         {
             float bx = ox + dx;
@@ -1353,16 +1249,16 @@ public static partial class InteriorBuilder
             Part(p, new Vector3(bx, 2.20f, ZC0 + 0.20f), new Vector3(1.50f, 0.75f, 0.02f), C("#f2fbf4"), 1.5f);
             // 板报内容：三块彩色小贴纸，让 56m 的走廊墙面有节奏
             // ⚠ 索引必须用非负种子：dx 有负值，C# 对负数取模返回负数，会直接越界（踩过）
-            int seed = Mathf.Abs(Mathf.RoundToInt(dx * 10f)) / 3;
-            for (int i = 0; i < 3; i++)
-                Part(p, new Vector3(bx - 0.44f + i * 0.44f, 2.20f, ZC0 + 0.215f),
-                     new Vector3(0.30f, 0.50f, 0.012f), C(noticeCols[(seed + i) % noticeCols.Length]), 1f);
+            SchoolNoticeContent(p,bx,ZC0+.219f,noticeIndex++);
         }
         foreach (float dx in new[] { -18.6f, -10.4f, 0.2f, 14.6f })   // 教室门牌（门楣上）
         {
             PartC(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.17f), new Vector3(1.14f, 0.34f, 0.05f), CB("#3f9a6a"), 0.012f, 1f);
             Part(p, new Vector3(ox + dx, 2.75f, ZC0 + 0.20f), new Vector3(0.96f, 0.24f, 0.012f), C("#f2fbf4"), 1f);
         }
+        int classroomNumber=1;
+        foreach(float dx in new[]{-18.6f,-10.4f,.2f,14.6f})SchoolDoorTrim(p,ox+dx,ZC0,"高一（"+(classroomNumber++)+"）班");
+        SchoolCraftLobby(p,ox);
         // 踢脚线按真实墙段断开（原来整条横穿门洞和敞开式门厅，像悬空的门槛）
         foreach (var (sa, sb) in new[] { (ox + 7.5f, ox + 12.0f), (ox + 14.0f, ox + 20.6f), (ox + 22.6f, ox + 27.86f) })
             Skirt(p, sa, ZC1 - 0.20f, sb, ZC1 - 0.20f, 0.02f);
@@ -1383,7 +1279,7 @@ public static partial class InteriorBuilder
         Reg(it, ox + 15.9f, 8.7f, 0.5f, 1.7f);
         Reg(it, ox + 21.5f, 6.0f, 1.8f, 0.9f);
         Reg(it, ox + 21.5f, 9.5f, 1.8f, 0.9f);
-
+        if(Args.Has("-schoolcraftcheck"))CheckSchoolCraft(it);
         return it;
     }
 
@@ -1399,11 +1295,7 @@ public static partial class InteriorBuilder
         float bx = cx + boardShift;     // 黑板/讲台/挂钟整体偏移，避开教室门
 
         // 黑板：框比板面外凸 6cm（原来黑板就是一块孤零零的深灰板，卡通描边贴墙糊成一条黑边）
-        PartC(p, new Vector3(bx, 1.7f, zFront - 0.02f), new Vector3(5.24f, 1.52f, 0.06f), CB("#c98a4e"), 0.016f, 1f);
-        Part(p, new Vector3(bx, 1.7f, zFront - 0.055f), new Vector3(5.0f, 1.3f, 0.03f), board, 5.0f);
-        // 粉笔槽 + 板擦
-        PartC(p, new Vector3(bx, 0.96f, zFront - 0.12f), new Vector3(5.10f, 0.07f, 0.14f), CB("#c98a4e"), 0.012f, 1f);
-        Part(p, new Vector3(bx + 1.6f, 1.01f, zFront - 0.12f), new Vector3(0.26f, 0.06f, 0.10f), C("#e0554a"), 1f);
+        TeachingBoard(p,bx,zFront);
         var skirt = C("#7fd0a8");
         float sx1 = westFaceX + 0.03f, sx2 = eastFaceX - 0.03f;
         // 走廊那面墙的墙裙必须按门洞断开：否则一条 1.1m 高的绿带横在门口，进门像被挡住
@@ -1422,11 +1314,12 @@ public static partial class InteriorBuilder
         // 讲台：倒角台体 + 台面压条
         PartC(p, new Vector3(bx, 0.45f, zFront - 0.85f), new Vector3(2.2f, 0.9f, 0.8f), wood, 0.028f, 1f);
         PartC(p, new Vector3(bx, 0.93f, zFront - 0.85f), new Vector3(2.3f, 0.05f, 0.86f), C("#d8b07a"), 0.012f, 1f);
+        Reg(it,bx,zFront-.85f,2.3f,.86f);
 
         // 12 座均匀铺满：宽教室 4 列×3 排，标准教室 3 列×4 排；行列按房间尺寸拉伸
-        int cols = w > 15f ? 4 : 3;
-        int rows = 12 / cols;
-        float colGap = Mathf.Min(3.2f, (w - 2.6f) / Mathf.Max(1, cols - 1));
+        int cols = w > 15f ? 5 : 4;
+        int rows = 4;
+        float colGap = Mathf.Min(2.25f, (w - 2.6f) / Mathf.Max(1, cols - 1));
         // 让门口正对两条列之间的过道，否则进门第一眼就是一张桌子
         float gridShift = 0f;
         if (doorB > doorA)
@@ -1443,17 +1336,13 @@ public static partial class InteriorBuilder
                 float gx = cx + gridShift + (g - (cols - 1) * 0.5f) * colGap;
                 float z = Mathf.Lerp(zTop, zBot, rows > 1 ? (float)r / (rows - 1) : 0.5f);
                 // 课桌：倒角桌面 + 桌斗（原来只有一块 0.62×0.05×0.42 的薄板和四条腿，近景像悬浮片）
-                PartC(p, new Vector3(gx, 0.74f, z), new Vector3(0.62f, 0.05f, 0.42f), desk, 0.012f, 1.0f);
-                PartC(p, new Vector3(gx, 0.66f, z + 0.02f), new Vector3(0.52f, 0.11f, 0.34f), Darker(desk, 0.80f), 0.010f, 1.0f);
-                for (int lg = 0; lg < 4; lg++)
-                    Part(p, new Vector3(gx + (lg % 2 == 0 ? -0.27f : 0.27f), 0.37f,
-                                        z + (lg < 2 ? -0.17f : 0.17f)),
-                         new Vector3(0.04f, 0.74f, 0.04f), C("#9aa4ae"), 0.5f);
+                StudyDesk(p,gx,z,r*cols+g);
                 // 椅子放在桌子**远离黑板**的一侧（z 更小），人朝 +z 正好面向桌子与黑板
                 Chair(p, it, new Vector3(gx, 0f, z - 0.62f), 0f, wood, false);
                 it.Solids.Add(new Solid(gx - 0.34f, z - 0.92f, gx + 0.34f, z + 0.22f));
             }
 
+        ClassroomRenewal(p,it,westFaceX,eastFaceX,zBack,zFront,bx);
         PartC(p, new Vector3(westFaceX + 0.03f, 1.85f, cz + 2.0f), new Vector3(0.05f, 1.3f, 4.2f), green, 0.012f, 4.2f);
 
         Lamp(p, new Vector3(cx - w * 0.25f, 3.85f, cz - 2.5f), 10f, 0.85f);

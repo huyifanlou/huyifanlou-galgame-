@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// C 键人物自选菜单：六人卡片（立绘缩略图+名字+简介），点击或按 1–6 切换玩家模型。
+// C 键人物图鉴：六人立绘卡片，点击或按数字键查看完整立绘。
 // 取代旧的 C 键盲循环；当前角色高亮，开关有淡入。开场期间不响应；对话期间也可开（由 DialogueManager 冻结推进）。
 public class CharacterPicker : MonoBehaviour
 {
@@ -10,7 +10,7 @@ public class CharacterPicker : MonoBehaviour
 
     static readonly string[] Desc =
     {
-        "男主 · 金发蓝瞳 · 水手校服",
+        "男主 · 金发蓝瞳 · 灰衬衫外套\n可查看觉醒后的女体形态",
         "女主 · 白发红瞳 · 礼服血族",
         "挚友 · 黑发棕瞳 · 立领夹克",
         "精灵女仆 · 绿发蓝瞳 · 尖耳",
@@ -26,6 +26,8 @@ public class CharacterPicker : MonoBehaviour
     GUIStyle _title, _sub, _cardName, _cardDesc, _badge, _foot, _num;
     float _anim;
     int _hover = -1;
+    int selected;bool preview,femaleForm;
+    CharacterDef SelectedDefinition=>selected==0&&femaleForm?CharacterDef.FanLouFemale:PlayerAvatar.Roster[selected];
 
     void Awake() { Live = this; }
 
@@ -33,10 +35,18 @@ public class CharacterPicker : MonoBehaviour
     {
         _avatar = avatar; _tod = tod;
         _white = new Texture2D(1, 1); _white.SetPixel(0, 0, Color.white); _white.Apply();
-        _font = Font.CreateDynamicFontFromOSFont(new[] { "Microsoft YaHei", "微软雅黑", "SimHei", "Arial" }, 24);
+        _font = GameFonts.Map;
         if (Args.Has("-picker")) Open();   // 验收钩子：启动即开菜单截图
     }
 
+    System.Collections.IEnumerator Start()
+    {
+        yield return null;
+        var index=Args.I("-gallerycharacter");
+        if(index.HasValue){Open();Select(Mathf.Clamp(index.Value-1,0,5));femaleForm=selected==0&&Args.Str("-galleryform")=="female";if(Args.Has("-gallerydisplay"))DisplaySelected();}
+    }
+    public bool DisplaySelected()
+    {if(StandeeDisplay.Live!=null&&StandeeDisplay.Live.Show(SelectedDefinition)){Close();return true;}return false;}
     public void Toggle() { if (IsOpen) Close(); else Open(); }
 
     void Open()
@@ -51,20 +61,18 @@ public class CharacterPicker : MonoBehaviour
     void Select(int i)
     {
         if (_avatar == null || i < 0 || i >= PlayerAvatar.Roster.Length) return;
-        _avatar.SetCharacter(PlayerAvatar.Roster[i]);
-        if (_tod != null) _tod.ShowToast("人物模型：" + _avatar.Label);
-        Close();
+        selected=i;preview=true;
     }
 
     void Update()
     {
-        if (!IsOpen) return;
+        if (!IsOpen||HelpSidebar.IsOpen) return;
         Cursor.lockState = CursorLockMode.None; Cursor.visible = true;
         _anim = Mathf.Min(1f, _anim + Time.deltaTime * 5f);
-        if (Input.GetKeyDown(KeyCode.Escape)) { Close(); return; }
+        if (GameInput.Cancel()) { if(preview)preview=false;else Close(); return; }
         // C 的开/关由 PlayerRig 统一处理（Toggle），这里不再响应，避免同帧双切换
         for (int i = 0; i < 6; i++)
-            if (Input.GetKeyDown(KeyCode.Alpha1 + i) || Input.GetKeyDown(KeyCode.Keypad1 + i)) { Select(i); return; }
+            if (GameInput.Down("Character"+(i+1))) { Select(i); return; }
     }
 
     GUIStyle Mk(int size, TextAnchor anchor, Color c, bool wrap = false, bool bold = false)
@@ -98,7 +106,7 @@ public class CharacterPicker : MonoBehaviour
     {
         var res = "Portraits/" + (string.IsNullOrEmpty(id) ? "fanlou" : id) + "-cut";
         if (_thumbs.TryGetValue(res, out var t)) return t;
-        t = Resources.Load<Texture2D>(res);
+        t = PortraitAssets.LoadResource(res);
         if (t != null) { t.filterMode = FilterMode.Bilinear; t.wrapMode = TextureWrapMode.Clamp; }
         _thumbs[res] = t;
         return t;
@@ -106,8 +114,31 @@ public class CharacterPicker : MonoBehaviour
 
     void OnGUI()
     {
-        if (!IsOpen) return;
+        if (!IsOpen||HelpSidebar.IsOpen) return;
         EnsureStyles();
+        if(preview)
+        {
+            GameUI.Begin(-400);GameUI.Panel(new Rect(280,35,1040,830));var tex=Thumb(SelectedDefinition.id);
+            if(tex!=null)GUI.DrawTexture(new Rect(320,65,610,740),tex,ScaleMode.ScaleToFit);
+            GUI.Label(new Rect(950,165,320,60),SelectedDefinition.label,GameUI.Text(36,GameUI.Paper,true,true));
+            GUI.Label(new Rect(950,245,310,110),femaleForm&&selected==0?"樊楼的觉醒形态\n金发蓝瞳 · 粉白魔法少女\n星心饰扣 · 元气招呼":Desc[selected],GameUI.Text(22,GameUI.Muted,true));
+            if(selected==0)
+            {
+                if(GameUI.Button(new Rect(950,370,145,48),"男体",!femaleForm))femaleForm=false;
+                if(GameUI.Button(new Rect(1110,370,145,48),"女体",femaleForm))femaleForm=true;
+            }
+            var display=StandeeDisplay.Live;
+            if(display!=null)
+            {
+                GUI.Label(new Rect(950,455,310,65),DialogueManager.Active?"暂离剧情后，可将立牌放到面前观看。":"把立牌放到面前，可以走近观看。",GameUI.Text(17,GameUI.Muted,true));
+                bool previousEnabled=GUI.enabled;GUI.enabled=!DialogueManager.Active;
+                if(GameUI.Button(new Rect(980,545,260,52),display.CurrentId==SelectedDefinition.id?"移到面前":"展示立牌",false,true))
+                {DisplaySelected();}
+                GUI.enabled=previousEnabled;
+                if(display.IsShowing&&GameUI.Button(new Rect(980,610,260,52),"收起展示立牌")){display.Clear();Close();}
+            }
+            if(GameUI.Button(new Rect(980,735,260,52),"返回人物图鉴"))preview=false;GameUI.End();return;
+        }
         float W = Screen.width, H = Screen.height, a = _anim;
         var accent = new Color(0.37f, 0.88f, 0.78f);
         float s = Mathf.Min(W / 1600f, H / 900f);
@@ -121,9 +152,9 @@ public class CharacterPicker : MonoBehaviour
         Fill(new Rect(px, py, pw, 3), new Color(accent.r, accent.g, accent.b, a));
 
         GUI.color = new Color(1, 1, 1, a);
-        GUI.Label(new Rect(px, py + 22 * s, pw, 40 * s), "选择人物模型", _title);
+        GUI.Label(new Rect(px, py + 22 * s, pw, 40 * s), "人物图鉴", _title);
         GUI.color = new Color(0.72f, 0.77f, 0.83f, 0.9f * a);
-        GUI.Label(new Rect(px, py + 60 * s, pw, 22 * s), "当前操控角色 · 点击卡片或按 1–6 切换", _sub);
+        GUI.Label(new Rect(px, py + 60 * s, pw, 22 * s), "查看人物立绘与简介", _sub);
         GUI.color = Color.white;
 
         float margin = 26 * s, gap = 18 * s, top = 100 * s, bottom = 46 * s;
@@ -137,7 +168,7 @@ public class CharacterPicker : MonoBehaviour
             var rect = new Rect(px + margin + col * (cw + gap), py + top + margin + row * (ch + gap), cw, ch);
             bool hover = rect.Contains(mouse);
             if (hover) _hover = i;
-            bool current = _avatar != null && _avatar.Id == (string.IsNullOrEmpty(PlayerAvatar.Roster[i].id) ? "fanlou" : PlayerAvatar.Roster[i].id);
+            bool current = selected==i;
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none)) Select(i);
 
@@ -173,13 +204,13 @@ public class CharacterPicker : MonoBehaviour
                 var br = new Rect(tx, rect.yMax - pad - 24 * s, 64 * s, 24 * s);
                 Fill(br, new Color(accent.r, accent.g, accent.b, a));
                 GUI.color = new Color(0.05f, 0.07f, 0.11f, a);
-                GUI.Label(br, "当前", _badge);
+                GUI.Label(br, "查看", _badge);
             }
             GUI.color = Color.white;
         }
 
         GUI.color = new Color(0.70f, 0.75f, 0.80f, 0.85f * a);
-        GUI.Label(new Rect(px, py + ph - 38 * s, pw, 24 * s), "C / Esc 关闭 · 切换仅改玩家模型，剧情立绘按说话人独立显示", _foot);
+        GUI.Label(new Rect(px, py + ph - 38 * s, pw, 24 * s), "点击查看完整立绘", _foot);
         GUI.color = Color.white;
     }
 }

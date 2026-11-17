@@ -18,8 +18,8 @@ public static class WorldValidator
         nx = b.face == 2 ? 1f : b.face == -2 ? -1f : 0f;
         nz = b.face == 1 ? 1f : b.face == -1 ? -1f : 0f;
         float off = b.FacesX ? b.HalfWX : b.HalfWZ;
-        dx = b.pos[0] + nx * (off + 0.9f);
-        dz = b.pos[1] + nz * (off + 0.9f);
+        dx = b.pos[0] + nx * (off + b.EntranceExtra + 0.9f);
+        dz = b.pos[1] + nz * (off + b.EntranceExtra + 0.9f);
     }
     // 点到步道中心线的距离（减去半宽；步道是带朝向的长条 plaza 道具）
     static float PathDist(float px, float pz, PropDef p)
@@ -353,6 +353,11 @@ public static class WorldValidator
         var audit = new List<string>();
         foreach (var b in W.BUILDINGS)
         {
+            if (SchoolExterior.Uses(b) || ResidentialExterior.Uses(b))
+            {
+                audit.Add($"立面 {b.id,-8} 实体窗框＋纯色墙体，无立面贴图（docs/109、112）");
+                continue;
+            }
             float fd = TextureLibrary.FacadeDensity(b.size[0], b.size[1]);
             audit.Add($"立面 {b.id,-8} {fd,6:F1}×{fd,6:F1}px/米  {Verdict(fd, fd)}（四面同密度·BoxUV）");
             if (b.wing)

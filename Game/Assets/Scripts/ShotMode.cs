@@ -4,8 +4,17 @@ using UnityEngine;
 // 截图验收（对应 web 版无头 Edge 截图流程）：
 //   Campus.exe -shot shots/day.png -time 18.5 -px 0 -pz 4 -at -21,7.5 -freeze 1 -frames 12
 // 截屏后自动退出（编辑器播放模式下则停止播放）
+[DefaultExecutionOrder(10000)]
 public class ShotMode : MonoBehaviour
 {
+    void LateUpdate()
+    {
+        if(!string.IsNullOrEmpty(_path)&&Args.Has("-trackoverview"))
+        {var camera=Camera.main;camera.transform.position=new Vector3(-28,22,-14);camera.transform.LookAt(new Vector3(-28,0,-32));}
+        if(!string.IsNullOrEmpty(_path)&&Args.Has("-groveoverview")){var c=Camera.main;c.transform.position=new Vector3(60,35,-53);c.transform.LookAt(new Vector3(32,0,-69));}
+        if(!string.IsNullOrEmpty(_path)&&Args.Has("-parkcompare"))
+        {var camera=Camera.main;camera.transform.position=new Vector3(58,1.45f,-43);camera.transform.LookAt(new Vector3(34,.65f,-40));}
+    }
     string _path;
     int _frames = 12;
 

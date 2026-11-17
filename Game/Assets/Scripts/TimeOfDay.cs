@@ -18,8 +18,9 @@ public class TimeOfDay : MonoBehaviour
     bool _perf;
     float _perfClock;
     int _perfFrames;
+    int _perfWarmup=60;
     PostFX _post;
-    Material _skybox;
+    WaterMotionState _waterMotion;
 
     public float Hour => GameMinutes / 60f;
     public float Mix { get; private set; }   // 夜晚混合值（0=白天 1=夜晚）
@@ -131,9 +132,7 @@ public class TimeOfDay : MonoBehaviour
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.Linear;
 
-        // 卡通渲染的天空：不用写实程序化天空盒（大气散射渐变会把画面拉回写实），
-        // 改用平涂渐变穹顶 + 远处的「云带」——卡通天空是色块，不是大气。
-        // WorldBuilder 建的 SkyDay / SkyNight 双穹正是为此而生，这里保留并驱动它们。
+        // 天空由 WorldBuilder 的单层 WorldSky 绘制（docs/110）。
         RenderSettings.skybox = null;
         RenderSettings.defaultReflectionMode = UnityEngine.Rendering.DefaultReflectionMode.Custom;
         RenderSettings.customReflectionTexture = null;
@@ -147,6 +146,7 @@ public class TimeOfDay : MonoBehaviour
 
     void Update()
     {
+        if(StartMenu.IsOpen||ProgressManager.MenuOpen||ProgressManager.Loading||HelpSidebar.IsOpen||CharacterPicker.IsOpen){Apply();return;}
         // 时间推进
         if (TimeSpeed > 0f)
         {
@@ -155,14 +155,14 @@ public class TimeOfDay : MonoBehaviour
         }
 
         // 0/1/2/3 速度 ｜ T +12h ｜ [ ] ±1h
-        if (Input.GetKeyDown(KeyCode.Alpha0)) SetSpeed(0f);
-        if (Input.GetKeyDown(KeyCode.Alpha1)) SetSpeed(1f);
-        if (Input.GetKeyDown(KeyCode.Alpha2)) SetSpeed(6f);
-        if (Input.GetKeyDown(KeyCode.Alpha3)) SetSpeed(30f);
-        if (Input.GetKeyDown(KeyCode.T)) Advance(720f);
-        if (Input.GetKeyDown(KeyCode.LeftBracket)) Advance(-60f);
-        if (Input.GetKeyDown(KeyCode.RightBracket)) Advance(60f);
-        if (Input.GetKeyDown(KeyCode.F10)) CycleFrameMode();
+        if (GameInput.Down("PauseTime")) SetSpeed(0f);
+        if (GameInput.Down("NormalTime")) SetSpeed(1f);
+        if (GameInput.Down("FastTime")) SetSpeed(6f);
+        if (GameInput.Down("VeryFastTime")) SetSpeed(30f);
+        if (GameInput.Down("HalfDay")) Advance(720f);
+        if (GameInput.Down("HourBack")) Advance(-60f);
+        if (GameInput.Down("HourNext")) Advance(60f);
+        if (GameInput.Down("FrameRate")) CycleFrameMode();
 
         Apply();
 
@@ -172,34 +172,44 @@ public class TimeOfDay : MonoBehaviour
     // 灯光剔除放在 LateUpdate：此时相机已跟到玩家最终位置（Update 首帧相机还在原点，会把整街灯误关）
     void LateUpdate()
     {
+        _waterMotion.Step(Time.deltaTime,_wth!=null?_wth.RainAmt:0);_waterMotion.Publish();
         if (_w == null || Camera.main == null) return;
         if (_perf)
         {
+            // 程序化建图会拖长启动帧；先预热，避免把一次建图时间算成运行帧率。
+            if(_perfWarmup>0)_perfWarmup--;
+            else
+            {
             _perfClock += Time.unscaledDeltaTime;
             _perfFrames++;
             if (_perfFrames >= 300)
             {
-                Debug.Log($"[Perf] 近 300 帧平均 {_perfFrames / Mathf.Max(0.001f, _perfClock):F1} FPS");
+                Debug.Log($"[Perf] 预热后 300 帧平均 {_perfFrames / Mathf.Max(0.001f, _perfClock):F1} FPS");
                 _perfClock = 0f;
                 _perfFrames = 0;
+            }
             }
         }
         _cullTimer -= Time.deltaTime;
         if (_cullTimer > 0f) return;
         _cullTimer = 0.2f;
         var cp = Camera.main.transform.position;
+        Light first=null,second=null;float d1=float.MaxValue,d2=float.MaxValue;
+        foreach(var light in _w.LampLights)if(light.type==LightType.Spot)
+        {float d=(light.transform.position-cp).sqrMagnitude;if(d<d1){second=first;d2=d1;first=light;d1=d;}else if(d<d2){second=light;d2=d;}}
         for (int i = 0; i < _w.LampLights.Count; i++)
         {
             var ll = _w.LampLights[i];
-            bool near = (ll.transform.position - cp).sqrMagnitude < 38f * 38f;
+            bool near = !Indoor && Mix>.025f && (ll.transform.position - cp).sqrMagnitude < 30f * 30f;
             if (ll.enabled != near) ll.enabled = near;
+            ll.shadows=near&&!Args.Has("-noshadow")&&ll.type==LightType.Spot&&(ll==first||ll==second)?LightShadows.Soft:LightShadows.None;
         }
     }
 
     public void SetSpeed(float s)
     {
         TimeSpeed = s;
-        ShowToast(s <= 0f ? "时间已暂停（0/1/2/3 切换速度）" : $"时间速度：{s}×（1 秒 = {s} 游戏分钟）");
+        ShowToast(s <= 0f ? "时间已暂停" : $"时间速度：{s}×（1 秒 = {s} 游戏分钟）");
     }
 
     public void Advance(float min)
@@ -207,14 +217,14 @@ public class TimeOfDay : MonoBehaviour
         GameMinutes += min;
         while (GameMinutes >= 1440f) { GameMinutes -= 1440f; DayNum++; }
         while (GameMinutes < 0f) { GameMinutes += 1440f; if (DayNum > 1) DayNum--; else { GameMinutes = 0f; break; } }
-        ShowToast($"时间 {(min > 0f ? "+" : "")}{min / 60f} 小时（T 跳 12h ｜ [ ] ±1h）");
+        ShowToast($"时间 {(min > 0f ? "+" : "")}{min / 60f} 小时");
     }
 
     int _frameMode;   // 0 锁 60 ｜ 1 垂直同步 ｜ 2 不锁帧
 
     // 高刷屏（144/165Hz）上「锁 60 且关垂直同步」会让每帧显示 2 或 3 个刷新周期，画面看着一卡一卡；
     // 给一个运行时切换键，作者可以在自己屏幕上直接试出最顺的一档。
-    void CycleFrameMode()
+    public void CycleFrameMode()
     {
         _frameMode = (_frameMode + 1) % 3;
         if (_frameMode == 0)
@@ -254,6 +264,7 @@ public class TimeOfDay : MonoBehaviour
         float wSun = _wth != null ? _wth.SunMul : 1f;
         float wAmb = _wth != null ? _wth.AmbMul : 1f;
         float wShadow = _wth != null ? _wth.ShadowMul : 1f;
+        warm*=1-wFog*.85f;
 
         // 环境光（ambient + 半球地面色）：0.28 的天空权重 → 阴影偏冷蓝（写实：天光主导阴影）
         Color gnd = Color.Lerp(DAY_HEMI_GND, NIGHT_HEMI_GND, m);
@@ -290,7 +301,7 @@ public class TimeOfDay : MonoBehaviour
             _dir.intensity = Mathf.Lerp(DAY_DIR_I, NIGHT_DIR_I, m) * wSun;
             var baseDir = Color.Lerp(Color.Lerp(DAY_DIR, NIGHT_DIR, m), WARM_DIR, warm * 0.75f);
             _dir.color = _wth != null && wFog > 0.001f ? Color.Lerp(baseDir, _wth.SunTint, wFog * 0.75f) : baseDir;
-            _dir.shadowStrength = Mathf.Lerp(0.85f, 0.22f, wFog) * Mathf.Lerp(1f, 0.85f, m);
+            _dir.shadowStrength = .85f*wShadow*Mathf.Lerp(1f,.85f,m);
         }
         if (_up != null)
         {
@@ -312,6 +323,11 @@ public class TimeOfDay : MonoBehaviour
             // 室内：抬到中性暖白，但**不能过亮**（上一版 0.62 让白墙直接过曝成一片白）
             if (Indoor) toonAmb = Color.Lerp(toonAmb, new Color(0.42f, 0.40f, 0.37f), 0.72f);
             MatLib.SetGlobals(toonAmb, toonSun);
+            Shader.SetGlobalFloat("_InteriorLighting",Indoor?1:0);
+            Color exteriorSky=Color.Lerp(new Color(.33f,.39f,.47f),new Color(.10f,.14f,.23f),m);
+            exteriorSky=Color.Lerp(exteriorSky,new Color(.29f,.34f,.39f)*Mathf.Lerp(1,.32f,m),wFog*.6f);
+            Shader.SetGlobalColor("_SurfaceSky",Indoor?new Color(.31f,.30f,.28f):exteriorSky*wAmb);
+            Shader.SetGlobalColor("_SurfaceGround",Indoor?new Color(.13f,.12f,.10f):Color.Lerp(new Color(.15f,.14f,.12f),new Color(.045f,.055f,.075f),m)*wAmb);
         }
 
         // 水面着色（Campus/Water 自定义着色器）
@@ -330,37 +346,21 @@ public class TimeOfDay : MonoBehaviour
 
         // 雾（雨雪：更近、更灰/更白）
         var fogBase = Color.Lerp(Color.Lerp(DAY_FOG, NIGHT_FOG, m), WARM_FOG, warm * 0.45f);
-        RenderSettings.fogColor = _wth != null && wFog > 0.001f ? Color.Lerp(fogBase, _wth.FogTint, wFog) : fogBase;
+        RenderSettings.fogColor = _wth != null && wFog > 0.001f ? Color.Lerp(fogBase, _wth.FogTint*Mathf.Lerp(1f,.16f,m), wFog*.75f) : fogBase;
         float fogNearMul = _wth != null ? _wth.FogNearMul : 1f;
         float fogFarMul = _wth != null ? _wth.FogFarMul : 1f;
-        RenderSettings.fogStartDistance = Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m) * fogNearMul;
-        RenderSettings.fogEndDistance = Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m) * fogFarMul;
+        RenderSettings.fogStartDistance = Indoor?100:Mathf.Lerp(DAY_FOG_NEAR, NIGHT_FOG_NEAR, m) * fogNearMul;
+        RenderSettings.fogEndDistance = Indoor?220:Mathf.Lerp(DAY_FOG_FAR, NIGHT_FOG_FAR, m) * fogFarMul;
 
-        // 卡通天空：太阳盘只在白天出现，晨昏染暖，夜晚低曝光（已改用平涂穹顶，见 Init）
-        if (_skybox != null)
-        {
-            _skybox.SetFloat("_SunDisk", m > 0.55f ? 0f : 2f);
-            _skybox.SetFloat("_SunSize", 0.035f);
-            _skybox.SetFloat("_SunSizeConvergence", 5f);
-            _skybox.SetFloat("_AtmosphereThickness", Mathf.Lerp(0.90f, 0.40f, m));
-            _skybox.SetColor("_SkyTint", Color.Lerp(new Color(0.42f, 0.62f, 0.95f), WARM_SKY, warm * 0.65f));
-            _skybox.SetColor("_GroundColor", Color.Lerp(RenderSettings.fogColor, gnd, 0.25f));
-            _skybox.SetFloat("_Exposure", Mathf.Lerp(1.0f, 0.10f, m));
-        }
-
-        // 天空双穹：夜穹淡入 + 白天穹晨昏染暖；星空缓转、云缓漂
+        // 单层天空直接做昼夜过渡，去掉旧透明双穹叠层。
         if (_w != null)
         {
-            float nightOp = Mathf.Clamp01((m - 0.35f) / 0.45f);
-            if (_w.SkyNightMat != null) _w.SkyNightMat.SetColor("_TintColor", new Color(0.5f, 0.5f, 0.5f, nightOp * 0.5f));
-            if (_w.SkyDayMat != null)
+            if (_w.WorldSkyMat != null)
             {
-                float w2 = warm * (1f - m * 0.65f) * 0.8f;
-                _w.SkyDayMat.SetColor("_TintColor", Color.Lerp(Color.white, WARM_SKY, w2) * 0.42f * (_wth != null ? _wth.SkyMul : 1f));
-                var off = _w.SkyDayMat.mainTextureOffset;
-                _w.SkyDayMat.mainTextureOffset = new Vector2(off.x - Time.deltaTime * 0.0045f, off.y);
+                _w.WorldSkyMat.SetFloat("_Night",m);
+                _w.WorldSkyMat.SetFloat("_Warm",warm*(1f-m));
+                _w.WorldSkyMat.SetFloat("_SkyMul",_wth != null ? _wth.SkyMul : 1f);
             }
-            if (_w.SkyNightTr != null) _w.SkyNightTr.Rotate(0f, Time.deltaTime * 0.004f * Mathf.Rad2Deg, 0f);
 
             // 路灯：灯头玻璃变暖 + 地面光池淡入（web: opacity = m*0.68）
             if (_w.LampGlass != null)
@@ -383,40 +383,22 @@ public class TimeOfDay : MonoBehaviour
                 // 阈值随夜晚升高：只有真正亮的东西（灯头/窗户/招牌）才泛光，路面不泛
                 _post.Threshold = Mathf.Lerp(1.05f, 1.35f, m);
                 // 卡通色彩：夜里压曝光把地面沉下去，蓝调才出得来
-                _post.Saturation = Mathf.Lerp(1.20f, 1.08f, m);
-                _post.Exposure = Mathf.Lerp(1.02f, 0.78f, m);
+                _post.Saturation = Indoor?.96f:Mathf.Lerp(.98f,.96f,m)*(1-wFog*.10f);
+                _post.Exposure = Indoor?1.14f:Mathf.Lerp(1.06f,.90f,m)*(1-(_wth!=null?_wth.RainAmt:0)*.03f);
+                _post.Posterize=0;
             }
 
-            // 店铺橱窗夜里透暖光（立面窗格由贴图渐变表现，不再覆盖玻璃片）
-            if (_w.WindowGlassMat != null)
+            // 校舍用同一块实体玻璃变亮，不叠第二层夜窗，门厅与立面保持一致。
+            if (_w.SchoolGlassLit != null)
             {
-                if (m > 0.15f)
-                {
-                    _w.WindowGlassMat.EnableKeyword("_EMISSION");
-                    _w.WindowGlassMat.SetColor("_EmissionColor", new Color(0.55f, 0.32f, 0.12f) * (m * 0.7f));
-                }
-                else _w.WindowGlassMat.DisableKeyword("_EMISSION");
+                _w.SchoolGlassLit.color = Color.Lerp(MatLib.Hex("#658b98"), MatLib.Hex("#c8a774"), m);
+                _w.SchoolGlassLit.SetColor("_EmissionColor", new Color(.85f,.57f,.28f) * (m*.65f));
             }
-            if (_w.WindowGlowMat != null)
-                _w.WindowGlowMat.color = new Color(0.95f, 0.72f, 0.42f) * Mathf.Clamp01(m * 0.95f);
-            bool glowOn = m >= 0.25f;
-            for (int i = 0; i < _w.WindowGlowRenders.Count; i++)
-                if (_w.WindowGlowRenders[i].enabled != glowOn) _w.WindowGlowRenders[i].enabled = glowOn;
-            bool signGlowOn = m >= 0.25f;
-            for (int i = 0; i < _w.SignGlowRenders.Count; i++)
-                if (_w.SignGlowRenders[i].enabled != signGlowOn) _w.SignGlowRenders[i].enabled = signGlowOn;
-
-            // 店铺招牌：夜里用自身贴图做自发光；门灯/骑楼灯笼亮起
-            for (int i = 0; i < _w.SignMatRefs.Count; i++)
+            if (_w.ResidenceGlassLit != null)
             {
-                var sm = _w.SignMatRefs[i];
-                if (m > 0.05f)
-                {
-                    sm.EnableKeyword("_EMISSION");
-                    sm.SetTexture("_EmissionMap", sm.mainTexture);
-                    sm.SetColor("_EmissionColor", new Color(1f, 0.82f, 0.55f) * (m * 0.9f));
-                }
-                else sm.DisableKeyword("_EMISSION");
+                _w.ResidenceGlassLit.color = Color.Lerp(MatLib.Hex("#6d8b93"),MatLib.Hex("#d0b78d"),m);
+                _w.ResidenceGlassLit.SetColor("_EmissionColor",new Color(.88f,.62f,.33f)*(m*.72f));
+                _w.ResidenceGlassDark.color = Color.Lerp(MatLib.Hex("#5b747c"),MatLib.Hex("#394b5a"),m);
             }
             if (_w.DoorLampMat != null)
             {
