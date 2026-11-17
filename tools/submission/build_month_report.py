@@ -13,8 +13,8 @@ import pymupdf
 from month_report_content import PAGES
 
 ROOT=Path(__file__).resolve().parents[2];BASE=ROOT/'output/submission'
-FINAL=ROOT/'output/pdf/他山之石-作品介绍与技术报告-一月增强版.pdf';FINAL.parent.mkdir(parents=True,exist_ok=True)
-CANON=BASE/'他山之石-李玉川-省赛交付/01_作品说明/他山之石-作品介绍与技术报告.pdf'
+FINAL=ROOT/'output/pdf/作品介绍与技术报告.pdf';FINAL.parent.mkdir(parents=True,exist_ok=True)
+CANON=BASE/'他山之石-李玉川-省赛交付/01_作品说明/作品介绍与技术报告.pdf'
 ARCHIVE=BASE/'report-archive';ARCHIVE.mkdir(exist_ok=True)
 if CANON.exists() and not (ARCHIVE/'他山之石-原12页报告.pdf').exists():shutil.copy2(CANON,ARCHIVE/'他山之石-原12页报告.pdf')
 for name,file in [('Body','MapSans.ttf'),('Heading','MapHeading.ttf')]:pdfmetrics.registerFont(TTFont(name,str(ROOT/'Game/Assets/Resources/Fonts'/file)))
