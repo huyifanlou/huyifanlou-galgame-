@@ -1,0 +1,33 @@
+{
+  "authorized": "2026-11-17 作者明确允许提交并推送",
+  "source_commit": "f8a8352143ce5c991d949fe442c083f57c4d5ac3",
+  "game_source_commit": "a7b09e21a14f85547e4a76f84d9ef533cb8262b8",
+  "modules": [
+    {
+      "module": "assets",
+      "commit": "f09ec09c0149da3a9bb4d40362fbc9867f898a0d"
+    },
+    {
+      "module": "runtime",
+      "commit": "a7b09e21a14f85547e4a76f84d9ef533cb8262b8"
+    },
+    {
+      "module": "tooling",
+      "commit": "5e26757d0e9be1242be3e1a1755546dc71b18645"
+    },
+    {
+      "module": "docs",
+      "commit": "f8a8352143ce5c991d949fe442c083f57c4d5ac3"
+    }
+  ],
+  "repository": "https://github.com/huyifanlou/huyifanlou-galgame-",
+  "branch": "main",
+  "verification": "源码重建成功；完整播放器菜单路线与真正退出通过；未修改游戏逻辑，仅整理并公开已有版本",
+  "video": "待按docs/151实录，最后处理",
+  "external_pending": [
+    "最终实机视频",
+    "完整作品网盘分享",
+    "公开视频地址",
+    "表单提交与回执"
+  ]
+}
