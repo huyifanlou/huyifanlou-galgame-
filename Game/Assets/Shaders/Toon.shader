@@ -1,24 +1,21 @@
-// ============================================================================
-// Campus/Toon —— 《他山之石》卡通渲染（Cel Shading）核心着色器
-// 2026-11-10 美术重做：取代原来的 Standard + 写实后处理（SSAO/ACES）路线
-//
-// 设计要点：
-//   1. 光照 ramp 阶梯化（_RampSteps 控制阶数，默认 3 阶）。暗面走 _ShadowTint（偏冷紫）而不是
-//      简单变黑 —— 「亮面暖、暗面冷」是卡通渲染最基本的语汇。
-//   2. 描边用反向外扩 + clip.w 补偿，屏幕空间宽度恒定，远近一致。
-//   3. 硬边高光（step 而非 smooth）+ 边缘光，这是卡通渲染区别于写实的关键。
-//   4. 环境光由全局 _ToonAmbient 驱动（TimeOfDay 每帧写入），随昼夜变化。
-//   5. 点光源走 ForwardAdd，同样阶梯化并压低 —— 路灯照亮地面但不把画面照"脏"。
-//
-// 属性命名与 Standard 对齐（_Color / _MainTex / _MainTex_ST / _EmissionColor / _EMISSION 关键字），
-// 所以 MatLib 与 TimeOfDay 里原有的 m.color / mainTexture / EnableKeyword("_EMISSION") 都仍然有效。
-// ============================================================================
+// Continuous surface lighting, triplanar materials and soft-shadow support. Legacy ramp remains available only when SurfaceModel is 0.
 Shader "Campus/Toon"
 {
     Properties
     {
         _MainTex ("Albedo", 2D) = "white" {}
+        _HeightTex ("Surface Height", 2D) = "gray" {}
+        _HeightStrength ("Surface Relief", Float) = 0
+        _WorldMapping ("World Mapping", Float) = 0
+        _WorldScale ("World Scale", Float) = 1
+        _SpecularSoft ("Soft Specular", Range(0,1)) = 0
+        _SurfaceModel ("Continuous Surface Lighting", Range(0,1)) = 0
+        _Roughness ("Roughness", Range(0.08,1)) = 0.7
+        _Metallic ("Metallic", Range(0,1)) = 0
+        _TerrainEdgeTex ("Terrain Edge Mask", 2D) = "black" {}
+        _TerrainSurface ("Terrain Surface", Float) = 0
         _Color ("Tint", Color) = (1,1,1,1)
+        _VertexTint ("Vertex Tint", Range(0,1)) = 0
         _ShadowTint ("Shadow Tint", Color) = (0.52,0.55,0.78,1)
         _RampSteps ("Ramp Steps", Range(1,6)) = 3
         _RampSoft ("Ramp Softness", Range(0.001,0.5)) = 0.06
@@ -48,9 +45,16 @@ Shader "Campus/Toon"
         #include "Lighting.cginc"
         #include "AutoLight.cginc"
 
+        sampler2D _HeightTex;float _HeightStrength,_WorldMapping,_WorldScale,_SpecularSoft,_SurfaceModel,_Roughness,_Metallic;
+        float _InteriorLighting;
+        float _WeatherRain,_WeatherSnow;
+        float4 _SurfaceSky,_SurfaceGround;
+        float4 _RoomFillPositions[4],_RoomFillColors[4];
+        sampler2D _TerrainEdgeTex;float _TerrainSurface,_TerrainSpan;
         sampler2D _MainTex;
         float4 _MainTex_ST;
         fixed4 _Color;
+        float _VertexTint;
         fixed4 _ShadowTint;
         float _RampSteps;
         float _RampSoft;
@@ -87,6 +91,7 @@ Shader "Campus/Toon"
             float4 vertex : POSITION;
             float3 normal : NORMAL;
             float2 uv : TEXCOORD0;
+            fixed4 color : COLOR;
         };
 
         struct v2f_t
@@ -95,6 +100,7 @@ Shader "Campus/Toon"
             float2 uv : TEXCOORD0;
             float3 wnormal : TEXCOORD1;
             float3 wpos : TEXCOORD2;
+            fixed4 color : COLOR;
             UNITY_SHADOW_COORDS(3)
             UNITY_FOG_COORDS(4)
         };
@@ -106,11 +112,27 @@ Shader "Campus/Toon"
             o.uv = TRANSFORM_TEX(v.uv, _MainTex);
             o.wnormal = UnityObjectToWorldNormal(v.normal);
             o.wpos = mul(unity_ObjectToWorld, v.vertex).xyz;
+            o.color = v.color;
             UNITY_TRANSFER_SHADOW(o, o.pos);
             UNITY_TRANSFER_FOG(o, o.pos);
             return o;
         }
 
+        float2 SurfaceUV(float2 uv,float3 pos,float3 normal)
+        {
+            if(_WorldMapping<.5)return uv;
+            float3 a=abs(normal);return (a.y>=a.x&&a.y>=a.z?pos.xz:a.x>=a.z?pos.zy:pos.xy)*_WorldScale;
+        }
+        float3 SafeDirection(float3 direction){return direction*rsqrt(max(dot(direction,direction),.0000001));}
+        float3 SurfaceNormal(float3 normal,float3 pos,float2 uv)
+        {
+            float3 n=SafeDirection(normal);if(_HeightStrength<.00001)return n;
+            float3 weights=pow(abs(n),4);weights/=max(dot(weights,1),.0001);
+            float height=_WorldMapping>.5?dot(float3(tex2D(_HeightTex,pos.zy*_WorldScale).r,tex2D(_HeightTex,pos.xz*_WorldScale).r,tex2D(_HeightTex,pos.xy*_WorldScale).r),weights):tex2D(_HeightTex,uv).r;
+            float3 dx=ddx(pos),dy=ddy(pos),r1=cross(dy,n),r2=cross(n,dx);
+            float det=dot(dx,r1);float3 gradient=(r1*ddx(height)+r2*ddy(height))*sign(det)/max(abs(det),.000001);
+            return SafeDirection(n-gradient*_HeightStrength);
+        }
         fixed4 SampleAlbedo(float2 uv)
         {
             fixed4 a = tex2D(_MainTex, uv) * _Color;
@@ -118,6 +140,36 @@ Shader "Campus/Toon"
                 clip(a.a - _Cutoff);
             #endif
             return a;
+        }
+        fixed4 SampleSurface(float2 uv,float3 pos,float3 normal)
+        {
+            if(_WorldMapping<.5)return SampleAlbedo(uv);
+            float3 weights=pow(abs(SafeDirection(normal)),4);weights/=max(dot(weights,1),.0001);
+            float4 color=(tex2D(_MainTex,pos.zy*_WorldScale)*weights.x+tex2D(_MainTex,pos.xz*_WorldScale)*weights.y+tex2D(_MainTex,pos.xy*_WorldScale)*weights.z)*_Color;
+            if(_TerrainSurface>.5){float edge=tex2D(_TerrainEdgeTex,pos.xz/max(_TerrainSpan,1)+.5).r;color.rgb*=lerp(float3(1,1,1),float3(.88,.79,.64),edge*.65);}
+            return color;
+        }
+        float3 WeatherSurface(float3 color,float3 pos,float3 normal)
+        {
+            float exposure=(1-_InteriorLighting)*step(max(abs(pos.x),abs(pos.z)),151);
+            float up=smoothstep(.25,.85,normal.y);
+            float patch=.5+.5*sin(pos.x*3.1+sin(pos.z*2.7))*sin(pos.z*4.7+sin(pos.x*1.8));
+            float pooled=smoothstep(.25,.75,patch)*up*lerp(1,.15,saturate(_TerrainSurface+_VertexTint));
+            color*=1-_WeatherRain*exposure*(.10+up*.20+pooled*.16);
+            float snow=_WeatherSnow*exposure*up*lerp(smoothstep(.08,.65,patch),1,_WeatherSnow);
+            return lerp(color,float3(.81,.86,.89)*( .92+patch*.08),snow*.94);
+        }
+        float3 SurfaceSpecular(float3 n,float3 l,float3 v,float3 albedo)
+        {
+            float3 h=SafeDirection(l+v);float wet=_WeatherRain*(1-_InteriorLighting)*smoothstep(.45,.95,n.y);
+            wet*=lerp(1,.25,saturate(_TerrainSurface+_VertexTint));
+            float rough=max(lerp(_Roughness,.18,wet*.92),.15);
+            rough=lerp(rough,.9,_WeatherSnow*(1-_InteriorLighting)*smoothstep(.25,.85,n.y));
+            float exponent=lerp(150,5,rough*rough);
+            float highlight=pow(max(.0001,saturate(dot(n,h))),exponent)*(exponent+2)/32;
+            float3 f0=lerp(float3(.035,.035,.035),albedo,_Metallic);
+            float3 fresnel=f0+(1-f0)*pow(max(.0001,1-saturate(dot(v,h))),5);
+            return fresnel*highlight*(1-rough*.35);
         }
         ENDCG
 
@@ -138,9 +190,12 @@ Shader "Campus/Toon"
 
             fixed4 frag_t(v2f_t i) : SV_Target
             {
-                fixed4 albedo = SampleAlbedo(i.uv);
+                float2 surfaceUV=SurfaceUV(i.uv,i.wpos,i.wnormal);
+                fixed4 albedo = SampleSurface(i.uv,i.wpos,i.wnormal);
+                albedo.rgb *= lerp(1.0, i.color.rgb, _VertexTint);
+                albedo.rgb=WeatherSurface(albedo.rgb,i.wpos,i.wnormal);
 
-                float3 n = normalize(i.wnormal);
+                float3 n = SurfaceNormal(i.wnormal,i.wpos,surfaceUV);
                 float3 v = normalize(_WorldSpaceCameraPos - i.wpos);
                 float3 l = normalize(_WorldSpaceLightPos0.xyz);
                 float3 lightCol = _LightColor0.rgb * _ToonSunPower;
@@ -152,13 +207,28 @@ Shader "Campus/Toon"
                 float3 cShadow = albedo.rgb * _ShadowTint.rgb * lightCol * (1.0 - lit) * 0.60;
                 float3 ambient = albedo.rgb * _ToonAmbient.rgb;
                 float3 col = cLit + cShadow + ambient;
+                if(_SurfaceModel>.5)
+                {
+                    float shadow=UNITY_SHADOW_ATTENUATION(i,i.wpos);
+                    float diffuse=saturate(dot(n,l));
+                    float3 hemi=lerp(_SurfaceGround.rgb,_SurfaceSky.rgb,saturate(n.y*.5+.5));
+                    col=albedo.rgb*hemi+_LightColor0.rgb*shadow*(albedo.rgb*diffuse*(1-_Metallic*.75)+SurfaceSpecular(n,l,v,albedo.rgb)*diffuse);
+                    [unroll]for(int j=0;j<4;j++)
+                    {
+                        float3 delta=_RoomFillPositions[j].xyz-i.wpos;float dist2=dot(delta,delta);float falloff=saturate(1-dist2/max(_RoomFillPositions[j].w,1));falloff*=falloff;
+                        col+=albedo.rgb*_RoomFillColors[j].rgb*falloff*(.25+.75*saturate(dot(n,SafeDirection(delta))))*_InteriorLighting;
+                    }
+                }
 
+                float wetFace=_WeatherRain*(1-_InteriorLighting)*smoothstep(.6,.95,i.wnormal.y)*lerp(1,.12,saturate(_TerrainSurface+_VertexTint));
+                float pools=smoothstep(.22,.72,.5+.5*sin(i.wpos.x*3.1+sin(i.wpos.z*2.7))*sin(i.wpos.z*4.7+sin(i.wpos.x*1.8)));
+                col=lerp(col,col*.75+_SurfaceSky.rgb*.30,wetFace*pools*(.18+.45*pow(1-saturate(dot(n,v)),3)));
                 // 硬边高光（卡通渲染的标志性特征）
-                if (_SpecularStrength > 0.001)
+                if (_SpecularStrength > 0.001 && _SurfaceModel<.5)
                 {
                     float3 h = normalize(l + v);
                     float sp = pow(saturate(dot(n, h)), 1.0 / max(_SpecularSize, 0.02));
-                    col += lightCol * step(0.5, sp) * _SpecularStrength * lit;
+                    col += lightCol * lerp(step(0.5, sp),smoothstep(.08,.65,sp),_SpecularSoft) * _SpecularStrength * lit;
                 }
 
                 // 边缘光（受光面更明显，勾出轮廓体积）
@@ -172,6 +242,7 @@ Shader "Campus/Toon"
                 #endif
 
                 UNITY_APPLY_FOG(i.fogCoord, col);
+                if(any(col!=col)||any(abs(col)>64))col=albedo.rgb*_ToonAmbient.rgb;
                 return fixed4(col, 1);
             }
             ENDCG
@@ -196,9 +267,12 @@ Shader "Campus/Toon"
 
             fixed4 frag_add(v2f_t i) : SV_Target
             {
-                fixed4 albedo = SampleAlbedo(i.uv);
+                float2 surfaceUV=SurfaceUV(i.uv,i.wpos,i.wnormal);
+                fixed4 albedo = SampleSurface(i.uv,i.wpos,i.wnormal);
+                albedo.rgb *= lerp(1.0, i.color.rgb, _VertexTint);
+                albedo.rgb=WeatherSurface(albedo.rgb,i.wpos,i.wnormal);
 
-                float3 n = normalize(i.wnormal);
+                float3 n = SurfaceNormal(i.wnormal,i.wpos,surfaceUV);
                 float3 v = normalize(_WorldSpaceCameraPos - i.wpos);
 
                 #ifdef USING_DIRECTIONAL_LIGHT
@@ -210,9 +284,11 @@ Shader "Campus/Toon"
                 #endif
 
                 float ramp = ToonStep(dot(n, l), _RampSteps, _RampSoft);
-                float3 col = albedo.rgb * _LightColor0.rgb * _ToonSunPower * ramp * atten * 0.60;
+                float3 col = albedo.rgb * _LightColor0.rgb * ramp * atten * 0.60;
+                if(_SurfaceModel>.5){float diffuse=saturate(dot(n,l));col=_LightColor0.rgb*atten*(albedo.rgb*diffuse*(1-_Metallic*.75)+SurfaceSpecular(n,l,v,albedo.rgb)*diffuse);}
 
                 UNITY_APPLY_FOG_COLOR(i.fogCoord, col, fixed4(0, 0, 0, 0));
+                if(any(col!=col)||any(abs(col)>64))col=0;
                 return fixed4(col, 1);
             }
             ENDCG
@@ -235,13 +311,14 @@ Shader "Campus/Toon"
         {
             Name "OUTLINE"
             Cull Front
-            ZWrite On
+            ZWrite Off
             ZTest LEqual
 
             CGPROGRAM
             #pragma vertex vert_o
             #pragma fragment frag_o
             #pragma multi_compile __ _OUTLINE_VERTEXCOLOR
+            #pragma multi_compile_fog
             #pragma target 3.0
 
             struct appdata_o
@@ -257,6 +334,7 @@ Shader "Campus/Toon"
                 float4 pos : SV_POSITION;
                 float dist : TEXCOORD0;
                 float2 uv : TEXCOORD1;
+                UNITY_FOG_COORDS(2)
             };
 
             v2f_o vert_o(appdata_o v)
@@ -305,10 +383,13 @@ Shader "Campus/Toon"
                 float nearFade = saturate((viewDist - _OutlineNearDistance) / max(_OutlineNearDistance, 0.01));
                 width *= lerp(0.35, 1.0, nearFade);
 
+                width *= 1.0 - smoothstep(_OutlineFarDistance * 0.40, _OutlineFarDistance, viewDist);
+                pn.x *= _ScreenParams.y / max(_ScreenParams.x, 1.0);
                 cp.xy += pn * width * finalScale;
                 o.pos = cp;
                 o.dist = viewDist;
                 o.uv = v.uv;
+                UNITY_TRANSFER_FOG(o, o.pos);
                 return o;
             }
 
@@ -322,14 +403,13 @@ Shader "Campus/Toon"
                 clip(mask - 0.02);
 
                 // 远处淡出
-                float farFade = 1.0 - saturate((i.dist - _OutlineFarDistance) / max(_OutlineFarDistance * 0.5, 1.0));
+                float farFade = 1.0 - smoothstep(_OutlineFarDistance * 0.40, _OutlineFarDistance, i.dist);
                 clip(farFade - 0.02);
 
                 fixed4 c = _OutlineColor;
                 c.a = 1;
                 // 描边颜色朝场景色靠，远处不糊成黑片（不透明 pass 里 alpha 无效，只能改色）
-                float fade = mask * farFade;
-                c.rgb = lerp(float3(0.42, 0.44, 0.50), c.rgb, saturate(fade));
+                UNITY_APPLY_FOG(i.fogCoord, c);
                 return c;
             }
             ENDCG

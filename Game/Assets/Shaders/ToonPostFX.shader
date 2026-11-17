@@ -1,16 +1,4 @@
-// ============================================================================
-// 卡通渲染后处理栈（Built-in RP，无第三方包）
-// 2026-11-10 美术重做：取代原来的写实栈（SSAO + ACES 色调映射 + 移轴景深）
-//
-// 卡通渲染的后处理和写实是反着来的：
-//   · 不要 SSAO —— 卡通暗面已由 ramp 阶梯化表达，再加 AO 会让暗部变脏
-//   · 不要 ACES —— 电影色调映射会压平颜色，卡通要的是鲜艳、通透、高饱和
-//   · 要的是：泛光（灯光晕开）+ 色彩量化（赛璐珞质感）+ 饱和度/对比度 + 暗角
-//
-// Pass 0：HDR 亮度预过滤（泛光源）
-// Pass 1：可分离高斯模糊
-// Pass 2：最终合成 —— 泛光 + 饱和度 + 对比度 + 色调分离 + 暗角
-// ============================================================================
+// Continuous HDR grading, restrained bloom and bilateral contact occlusion. Shader name retained for existing materials.
 Shader "Campus/ToonPostFX"
 {
     Properties
@@ -49,6 +37,7 @@ Shader "Campus/ToonPostFX"
             float4 frag(v2f_img i) : SV_Target
             {
                 float3 c = tex2D(_MainTex, i.uv).rgb;
+                if(any(c!=c))c=0;c=clamp(c,0,32);
                 float l = max(max(c.r, c.g), c.b);
                 float w = smoothstep(_Threshold, _Threshold + 0.5, l);
                 return float4(c * w, 1);
@@ -87,6 +76,8 @@ Shader "Campus/ToonPostFX"
             sampler2D _MainTex;
             sampler2D _BloomTex;
             sampler2D _BlurTex;
+            sampler2D _AOTex;float _AOStrength,_AODebug;
+            UNITY_DECLARE_DEPTH_TEXTURE(_CameraDepthTexture);
             float _BloomIntensity, _FocusY, _FocusBand, _FocusFalloff, _DofMax;
             float _Exposure, _Saturation, _Contrast, _VigInner, _VigOuter, _VigStrength;
             float _Posterize, _PosterizeSteps;
@@ -95,6 +86,8 @@ Shader "Campus/ToonPostFX"
             float4 frag(v2f_img i) : SV_Target
             {
                 float4 src = tex2D(_MainTex, i.uv);
+                float ao=tex2D(_AOTex,i.uv).r;
+                if(_AODebug>.5)return float4(ao,ao,ao,1);
                 float3 bloom = tex2D(_BloomTex, i.uv).rgb;
                 float3 blur = tex2D(_BlurTex, i.uv).rgb;
 
@@ -102,12 +95,14 @@ Shader "Campus/ToonPostFX"
                 float d = abs(i.uv.y - _FocusY);
                 float dof = smoothstep(_FocusBand, _FocusBand + _FocusFalloff, d) * _DofMax;
                 float3 col = lerp(src.rgb, blur, dof);
+                col*=lerp(1,ao,_AOStrength);
 
                 // 泛光：卡通渲染里灯光晕开是「软糖感」的来源
                 col += bloom * _BloomIntensity;
 
                 // 曝光（不做 ACES —— 卡通要保色）
                 col *= _Exposure;
+                col=max(0,col);col=saturate(col/(1+max(0,col-.55)*.85));
 
                 // 饱和度 / 对比度
                 float l = dot(col, float3(0.2126, 0.7152, 0.0722));
@@ -118,7 +113,9 @@ Shader "Campus/ToonPostFX"
                 if (_Posterize > 0.001)
                 {
                     float3 q = floor(col * _PosterizeSteps + 0.5) / _PosterizeSteps;
-                    col = lerp(col, q, _Posterize * 0.55);
+                    // 天空需要连续渐变；量化背景会放大成横跨屏幕的弧形色带。
+                    float surface = 1.0 - step(0.999, Linear01Depth(SAMPLE_DEPTH_TEXTURE(_CameraDepthTexture, i.uv)));
+                    col = lerp(col, q, _Posterize * 0.55 * surface);
                 }
 
                 col *= _Tint.rgb;
@@ -129,6 +126,58 @@ Shader "Campus/ToonPostFX"
                 col *= lerp(_VigStrength, 1.0, vig);
 
                 return float4(saturate(col), src.a);
+            }
+            ENDCG
+        }
+        // Pass 3: stable screen-space contact occlusion.
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment fragAO
+            #pragma target 3.0
+            #include "UnityCG.cginc"
+            sampler2D _CameraDepthNormalsTexture;
+            float _AORadius,_AOBias;
+            float3 ViewPosition(float2 uv,float depth)
+            {float2 ray=(uv*2-1)/float2(unity_CameraProjection._m00,unity_CameraProjection._m11);return float3(ray,-1)*(depth*_ProjectionParams.z);}
+            float4 fragAO(v2f_img i):SV_Target
+            {
+                float depth;float3 n;DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture,i.uv),depth,n);
+                if(depth>.999)return 1;
+                float3 p=ViewPosition(i.uv,depth);float eye=max(depth*_ProjectionParams.z,.1);
+                float radius=min(.10,_AORadius*unity_CameraProjection._m11/(eye*2));float ao=0;
+                [unroll]for(int k=0;k<12;k++)
+                {
+                    float angle=k*2.399963;float2 offset=float2(cos(angle),sin(angle))*radius*sqrt((k+.5)/12.0);offset.x*=_ScreenParams.y/_ScreenParams.x;
+                    float2 uv=saturate(i.uv+offset);float sd;float3 sn;DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture,uv),sd,sn);
+                    float3 delta=ViewPosition(uv,sd)-p;float distance=length(delta);
+                    float horizon=max(0,dot(n,delta)/max(distance,.0001)-_AOBias);
+                    ao+=horizon*saturate(1-distance/_AORadius);
+                }
+                float value=saturate(1-ao/12*3.2);return float4(value,value,value,1);
+            }
+            ENDCG
+        }
+        // Pass 4: depth/normal aware bilateral filtering.
+        Pass
+        {
+            CGPROGRAM
+            #pragma vertex vert_img
+            #pragma fragment fragBilateral
+            #include "UnityCG.cginc"
+            sampler2D _MainTex,_CameraDepthNormalsTexture;float4 _MainTex_TexelSize;float2 _Dir;
+            float4 fragBilateral(v2f_img i):SV_Target
+            {
+                float d;float3 n;DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture,i.uv),d,n);
+                float sum=tex2D(_MainTex,i.uv).r*2,weight=2;
+                [unroll]for(int k=-2;k<=2;k++)
+                {
+                    if(k==0)continue;float2 uv=i.uv+_MainTex_TexelSize.xy*_Dir*k;float sd;float3 sn;DecodeDepthNormal(tex2D(_CameraDepthNormalsTexture,uv),sd,sn);
+                    float w=exp(-abs(sd-d)*_ProjectionParams.z*8)*pow(saturate(dot(sn,n)),8)/(1+abs(k));
+                    sum+=tex2D(_MainTex,uv).r*w;weight+=w;
+                }
+                float value=sum/weight;return float4(value,value,value,1);
             }
             ENDCG
         }
