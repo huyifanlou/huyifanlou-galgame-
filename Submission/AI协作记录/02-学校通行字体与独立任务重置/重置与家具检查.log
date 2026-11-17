@@ -1,0 +1,17 @@
+# 公开验收日志节选：仅保留结果/坐标；原始日志保留在作者本机。
+[LampLayout] 全图 139 → 105，移动 78，移除无净空点 34；净空问题 0
+[Interior:home] 校验完成：58 个碰撞盒，问题 0 处
+[Interior:school] 校验完成：115 个碰撞盒，问题 0 处
+[Interior:library] 校验完成：57 个碰撞盒，问题 0 处
+[Interior:restaurant] 校验完成：80 个碰撞盒，问题 0 处
+[Interior:supermarket] 校验完成：22 个碰撞盒，问题 0 处
+[Interior:canteen] 校验完成：53 个碰撞盒，问题 0 处
+[Interior:dorm] 校验完成：259 个碰撞盒，问题 0 处
+[Interior:auditorium] 校验完成：157 个碰撞盒，问题 0 处
+[Interior:labs] 校验完成：168 个碰撞盒，问题 0 处
+[Interior:milktea] 校验完成：39 个碰撞盒，问题 0 处
+[Interior:photo] 校验完成：39 个碰撞盒，问题 0 处
+[Interior:book] 校验完成：28 个碰撞盒，问题 0 处
+[Interior:conv] 校验完成：26 个碰撞盒，问题 0 处
+[RenewalCheck] PASS bundled glyphs/font selection; stand walk route and ten tier heights; 68 desks/48 mirrored lofts; new game at home; independent resets/manual preservation/continue load
+[ShotMode] player=(900.00,0.02,-8.30) cam=(900.00, 1.47, -8.30)

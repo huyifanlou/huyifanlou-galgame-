@@ -1,0 +1,43 @@
+# 公开验收日志节选：仅保留结果/坐标；原始日志保留在作者本机。
+[LampLayout] 全图 139 → 105，移动 78，移除无净空点 34；净空问题 0
+[Interior:home] 校验完成：58 个碰撞盒，问题 0 处
+[Interior:school] 校验完成：115 个碰撞盒，问题 0 处
+[Interior:library] 校验完成：57 个碰撞盒，问题 0 处
+[Interior:restaurant] 校验完成：80 个碰撞盒，问题 0 处
+[Interior:supermarket] 校验完成：22 个碰撞盒，问题 0 处
+[Interior:canteen] 校验完成：53 个碰撞盒，问题 0 处
+[Interior:dorm] 校验完成：259 个碰撞盒，问题 0 处
+[Interior:auditorium] 校验完成：157 个碰撞盒，问题 0 处
+[Interior:labs] 校验完成：168 个碰撞盒，问题 0 处
+[Interior:milktea] 校验完成：39 个碰撞盒，问题 0 处
+[Interior:photo] 校验完成：39 个碰撞盒，问题 0 处
+[Interior:book] 校验完成：28 个碰撞盒，问题 0 处
+[Interior:conv] 校验完成：26 个碰撞盒，问题 0 处
+[PrecisionAudit] PASS 旧立面 0，旧夜窗 0，重复建筑 0，封闭区交互点 0，材质/边界异常 0 → <工作区>\shots\145-start-hud-fonts-school\precision.json
+[LightingCheck] PASS school：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS school 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS library：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS library 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS labs：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS labs 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS dorm：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS dorm 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS canteen：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS canteen 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS auditorium：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS auditorium 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS milktea：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS milktea 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS supermarket：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS supermarket 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS restaurant：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS restaurant 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS photo：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS photo 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS book：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS book 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS conv：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS conv 门内外落点、朝向、过渡与碰撞
+[LightingCheck] PASS home：2 柔影主灯、房间补光绑定、HDR/深度法线/连续调色
+[PortalCheck] PASS home 门内外落点、朝向、过渡与碰撞
+[ShotMode] player=(44.00,0.00,-16.00) cam=(44.00, 1.45, -16.00)

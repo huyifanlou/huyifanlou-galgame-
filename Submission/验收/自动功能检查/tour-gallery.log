@@ -1,0 +1,12 @@
+[SubmissionTour] 0.00s begin tour-gallery; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 3.01s gallery portrait 1; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 5.01s gallery portrait 2; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 7.04s gallery portrait 3; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 9.04s gallery portrait 4; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 11.05s gallery portrait 5; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 13.08s gallery portrait 0; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 15.10s female form; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 18.12s display female standee=True; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 24.15s native movement 4.53m; player=(-13.85, 0.00, -8.25); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 24.15s recall standee; player=(-13.85, 0.00, -8.25); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 30.20s COMPLETE tour-gallery; player=(-13.85, 0.00, -8.25); chapter=0 line=0; room=; weather=Clear

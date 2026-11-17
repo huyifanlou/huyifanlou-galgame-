@@ -1,0 +1,158 @@
+{
+    "legacyFacades": 0,
+    "oldNightOverlays": 0,
+    "missingMaterials": 0,
+    "invalidBounds": 0,
+    "duplicateBuildings": 0,
+    "closedInteractionPoints": 0,
+    "regions": [
+        {
+            "name": "学校",
+            "buildings": 9,
+            "renderers": 89,
+            "triangles": 1585130
+        },
+        {
+            "name": "公园",
+            "buildings": 1,
+            "renderers": 3,
+            "triangles": 4292
+        },
+        {
+            "name": "神社",
+            "buildings": 3,
+            "renderers": 202,
+            "triangles": 7444
+        },
+        {
+            "name": "老街",
+            "buildings": 6,
+            "renderers": 62,
+            "triangles": 615824
+        },
+        {
+            "name": "居民区",
+            "buildings": 19,
+            "renderers": 189,
+            "triangles": 1479992
+        },
+        {
+            "name": "车站",
+            "buildings": 2,
+            "renderers": 14,
+            "triangles": 130200
+        },
+        {
+            "name": "游乐场封闭保留",
+            "buildings": 6,
+            "renderers": 12,
+            "triangles": 3600
+        }
+    ],
+    "rooms": [
+        {
+            "id": "home",
+            "renderers": 84,
+            "exitDoors": 1,
+            "colliders": 58,
+            "ceiling": 3.940000057220459,
+            "triangles": 167706
+        },
+        {
+            "id": "school",
+            "renderers": 119,
+            "exitDoors": 1,
+            "colliders": 115,
+            "ceiling": 4.139999866485596,
+            "triangles": 942370
+        },
+        {
+            "id": "library",
+            "renderers": 68,
+            "exitDoors": 1,
+            "colliders": 57,
+            "ceiling": 4.740000247955322,
+            "triangles": 479250
+        },
+        {
+            "id": "restaurant",
+            "renderers": 62,
+            "exitDoors": 1,
+            "colliders": 80,
+            "ceiling": 4.440000057220459,
+            "triangles": 332686
+        },
+        {
+            "id": "supermarket",
+            "renderers": 69,
+            "exitDoors": 1,
+            "colliders": 22,
+            "ceiling": 3.940000057220459,
+            "triangles": 336384
+        },
+        {
+            "id": "canteen",
+            "renderers": 64,
+            "exitDoors": 1,
+            "colliders": 53,
+            "ceiling": 4.139999866485596,
+            "triangles": 224778
+        },
+        {
+            "id": "dorm",
+            "renderers": 116,
+            "exitDoors": 1,
+            "colliders": 259,
+            "ceiling": 3.5399999618530275,
+            "triangles": 1510088
+        },
+        {
+            "id": "auditorium",
+            "renderers": 105,
+            "exitDoors": 1,
+            "colliders": 157,
+            "ceiling": 8.4399995803833,
+            "triangles": 1325988
+        },
+        {
+            "id": "labs",
+            "renderers": 118,
+            "exitDoors": 1,
+            "colliders": 168,
+            "ceiling": 4.139999866485596,
+            "triangles": 769144
+        },
+        {
+            "id": "milktea",
+            "renderers": 61,
+            "exitDoors": 1,
+            "colliders": 39,
+            "ceiling": 4.139999866485596,
+            "triangles": 233010
+        },
+        {
+            "id": "photo",
+            "renderers": 62,
+            "exitDoors": 1,
+            "colliders": 39,
+            "ceiling": 4.440000057220459,
+            "triangles": 118726
+        },
+        {
+            "id": "book",
+            "renderers": 52,
+            "exitDoors": 1,
+            "colliders": 28,
+            "ceiling": 4.440000057220459,
+            "triangles": 434126
+        },
+        {
+            "id": "conv",
+            "renderers": 53,
+            "exitDoors": 1,
+            "colliders": 26,
+            "ceiling": 4.139999866485596,
+            "triangles": 406848
+        }
+    ]
+}

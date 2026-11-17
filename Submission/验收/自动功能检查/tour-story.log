@@ -1,0 +1,11 @@
+[SubmissionTour] 0.00s begin tour-story; player=(900.00, 0.02, -6.70); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 0.02s manual dialogue / portrait; player=(900.00, 0.02, -6.70); chapter=0 line=18; room=home; weather=Clear
+[SubmissionTour] 10.06s auto reading; player=(900.00, 0.02, -6.70); chapter=0 line=20; room=home; weather=Clear
+[SubmissionTour] 20.08s chapter archive; player=(900.00, 0.02, -6.70); chapter=0 line=25; room=home; weather=Clear
+[SubmissionTour] 24.08s search character; player=(900.00, 0.02, -6.70); chapter=0 line=25; room=home; weather=Clear
+[SubmissionTour] 31.11s jump chapter / line; player=(900.00, 0.02, -6.70); chapter=2 line=1; room=home; weather=Clear
+[SubmissionTour] 37.11s return preserves main progress; player=(900.00, 0.02, -6.70); chapter=0 line=25; room=home; weather=Clear
+[SubmissionTour] 46.14s sans reading / larger text; player=(900.00, 0.02, -6.70); chapter=0 line=25; room=home; weather=Clear
+[SubmissionTour] 50.15s skip; player=(900.00, 0.02, -6.70); chapter=0 line=25; room=home; weather=Clear
+[SubmissionTour] 52.15s pause preserves chapter / line; player=(900.00, 0.02, -6.70); chapter=0 line=51; room=home; weather=Clear
+[SubmissionTour] 56.16s COMPLETE tour-story; player=(900.00, 0.02, -6.70); chapter=0 line=51; room=home; weather=Clear

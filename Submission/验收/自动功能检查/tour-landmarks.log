@@ -1,0 +1,14 @@
+[SubmissionTour] 0.00s begin tour-landmarks; player=(36.00, 0.00, -66.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 0.36s landmark giant sakura; player=(54.00, 0.00, -49.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 9.16s native movement 10.96m; player=(45.68, 0.00, -56.14); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 9.51s landmark shrine approach; player=(79.00, 0.02, -53.50); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 18.31s native movement 6.75m; player=(79.10, 0.02, -60.25); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 18.66s landmark park fountain; player=(34.00, 0.00, -31.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 27.50s native movement 3.19m; player=(34.04, 0.00, -34.19); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 27.89s landmark covered bridge; player=(28.00, 0.00, 22.09); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 36.69s native movement 18.03m; player=(28.38, 0.05, 4.07); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 37.04s landmark clock square; player=(-18.72, 0.00, -1.16); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 45.84s native movement 7.29m; player=(-17.36, 0.00, -8.32); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 46.17s landmark school stand; player=(-28.00, 0.00, -26.10); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 54.99s native movement 4.80m; player=(-27.64, 1.82, -21.68); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 54.99s COMPLETE tour-landmarks; player=(-27.64, 1.82, -21.68); chapter=0 line=0; room=; weather=Clear

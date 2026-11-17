@@ -1,0 +1,13 @@
+[SubmissionTour] 0.00s begin tour-systems; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 0.04s map markers; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 1.40s map zoom / pan; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 3.15s main journal; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 6.16s side journal / tracking; player=(-17.00, 0.00, -5.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 9.91s entered 图书馆; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 12.44s side completed naturally=True; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 15.45s manual save / slot captions; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 19.56s load restores room / story / side; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 21.58s side reset confirmation; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 25.61s main reset confirmation; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 28.75s main reset home / manual slot retained; player=(900.00, 0.02, -8.30); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 30.76s COMPLETE tour-systems; player=(900.00, 0.02, -8.30); chapter=0 line=0; room=home; weather=Clear

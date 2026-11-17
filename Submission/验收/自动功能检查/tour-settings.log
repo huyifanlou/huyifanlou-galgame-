@@ -1,0 +1,6 @@
+[SubmissionTour] 0.00s begin tour-settings; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 0.00s bindings; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 3.02s rebind W to R; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 8.03s reading controls; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 11.04s display controls; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 17.04s COMPLETE tour-settings; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear

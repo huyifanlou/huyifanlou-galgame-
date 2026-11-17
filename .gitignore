@@ -43,3 +43,13 @@ Build/
 .workbuddy-ai/
 .dsh-tool-vision/
 
+
+# Local font preparation cache (bundled static fonts are in Assets/Resources/Fonts)
+tools/.fontenv/
+tools/fonts/sources/
+tools/fonts/*.whl
+
+# Submission build dependencies and generated deliverables
+tools/.submissionenv/
+tools/submission/vendor/
+output/submission/

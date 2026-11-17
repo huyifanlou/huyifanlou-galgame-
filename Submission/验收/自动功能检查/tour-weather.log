@@ -1,0 +1,10 @@
+[SubmissionTour] 0.00s begin tour-weather; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 0.00s clear daylight; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 5.04s native movement 0.00m; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 16.05s night lamps / sky; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 22.10s rain transition; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Rain
+[SubmissionTour] 30.11s native movement 0.00m; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Rain
+[SubmissionTour] 32.14s snow transition / intensity / size; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Snow
+[SubmissionTour] 43.15s native movement 0.00m; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Snow
+[SubmissionTour] 43.15s snow cover / water / lighting; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Snow
+[SubmissionTour] 43.15s COMPLETE tour-weather; player=(58.00, 0.00, -43.00); chapter=0 line=0; room=; weather=Snow

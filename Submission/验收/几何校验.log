@@ -1,0 +1,5 @@
+# 公开验收日志节选：仅保留结果/坐标；原始日志保留在作者本机。
+[LampLayout] 全图 139 → 105，移动 78，移除无净空点 34；净空问题 0
+[RegionGeometry] PASS：三类开放叶片法线有效、山墙闭合；铺装并集面积与真实路径覆盖一致，无重叠面。
+Exiting batchmode successfully now!
+Exiting without the bug reporter. Application will terminate with return code 0

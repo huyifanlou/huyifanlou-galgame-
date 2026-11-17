@@ -1,0 +1,38 @@
+[
+  {
+    "case": "01-水面异常加速与Esc意图对齐",
+    "messages": 7,
+    "first": "2026-11-16T10:37:47.386Z",
+    "last": "2026-11-16T11:10:21.521Z",
+    "source_sha256": "0e17242e8071947f8a0db9fcbf931b92d26c13aa9dbf76b53ebd6586f8b83501",
+    "files": [
+      "Game/Assets/Shaders/Water.shader",
+      "Game/Assets/Scripts/WaterMotionState.cs",
+      "docs/142-Esc设置入口与水面异常加速修复.md"
+    ]
+  },
+  {
+    "case": "02-学校通行字体与独立任务重置",
+    "messages": 16,
+    "first": "2026-11-16T13:05:09.572Z",
+    "last": "2026-11-17T00:54:32.987Z",
+    "source_sha256": "0e17242e8071947f8a0db9fcbf931b92d26c13aa9dbf76b53ebd6586f8b83501",
+    "files": [
+      "Game/Assets/Scripts/StandAccess.cs",
+      "Game/Assets/Scripts/RenewalReview.cs",
+      "docs/145-开始菜单全局HUD字体与学校室内通行更新.md"
+    ]
+  },
+  {
+    "case": "03-设置可见性失败与修复",
+    "messages": 10,
+    "first": "2026-11-17T00:59:58.849Z",
+    "last": "2026-11-17T02:29:33.873Z",
+    "source_sha256": "0e17242e8071947f8a0db9fcbf931b92d26c13aa9dbf76b53ebd6586f8b83501",
+    "files": [
+      "Game/Assets/Scripts/StartMenu.cs",
+      "Game/Assets/Scripts/HelpSidebar.cs",
+      "docs/148-开始设置遮挡与GUI事件切换修复.md"
+    ]
+  }
+]

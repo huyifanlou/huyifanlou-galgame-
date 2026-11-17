@@ -1,0 +1,14 @@
+[SubmissionTour] 0.00s begin tour-interiors; player=(896.00, 0.02, -2.50); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 0.00s interior inspection camera cut; player=(900.00, 0.02, -6.70); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 5.00s native movement 0.00m; player=(900.00, 0.02, -6.70); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 5.00s home oak / wallpaper / rug; player=(900.00, 0.02, -6.70); chapter=0 line=0; room=home; weather=Clear
+[SubmissionTour] 6.14s entered 教学楼; player=(1060.00, 0.02, 11.00); chapter=0 line=0; room=school; weather=Clear
+[SubmissionTour] 6.14s interior inspection camera cut; player=(1038.00, 0.02, -4.90); chapter=0 line=0; room=school; weather=Clear
+[SubmissionTour] 14.16s native movement 0.10m; player=(1038.01, 0.02, -5.00); chapter=0 line=0; room=school; weather=Clear
+[SubmissionTour] 15.29s entered 宿舍楼; player=(1540.00, 0.02, 16.90); chapter=0 line=0; room=dorm; weather=Clear
+[SubmissionTour] 15.29s interior inspection camera cut; player=(1514.50, 0.02, -7.00); chapter=0 line=0; room=dorm; weather=Clear
+[SubmissionTour] 23.29s native movement 0.00m; player=(1514.50, 0.02, -7.00); chapter=0 line=0; room=dorm; weather=Clear
+[SubmissionTour] 24.40s entered 图书馆; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 33.41s native movement 0.00m; player=(1220.00, 0.02, 8.40); chapter=0 line=0; room=library; weather=Clear
+[SubmissionTour] 34.15s interior exit restores exterior; player=(-86.45, 0.45, -60.00); chapter=0 line=0; room=; weather=Clear
+[SubmissionTour] 37.16s COMPLETE tour-interiors; player=(-86.45, 0.45, -60.00); chapter=0 line=0; room=; weather=Clear
