@@ -1,0 +1,998 @@
+[
+  {
+    "path": "docs/00-立项与迁移说明.md",
+    "sha256": "3b5d2fc9e252a16ae0887d169316f1a2c673091a3a22383a840aa2966e47732e",
+    "characters": 1429,
+    "title": "00 · 立项与引擎迁移说明（2026-10-15）"
+  },
+  {
+    "path": "docs/01-迁移中修复的问题.md",
+    "sha256": "33f6ae0c23771f4eab4d849310c7f8ecc4086863e69c826215c642c6f30cc76f",
+    "characters": 1575,
+    "title": "01 · 迁移中发现并修复的问题（2026-10-15）"
+  },
+  {
+    "path": "docs/02-移植进度与运行手册.md",
+    "sha256": "baef6028955ea5a108df4ee66c898350255ff25201b241abebe5974a77f3419c",
+    "characters": 2003,
+    "title": "02 · 移植进度与运行手册（2026-10-15）"
+  },
+  {
+    "path": "docs/03-首屏上线记录.md",
+    "sha256": "0f7c707ba671f0736da9594d97e2dfd9f6e33cd2acf2da2aab917b9bbccb7bbd",
+    "characters": 2583,
+    "title": "03 · Unity 首屏上线记录（2026-10-16）"
+  },
+  {
+    "path": "docs/04-世界扩容与设施丰富.md",
+    "sha256": "b8ea729730cef0256f10c889df0878b736c2bcde1b1176c127c03e3f9b8288ea",
+    "characters": 1777,
+    "title": "04 · 世界扩容与设施丰富（2026-10-16）"
+  },
+  {
+    "path": "docs/05-布局逻辑重整与操作修正.md",
+    "sha256": "3f21ea889784118620544e31c2c46b30f557b0ff4885723fa14f2e562e730941",
+    "characters": 1160,
+    "title": "05 · 布局逻辑重整与操作修正（2026-10-16）"
+  },
+  {
+    "path": "docs/06-单一语言迁移.md",
+    "sha256": "e43afce4deeffaebeb4a716d29a90d93d2832db4afdc4f59f8621fd856bb580e",
+    "characters": 1221,
+    "title": "06 · 全项目单一语言迁移（JS → C#，2026-10-16）"
+  },
+  {
+    "path": "docs/07-贴图生成器移植与对拍.md",
+    "sha256": "6be5fdc1174bd1c44a267ee3f461e178ef3530b91b5af71d9b5c2a60d8bd1132",
+    "characters": 1124,
+    "title": "07 · 程序化贴图生成器移植 C# 与像素对拍（2026-10-16）"
+  },
+  {
+    "path": "docs/08-场景美化-后处理.md",
+    "sha256": "4bc1a180357cb616ed324d276e7e2dda89597b79ff6552a95d0791bf07ab050d",
+    "characters": 871,
+    "title": "08 · 场景美化①：后处理栈（2026-10-16）"
+  },
+  {
+    "path": "docs/09-像素统一收尾.md",
+    "sha256": "0e1e102b5cf813ebcdea9e729f1985b5a33beb6c088e3d99f1762d2a6ca9cab0",
+    "characters": 4894,
+    "title": "09 · 像素统一收尾：主路石板 4×4 / 别墅·操场·池塘 ×2 / 招牌 PNG 可读修复（2026-10-16）"
+  },
+  {
+    "path": "docs/10-贴地纹理密度收尾.md",
+    "sha256": "414a7aff0b8c77f278e275840fbb6a41d0542f82e347ed164cb4ad0b6c3c96d6",
+    "characters": 3224,
+    "title": "10 · 贴地纹理密度收尾：球场 / 花坛 / 土斑 / 中线石带（2026-10-16）"
+  },
+  {
+    "path": "docs/100-对话系统与人物自选菜单.md",
+    "sha256": "236516199b188b2ebe491ae84f21d0b101fd6a466a6d53cd8ef3853a143c114c",
+    "characters": 7549,
+    "title": "100 · 对话系统 + C 键人物自选菜单（玩法线零的突破）"
+  },
+  {
+    "path": "docs/101-待定立绘重画与入库.md",
+    "sha256": "48bd356c63cb021afffa42709e5e89c8f98d12a0fd9337d51c9ff055f0c6d07b",
+    "characters": 2576,
+    "title": "101 · 待定立绘重画与入库（樊楼 FL-A / 景楠 JN-D）"
+  },
+  {
+    "path": "docs/102-立绘抠图修订与侧边栏章节目录.md",
+    "sha256": "a7b34bcb172deeb209045dc9e3c24b55fe25f0a93ac037d34b7908ba29e55e5b",
+    "characters": 2789,
+    "title": "102 · 立绘白底清干净 + 瑶清寒缩小 + 按键侧边栏 + 剧情浏览章节目录"
+  },
+  {
+    "path": "docs/103-室内卡通化.md",
+    "sha256": "bf4d462900e8d4a2b18d7ff9d3d6ea38f8876c5810714d55150268b34e971902",
+    "characters": 7854,
+    "title": "103 · 室内 13 间卡通化（Cel Shading 重做）"
+  },
+  {
+    "path": "docs/104-人物卡通材质化.md",
+    "sha256": "ccdc17465c2b7c5e08162332f7e67de69c6a768277510566e02486f3effb829d",
+    "characters": 10401,
+    "title": "104 · 人物卡通材质化（六角色方块人 Cel Shading 适配）"
+  },
+  {
+    "path": "docs/105-美术风格从0重做-卡通渲染.md",
+    "sha256": "3519fc3e79252db538e756dc4b055ad4c0e64dcb23f72a030d28667dff24bf7b",
+    "characters": 7320,
+    "title": "103 · 美术风格从 0 重做：写实 → 卡通渲染（Cel Shading）"
+  },
+  {
+    "path": "docs/106-第三方渲染方案调研与描边移植.md",
+    "sha256": "ad45049d84a3a5186062ddde126a7e40fce8759c54b4f7d3fbd0ff0867a540bd",
+    "characters": 4857,
+    "title": "106 · 第三方渲染方案调研与描边能力移植（scss）"
+  },
+  {
+    "path": "docs/107-六人立绘去白底与透明边缘修复.md",
+    "sha256": "93d3a7bbb30a5d088ced461d8940da12ed1df182f43e3034d2aab40ad3c09cd2",
+    "characters": 1786,
+    "title": "107 · 六人立绘重新去白底与透明边缘修复"
+  },
+  {
+    "path": "docs/108-城镇美化与室内外衔接修复.md",
+    "sha256": "7917b49e2be9ac45c19be9b53d012470c142aa84fe3317e67f5b2173d7d61e70",
+    "characters": 2622,
+    "title": "108 · 城镇配色、虚影与室内外入口统一修整"
+  },
+  {
+    "path": "docs/109-学校区域实体重建与虚影排查.md",
+    "sha256": "e1e66cab418569dc87d7a5014b125e6e23e428f5624147c134d5613e37f829be",
+    "characters": 1273,
+    "title": "109 学校区域实体重建与虚影排查"
+  },
+  {
+    "path": "docs/11-材质写实化与密度审计.md",
+    "sha256": "41487c2e68ab8ee185f8ea5d92da62c52a967716a99c520132455237a9a52130",
+    "characters": 3081,
+    "title": "11 · 材质写实化 + 全场景像素密度审计（2026-10-17）"
+  },
+  {
+    "path": "docs/110-樱花林重建与天空旧渲染清理.md",
+    "sha256": "6d823be9e639f7c0b22cec947eb604dada992c5ea26734d5e843fb2def140a15",
+    "characters": 1423,
+    "title": "110 樱花林重建与天空旧渲染清理"
+  },
+  {
+    "path": "docs/111-钟楼门口两处虚影修复.md",
+    "sha256": "386ed0f72207d6bb3b0480a0a17861df2e773599875dcd20fff023961cbc402b",
+    "characters": 583,
+    "title": "111 钟楼门口两处虚影修复"
+  },
+  {
+    "path": "docs/112-居民区逐栋实体优化与入户连接.md",
+    "sha256": "cae97c2db5f958286f06e469284291f02c3901da32f559ae34b5b64025178850",
+    "characters": 1872,
+    "title": "112 居民区逐栋实体优化与入户连接"
+  },
+  {
+    "path": "docs/113-传智杯赛道要求与参赛缺口核对.md",
+    "sha256": "aa9e0c616ad3949b38bebac5c6e707d5a55be64e83968b57051f347622e379e2",
+    "characters": 2930,
+    "title": "113 传智杯赛道要求与参赛缺口核对"
+  },
+  {
+    "path": "docs/114-存读档与空间化剧情闭环.md",
+    "sha256": "b53ba7a70d50dbd8ee0cc2a63136ab8161636be162d7fcf98b32b004f13eeea2",
+    "characters": 1854,
+    "title": "114 · 存读档与空间化剧情闭环"
+  },
+  {
+    "path": "docs/115-虚影路灯与主线追踪传送衔接.md",
+    "sha256": "0e5dc738eb361a85d9f31d69f6a0a80475fd99c132ca3f0cb0480c15790c518c",
+    "characters": 1397,
+    "title": "115 · 虚影、全图路灯与主线追踪传送衔接"
+  },
+  {
+    "path": "docs/116-对话任务手记与统一设置UI重设计.md",
+    "sha256": "71f34887fd30600c166233fb12d6c2c4f9a6373003bd0c371d8dc2127c243d63",
+    "characters": 2154,
+    "title": "116 · 对话、任务手记与统一设置 UI 重设计"
+  },
+  {
+    "path": "docs/117-建筑室内精度升级与旧布局清理及游乐场封闭.md",
+    "sha256": "ee94703dff8939a128a44befe60ac3a251f100e629df728ac28fcb0af7cef475",
+    "characters": 3140,
+    "title": "117 · 建筑、室内精度升级与旧布局清理，游乐场暂时封闭"
+  },
+  {
+    "path": "docs/118-学校教学楼入口与教室近景精修.md",
+    "sha256": "f6b2cfaa9379ebf32d281eee9425a25686d4f0e078d1baae5f6a3e3e187b1d1e",
+    "characters": 1447,
+    "title": "118 · 学校教学楼入口与教室近景精修"
+  },
+  {
+    "path": "docs/119-室内风格差异化与独立材质家具.md",
+    "sha256": "340619ad3d8ebbaa9a69f5cbdaec45c4769f9438eb6135a71a4fa446519177ec",
+    "characters": 1708,
+    "title": "119 · 室内风格差异化与独立材质、家具"
+  },
+  {
+    "path": "docs/12-立面密度统一.md",
+    "sha256": "6802c507649da308a94ef2c7929e64dc06a610a8a8e02c17afee3f5bd32482fa",
+    "characters": 2088,
+    "title": "12 · 立面密度统一：按世界比例重画 + 世界尺度 UV（2026-10-17）"
+  },
+  {
+    "path": "docs/120-连续光照柔影接触遮蔽与材质过渡重构.md",
+    "sha256": "5eb0a0b342920c9ccc361995a239d6dfa88b1cfc89ab2da70d70eebfb2e03c0c",
+    "characters": 2854,
+    "title": "120 · 连续光照、柔影、接触遮蔽与材质过渡重构"
+  },
+  {
+    "path": "docs/121-墙纸地板与整张地毯纹样精修.md",
+    "sha256": "dc2c3b9392325e89f333cc140396e5ba6735dc7ebe4e53f4c00f585fb74cb8c1",
+    "characters": 1370,
+    "title": "121 · 墙纸、地板与整张地毯纹样精修"
+  },
+  {
+    "path": "docs/122-植被分枝树冠与草地接壤及旧碰撞清理.md",
+    "sha256": "e522eb4e58f7f0906c8c6d15add76ab3654f678df75b040da4a0f26e5acd4d4f",
+    "characters": 878,
+    "title": "122 · 植被分枝树冠、草地接壤与旧碰撞清理"
+  },
+  {
+    "path": "docs/123-实景角色对话与开放世界主线指引首轮.md",
+    "sha256": "522cef7f3f4afd9c7c2804f3b8ece8757a370a834f04bfbc86754a50b1215708",
+    "characters": 1573,
+    "title": "123 · 实景角色对话与开放世界主线指引首轮"
+  },
+  {
+    "path": "docs/124-实景对话回退与六人立绘比例建模重做.md",
+    "sha256": "9ba6a85398b6aa5498f29a0a8a9415dc11ca83448df9ca50510b5edd0b29d825",
+    "characters": 1472,
+    "title": "124 · 实景对话回退与六人立绘比例建模重做"
+  },
+  {
+    "path": "docs/126-方块人物恢复精修与MC-MMD接入核对.md",
+    "sha256": "4d6099533a9d640dbbe5c13f338b17c9b816da01a27af02debfe3c9f2a4e3349",
+    "characters": 1648,
+    "title": "126 · 恢复方块人物精修与 MC-MMD-rust 接入核对"
+  },
+  {
+    "path": "docs/127-MMD六人实装与整章剧情节点.md",
+    "sha256": "39259fecd2f1d254e88b53526e72a407040816aa119b4c6b8f2ce90feca2b883",
+    "characters": 2034,
+    "title": "127 · 六人 PMX/VMD 实装与整章剧情节点"
+  },
+  {
+    "path": "docs/128-MC方块人立绘脸与紧密发型.md",
+    "sha256": "f18a61c37928d1949bb059da1de90c015d76cd2531dffae29fbe382a304e54ad",
+    "characters": 1688,
+    "title": "128 · 停止完整人体方向，MC 方块人立绘脸与紧密发型"
+  },
+  {
+    "path": "docs/13-操场与花坛颗粒对齐.md",
+    "sha256": "30654f5e247c10fc21cbc73f200f7f1f62020963ff779308023612aaab743b10",
+    "characters": 1353,
+    "title": "13 · 操场与花坛：颗粒对齐地形、去除「贴上去的方片」（2026-10-17）"
+  },
+  {
+    "path": "docs/130-角色建模退役与固定第一人称立绘立牌.md",
+    "sha256": "6d50e33e5b449240c68559a2feeb3d04f22f2ee8b45e963a8129b693f4651394",
+    "characters": 1792,
+    "title": "130 · 角色建模退役、固定第一人称与立绘立牌"
+  },
+  {
+    "path": "docs/131-人物图鉴展示与收起立绘立牌.md",
+    "sha256": "03641d05ed38d7125d623e312460391008e58e572e05f73c995ebc349d848616",
+    "characters": 842,
+    "title": "131 · C 键图鉴展示立绘立牌"
+  },
+  {
+    "path": "docs/132-瑶清寒站姿与紫薇全身立绘补全.md",
+    "sha256": "0deb2a7d5b1568cba62ca2f2e2bcd942ced944028e8ba682fc0589521a791b5d",
+    "characters": 1575,
+    "title": "132 · 瑶清寒站姿与紫薇全身立绘补全"
+  },
+  {
+    "path": "docs/133-立绘透明复查与场景多人演出及樊楼女体.md",
+    "sha256": "eba4cd0342f94ef9c47bb85a31f99b0d0b00c42ed016ddda4b450449b1fc8e9f",
+    "characters": 2402,
+    "title": "133 · 立绘透明复查、场景多人演出与樊楼女体"
+  },
+  {
+    "path": "docs/134-恢复双人对话与清理版立绘实装及女体衬衫.md",
+    "sha256": "a9d101c4c2f2a40bea982be63b8deb1f1c1ef6f2ac21f0978c50502d06314a6a",
+    "characters": 2365,
+    "title": "134 · 恢复双人对话、清理版立绘实装与女体衬衫"
+  },
+  {
+    "path": "docs/135-樊楼女体粉白魔法少女与蓝瞳Ciallo.md",
+    "sha256": "fc46db57142c04901ac2cdb73a8e006f9476cea6dbb67785528858a8c2d45cca",
+    "characters": 991,
+    "title": "135 · 樊楼女体粉白魔法少女与蓝瞳 Ciallo"
+  },
+  {
+    "path": "docs/136-操场椭圆跑道与草地细节及剧情回看重置.md",
+    "sha256": "4c553e24ad887d59516d0cb570ca05cc390c3f5b8bcaf118add4f9e7fcc71d33",
+    "characters": 1395,
+    "title": "136 · 操场椭圆跑道、草地细节与剧情回看重置"
+  },
+  {
+    "path": "docs/137-树木枝干叶片重建与林带分区.md",
+    "sha256": "5a78423e25ce107e2efc2b325904ef5180468f63b5897121b9a640f19a645f0f",
+    "characters": 1348,
+    "title": "137 · 树木枝干、叶片重建与林带分区"
+  },
+  {
+    "path": "docs/138-灌木花瓣公园重建与天气路灯细化.md",
+    "sha256": "2090bf098501ad4a7ae03a9978a6aadb32cd50caa03a597bddbcd2fc60888fac",
+    "characters": 1998,
+    "title": "138 · 灌木花瓣、公园重建与天气路灯细化"
+  },
+  {
+    "path": "docs/139-雨雪可读性天气地表与动态水风格统一.md",
+    "sha256": "e22b2fe4e5cdb2887c63f457ee1d1e696940ff5f42f9d69c5765eedd00e98c8c",
+    "characters": 2147,
+    "title": "139 · 雨雪可读性、天气地表与动态水风格统一"
+  },
+  {
+    "path": "docs/14-建筑配件与树距.md",
+    "sha256": "860ac15d9c6bc68a069f6ddb081a349aa9dd612330784d26283a38cba2584cf3",
+    "characters": 1728,
+    "title": "14 · 建筑配件与矮墙写实化 + 树木净距（2026-10-18）"
+  },
+  {
+    "path": "docs/140-Y键天气设置与雨雪强度尺寸调节.md",
+    "sha256": "08f100b2a0a577b5350383ec9907299bf5f648ceb8fcb1fbf9e6711465c8db71",
+    "characters": 1582,
+    "title": "140 · Y 键天气设置与雨雪强度、尺寸调节"
+  },
+  {
+    "path": "docs/141-界面参考重配色与巨樱林道看台修整.md",
+    "sha256": "c59f66cec1d1230681e4cee75d4f1ede1f6890997a113f6f46f21446d1faa396",
+    "characters": 1962,
+    "title": "141 · 界面参考重配色与巨樱、林道、看台修整"
+  },
+  {
+    "path": "docs/142-Esc设置入口与水面异常加速修复.md",
+    "sha256": "9e9fec31297e08fa9f6fac52ed40762942ba8357ac58bf117118ea1c3f89401b",
+    "characters": 1562,
+    "title": "142 · Esc 设置入口与水面异常加速修复"
+  },
+  {
+    "path": "docs/143-镜荧头像图标与开场退役及巨樱有机重建.md",
+    "sha256": "ee9e3a5a9fb3615eb88ee840005da146c6f5930819720bc12affa3036066a268",
+    "characters": 2000,
+    "title": "143 · 镜荧头像图标、开场退役与巨樱有机重建"
+  },
+  {
+    "path": "docs/144-桌面快捷方式旧图标引用与品牌残留清理.md",
+    "sha256": "3e236acce2b2472e63c31e5be5600b20129f56a778540263644771f865e965e1",
+    "characters": 1308,
+    "title": "144 · 桌面快捷方式旧图标引用与品牌残留清理"
+  },
+  {
+    "path": "docs/145-开始菜单全局HUD字体与学校室内通行更新.md",
+    "sha256": "e463190b448c6a122ff4a9fcd048efe37d5398b4ba078bc18343c1a8c2f17789",
+    "characters": 2480,
+    "title": "145 · 开始菜单、全局 HUD/字体与学校室内通行更新"
+  },
+  {
+    "path": "docs/146-桌面壁纸坐姿女主开始背景.md",
+    "sha256": "19c1e4f41e58c4db3fca4a7212cbf65fa2a96a00bedc1101e9682c8949c16a18",
+    "characters": 917,
+    "title": "146 · 桌面壁纸坐姿的女主开始背景"
+  },
+  {
+    "path": "docs/147-暮色开始菜单与淡化横条无底主线HUD.md",
+    "sha256": "0c49d7b073be1c34b0c9d5d4b6fa3b35060479597515f3549b70be43c6fb010f",
+    "characters": 1137,
+    "title": "147 · 暮色开始菜单、淡化横条与无底主线 HUD"
+  },
+  {
+    "path": "docs/148-开始设置遮挡与GUI事件切换修复.md",
+    "sha256": "0545dee35198cf715704601d424516255995034c28e957253da4243d053549e4",
+    "characters": 582,
+    "title": "148 · 开始设置遮挡与 GUI 事件切换修复"
+  },
+  {
+    "path": "docs/149-省赛作品交付与材料验证.md",
+    "sha256": "fbf597f6c90006a2bcc996c2ab8f77b18b683894b7a9cb69e40dbda6a8fed571",
+    "characters": 2215,
+    "title": "149 · 省赛作品交付与材料验证"
+  },
+  {
+    "path": "docs/15-照明预设第二版.md",
+    "sha256": "62257f4dc5fa192288faeb06da48b414d1cd6e1b4c9fef2d3291dc71cfcf0095",
+    "characters": 1329,
+    "title": "15 · 照明预设第二版：压曝光、收高光（2026-10-18）"
+  },
+  {
+    "path": "docs/150-跨会话历史核对与全功能实机解说演示.md",
+    "sha256": "410c7919a3c0c2e4bdde0839f877fcedcc552c62ecab02137e17b0137a31225f",
+    "characters": 2181,
+    "title": "150 · 跨会话历史核对与全功能实机解说演示"
+  },
+  {
+    "path": "docs/151-先交付材料与最终真人游玩录像要求.md",
+    "sha256": "dd787287951aab2e3006c57c944fe0747c21803be771cee216109b168632e8da",
+    "characters": 816,
+    "title": "151 · 先完成交付材料，最终视频改为真实游玩路线"
+  },
+  {
+    "path": "docs/152-授权后模块提交与仓库同步.md",
+    "sha256": "d7500a7d2a663b7d0e6027bb3d9f1377b3a6f8cb98d89e24d87f40ad00562e0f",
+    "characters": 440,
+    "title": "152 · 授权后模块提交与仓库同步"
+  },
+  {
+    "path": "docs/153-百度网盘交付与连续步行试玩预览.md",
+    "sha256": "e0196183d5be29efe202d8e8213d6fa9ef0c00dce61261049bdaafbab0f8734d",
+    "characters": 955,
+    "title": "153 · 百度网盘交付与连续步行试玩预览"
+  },
+  {
+    "path": "docs/16-雨雪天气系统.md",
+    "sha256": "71e13c1897eb63bfcaf56ea3ee64a5afa2efc1b63a68ce4e5e5bfdce6826107c",
+    "characters": 1575,
+    "title": "16 · 雨雪天气系统（2026-10-18）"
+  },
+  {
+    "path": "docs/17-桌面快捷方式与应用图标.md",
+    "sha256": "f220311f8e42ebf511ce40cc258fd0e5bca985bb0b429859033d5decdd1a96e0",
+    "characters": 1547,
+    "title": "17 · 桌面快捷方式与应用图标（2026-10-18）"
+  },
+  {
+    "path": "docs/18-小镇总平面布局.md",
+    "sha256": "a31d0a4b6249a027eceed20f05acafa3d3269e417c3ca6f45662043d55a280f9",
+    "characters": 4056,
+    "title": "18 · 小镇总平面布局 V5（近代风格 · 道路净距已校验）"
+  },
+  {
+    "path": "docs/19-小镇落地第一期.md",
+    "sha256": "820e140992a87d5e4fc2af8543591277babfc89be64c8d390ae0c2bebb34dd8f",
+    "characters": 2834,
+    "title": "19 · 小镇落地第一期（Unity 原生重建）"
+  },
+  {
+    "path": "docs/20-物理引擎与流动水.md",
+    "sha256": "da63dd4ec87eeb2f1e7bdb449ae60a60e996b15ee7d9d718c93a38be1f9a280c",
+    "characters": 2307,
+    "title": "20 · 物理引擎接入与可流动的河水"
+  },
+  {
+    "path": "docs/21-地标建模试点.md",
+    "sha256": "9d9bd106a0712f56e62a1db347603aadc0d4fd4a276c33305ce4cbb6e9dcc865",
+    "characters": 1392,
+    "title": "21 · 地标建模试点：神社 / 钟楼 / 骑楼"
+  },
+  {
+    "path": "docs/22-水面静止与场景修正.md",
+    "sha256": "68a0c9943c968d06960bef1c0afa63a9cd575d519dbb05a7270211c81466611a",
+    "characters": 1428,
+    "title": "22 · 水面静止、游乐场旋转修复与植被清理"
+  },
+  {
+    "path": "docs/23-夜幕路灯-摊位-公园-小地图.md",
+    "sha256": "535fefe5b62979c4c5c44c8cff681e7d0de289de21b8bec7144dc491985a8568",
+    "characters": 1420,
+    "title": "23 · 夜晚路灯、摊位多样性、公园细节与可传送小地图"
+  },
+  {
+    "path": "docs/24-夜景与摊位建筑修正.md",
+    "sha256": "36af6c8959c6971cc1dc10c475d78e2f763f31a5e7149f89dd92f3e7c701a665",
+    "characters": 1456,
+    "title": "24 · 夜景遮拦修复、路灯落地、窗光、摊位与建筑细节"
+  },
+  {
+    "path": "docs/25-树木净距-长椅-性能.md",
+    "sha256": "1541479c490309733b7ab82695d880d1538c1208b0cfe73e4c0d9f4f0c42dee3",
+    "characters": 1220,
+    "title": "25 · 树木净距最终过滤、河边长椅、启动性能与崩溃风险"
+  },
+  {
+    "path": "docs/26-天空黑幕-廊桥屋顶-圆形地图-操作.md",
+    "sha256": "db82a8a75948555827d91e9e86ef949692e4bab79a768deef8457b5338b8c676",
+    "characters": 1241,
+    "title": "26 · 天空黑幕、廊桥屋顶、地面铺装层级、圆形地图与操作方式"
+  },
+  {
+    "path": "docs/27-窗口尺寸与拖拽视角回退.md",
+    "sha256": "bccca064c0281caca380a258d17432aab26b0d7fb6c9b21ea43be60aac207619",
+    "characters": 463,
+    "title": "27 · 窗口尺寸可调 + 鼠标视角回退"
+  },
+  {
+    "path": "docs/28-坡屋顶与树木硬排除.md",
+    "sha256": "0e7327e021886e660b8d1500cdfaefc8e637949c570e26af0c3ddc47bc31649b",
+    "characters": 764,
+    "title": "28 · 坡屋顶重做与树木硬排除"
+  },
+  {
+    "path": "docs/29-学校道路矮墙.md",
+    "sha256": "c3a666a30f49866f2fd8f6c87311849e0ac414d13e7ad8c1e1a7b36946ed761a",
+    "characters": 630,
+    "title": "29 · 学校区域道路矮墙（入口留口）"
+  },
+  {
+    "path": "docs/30-地图扩大-具名传送-店铺精修.md",
+    "sha256": "73cd1cfa04cb864001d0c954ba5dce4f83fc44624fdebc51e705e4be91c1a31d",
+    "characters": 1193,
+    "title": "30 · 地图扩大、具名传送（二次确认）、店铺立面精修"
+  },
+  {
+    "path": "docs/31-廊桥屋顶换样式.md",
+    "sha256": "cfe4658a190c361530d986c8b762be20b5d2155077a5c192df872da9696af235",
+    "characters": 369,
+    "title": "31 · 廊桥屋顶换样式"
+  },
+  {
+    "path": "docs/32-世界边界填充.md",
+    "sha256": "844d454290cabb06b8315846238eee13a6f37d4a20c40830ddbf83ce89dda982",
+    "characters": 4390,
+    "title": "32 · 世界边界填充：缓丘 + 密林 + 远景山脊 + 铁路收口"
+  },
+  {
+    "path": "docs/33-光照修正-背光补光.md",
+    "sha256": "2b4a69dfa8b282e251f6368cdc2552251938474a170fb7b687f6643476889dda",
+    "characters": 1210,
+    "title": "33 · 光照修正：背光面与角色正面"
+  },
+  {
+    "path": "docs/34-室内系统-家与教学楼.md",
+    "sha256": "fa2bcd3f82464345f0cddd180c406b9ef5a062adbd104cb580f5d66d140966f2",
+    "characters": 10371,
+    "title": "34 · 室内系统：家 / 教学楼（可交互建筑第一版）"
+  },
+  {
+    "path": "docs/35-交接说明.md",
+    "sha256": "a206e9e19bbe41687fe5bb6a3f0210ee87a2632aa9ed76fb279bfa6d808b7611",
+    "characters": 4320,
+    "title": "35 · 交接说明（室内系统这一轮的完整状态）"
+  },
+  {
+    "path": "docs/35-室内修正-楼梯门窗墙纸.md",
+    "sha256": "f18a4f6ef28b093df35028c48551ab1ce834618879a560f886fcb5623a9e3d12",
+    "characters": 1788,
+    "title": "35 · 室内修正：楼梯挡墙、门扇、墙纸补漏、FP 地图、教室座位"
+  },
+  {
+    "path": "docs/36-室内扩建与去门.md",
+    "sha256": "413207f17acb35171c59f1a1b2ada34fb80fe0fb4d517a8a3bb8405c994ca937",
+    "characters": 1385,
+    "title": "36 · 室内扩建三倍 + 删除门扇"
+  },
+  {
+    "path": "docs/37-室内重建-单层开放.md",
+    "sha256": "1df4dd7159c828b60757b5220026964a8e961aab060b88e38f8b35c85698132d",
+    "characters": 1945,
+    "title": "37 · 室内删净重建：单层开放布局（方案 A 定稿）"
+  },
+  {
+    "path": "docs/38-教室门口与座位修正.md",
+    "sha256": "da135e924823c473f0c6bd8510ab6012812ec9c9d6ab7bd600c528188a9a7cee",
+    "characters": 1589,
+    "title": "38 · 教室三项修正：门口通畅、12 座均布、门洞加宽"
+  },
+  {
+    "path": "docs/39-墙皮闪烁与椅子朝向.md",
+    "sha256": "a313fed8498745234776aa1276618bc61b3b0772169d7c448049d57d3ce6d1ed",
+    "characters": 2913,
+    "title": "39 · 室内\"浮空布\"真相：墙皮 z-fighting + 椅子朝向"
+  },
+  {
+    "path": "docs/40-挂饰浮空修正.md",
+    "sha256": "9e670ab93d341ea3498480f7287f16094f3268310e350c1f84b52947adb0c5a5",
+    "characters": 2463,
+    "title": "40 · 挂饰浮空收尾：玄关镜 / 教室侧墙绿板 / 门楣门牌 / 公告栏"
+  },
+  {
+    "path": "docs/41-门洞加宽与洗衣房.md",
+    "sha256": "7b82583d0c07a084f85d049a2371c894b0511cb4487644608656c41aab6a1106",
+    "characters": 1595,
+    "title": "41 · 家里门洞加宽 + 浴室右边的房间改成明确的洗衣房"
+  },
+  {
+    "path": "docs/42-办公室与图书角门洞及陈设.md",
+    "sha256": "f54b5c4543216c9b5dd0b857921907e4d6048386bfc53024a0ad0be17d069371",
+    "characters": 2419,
+    "title": "42 · 学校办公室 / 图书角门洞加宽 + 图书角补陈设"
+  },
+  {
+    "path": "docs/43-图书馆餐厅超市与地图交互.md",
+    "sha256": "82759748bff0fff18f4f4945cf3e1bb20df4d49f32af9a326f917d4a39b054d8",
+    "characters": 4193,
+    "title": "43 · 图书馆 / 餐厅 / 超市三处室内 + 建筑级传送与大地图交互"
+  },
+  {
+    "path": "docs/44-公共室内翻倍重排与食堂.md",
+    "sha256": "25a481d0962bd4f6cd6c9d3e3c5ff1ee6a4cab8531c6d04ba3c8c2aab11cc2b3",
+    "characters": 3764,
+    "title": "44 · 图书馆 / 餐厅 / 超市面积翻倍重排 + 新增食堂（含虚影排查）"
+  },
+  {
+    "path": "docs/45-室内实体占位与出口净空.md",
+    "sha256": "cae9fc3aa9dfbb3b86c12db648f01a0bdb3c9bbe03e6eeac79813d3e23d5e4be",
+    "characters": 1831,
+    "title": "45 · 公共室内实体占位与出口净空修正"
+  },
+  {
+    "path": "docs/46-主角3D低模重做.md",
+    "sha256": "05937d5ea2d99cdad070334c1ca446695af3e17aa4b202644a2880425cdf987a",
+    "characters": 1797,
+    "title": "46 · 主角从 2D 精灵改为程序化 3D 低模"
+  },
+  {
+    "path": "docs/47-主角改为我的世界风方块人.md",
+    "sha256": "1f3f676ec067237f206b4eaf8258f18428a053f67bf8fe250b3bee25e53a7783",
+    "characters": 1429,
+    "title": "47 · 主角改为《我的世界》风方块人"
+  },
+  {
+    "path": "docs/48-主角脸部美化.md",
+    "sha256": "9ba36cc7e732f29369dcfd8583f2b94970a461f5f022075e2aea19edef2f0f84",
+    "characters": 1107,
+    "title": "48 · 主角脸部美化（32×32 像素脸贴片）"
+  },
+  {
+    "path": "docs/49-主角脸部精修与参考皮肤.md",
+    "sha256": "941ac053879b7efeaf50bdeac7f1451a812de96753a2a2969ab5bd450e518e39",
+    "characters": 2972,
+    "title": "49 · 主角脸部精修与参考皮肤（64×64 脸 / 浅金长发 / 蓝眼）"
+  },
+  {
+    "path": "docs/50-主角回归男主樊楼形象.md",
+    "sha256": "edd151864baa7adc036cd514e902d451791c7deb2893341d4025b8ecf80b9682",
+    "characters": 2244,
+    "title": "50 · 主角回归男主樊楼形象（参考只借画质）"
+  },
+  {
+    "path": "docs/51-主角脸改回MC8x8像素.md",
+    "sha256": "62305166d36070b0db96d87f95b1a2c607221bd976473b67e3315919cfc621b2",
+    "characters": 1554,
+    "title": "51 · 主角脸改回《我的世界》8×8 经典像素"
+  },
+  {
+    "path": "docs/52-男主短发美化.md",
+    "sha256": "1ed03d74e2f368b6ef8d0a1748be66334e793dfc67a1cb542608e6828adc90b2",
+    "characters": 1601,
+    "title": "52 · 男主短发美化（锥形发盖 / 斜扫刘海 / 竖发丝纹理）"
+  },
+  {
+    "path": "docs/53-主角64x64忧郁脸.md",
+    "sha256": "4e510447234c1002657e981692891ab45f10ab0c7b8e6a35c4d16da326b23b78",
+    "characters": 1323,
+    "title": "53 · 主角脸/发丝升到 64×64，表情改忧郁"
+  },
+  {
+    "path": "docs/54-主角按参考皮肤改猫耳奶油短发.md",
+    "sha256": "c1a3d971f6f6508393000966ac326805c509dbcaed6b8c2cb920c2e2ba4b8f42",
+    "characters": 2097,
+    "title": "54 · 主角按参考皮肤改猫耳奶油短发（蓝眼 + 男校服）"
+  },
+  {
+    "path": "docs/55-男主按人设重建-金发水手校服.md",
+    "sha256": "89c7348c8f5ab2f0dad61d452e8b5c9f0dd9030ece3663f559bd48e522068aa5",
+    "characters": 2505,
+    "title": "55 · 男主按人设重建：金发、小嘴、男版水手校服"
+  },
+  {
+    "path": "docs/56-跑步动作与室内出口木门.md",
+    "sha256": "43320462cc39089507c83addfff78b31956099ad79029b8a10e468d6a52266b0",
+    "characters": 1905,
+    "title": "56 · 跑步动作 + 六个室内出口统一木门"
+  },
+  {
+    "path": "docs/58-学校三所大室内.md",
+    "sha256": "97040b67e5cdc7e852ab97398a1a147f4f1d70cafc2062253c6cf3d809c4fb4d",
+    "characters": 4963,
+    "title": "58 · 学校三所大室内（宿舍楼 / 礼堂 / 实验楼）"
+  },
+  {
+    "path": "docs/59-礼堂标牌与舞台可上人.md",
+    "sha256": "257c7e2f0112c35b8c87b909b9e4c00d5b9f49a0f458c8f25cf37bea447afc90",
+    "characters": 2465,
+    "title": "59 · 礼堂标牌修正与舞台可上人"
+  },
+  {
+    "path": "docs/60-礼堂柜台与卫生间隔间.md",
+    "sha256": "6d3e1585b6d74d3b4caf60c21f6d8eb96c5bbda5d411d86fcb0192f86d9971e2",
+    "characters": 1687,
+    "title": "60 · 礼堂门厅柜台调整与卫生间隔间"
+  },
+  {
+    "path": "docs/61-写实光影渲染.md",
+    "sha256": "3f5b7fdeb4bda4cec76914c27ce16cad14d9d2d7a5eb12486eb006d1b63bbae5",
+    "characters": 4137,
+    "title": "61 · 写实光影渲染（线性 / HDR / ACES / SSAO / 程序化天空）"
+  },
+  {
+    "path": "docs/62-外部场景与建筑渲染适配.md",
+    "sha256": "f83e0e2deedd5b5e594b81f5de8d64ef0a25101eaf77615e22571b4e54d80e36",
+    "characters": 3104,
+    "title": "62 · 外部场景与建筑渲染适配（日间玻璃 / 植被降饱和 / 夜景店面 / 静态合批）"
+  },
+  {
+    "path": "docs/63-远山与林带优化.md",
+    "sha256": "4c3670db73aa24cf2f09d8d5fdb7c5d24d66dd1abce7753f9d6d087f5dcdba6d",
+    "characters": 5321,
+    "title": "63 · 远山与林带（边界缓坡 / 贴坡灌丛 / 林毯形态）"
+  },
+  {
+    "path": "docs/64-树冠与灌木形态.md",
+    "sha256": "482c4099ffa9c412ef7e7c75edbc984c2ab45817e4d0cb846a7c66ed200338b3",
+    "characters": 2918,
+    "title": "64 · 树冠与灌木形态（七树种 / 伞松 / 冠形分型）"
+  },
+  {
+    "path": "docs/65-树冠灌木改回方块.md",
+    "sha256": "e5397dc4871306dd684928f90efab327bcc38ee3f6f43dbeada0186f390e1419",
+    "characters": 1961,
+    "title": "65 · 树冠与灌木改回方块造型"
+  },
+  {
+    "path": "docs/66-回退远山与林带优化.md",
+    "sha256": "b1a0b829922b75cf3e484eeb00dba2c98850414a3fd54b1f5d4e601ff513ff45",
+    "characters": 1297,
+    "title": "66 · 回退远山与林带优化（docs/63~65）"
+  },
+  {
+    "path": "docs/67-CPU与GPU占用修复.md",
+    "sha256": "eb7b4a67756a74b7374829f1f04ab2afbac494c22f7b1fbe355e8ffbe7c33cd9",
+    "characters": 1538,
+    "title": "67 · CPU/GPU 占用修复（高分屏下锁帧失效）"
+  },
+  {
+    "path": "docs/68-钟楼广场接壤与公园樱花林.md",
+    "sha256": "574f4e7d94122d184209affb6edbf21f57b90c82ff79e5bb4e3f3b4b420ed42a",
+    "characters": 4047,
+    "title": "68 · 钟楼广场接壤修复 + 公园喷泉地标 + 樱花林加密"
+  },
+  {
+    "path": "docs/69-樱花树改非球造型.md",
+    "sha256": "8c4caf6b1e1aca1596eae3a3b4fd12b7dcc9e8866f92e8a0f384f017234471db",
+    "characters": 1931,
+    "title": "69 · 樱花树与巨樱改《我的世界》式体素结构"
+  },
+  {
+    "path": "docs/70-樱花林扩散与巨樱抬高.md",
+    "sha256": "dd87f4d020b380b8d305ae1b58ba83b37ff69d0f2b5caf51e516230a794db9d5",
+    "characters": 1507,
+    "title": "70 · 樱花林扩散、树干抬高与巨樱强化"
+  },
+  {
+    "path": "docs/71-巨樱三倍化.md",
+    "sha256": "80ee87d074b5aff58278bb28caef5d912d5298d88d10eb42c7520507580f4a8f",
+    "characters": 1555,
+    "title": "71 · 巨樱三倍化：3×3 粗干、16.8m 冠幅、26.4m 冠顶"
+  },
+  {
+    "path": "docs/72-巨樱三层树冠.md",
+    "sha256": "8a315020751f6f29129b73d27cd21203edbf024e2303cd829bbd82c4f80aec5e",
+    "characters": 1417,
+    "title": "72 · 巨樱沿树干分三层树冠"
+  },
+  {
+    "path": "docs/73-巨樱上窄下宽与体素缩至25%.md",
+    "sha256": "b31efc409f207873ac0fdf29321e11dfef4eddcacd58c0ae6585616f7e675615",
+    "characters": 1589,
+    "title": "73 · 巨樱三层上窄下宽 + 樱花体素缩到 0.2m"
+  },
+  {
+    "path": "docs/74-巨樱改为MC大型樱花结构.md",
+    "sha256": "d5babfa86f83e87f96c6d8bfa80acfc3af9846a630e3b3a15fa0d7a5f5f14666",
+    "characters": 1894,
+    "title": "74 · 巨樱改为《我的世界》大型樱花结构"
+  },
+  {
+    "path": "docs/75-神社区域精修.md",
+    "sha256": "51c552e46ebf8389ea07cd5540c979e27c8cfa413ef08db3c6e01e84bd88fb16",
+    "characters": 2730,
+    "title": "75 · 神社区域精修（路灯、小摊排布、摊位样式、周边细节）"
+  },
+  {
+    "path": "docs/76-学校区总平面与校舍改造.md",
+    "sha256": "aaf0aee86594fc6f5acc1e416ad1f2251b042bcbc0fdffa135ff33522c7e6bb7",
+    "characters": 3640,
+    "title": "76 · 学校区总平面重排与校舍改造"
+  },
+  {
+    "path": "docs/77-学校区扩边界与二次总平面.md",
+    "sha256": "03fbd3959fe25f46c27df2239e2e57a3472b96faf58038c60007807e6948368e",
+    "characters": 4489,
+    "title": "77 · 学校区扩边界与二次总平面"
+  },
+  {
+    "path": "docs/78-台阶朝向与门口碰撞修复.md",
+    "sha256": "728aade7fe1bd20e506a859294bb8b4236d73ad267810f1896dfdc9cd9d0b342",
+    "characters": 3153,
+    "title": "78 · 台阶朝向、长椅布点与门口空气墙修复"
+  },
+  {
+    "path": "docs/79-柱廊对位与校园路灯重排.md",
+    "sha256": "c214eec7eb8d10294159c45fc7acdba69c967b0ee5711878d589c75ce3791ffa",
+    "characters": 1893,
+    "title": "79 · 柱廊对位、教学楼门前浮空与校园路灯重排"
+  },
+  {
+    "path": "docs/80-教学楼门斗与校名值班牌修正.md",
+    "sha256": "8004d281717b3cadcaa6a3ea507eeca0438657b7ed0359030b8c050d91aac84f",
+    "characters": 1343,
+    "title": "80 · 教学楼门斗裙板、校名横匾与宿舍值班牌"
+  },
+  {
+    "path": "docs/81-钟面虚影修复.md",
+    "sha256": "1af43c2c134c021932b39107585b7909ea9b55e3dc3d9fc722b8c5c74bc0195d",
+    "characters": 923,
+    "title": "81 · 钟面虚影修复"
+  },
+  {
+    "path": "docs/82-校验口径修正与四间商铺室内.md",
+    "sha256": "a5fa9551fa461bd0a59ff7c3cfd3a1b82fd6ff3053f204094a532ecdc0f1dd3e",
+    "characters": 3914,
+    "title": "82 · 校验口径修正 + 四间商铺室内 + 全量室内虚影审计"
+  },
+  {
+    "path": "docs/83-室内椅子朝向与吊牌接顶与更衣室修复.md",
+    "sha256": "c1d83591a2d7735961682d30295254a3178efec9404d78e0ec208c47b828bbdb",
+    "characters": 4759,
+    "title": "83 · 室内三处缺陷修复：椅子朝向 / 吊牌接顶 / 更衣室空气墙"
+  },
+  {
+    "path": "docs/84-宿舍值班牌与室内悬空虚影修复.md",
+    "sha256": "923a7651f9b27ebfcb7c397e348ecb34f19007a9ee5b6d7e17e994d53b296a00",
+    "characters": 2297,
+    "title": "84 · 宿舍值班牌位置与奶茶店/宿舍虚影修复"
+  },
+  {
+    "path": "docs/85-共面闪面与帧率节奏修复.md",
+    "sha256": "9b10d4519c064f8faa0efaebd5419e008a81b41f77c103b9f0512ddc4c779d4b",
+    "characters": 2084,
+    "title": "85 · 共面闪面（柜台 / 沙发 / 椅子）与帧率节奏、地图 GC 抖动"
+  },
+  {
+    "path": "docs/86-柜台上面虚影与人物动作删除.md",
+    "sha256": "436e6e35a3668abdc891ed1a2090b92b0d8733f8c3e7df0538932ad6872360d5",
+    "characters": 1925,
+    "title": "86 · 柜台上面虚影补刀；人物动作试过又删除"
+  },
+  {
+    "path": "docs/87-住宅区商铺区拉开间距与路网路灯联动.md",
+    "sha256": "7dd8eff50a2f0aeb7106d18b47687b97071e96c21a36893eb34e910317a7ac7c",
+    "characters": 3407,
+    "title": "87 · 住宅区与商铺区拉开间距（扩边界 + 路网路灯联动）"
+  },
+  {
+    "path": "docs/88-路灯朝向与间距量化复核.md",
+    "sha256": "c77640c4fcd9a4284d9cddc12279fc5d6e639d0a140f914daca85114f203acbe",
+    "characters": 2463,
+    "title": "88 · 路灯朝向与间距量化复核"
+  },
+  {
+    "path": "docs/89-交接说明.md",
+    "sha256": "ce48b6a652199f067f5af60965369acefa880e0da10e2d286420b1a39a09bbd5",
+    "characters": 23626,
+    "title": "89 · 交接说明（docs/83~88 这一轮的完整状态）"
+  },
+  {
+    "path": "docs/90-剧本线开工与第一章扩写样张.md",
+    "sha256": "3e92aaa9ece1bd15c09a80bf642c5da866bce3c6012fc29ad11958c73868a092",
+    "characters": 5255,
+    "title": "90 · 剧本线开工：第一章扩写样张（Scenario/ 目录）"
+  },
+  {
+    "path": "docs/91-品牌线图标与启动logo概念稿.md",
+    "sha256": "3ba7a5b47abf36e2530e7dadde3c6e7dd31eaaaf585a1931ea7722fd597866b2",
+    "characters": 6926,
+    "title": "91 · 品牌线开工：图标 / 游戏名 / 启动 Logo 概念稿"
+  },
+  {
+    "path": "docs/92-开场logo实现.md",
+    "sha256": "d10fb60fa0b91bff48d4135dc26358bdedd751388b9d3a4720cb7387a2d5b1b6",
+    "characters": 1968,
+    "title": "92 · 开场 logo 实现（F-1 版式 · 隶书烘贴图）"
+  },
+  {
+    "path": "docs/93-原作底本入库.md",
+    "sha256": "fd90d9817a039df94ee8cae8342e129793815537a455bf76de8549be778bdfdd",
+    "characters": 1940,
+    "title": "93 · 原作底本入库（番茄小说《我的人生是否有问题》第 9~120 章）"
+  },
+  {
+    "path": "docs/94-第一卷后半扩写与覆盖校验.md",
+    "sha256": "466f24d16e786792b4ef4cae09a1621a0f8f338711b9b08cb29eb3bb70eb56de",
+    "characters": 4183,
+    "title": "94 · 剧本线第二轮：第一卷结构图 + 第 5~8 章扩写 + 覆盖校验脚本"
+  },
+  {
+    "path": "docs/95-交接说明-剧本线.md",
+    "sha256": "78a171a1722676acd1b0ed5348f7810cf7c1a28a482f1083feaf059d680350a4",
+    "characters": 4148,
+    "title": "95 · 交接说明（剧本线，docs/90 / 93 / 94 这一轮的完整状态）"
+  },
+  {
+    "path": "docs/96-NPC建模第一批-镜荧景楠实装.md",
+    "sha256": "fd0d9275a3fd9720270233b2dbf2ea4a7d1cde9445022ed5d59174fa6dc0714d",
+    "characters": 2689,
+    "title": "96 - NPC 建模第一批：镜荧 / 景楠 实装（CharacterDef 数据驱动）"
+  },
+  {
+    "path": "docs/97-NPC修订轮-镜荧红眼中分与景楠夹克.md",
+    "sha256": "9cdb294baecd6d8ff33d0da5aead0bb666a1050e57fa74c930230fe70b74f451",
+    "characters": 5153,
+    "title": "97 - NPC 修订轮：镜荧红瞳/侧扫刘海/礼服细节/穿模修复，景楠立领夹克"
+  },
+  {
+    "path": "docs/98-C阶段-莉莉雅瑶清寒紫薇参考与概念.md",
+    "sha256": "b1d47e62622589144ab801a04e1a0ae1661f43b018e278a797ddaad02a6b6dbb",
+    "characters": 4404,
+    "title": "98 - C 阶段：莉莉雅 / 瑶清寒 / 紫薇 参考与概念稿（待挑编号）"
+  },
+  {
+    "path": "docs/99-C阶段建模实装-莉莉雅瑶清寒紫薇.md",
+    "sha256": "f2651abc7a9e33dea7e7a68de314016b1d7d5e43296154e3a70486c61724d79c",
+    "characters": 2451,
+    "title": "99 - C 阶段建模实装：莉莉雅 / 瑶清寒 / 紫薇"
+  },
+  {
+    "path": ".zcode/memory/decisions.md",
+    "sha256": "4cddf01579b9f33f386768465f229e01388a22d7ccf6738d7ff1e6db5737e683",
+    "characters": 601,
+    "title": "decisions.md — 关键决策"
+  },
+  {
+    "path": ".zcode/memory/handoffs/Unity版像素密度统一与待办.memo.md",
+    "sha256": "80904fbff96c2bd6170b25412cb4d381887cca2e5c847c674c32ca1963c534bb",
+    "characters": 2330,
+    "title": "Unity版像素密度统一与待办.memo"
+  },
+  {
+    "path": ".zcode/memory/handoffs/小镇世界与单层室内重建完成.memo.md",
+    "sha256": "d058f45b1f7ce829a08527f2060665c9bed95dadba3299f4a08644fdbed12cd8",
+    "characters": 3646,
+    "title": "小镇世界与单层室内重建完成.memo"
+  },
+  {
+    "path": ".zcode/memory/INDEX.md",
+    "sha256": "a0a581716fdf0bcd47687773b3393fc7b4f613b18c0f7ef2d19764c9c3a7e413",
+    "characters": 1359,
+    "title": "记忆索引 — 校园叙事 RPG（Unity 版）"
+  },
+  {
+    "path": ".zcode/memory/lessons.md",
+    "sha256": "b3f41a6bd5b79eaf06374eca5da5bdd990dfaee23a9cf29d02aba5f9b840a9f8",
+    "characters": 7725,
+    "title": "lessons.md — 坑与经验"
+  },
+  {
+    "path": ".zcode/memory/project.md",
+    "sha256": "50a1328996b5025caca61d47bf895a12053a62cd0371392278c2b2c8a8d51b69",
+    "characters": 3535,
+    "title": "project.md — 项目状态"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-22.md",
+    "sha256": "a55d53bb393ef7d3f158b436231a38705160fcf5307a08a54c6a292de56eec76",
+    "characters": 3704,
+    "title": "2026-10-22"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-23.md",
+    "sha256": "a4df96a210b9a55a9cdbc209ef27029426b3230e45003c0fd7eab03202d3e21e",
+    "characters": 2937,
+    "title": "2026-10-23"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-24.md",
+    "sha256": "b9ca08b3482f5e8a8d1bdb822c50d9ea582c99d89b6befbe4deea765291324b1",
+    "characters": 3866,
+    "title": "2026-10-24"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-25.md",
+    "sha256": "442f4d7187af382b4694756155ad1fe2ad80c2896a1115762204af6c82dd6521",
+    "characters": 483,
+    "title": "2026-10-25"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-26.md",
+    "sha256": "b23001a1b8b939b77fa59ede356504a257e0b1c068d21552eca4902739c85891",
+    "characters": 5217,
+    "title": "2026-10-26"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-27.md",
+    "sha256": "147e56b7ba5abe58454e2ead21d596287b2d8decf09d1e430d52507772c3cbb4",
+    "characters": 11550,
+    "title": "2026-10-27 工作日志"
+  },
+  {
+    "path": ".workbuddy-ai/memory/2026-10-28.md",
+    "sha256": "f47e767fcfd90824656ce6cb5d6b6ce72b0ec6926f102fd21341064849fe4abc",
+    "characters": 5255,
+    "title": "2026-10-28 工作日志"
+  },
+  {
+    "path": ".workbuddy-ai/memory/MEMORY.md",
+    "sha256": "b21cfe4698096ce9fbbc66a39fdbe61e1db79d2be19c151f9648804267154a29",
+    "characters": 2238,
+    "title": "项目长期记忆 · Unity开发galgame"
+  }
+]
