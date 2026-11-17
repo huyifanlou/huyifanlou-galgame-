@@ -6,7 +6,7 @@ using UnityEngine;
 
 // Optional submission-only operator. Invokes existing gameplay/UI actions and
 // feeds movement into PlayerRig's normal collision path; never drives the desktop.
-public class SubmissionTour : MonoBehaviour
+public partial class SubmissionTour : MonoBehaviour
 {
     public static Vector2 Motion;
     PlayerRig rig; DialogueManager story; ProgressManager progress; InteriorManager rooms;
@@ -57,6 +57,7 @@ public class SubmissionTour : MonoBehaviour
         Mark("begin "+mode);
         switch(mode)
         {
+            case "tour-walk":yield return WalkPreview();break;
             case "tour-title":yield return Title();break;
             case "tour-story":yield return Story();break;
             case "tour-gallery":yield return Gallery();break;

@@ -16,6 +16,7 @@ public class SubmissionCapture:MonoBehaviour
         if(mode.StartsWith("tour-"))gameObject.AddComponent<SubmissionTour>().Begin(mode);
         while(Time.realtimeSinceStartup-start<seconds)
         {
+            if(mode=="tour-walk"&&GetComponent<SubmissionTour>().WalkFinished)break;
             float t=Time.realtimeSinceStartup-start;
             if(mode=="title"&&t>8&&!opened){StartMenu.Live.QueueEntry(StartMenu.Entry.Settings);opened=true;}
             if(mode=="title"&&t>16&&!closed){HelpSidebar.Live.Close();closed=true;}
